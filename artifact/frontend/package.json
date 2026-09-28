@@ -1,0 +1,41 @@
+{
+  "name": "trading-analysis-platform-frontend",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm run type-check && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vueuse/core": "15.0.0",
+    "naive-ui": "2.45.3",
+    "pinia": "4.0.3",
+    "vue": "3.5.43",
+    "vue-i18n": "11.4.12",
+    "vue-router": "5.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "@vitejs/plugin-vue": "6.0.9",
+    "@vue/eslint-config-prettier": "10.2.0",
+    "@vue/eslint-config-typescript": "14.9.0",
+    "@vue/tsconfig": "0.9.1",
+    "eslint": "10.11.0",
+    "eslint-plugin-vue": "10.11.1",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "vite": "8.3.1",
+    "vitest": "5.0.2",
+    "vue-tsc": "3.3.11"
+  }
+}

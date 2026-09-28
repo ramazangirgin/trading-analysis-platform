@@ -1,6 +1,6 @@
 # TradingAgents Platform — Detailed Plan
 
-> Status: **Draft v0.10** (2026-09-28) · All open decisions resolved (✅). Next step: Phase 0.
+> Status: **v0.11** (2026-09-28) · All open decisions resolved (✅). Phase 0 done except the real-LLM end-to-end run; next step: Phase 1.
 
 ### Decisions
 | # | Topic | Decision |
@@ -8,7 +8,7 @@
 | D1 | Target environment | ✅ Mac first (native), then a Linux server (Docker Compose) |
 | D2 | Execution model | ✅ `RunnerPort` with two adapters: Phase 1 local process, Phase 2 Docker |
 | D3 | UI component library | ✅ Naive UI |
-| D4 | Upstream source | ✅ GitHub tag, pinned (`v0.4.2`) |
+| D4 | Upstream source | ✅ GitHub tag, pinned (`v0.5.1`; `v0.4.2` does not exist upstream, so Phase 0 pinned the latest release) |
 | D5 | UI language | ✅ Turkish + English (vue-i18n), **Turkish by default** |
 | D6 | Number of users | ✅ Single user for now; data model designed so it can be extended to multiple users later |
 | D7 | Existing data | ✅ `~/.tradingagents` is imported into the platform (see §3.6) |
@@ -62,7 +62,7 @@ Spring Boot 4.1.1, Java 25, Gradle 9.7.1 (Kotlin DSL, version catalog, conventio
 ### 2.4 Local environment notes
 - Docker 29.8 installed.
 - JDK: only 7/8/17 installed → Java 25 is provisioned by the Gradle toolchain (foojay resolver), no manual install needed.
-- System Python is 3.9 (upstream needs ≥3.10); `ta-runner` gets its own `uv`-managed Python 3.12 venv. `uv` is not installed yet.
+- System Python is 3.9 (upstream needs ≥3.10); `ta-runner` gets its own `uv`-managed Python 3.12 venv. `uv` installed in Phase 0 (`pip install --user uv`; the local Homebrew is too old to have it).
 - `~/.tradingagents` contains real past runs (NVDA, MU, GOOG…) → ready-made data for the first import test.
 
 ---
@@ -109,7 +109,7 @@ Spring Boot 4.1.1, Java 25, Gradle 9.7.1 (Kotlin DSL, version catalog, conventio
 
 1. **The platform (backend + frontend) has zero dependency on TradingAgents code.** The Java backend cannot import Python anyway; it only knows three things: the run spec it sends (`spec.json`), the event stream it receives (JSONL), and the output files in the data dir.
 2. **`ta-runner` is the only thing that touches TradingAgents.** Upstream has no HTTP API and its CLI prompts interactively, so it cannot be driven headlessly. A thin Python runner (§3.3) is installed **into the TradingAgents runtime** (its venv or Docker image), not into the platform. It is a separate deliverable with its own versioning, released against a pinned upstream tag.
-3. **Zero changes to upstream.** Upstream is consumed as-is: `pip install "tradingagents @ git+https://github.com/TauricResearch/TradingAgents@v0.4.2"` or the upstream Docker image, with `ta-runner` added on top.
+3. **Zero changes to upstream.** Upstream is consumed as-is: `pip install "tradingagents @ git+https://github.com/TauricResearch/TradingAgents@v0.5.1"` or the upstream Docker image, with `ta-runner` added on top.
 4. **Each analysis is a separate process/container.** Real Stop (SIGTERM → SIGKILL), isolation, parallel runs, independence from backend crashes.
 5. **Runner ↔ platform contract = spec in, JSONL events out** (one JSON object per line on stdout). Wherever the runner runs (local, Docker, K8s), the backend reads it the same way. The same events are also written to `run_dir/events.jsonl` → past events survive a backend restart and the UI can replay them. The contract is versioned (`"v": 1`) and documented in `docs/event-protocol.md`.
 6. **Where the runner runs is an outbound-adapter concern.** The `analysis` domain defines a `RunnerPort`; `adapter.runner` provides a local-process and a Docker implementation, selected by property (see §4).
@@ -169,7 +169,7 @@ Runner output is **untrusted input** (same stance as job-radar's model output): 
 | Docker | docker-java (Phase 2, Docker runner adapter) |
 | Mapping | MapStruct 1.6.3 (`unmappedTargetPolicy=ERROR`) |
 | Architecture tests | ArchUnit 1.5.0 |
-| API docs | springdoc-openapi (version compatible with Boot 4, resolved in Phase 0) → OpenAPI spec used to generate the frontend TS client |
+| API docs | springdoc-openapi 3.1.1 (`starter-webmvc-api`, the Boot 4 line), spec served at `/api/openapi` → used to generate the frontend TS client |
 | Static UI | the frontend build is served from the jar's `classpath:/static` (D12), with an SPA fallback to `index.html` for client-side routes |
 
 #### Package layout
@@ -415,12 +415,18 @@ TradingAgents-Platform/
 
 ## 6. Roadmap
 
-### Phase 0 — Skeleton and spike (2-3 days)
-- [ ] Gradle skeleton copied from job-radar: `settings.gradle.kts`, `build-logic` convention plugins, version catalog, Java 25 toolchain, `ArchitectureTest`
-- [ ] Empty modules: `bff:api`, `bff:impl`, `orchestration`, `domain:{analysis,report,catalog,settings}:{core,adapter}`; context-load test green
-- [ ] Frontend skeleton (`artifact/frontend` as Gradle subproject `:frontend`, pnpm, Vite, Vue 3.5, Naive UI, vue-i18n, eslint/prettier); `bootJar` bundles it and serves `index.html` at `/`
-- [ ] `ta-runner` skeleton (`uv`, Python 3.12, upstream pinned) + **spike:** take a spec → `graph.stream` → print JSONL; end-to-end test with a real ticker (cheap model)
-- [ ] Event protocol v1 document (`docs/event-protocol.md`)
+### Phase 0 — Skeleton and spike (2-3 days) ✅
+- [x] Gradle skeleton copied from job-radar: `settings.gradle.kts`, `build-logic` convention plugins, version catalog, Java 25 toolchain, `ArchitectureTest` (job-radar rules + the two platform rules; `archunit.properties` allows empty selections while modules are empty)
+- [x] Empty modules: `bff:api`, `bff:impl`, `orchestration`, `domain:{analysis,report,catalog,settings}:{core,adapter}`; context-load test green
+- [x] Frontend skeleton (`artifact/frontend` as Gradle subproject `:frontend`, pnpm, Vite, Vue 3.5, Naive UI, vue-i18n, eslint/prettier); `bootJar` bundles it and serves `index.html` at `/` (SPA fallback for client routes; unknown `/api` paths and missing assets stay 404)
+- [x] `ta-runner` skeleton (`uv`, Python 3.12, upstream pinned) + spike: spec → `graph.stream` → JSONL, with `compat.py`, event tracker, callbacks, SIGTERM handling and contract tests against the real v0.5.1 graph
+- [ ] **Open:** end-to-end run with a real ticker and a cheap model. Verified up to the first LLM call with a dummy key (clean stdout, `events.jsonl` identical, `run_finished{error}` on 401); needs a real provider key to finish
+- [x] Event protocol v1 document (`docs/event-protocol.md`)
+
+Phase 0 notes:
+- TypeScript is pinned to 6.0.x: `typescript-eslint` does not support TypeScript 7 yet.
+- Intel Mac: `cryptography>=49` ships no x86_64 macOS wheels; `ta-runner` constrains it to `<49` on Intel Macs only (`[tool.uv] constraint-dependencies`).
+- Gradle itself needs a JDK 17+ to launch (e.g. `JAVA_HOME=/usr/local/opt/openjdk@17`); Java 25 comes from the toolchain.
 
 ### Phase 1 — MVP, no Docker (1.5-2 weeks)
 - [ ] `ta-runner`: full event set, callbacks, SIGTERM, report saving, decision extraction, checkpoint, `catalog` / `version` commands

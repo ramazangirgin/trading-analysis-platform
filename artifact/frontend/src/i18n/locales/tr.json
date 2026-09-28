@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "TradingAgents Platformu",
+    "language": "Dil"
+  },
+  "nav": {
+    "dashboard": "Gösterge Paneli"
+  },
+  "home": {
+    "heading": "Hoş geldiniz",
+    "intro": "Platform iskeleti çalışıyor. Analiz başlatma, canlı akış ve raporlar sonraki aşamalarda eklenecek.",
+    "backend": "Backend durumu",
+    "status": {
+      "checking": "Kontrol ediliyor…",
+      "up": "Çalışıyor",
+      "down": "Ulaşılamıyor"
+    }
+  },
+  "notFound": {
+    "heading": "Sayfa bulunamadı",
+    "back": "Ana sayfaya dön"
+  }
+}

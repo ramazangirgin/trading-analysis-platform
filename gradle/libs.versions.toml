@@ -1,0 +1,37 @@
+# Single source of truth for versions. Bump here, nowhere else.
+[versions]
+# Java 25 LTS. Non-LTS releases reach end of life after six months.
+java = "25"
+springBoot = "4.1.1"
+# springdoc 3.x is the line built for Spring Boot 4.
+springdoc = "3.1.1"
+archunit = "1.5.0"
+mapstruct = "1.6.3"
+# Frontend toolchain, downloaded by the node-gradle plugin: no global Node needed for a build.
+nodeGradle = "7.1.0"
+node = "24.21.0"
+pnpm = "12.6.0"
+
+[libraries]
+# BOM. The Spring Boot Gradle plugin does NOT apply dependency management on its own,
+# so the platform must be imported explicitly - otherwise starters resolve to no version.
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
+
+# Versions below come from the BOM.
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-context = { module = "org.springframework:spring-context" }
+slf4j-api = { module = "org.slf4j:slf4j-api" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+springdoc-openapi-webmvc-api = { module = "org.springdoc:springdoc-openapi-starter-webmvc-api", version.ref = "springdoc" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+node = { id = "com.github.node-gradle.node", version.ref = "nodeGradle" }

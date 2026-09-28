@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "TradingAgents Platform",
+    "language": "Language"
+  },
+  "nav": {
+    "dashboard": "Dashboard"
+  },
+  "home": {
+    "heading": "Welcome",
+    "intro": "The platform skeleton is running. Starting analyses, the live stream and reports come in the next phases.",
+    "backend": "Backend status",
+    "status": {
+      "checking": "Checking…",
+      "up": "Up",
+      "down": "Unreachable"
+    }
+  },
+  "notFound": {
+    "heading": "Page not found",
+    "back": "Back to the home page"
+  }
+}

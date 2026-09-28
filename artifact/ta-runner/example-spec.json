@@ -1,0 +1,14 @@
+{
+  "run_id": "r_spike01",
+  "ticker": "NVDA",
+  "trade_date": "2026-09-25",
+  "asset_type": "stock",
+  "analysts": ["market"],
+  "llm_provider": "openai",
+  "deep_think_llm": "gpt-5.4-mini",
+  "quick_think_llm": "gpt-5.4-mini",
+  "max_debate_rounds": 1,
+  "max_risk_discuss_rounds": 1,
+  "output_language": "English",
+  "checkpoint_enabled": false
+}

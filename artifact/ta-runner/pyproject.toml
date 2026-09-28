@@ -1,0 +1,44 @@
+[project]
+name = "ta-runner"
+version = "0.1.0"
+description = "Non-interactive, single-run executor for TradingAgents that emits JSONL events (see docs/event-protocol.md)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # The ONLY place the platform touches TradingAgents code. Pinned to a release tag;
+    # bump it together with compat.py and the contract tests (PLAN.md section 10).
+    "tradingagents @ git+https://github.com/TauricResearch/TradingAgents@v0.5.1",
+]
+
+[project.scripts]
+ta-runner = "ta_runner.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "ruff>=0.15",
+]
+
+[tool.uv]
+# Intel Macs: several packages stopped publishing x86_64 macOS wheels, and building them
+# needs a Rust toolchain. Pin to the last releases with universal2 wheels, on Intel Macs only.
+constraint-dependencies = [
+    "cryptography<49; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
