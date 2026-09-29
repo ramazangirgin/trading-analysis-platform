@@ -103,6 +103,7 @@
     "rating": "Decision",
     "model": "Model",
     "created": "Started",
+    "startedAt": "Started {time}",
     "duration": "Duration",
     "filterTicker": "Filter by ticker",
     "filterStatus": "Status",

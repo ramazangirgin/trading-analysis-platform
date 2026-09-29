@@ -37,7 +37,17 @@ const PriceChart = defineAsyncComponent(() => import('@/components/PriceChart.vu
 
 const route = useRoute()
 const router = useRouter()
-const { t, language, error: errorLabel, errorCode, dateTime, duration, integer, usd } = useLabels()
+const {
+  t,
+  language,
+  error: errorLabel,
+  errorCode,
+  dateTime,
+  startTime,
+  duration,
+  integer,
+  usd,
+} = useLabels()
 const { locale } = useI18n()
 
 const id = computed(() => String(route.params.id))
@@ -152,6 +162,9 @@ async function rerun() {
         <NSpace align="center" :wrap="true">
           <span class="title">{{ analysis.spec.ticker }}</span>
           <span class="subtitle">{{ analysis.spec.tradeDate }}</span>
+          <span class="subtitle subtitle--small">{{
+            t('runs.startedAt', { time: startTime(analysis) })
+          }}</span>
           <StatusTag :status="analysis.status" />
           <RatingTag :rating="rating" size="medium" />
           <NTooltip v-if="outputLanguage">
@@ -342,7 +355,7 @@ async function rerun() {
               language(outputLanguage ?? analysis.spec.outputLanguage)
             }}</NDescriptionsItem>
             <NDescriptionsItem :label="t('runs.created')">{{
-              dateTime(analysis.createdAt)
+              startTime(analysis)
             }}</NDescriptionsItem>
           </NDescriptions>
         </NTabPane>
@@ -359,6 +372,10 @@ async function rerun() {
 
 .subtitle {
   opacity: 0.7;
+}
+
+.subtitle--small {
+  font-size: 13px;
 }
 
 .feed {

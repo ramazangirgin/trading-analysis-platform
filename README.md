@@ -93,7 +93,8 @@ and report tables that are series over periods (quarterly or yearly figures) get
 
 ### 6. Past analyses
 
-**Analyses** lists every run with its decision, model and duration, filterable by ticker and status.
+**Analyses** lists every run with its analysis date and start time, decision, model and duration,
+filterable by ticker and status.
 Runs made with the TradingAgents CLI are imported from `~/.tradingagents/logs` (read-only) —
 **Scan data dir** picks up new ones.
 
@@ -105,9 +106,8 @@ The **Dashboard** shows the running analyses and the latest decisions at a glanc
 
 ### Language
 
-The UI is Turkish by default; switch to English in the header (the choice is remembered per
-browser). Reports stay in the language the analysis was started with; the analysis page shows it
-as a "Report language" tag. The screenshots above are the English UI with an analysis run in English.
+The UI is in English. Reports are written in the language chosen in the New Analysis form's
+"Report language" field; the analysis page shows it as a tag.
 
 ## Where things live
 

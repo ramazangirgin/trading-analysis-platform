@@ -103,6 +103,7 @@
     "rating": "Karar",
     "model": "Model",
     "created": "Başlatıldı",
+    "startedAt": "Başlatıldı: {time}",
     "duration": "Süre",
     "filterTicker": "Sembole göre filtrele",
     "filterStatus": "Durum",

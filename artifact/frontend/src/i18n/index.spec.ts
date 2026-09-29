@@ -3,7 +3,7 @@ import { i18n, loadStoredLocale, outputLanguageFor, setLocale } from '.'
 
 describe('setLocale', () => {
   afterEach(() => {
-    setLocale('tr')
+    setLocale('en')
     vi.unstubAllGlobals()
   })
 
@@ -27,9 +27,9 @@ describe('setLocale', () => {
     expect(loadStoredLocale()).toBe('en')
   })
 
-  it('falls back to Turkish for an unknown stored value', () => {
+  it('falls back to English for an unknown stored value', () => {
     vi.stubGlobal('localStorage', { getItem: () => 'de', setItem: () => {} })
-    expect(loadStoredLocale()).toBe('tr')
+    expect(loadStoredLocale()).toBe('en')
   })
 })
 

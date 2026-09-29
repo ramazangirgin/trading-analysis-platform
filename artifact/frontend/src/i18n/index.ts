@@ -2,12 +2,12 @@ import { createI18n } from 'vue-i18n'
 import en from './locales/en.json'
 import tr from './locales/tr.json'
 
-export type MessageSchema = typeof tr
-export const SUPPORTED_LOCALES = ['tr', 'en'] as const
+export type MessageSchema = typeof en
+export const SUPPORTED_LOCALES = ['en', 'tr'] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
-// Turkish by default (PLAN.md D5); the viewer's choice is remembered per browser.
-export const DEFAULT_LOCALE: AppLocale = 'tr'
+// English by default (PLAN.md D5); the viewer's choice is remembered per browser.
+export const DEFAULT_LOCALE: AppLocale = 'en'
 const STORAGE_KEY = 'tap.locale'
 
 export function isAppLocale(value: unknown): value is AppLocale {
@@ -31,7 +31,7 @@ export function storeLocale(locale: AppLocale): void {
   }
 }
 
-export const messages: Record<AppLocale, MessageSchema> = { tr, en }
+export const messages: Record<AppLocale, MessageSchema> = { en, tr }
 
 export const i18n = createI18n<[MessageSchema], AppLocale, false>({
   legacy: false,

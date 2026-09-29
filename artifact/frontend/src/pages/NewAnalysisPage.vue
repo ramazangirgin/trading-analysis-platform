@@ -35,7 +35,7 @@ const { t, language, error: errorLabel } = useLabels()
 const catalogStore = useCatalogStore()
 
 const ANALYSTS: Analyst[] = ['MARKET', 'SOCIAL', 'NEWS', 'FUNDAMENTALS']
-const LANGUAGES = ['Turkish', 'English', 'German', 'French', 'Spanish', 'Chinese', 'Japanese']
+const LANGUAGES = ['English', 'Turkish', 'German', 'French', 'Spanish', 'Chinese', 'Japanese']
 
 /** The latest weekday up to today: upstream rejects future dates, markets are closed at weekends. */
 function lastWeekday(): number {

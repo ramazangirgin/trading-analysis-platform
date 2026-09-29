@@ -9,7 +9,7 @@
 | D2 | Execution model | ✅ `RunnerPort` with two adapters: Phase 1 local process, Phase 2 Docker |
 | D3 | UI component library | ✅ Naive UI |
 | D4 | Upstream source | ✅ GitHub tag, pinned (`v0.5.1`; `v0.4.2` does not exist upstream, so Phase 0 pinned the latest release) |
-| D5 | UI language | ✅ Turkish + English (vue-i18n), **Turkish by default** |
+| D5 | UI language | ✅ English + Turkish (vue-i18n), **English by default** |
 | D6 | Number of users | ✅ Single user for now; data model designed so it can be extended to multiple users later |
 | D7 | Existing data | ✅ `~/.tradingagents` is imported into the platform (see §3.6) |
 | D8 | Docker model on the server | ✅ One container per analysis (Docker runner adapter, via the Docker socket) |
@@ -295,7 +295,7 @@ Rules:
 - **Triggering:** full scan on startup, then change watching (`java.nio.file.WatchService`) + a "Rescan" button in the UI.
 
 ### 3.7 Language policy (D5)
-- **UI strings:** `artifact/frontend/src/i18n/{tr,en}.json`, Turkish by default.
+- **UI strings:** `artifact/frontend/src/i18n/{en,tr}.json`, English by default.
 - **Analysis output language is a separate setting:** `output_language` (upstream config) in the New Analysis form defaults to the UI language (TR → `Turkish`) but can be changed per run. Upstream keeps internal debates in English; show this as a note in the UI.
 - **Fixed labels are translated:** agent names (Market Analyst → Piyasa Analisti), stages, ratings (Buy → Al, Overweight → Ağırlık Artır, Hold → Tut, Underweight → Ağırlık Azalt, Sell → Sat, REVIEW → İncele). Raw values stay in English in the DB; translation happens only at display time.
 - The backend returns an `error_code` + parameters; the frontend translates the text.

@@ -1,5 +1,5 @@
 import { useI18n } from 'vue-i18n'
-import { ApiError } from '@/api/client'
+import { ApiError, type Analysis } from '@/api/client'
 
 /** Upstream agent name ("Market Analyst") -> message key ("market_analyst"). */
 export const agentKey = (agent: string): string => agent.toLowerCase().replace(/ /g, '_')
@@ -30,6 +30,10 @@ export function useLabels() {
       ? new Date(iso).toLocaleString(locale.value, { dateStyle: 'short', timeStyle: 'short' })
       : '—'
 
+  /** When the run started; queued runs have not yet, so their creation time stands in. */
+  const startTime = (analysis: Analysis): string =>
+    dateTime(analysis.startedAt ?? analysis.createdAt)
+
   const duration = (ms: number | null): string => {
     if (ms === null || ms <= 0) return '—'
     const seconds = Math.round(ms / 1000)
@@ -51,5 +55,5 @@ export function useLabels() {
           maximumFractionDigits: 4,
         }).format(value)
 
-  return { t, d, n, agent, language, error, errorCode, dateTime, duration, integer, usd }
+  return { t, d, n, agent, language, error, errorCode, dateTime, startTime, duration, integer, usd }
 }

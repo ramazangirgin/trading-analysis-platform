@@ -2,17 +2,17 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NSelect } from 'naive-ui'
-import { isAppLocale, setLocale, type AppLocale } from '@/i18n'
+import { DEFAULT_LOCALE, isAppLocale, setLocale, type AppLocale } from '@/i18n'
 
 const { t, locale } = useI18n()
 
 const options = [
-  { label: 'Türkçe', value: 'tr' },
   { label: 'English', value: 'en' },
+  { label: 'Türkçe', value: 'tr' },
 ]
 
 const selected = computed<AppLocale>({
-  get: () => (isAppLocale(locale.value) ? locale.value : 'tr'),
+  get: () => (isAppLocale(locale.value) ? locale.value : DEFAULT_LOCALE),
   set: setLocale,
 })
 </script>

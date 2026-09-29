@@ -9,12 +9,20 @@ import RatingTag from './RatingTag.vue'
 
 const props = defineProps<{ analyses: Analysis[]; loading?: boolean; compact?: boolean }>()
 const router = useRouter()
-const { t, dateTime, duration } = useLabels()
+const { t, startTime, duration } = useLabels()
 
 const columns = computed<DataTableColumns<Analysis>>(() => {
   const all: DataTableColumns<Analysis> = [
     { title: t('runs.ticker'), key: 'ticker', render: (row) => h('strong', row.spec.ticker) },
-    { title: t('runs.tradeDate'), key: 'tradeDate', render: (row) => row.spec.tradeDate },
+    {
+      title: t('runs.tradeDate'),
+      key: 'tradeDate',
+      render: (row) =>
+        h('div', [
+          h('div', row.spec.tradeDate),
+          h('div', { class: 'started' }, t('runs.startedAt', { time: startTime(row) })),
+        ]),
+    },
     {
       title: t('runs.status'),
       key: 'status',
@@ -36,7 +44,6 @@ const columns = computed<DataTableColumns<Analysis>>(() => {
             ? t('runs.imported')
             : `${row.spec.llmProvider} / ${row.spec.deepThinkLlm}`,
       },
-      { title: t('runs.created'), key: 'created', render: (row) => dateTime(row.createdAt) },
       {
         title: t('runs.duration'),
         key: 'duration',
@@ -65,3 +72,11 @@ const rowProps = (row: Analysis) => ({
     :scroll-x="compact ? undefined : 760"
   />
 </template>
+
+<style scoped>
+:deep(.started) {
+  font-size: 12px;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+</style>
