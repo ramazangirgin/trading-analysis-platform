@@ -82,6 +82,12 @@ Underweight / Sell) with its reasoning, and the tabs hold everything behind it:
 
 ![Stats tab: calls, tokens, cost, duration and the run's settings](docs/screenshots/run-stats.png)
 
+The market report opens with a price chart — close, 10 EMA, 50 SMA and 200 SMA with volume, over
+3 months to a year up to the analysis date, from the price data TradingAgents itself downloaded —
+and report tables that are series over periods (quarterly or yearly figures) get a chart beside them:
+
+![A fundamentals table with its chart](docs/screenshots/run-table-chart.png)
+
 ### 6. Past analyses
 
 **Analyses** lists every run with its decision, model and duration, filterable by ticker and status.
