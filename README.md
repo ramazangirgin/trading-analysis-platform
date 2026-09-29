@@ -15,22 +15,31 @@ analyses without modifying its code. See [PLAN.md](PLAN.md) for the design and r
 - [uv](https://docs.astral.sh/uv/) for `ta-runner` (it downloads Python 3.12).
 - Nothing else: Node.js and pnpm are downloaded by the build.
 
-## Platform
+## Getting started
 
 ```sh
-./gradlew build                     # all tests (ArchUnit included), lint, and the single jar
-java -jar artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar   # http://127.0.0.1:8080
+make setup      # uv sync for ta-runner (downloads TradingAgents), frontend packages
+make dev        # backend on :8080 + Vite with hot reload on http://localhost:5173
+make build      # all tests (ArchUnit included), lint, and the single jar
+make run        # the jar on http://127.0.0.1:8080 (needs Java 25: make run JAVA=/path/to/java)
+make test       # backend + frontend + ta-runner tests
 ```
 
-Dev mode, with UI hot reload:
+`make help` lists the targets; `JAVA_HOME`, `UV` and `JAVA` can be overridden on the command line.
 
-```sh
-./gradlew :backend:bootRun          # API on :8080
-cd artifact/frontend && pnpm dev    # UI on :5173, proxies /api and /actuator to :8080
-```
+Provider API keys: add them on the **Settings** page (stored in
+`~/.tradingagents-platform/secrets.env`, owner-only), or keep them in
+`artifact/ta-runner/.env`, which the platform reads but never writes.
 
-`pnpm` for dev mode: `corepack enable`, or use the copy the build downloaded
-(`artifact/frontend/.gradle/pnpm/`).
+Where things live:
+
+| Path | What |
+|---|---|
+| `~/.tradingagents-platform/platform.db` | Analyses and presets (SQLite) |
+| `~/.tradingagents-platform/runs/<id>/` | `spec.json`, `events.jsonl` (replayed to the UI), `run.log` (runner stderr) |
+| `~/.tradingagents/logs/` | TradingAgents' own reports, shared with its CLI; runs found here are imported (read-only) |
+
+Override with `PLATFORM_HOME`, `TRADINGAGENTS_HOME` or `TRADINGAGENTS_RESULTS_DIR`.
 
 ## ta-runner
 
