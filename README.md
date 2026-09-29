@@ -1,21 +1,102 @@
 # TradingAgents Platform
 
 A web platform for running and managing [TradingAgents](https://github.com/TauricResearch/TradingAgents)
-analyses without modifying its code. See [PLAN.md](PLAN.md) for the design and roadmap and
-[docs/event-protocol.md](docs/event-protocol.md) for the runner contract.
+analyses without modifying its code: start an analysis from the browser, watch the agents work live,
+then read the decision, the reports and the debates. See [PLAN.md](PLAN.md) for the design and
+roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner contract.
+
+![An analysis: agent pipeline and the final decision](docs/screenshots/run-decision.png)
 
 | Artifact | Path | Stack |
 |---|---|---|
 | Platform (backend + UI, one jar) | `artifact/backend`, `artifact/frontend` | Java 25, Spring Boot 4.1 · Vue 3.5, Vite, Naive UI |
 | Runner (installed into the TradingAgents runtime) | `artifact/ta-runner` | Python 3.12, uv, TradingAgents `v0.5.1` |
 
-## Prerequisites
+## Quick start
+
+### 1. Prerequisites
 
 - A JDK 17+ to launch Gradle. Java 25 itself is downloaded by the Gradle toolchain.
 - [uv](https://docs.astral.sh/uv/) for `ta-runner` (it downloads Python 3.12).
+- An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
+  Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
 - Nothing else: Node.js and pnpm are downloaded by the build.
 
-## Getting started
+### 2. Start the platform
+
+```sh
+git clone https://github.com/ramazangirgin/trading-analysis-platform.git
+cd trading-analysis-platform
+make setup      # once: installs ta-runner (downloads TradingAgents) and the UI packages
+make dev        # backend on :8080 + UI with hot reload
+```
+
+Open **http://localhost:5173**. If Gradle picks up a JDK older than 17, point it at a newer one:
+`make dev JAVA_HOME=/path/to/jdk17+`. The first start takes a few minutes (Gradle, Java 25, Node).
+
+To run it the way it ships instead — one jar serving both the API and the UI — use
+`make build && make run` and open http://127.0.0.1:8080 (the jar needs Java 25:
+`make run JAVA=/path/to/jdk25/bin/java`).
+
+### 3. Add an API key
+
+Open **Settings**, paste the key next to its provider and press **Save**. Keys are stored in
+`~/.tradingagents-platform/secrets.env` (owner-only) and are never shown back. A key already in
+`artifact/ta-runner/.env` is picked up too (read-only).
+
+![Settings: provider API keys](docs/screenshots/settings.png)
+
+### 4. Start an analysis
+
+Open **New analysis** and fill in:
+
+| Field | What to enter |
+|---|---|
+| Ticker | Any Yahoo Finance symbol: `NVDA`, `THYAO.IS`, `BTC-USD` (crypto pairs switch the asset type automatically) |
+| Analysis date | Defaults to the last weekday; future dates are rejected |
+| Analysts | Market, Sentiment, News, Fundamentals — fewer analysts means a faster, cheaper run |
+| Provider, models | A deep-thinking model (research/portfolio managers) and a quick-thinking one (everyone else); you can type a model id that is not listed |
+| Debate rounds | 1 is enough to start; every extra round adds LLM calls |
+| Report language | The language of the reports and the decision; follows the UI language by default |
+
+Press **Start analysis**. **Save as preset** keeps the provider, model and analyst choices for next time.
+
+![New analysis form](docs/screenshots/new-analysis.png)
+
+### 5. Watch it and read the results
+
+The analysis page updates live: the agent pipeline (analysts → research debate → trader → risk
+debate → portfolio manager), a feed of agent messages and tool calls, the runner log, and token
+counts. A full run with all four analysts can take 20 minutes or more, depending on the model and
+the debate rounds (the example above: 42 LLM calls, ~1.6M input tokens, 20 minutes). **Stop** ends it; **Run again**
+repeats it with the same settings.
+
+When it finishes, the decision card shows the portfolio manager's rating (Buy / Overweight / Hold /
+Underweight / Sell) with its reasoning, and the tabs hold everything behind it:
+
+| Reports — one per analyst and manager | Debates — bull vs. bear, then the risk debate |
+|---|---|
+| ![Reports tab](docs/screenshots/run-reports.png) | ![Debates tab](docs/screenshots/run-debates.png) |
+
+![Stats tab: calls, tokens, cost, duration and the run's settings](docs/screenshots/run-stats.png)
+
+### 6. Past analyses
+
+**Analyses** lists every run with its decision, model and duration, filterable by ticker and status.
+Runs made with the TradingAgents CLI are imported from `~/.tradingagents/logs` (read-only) —
+**Scan data dir** picks up new ones.
+
+![Analyses list](docs/screenshots/analyses.png)
+
+### Language
+
+The UI is Turkish by default; switch to English in the header (the choice is remembered per
+browser). Reports stay in the language the analysis was started with; the analysis page shows it
+as a "Report language" tag.
+
+![Dashboard in Turkish](docs/screenshots/dashboard-tr.png)
+
+## Commands
 
 ```sh
 make setup      # uv sync for ta-runner (downloads TradingAgents), frontend packages
@@ -27,11 +108,8 @@ make test       # backend + frontend + ta-runner tests
 
 `make help` lists the targets; `JAVA_HOME`, `UV` and `JAVA` can be overridden on the command line.
 
-Provider API keys: add them on the **Settings** page (stored in
-`~/.tradingagents-platform/secrets.env`, owner-only), or keep them in
-`artifact/ta-runner/.env`, which the platform reads but never writes.
+## Where things live
 
-Where things live:
 
 | Path | What |
 |---|---|
