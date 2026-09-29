@@ -66,6 +66,9 @@
     "risk": "Risk debate",
     "portfolio": "Portfolio"
   },
+  "pipeline": {
+    "debate": "debate"
+  },
   "sections": {
     "market_report": "Market report",
     "sentiment_report": "Sentiment report",

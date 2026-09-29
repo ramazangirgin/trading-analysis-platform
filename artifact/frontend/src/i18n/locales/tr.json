@@ -66,6 +66,9 @@
     "risk": "Risk tartışması",
     "portfolio": "Portföy"
   },
+  "pipeline": {
+    "debate": "tartışma"
+  },
   "sections": {
     "market_report": "Piyasa raporu",
     "sentiment_report": "Duyarlılık raporu",

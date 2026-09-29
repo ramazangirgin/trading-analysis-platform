@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RunEvent } from '@/api/client'
-import { applyRunEvent, emptyRunView } from './runView'
+import { applyRunEvent, emptyRunView, stageStatus } from './runView'
 
 let seq = 0
 const event = (type: string, payload: Record<string, unknown>): RunEvent => ({
@@ -75,5 +75,29 @@ describe('applyRunEvent', () => {
       error: 'Runner exited with code 137',
       errorType: 'runner_died',
     })
+  })
+})
+
+describe('stageStatus', () => {
+  const analysts = ['Market Analyst', 'News Analyst']
+
+  it('ignores agents the run did not report', () => {
+    expect(stageStatus({}, analysts)).toBeNull()
+    expect(stageStatus({ 'Market Analyst': 'completed' }, analysts)).toBe('completed')
+  })
+
+  it('is pending, running, done or failed as a whole', () => {
+    expect(stageStatus({ 'Market Analyst': 'pending', 'News Analyst': 'pending' }, analysts)).toBe(
+      'pending',
+    )
+    expect(
+      stageStatus({ 'Market Analyst': 'completed', 'News Analyst': 'pending' }, analysts),
+    ).toBe('in_progress')
+    expect(
+      stageStatus({ 'Market Analyst': 'completed', 'News Analyst': 'in_progress' }, analysts),
+    ).toBe('in_progress')
+    expect(
+      stageStatus({ 'Market Analyst': 'error', 'News Analyst': 'in_progress' }, analysts),
+    ).toBe('error')
   })
 })

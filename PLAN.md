@@ -521,7 +521,7 @@ and where to start. Mark items ✅ here when done.
   Tartışmalar); English runs must be unchanged. The live feed (`Canlı akış`) still shows tool output
   in English — that is market data, not report text; decide with the user whether to leave it.
 
-### KI-3 Pipeline should look like the diagrams in the TradingAgents README (request)
+### KI-3 Pipeline should look like the diagrams in the TradingAgents README — ✅ done
 - **Today:** `artifact/frontend/src/components/AgentPipeline.vue` shows five columns of tags
   ("Piyasa Analisti · Çalışıyor"), which the user finds too plain.
 - **Wanted:** a visual flow like https://github.com/TauricResearch/TradingAgents (schema images):
@@ -530,6 +530,10 @@ and where to start. Mark items ✅ here when done.
   cards (icon, name, live status: pending / running with animation / done / error). Must work in dark
   and light themes and at phone width, and only show the analysts selected for the run.
 - **Data:** already there — `view.agents` from `agent_status` events (`domain/runView.ts`, `PIPELINE`).
+- **Done:** `AgentPipeline.vue` is now a flow of team boxes with arrows, per-agent cards (status dot,
+  pulsing while running), ⇄ between debaters, the judge below its debate, a done/total count per team
+  and a team status from `stageStatus()` (tested). Colours come from Naive UI theme vars (dark + light);
+  under 860px the flow runs top to bottom. Only agents the runner reports (= selected analysts) show.
 
 ### KI-4 Charts next to report tables (request)
 - **Wanted:** in Run Detail → Raporlar, charts beside the markdown tables so they are easier to read.

@@ -30,17 +30,52 @@ export interface RunView {
   lastSeq: number
 }
 
-/** The pipeline in upstream's order, grouped as the UI shows it. */
-export const PIPELINE: { stage: string; agents: string[] }[] = [
+/**
+ * The pipeline in upstream's order, grouped as the UI shows it. `debaters` argue in turns
+ * (bull ⇄ bear, the three risk views); `judge` closes the debate.
+ */
+export interface PipelineStage {
+  stage: 'analysts' | 'research' | 'trading' | 'risk' | 'portfolio'
+  agents: string[]
+  debaters?: string[]
+  judge?: string
+}
+
+export const PIPELINE: PipelineStage[] = [
   {
     stage: 'analysts',
     agents: ['Market Analyst', 'Sentiment Analyst', 'News Analyst', 'Fundamentals Analyst'],
   },
-  { stage: 'research', agents: ['Bull Researcher', 'Bear Researcher', 'Research Manager'] },
+  {
+    stage: 'research',
+    agents: ['Bull Researcher', 'Bear Researcher', 'Research Manager'],
+    debaters: ['Bull Researcher', 'Bear Researcher'],
+    judge: 'Research Manager',
+  },
   { stage: 'trading', agents: ['Trader'] },
-  { stage: 'risk', agents: ['Aggressive Analyst', 'Conservative Analyst', 'Neutral Analyst'] },
+  {
+    stage: 'risk',
+    agents: ['Aggressive Analyst', 'Conservative Analyst', 'Neutral Analyst'],
+    debaters: ['Aggressive Analyst', 'Conservative Analyst', 'Neutral Analyst'],
+  },
   { stage: 'portfolio', agents: ['Portfolio Manager'] },
 ]
+
+/**
+ * One status for a stage, from the agents the run reported (analysts it did not select never
+ * appear): an error wins, then work in progress, then done once every agent is done.
+ */
+export function stageStatus(
+  agents: Record<string, AgentStatus>,
+  names: string[],
+): AgentStatus | null {
+  const statuses = names.filter((name) => name in agents).map((name) => agents[name]!)
+  if (!statuses.length) return null
+  if (statuses.includes('error')) return 'error'
+  if (statuses.includes('in_progress')) return 'in_progress'
+  if (statuses.every((status) => status === 'completed')) return 'completed'
+  return statuses.includes('completed') ? 'in_progress' : 'pending'
+}
 
 /** Report sections in pipeline order. */
 export const SECTIONS = [
