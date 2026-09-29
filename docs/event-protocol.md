@@ -11,6 +11,7 @@ Wherever the runner runs (local process, Docker container), the backend reads it
 ```
 python -m ta_runner run --spec <run_dir>/spec.json --out <run_dir>
 python -m ta_runner version
+python -m ta_runner catalog
 ```
 
 | Stream | Content |
@@ -43,6 +44,27 @@ Prints one JSON object (not an event) and exits 0:
 ```json
 {"runner_version": "0.1.0", "protocol_version": 1, "upstream_version": "0.5.1"}
 ```
+
+### `catalog`
+
+Prints one JSON object (not an event) and exits 0: what the installed upstream offers, so the
+platform keeps no hand-maintained lists.
+
+```json
+{
+  "upstream_version": "0.5.1",
+  "defaults": {"llm_provider": "deepseek", "deep_think_llm": "deepseek-v4-pro", "quick_think_llm": "deepseek-v4-flash"},
+  "providers": [
+    {"id": "deepseek", "api_key_env": "DEEPSEEK_API_KEY", "custom_model_allowed": true,
+     "quick_models": [{"id": "deepseek-v4-flash", "label": "…"}], "deep_models": [{"id": "deepseek-v4-pro", "label": "…"}]}
+  ],
+  "analysts": [{"id": "market", "agent": "Market Analyst"}, …],
+  "asset_types": ["stock", "crypto"]
+}
+```
+
+`api_key_env` is null for keyless providers (Ollama, Bedrock). `defaults` reflect upstream's
+`TRADINGAGENTS_*` environment overrides.
 
 ## 2. Spec (`spec.json`)
 

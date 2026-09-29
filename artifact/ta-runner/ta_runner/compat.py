@@ -20,6 +20,8 @@ from tradingagents.dataflows.config import run_config
 from tradingagents.dataflows.symbols import safe_ticker_component
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.llm_clients.api_key_env import get_api_key_env
+from tradingagents.llm_clients.model_catalog import MODEL_OPTIONS
 from tradingagents.reporting import write_report_tree
 
 from .spec import RunSpec
@@ -30,6 +32,24 @@ def upstream_version() -> str:
         return metadata.version("tradingagents")
     except metadata.PackageNotFoundError:
         return "unknown"
+
+
+def model_options() -> dict[str, dict[str, list[tuple[str, str]]]]:
+    """Provider -> {"quick"|"deep": [(label, model id)]}, as the upstream CLI offers them."""
+    return MODEL_OPTIONS
+
+
+def api_key_env(provider: str) -> str | None:
+    """Env var holding the provider's API key; None for keyless providers (ollama, bedrock)."""
+    return get_api_key_env(provider)
+
+
+def default_models() -> dict[str, str]:
+    return {
+        "llm_provider": DEFAULT_CONFIG["llm_provider"],
+        "deep_think_llm": DEFAULT_CONFIG["deep_think_llm"],
+        "quick_think_llm": DEFAULT_CONFIG["quick_think_llm"],
+    }
 
 
 def build_config(spec: RunSpec) -> dict[str, Any]:

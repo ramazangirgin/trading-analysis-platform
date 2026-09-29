@@ -2,6 +2,7 @@
 
     python -m ta_runner run --spec <run_dir>/spec.json --out <run_dir>
     python -m ta_runner version
+    python -m ta_runner catalog
 
 stdout carries protocol lines only. Anything else that writes to stdout (upstream prints,
 third-party libraries) is redirected to stderr, which the platform keeps as the raw run log.
@@ -31,10 +32,13 @@ def main(argv: list[str] | None = None) -> int:
     run_cmd.add_argument("--spec", type=Path, required=True)
     run_cmd.add_argument("--out", type=Path, required=True, help="run directory (events.jsonl)")
     commands.add_parser("version", help="print runner and upstream versions as JSON")
+    commands.add_parser("catalog", help="print providers, models and analysts as JSON")
     args = parser.parse_args(argv)
 
     if args.command == "version":
         return _version()
+    if args.command == "catalog":
+        return _catalog()
     return _run(args.spec, args.out)
 
 
@@ -50,6 +54,13 @@ def _version() -> int:
             }
         )
     )
+    return 0
+
+
+def _catalog() -> int:
+    from .catalog import build_catalog
+
+    print(json.dumps(build_catalog(), ensure_ascii=False))
     return 0
 
 
