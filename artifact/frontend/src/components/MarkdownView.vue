@@ -2,12 +2,15 @@
 import { computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import { localizeReport } from '@/domain/reportLanguage'
 
 /** Renders LLM-written markdown. The output is untrusted input, so the HTML is sanitized. */
-const props = defineProps<{ source: string }>()
+const props = defineProps<{ source: string; language?: string | null }>()
 
 const markdown = new MarkdownIt({ html: false, linkify: true, breaks: false })
-const html = computed(() => DOMPurify.sanitize(markdown.render(props.source)))
+const html = computed(() =>
+  DOMPurify.sanitize(markdown.render(localizeReport(props.source, props.language))),
+)
 </script>
 
 <template>

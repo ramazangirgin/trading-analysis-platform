@@ -177,7 +177,10 @@ async function rerun() {
       v-if="sectionText('final_trade_decision') || analysis?.decision"
       :title="t('detail.decision')"
     >
-      <MarkdownView :source="sectionText('final_trade_decision') ?? analysis?.decision ?? ''" />
+      <MarkdownView
+        :language="analysis?.spec.outputLanguage"
+        :source="sectionText('final_trade_decision') ?? analysis?.decision ?? ''"
+      />
     </NCard>
 
     <NCard>
@@ -214,7 +217,10 @@ async function rerun() {
               :name="key"
               :title="t(`sections.${key}`)"
             >
-              <MarkdownView :source="sectionText(key) ?? ''" />
+              <MarkdownView
+                :language="analysis?.spec.outputLanguage"
+                :source="sectionText(key) ?? ''"
+              />
             </NCollapseItem>
           </NCollapse>
         </NTabPane>
@@ -238,7 +244,7 @@ async function rerun() {
                   :class="['debate__turn', `debate__turn--${turn.speaker}`]"
                 >
                   <header class="debate__speaker">{{ t(`speakers.${turn.speaker}`) }}</header>
-                  <MarkdownView :source="turn.content" />
+                  <MarkdownView :language="analysis?.spec.outputLanguage" :source="turn.content" />
                 </article>
               </section>
             </template>
@@ -259,7 +265,7 @@ async function rerun() {
                     t('detail.round', { round: turn.round })
                   }}</span>
                 </header>
-                <MarkdownView :source="turn.content" />
+                <MarkdownView :language="analysis?.spec.outputLanguage" :source="turn.content" />
               </article>
             </section>
           </template>
