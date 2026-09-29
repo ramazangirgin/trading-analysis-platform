@@ -16,6 +16,7 @@ export const router = createRouter({
       name: 'analysis',
       component: () => import('@/pages/RunDetailPage.vue'),
     },
+    { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',

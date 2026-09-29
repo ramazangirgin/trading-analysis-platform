@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+    "/api/secrets/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["setSecret"];
+        post?: never;
+        delete: operations["removeSecret"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/presets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updatePreset"];
+        post?: never;
+        delete: operations["deletePreset"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reports/rescan": {
         parameters: {
             query?: never;
@@ -14,6 +46,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["rescan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPresets"];
+        put?: never;
+        post: operations["createPreset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -62,6 +110,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["rerunAnalysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listSecrets"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -136,6 +200,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        SetSecretRequest: {
+            value: string;
+        };
+        SecretStatusDto: {
+            name?: string;
+            source?: string;
+            maskedValue?: string;
+        };
+        SavePresetRequest: {
+            name: string;
+            values: {
+                [key: string]: unknown;
+            };
+        };
+        PresetDto: {
+            id?: string;
+            name?: string;
+            values?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            updatedAt?: string;
+        };
         ImportResultDto: {
             /** Format: int32 */
             scanned?: number;
@@ -266,6 +353,98 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    setSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretStatusDto"];
+                };
+            };
+        };
+    };
+    removeSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updatePreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePresetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresetDto"];
+                };
+            };
+        };
+    };
+    deletePreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     rescan: {
         parameters: {
             query?: never;
@@ -282,6 +461,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportResultDto"];
+                };
+            };
+        };
+    };
+    listPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresetDto"][];
+                };
+            };
+        };
+    };
+    createPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavePresetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresetDto"];
                 };
             };
         };
@@ -373,6 +596,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalysisDto"];
+                };
+            };
+        };
+    };
+    listSecrets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretStatusDto"][];
                 };
             };
         };

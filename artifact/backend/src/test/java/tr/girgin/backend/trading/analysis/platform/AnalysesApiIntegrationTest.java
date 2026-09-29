@@ -177,6 +177,42 @@ class AnalysesApiIntegrationTest {
         assertThat(JSON.readTree(get("/api/analyses?ticker=BE").body()).size()).isEqualTo(1);
     }
 
+    @Test
+    void managesSecretsWithoutEverReturningThem() throws Exception {
+        HttpResponse<String> set = put("/api/secrets/OPENAI_API_KEY", "{\"value\":\"sk-test-secret-9876\"}");
+        HttpResponse<String> forbidden = put("/api/secrets/PATH", "{\"value\":\"/tmp\"}");
+
+        assertThat(set.statusCode()).isEqualTo(200);
+        assertThat(set.body()).doesNotContain("sk-test-secret").contains("9876");
+        assertThat(forbidden.statusCode()).isEqualTo(400);
+        assertThat(JSON.readTree(forbidden.body()).get("errorCode").asString()).isEqualTo("invalid_secret_name");
+        String listed = get("/api/secrets").body();
+        assertThat(listed).contains("OPENAI_API_KEY").doesNotContain("sk-test-secret");
+        assertThat(Files.readString(HOME.resolve("secrets.env"))).contains("OPENAI_API_KEY=\"sk-test-secret-9876\"");
+        assertThat(http.send(HttpRequest.newBuilder(uri("/api/secrets/OPENAI_API_KEY")).DELETE().build(),
+                HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(204);
+    }
+
+    @Test
+    void storesPresetsAsGiven() throws Exception {
+        HttpResponse<String> created = post("/api/presets",
+                "{\"name\":\"Cheap\",\"values\":{\"llmProvider\":\"deepseek\",\"analysts\":[\"MARKET\"]}}");
+
+        assertThat(created.statusCode()).isEqualTo(201);
+        String id = JSON.readTree(created.body()).get("id").asString();
+        JsonNode listed = JSON.readTree(get("/api/presets").body());
+        assertThat(listed.valueStream().filter(p -> p.get("id").asString().equals(id)).findFirst().orElseThrow()
+                .at("/values/analysts/0").asString()).isEqualTo("MARKET");
+        assertThat(put("/api/presets/nope", "{\"name\":\"x\",\"values\":{}}").statusCode()).isEqualTo(404);
+    }
+
+    private HttpResponse<String> put(String path, String body) throws Exception {
+        return http.send(HttpRequest.newBuilder(uri(path))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
+                .build(), HttpResponse.BodyHandlers.ofString());
+    }
+
     private static String request(String ticker) {
         return """
                 {"ticker":"%s","tradeDate":"2026-09-25","analysts":["MARKET"],"llmProvider":"deepseek",

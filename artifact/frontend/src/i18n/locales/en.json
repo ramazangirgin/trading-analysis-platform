@@ -6,7 +6,8 @@
   "nav": {
     "dashboard": "Dashboard",
     "analyses": "Analyses",
-    "newAnalysis": "New analysis"
+    "newAnalysis": "New analysis",
+    "settings": "Settings"
   },
   "common": {
     "refresh": "Refresh",
@@ -169,10 +170,41 @@
     "runner_start_failed": "ta-runner could not be started",
     "platform_restarted": "The platform restarted while this analysis was running",
     "report_not_found": "No report files found for this analysis.",
-    "incomplete_report": "The report files hold no final decision"
+    "incomplete_report": "The report files hold no final decision",
+    "invalid_secret_name": "Only *_API_KEY and *_BASE_URL names can be saved.",
+    "invalid_secret_value": "Invalid value.",
+    "secret_not_managed": "This value is not in the platform's file; it comes from an external file.",
+    "invalid_preset": "Invalid preset.",
+    "preset_not_found": "Preset not found."
   },
   "notFound": {
     "heading": "Page not found",
     "back": "Back to the home page"
+  },
+  "settings": {
+    "title": "Settings",
+    "keys": "API keys",
+    "keysNote": "Keys are stored in the platform's own file (readable by its owner only) and handed to analyses as environment variables. Values are never shown back.",
+    "provider": "Provider",
+    "variable": "Variable",
+    "status": "Status",
+    "notSet": "Not set",
+    "fromPlatform": "In the platform",
+    "fromFile": "In an external file (read-only)",
+    "newValue": "New value",
+    "save": "Save",
+    "remove": "Remove",
+    "saved": "{name} saved.",
+    "removed": "{name} removed.",
+    "noKeyNeeded": "No key needed"
+  },
+  "presets": {
+    "label": "Preset",
+    "load": "Load a preset",
+    "save": "Save as preset",
+    "name": "Name",
+    "saved": "\"{name}\" saved.",
+    "delete": "Delete",
+    "none": "No saved presets"
   }
 }

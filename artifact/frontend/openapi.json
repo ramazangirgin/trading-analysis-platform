@@ -11,6 +11,128 @@
         }
     ],
     "paths": {
+        "/api/secrets/{name}": {
+            "put": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "setSecret",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetSecretRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecretStatusDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "removeSecret",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/presets/{id}": {
+            "put": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "updatePreset",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SavePresetRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PresetDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "deletePreset",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/reports/rescan": {
             "post": {
                 "tags": [
@@ -24,6 +146,57 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ImportResultDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/presets": {
+            "get": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "listPresets",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PresetDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "createPreset",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SavePresetRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PresetDto"
                                 }
                             }
                         }
@@ -167,6 +340,29 @@
                 }
             }
         },
+        "/api/secrets": {
+            "get": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "listSecrets",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SecretStatusDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/catalog": {
             "get": {
                 "tags": [
@@ -298,6 +494,68 @@
     },
     "components": {
         "schemas": {
+            "SetSecretRequest": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "value"
+                ]
+            },
+            "SecretStatusDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "maskedValue": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SavePresetRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "values": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "required": [
+                    "name",
+                    "values"
+                ]
+            },
+            "PresetDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "values": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
             "ImportResultDto": {
                 "type": "object",
                 "properties": {

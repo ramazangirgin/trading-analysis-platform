@@ -38,6 +38,7 @@ public abstract class AdapterTestSupport {
         registry.add("platform.runner.process.working-dir", HOME::toString);
         registry.add("platform.runner.stop-grace-seconds", () -> "2");
         registry.add("platform.secrets.env-file", ENV_FILE::toString);
+        registry.add("platform.secrets.external-env-files", () -> "");
     }
 
     protected static AnalysisSpec spec(String ticker) {

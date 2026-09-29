@@ -18,10 +18,12 @@ import {
   NSelect,
   NSpace,
   NSwitch,
+  NPopover,
+  useMessage,
   type FormInst,
   type FormRules,
 } from 'naive-ui'
-import { api, type Analyst, type ModelOption } from '@/api/client'
+import { api, type Analyst, type ModelOption, type Preset } from '@/api/client'
 import { useCatalogStore } from '@/stores/catalog'
 import { useLabels } from '@/composables/useLabels'
 
@@ -55,6 +57,49 @@ const form = reactive({
   checkpointEnabled: false,
 })
 
+// Presets keep the model and analyst choices; ticker and date are picked per run.
+const PRESET_FIELDS = [
+  'assetType',
+  'analysts',
+  'llmProvider',
+  'deepThinkLlm',
+  'quickThinkLlm',
+  'maxDebateRounds',
+  'maxRiskDiscussRounds',
+  'outputLanguage',
+  'checkpointEnabled',
+] as const
+const message = useMessage()
+const presets = ref<Preset[]>([])
+const presetName = ref('')
+const presetOptions = computed(() => presets.value.map((p) => ({ label: p.name, value: p.id })))
+
+async function loadPresets() {
+  presets.value = await api.listPresets().catch(() => [])
+}
+
+function applyPreset(id: string | null) {
+  const preset = presets.value.find((p) => p.id === id)
+  if (!preset) return
+  for (const field of PRESET_FIELDS) {
+    if (field in preset.values) Object.assign(form, { [field]: preset.values[field] })
+  }
+}
+
+async function savePreset() {
+  const name = presetName.value.trim()
+  if (!name) return
+  const values = Object.fromEntries(PRESET_FIELDS.map((field) => [field, form[field]]))
+  try {
+    await api.createPreset(name, values)
+    message.success(t('presets.saved', { name }))
+    presetName.value = ''
+    await loadPresets()
+  } catch (e) {
+    message.error(errorLabel(e))
+  }
+}
+
 const formRef = ref<FormInst | null>(null)
 const submitting = ref(false)
 const failure = ref<unknown>(null)
@@ -72,6 +117,7 @@ const deepOptions = computed(() => toOptions(provider.value?.deepModels ?? []))
 const quickOptions = computed(() => toOptions(provider.value?.quickModels ?? []))
 
 onMounted(async () => {
+  void loadPresets()
   await catalogStore.load()
   const defaults = catalog.value?.defaults
   if (defaults && !form.llmProvider) {
@@ -164,6 +210,30 @@ const futureDate = (millis: number) => {
   <NCard :title="t('form.title')" class="new-analysis">
     <NSpace vertical :size="12">
       <NAlert v-if="catalogStore.error" type="warning" :title="t('form.catalogUnavailable')" />
+      <div class="presets">
+        <NSelect
+          :options="presetOptions"
+          :placeholder="presets.length ? t('presets.load') : t('presets.none')"
+          :disabled="!presets.length"
+          clearable
+          @update:value="applyPreset"
+        />
+        <NPopover trigger="click" placement="bottom-end">
+          <template #trigger>
+            <NButton secondary>{{ t('presets.save') }}</NButton>
+          </template>
+          <NSpace>
+            <NInput
+              v-model:value="presetName"
+              :placeholder="t('presets.name')"
+              @keyup.enter="savePreset"
+            />
+            <NButton type="primary" :disabled="!presetName.trim()" @click="savePreset">
+              {{ t('settings.save') }}
+            </NButton>
+          </NSpace>
+        </NPopover>
+      </div>
       <NForm ref="formRef" :model="form" :rules="rules" label-placement="top">
         <div class="grid">
           <NFormItem :label="t('form.ticker')" path="ticker">
@@ -267,6 +337,12 @@ const futureDate = (millis: number) => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   column-gap: 16px;
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) auto;
+  gap: 8px;
 }
 
 .hint {

@@ -6,7 +6,8 @@
   "nav": {
     "dashboard": "Gösterge Paneli",
     "analyses": "Analizler",
-    "newAnalysis": "Yeni analiz"
+    "newAnalysis": "Yeni analiz",
+    "settings": "Ayarlar"
   },
   "common": {
     "refresh": "Yenile",
@@ -169,10 +170,41 @@
     "runner_start_failed": "ta-runner başlatılamadı",
     "platform_restarted": "Platform yeniden başladığı için analiz yarıda kaldı",
     "report_not_found": "Bu analiz için rapor dosyası bulunamadı.",
-    "incomplete_report": "Rapor dosyalarında nihai karar yok"
+    "incomplete_report": "Rapor dosyalarında nihai karar yok",
+    "invalid_secret_name": "Yalnızca *_API_KEY ve *_BASE_URL adları kaydedilebilir.",
+    "invalid_secret_value": "Geçersiz değer.",
+    "secret_not_managed": "Bu değer platform dosyasında değil; harici dosyadan geliyor.",
+    "invalid_preset": "Geçersiz hazır ayar.",
+    "preset_not_found": "Hazır ayar bulunamadı."
   },
   "notFound": {
     "heading": "Sayfa bulunamadı",
     "back": "Ana sayfaya dön"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "keys": "API anahtarları",
+    "keysNote": "Anahtarlar platformun kendi dosyasında (yalnızca sahibi okuyabilir) saklanır ve analizlere ortam değişkeni olarak verilir. Değerler hiçbir zaman geri gösterilmez.",
+    "provider": "Sağlayıcı",
+    "variable": "Değişken",
+    "status": "Durum",
+    "notSet": "Tanımlı değil",
+    "fromPlatform": "Platformda",
+    "fromFile": "Harici dosyada (salt okunur)",
+    "newValue": "Yeni değer",
+    "save": "Kaydet",
+    "remove": "Sil",
+    "saved": "{name} kaydedildi.",
+    "removed": "{name} silindi.",
+    "noKeyNeeded": "Anahtar gerekmez"
+  },
+  "presets": {
+    "label": "Hazır ayar",
+    "load": "Hazır ayar yükle",
+    "save": "Hazır ayar olarak kaydet",
+    "name": "Ad",
+    "saved": "\"{name}\" kaydedildi.",
+    "delete": "Sil",
+    "none": "Kayıtlı hazır ayar yok"
   }
 }

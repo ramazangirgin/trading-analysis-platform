@@ -39,6 +39,7 @@ watchEffect(() => {
             <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
             <RouterLink :to="{ name: 'analyses' }">{{ t('nav.analyses') }}</RouterLink>
             <RouterLink :to="{ name: 'new-analysis' }">{{ t('nav.newAnalysis') }}</RouterLink>
+            <RouterLink :to="{ name: 'settings' }">{{ t('nav.settings') }}</RouterLink>
           </nav>
           <LocaleSwitcher />
         </NLayoutHeader>

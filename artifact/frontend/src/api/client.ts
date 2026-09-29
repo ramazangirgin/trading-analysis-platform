@@ -45,6 +45,10 @@ export type AnalysisReport = Omit<
   debates: Record<string, string>
 }
 export type ImportResult = Present<Schemas['ImportResultDto']>
+export type SecretStatus = Present<Schemas['SecretStatusDto']>
+export type Preset = Omit<Present<Schemas['PresetDto']>, 'values'> & {
+  values: Record<string, unknown>
+}
 
 /** One runner event from the SSE stream (docs/event-protocol.md, section 4). */
 export interface RunEvent {
@@ -90,6 +94,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       body.message ?? response.statusText,
     )
   }
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
@@ -118,6 +123,27 @@ export const api = {
   },
   rescanReports(): Promise<ImportResult> {
     return request('/api/reports/rescan', { method: 'POST' })
+  },
+  listSecrets(): Promise<SecretStatus[]> {
+    return request('/api/secrets')
+  },
+  setSecret(name: string, value: string): Promise<SecretStatus> {
+    return request(`/api/secrets/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value }),
+    })
+  },
+  removeSecret(name: string): Promise<void> {
+    return request(`/api/secrets/${encodeURIComponent(name)}`, { method: 'DELETE' })
+  },
+  listPresets(): Promise<Preset[]> {
+    return request('/api/presets')
+  },
+  createPreset(name: string, values: Record<string, unknown>): Promise<Preset> {
+    return request('/api/presets', { method: 'POST', body: JSON.stringify({ name, values }) })
+  },
+  deletePreset(id: string): Promise<void> {
+    return request(`/api/presets/${encodeURIComponent(id)}`, { method: 'DELETE' })
   },
   getCatalog(): Promise<Catalog> {
     return request('/api/catalog')
