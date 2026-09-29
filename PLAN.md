@@ -1,6 +1,6 @@
 # TradingAgents Platform — Detailed Plan
 
-> Status: **v0.12** (2026-09-29) · All open decisions resolved (✅). Phase 0 and Phase 1 done; next step: Phase 2.
+> Status: **v0.13** (2026-09-29) · Phase 0 and Phase 1 done. Next: the known issues in §6a, then Phase 2.
 
 ### Decisions
 | # | Topic | Decision |
@@ -470,6 +470,82 @@ Still open from §3.6 (moved to Phase 2): importing TradingAgents-GUI's `runs.js
 - [ ] Batch analysis (ticker list), backtest mode (date range)
 
 ---
+
+## 6a. Known Issues and Open Requests (2026-09-29) — start here in a new session
+
+Reported by the user after Phase 1, in this order of priority. Each item says what is known so far
+and where to start. Mark items ✅ here when done.
+
+### KI-1 UI language switch is wrong (bug, not yet reproduced)
+- **Symptoms (user):** with Türkçe selected the UI looks as if English were selected; with English
+  selected some texts stay Turkish.
+- **Not yet investigated.** Suspects to check first:
+  - `artifact/frontend/src/components/LocaleSwitcher.vue`: the `NSelect` value vs `locale` of the
+    global vue-i18n composer (`legacy: false`); whether `useI18n()` returns the global scope there.
+  - `artifact/frontend/src/i18n/index.ts`: initial locale from `localStorage['tap.locale']`, fallback `tr`.
+  - Texts that do not go through i18n: Naive UI's own strings (`NConfigProvider :locale/:date-locale`
+    in `App.vue`), `document.title`, the New Analysis "Rapor dili" default (`outputLanguage` is set
+    once from the UI locale at form creation and does not follow later switches), LLM-written text
+    (always in the run's output language, by design), agent names in the live feed.
+- **How to reproduce:** `make dev JAVA_HOME=/usr/local/opt/openjdk@17`, open http://localhost:5173,
+  switch the language in the header on each page (Dashboard, Analizler, Yeni analiz, a run's page,
+  Ayarlar) and list every text that does not follow.
+- **Done when:** every platform-owned text follows the switch on every page, the choice survives a
+  reload, and a test covers the switcher.
+
+### KI-2 Reports half Turkish, half English — ✅ fixed (commit `fe80a07`), verify in the browser
+- **Cause:** the model's text is in the chosen language, but upstream (v0.5.1) writes fixed English
+  itself: structured-output labels (`**Rating**`, `**Executive Summary**`, `**Investment Thesis**`,
+  `**Price Target**`, `**Time Horizon**`, `**Recommendation**`, `**Rationale**`, `**Action**`,
+  `**Reasoning**`, `**Entry Price**`, `**Stop Loss**`, `**Position Sizing**`, `**Strategic Actions**`),
+  the rating scale words (`Overweight`, `Underweight`, …), "not provided", and debate prefixes
+  (`Bull Analyst:` …, from `agents/researchers/*.py`, `agents/risk_mgmt/*.py`).
+- **Fix:** `artifact/frontend/src/domain/reportLanguage.ts` translates these at display time (files on
+  disk unchanged, PLAN §3.7), applied by `MarkdownView` with the run's `outputLanguage`; imported runs
+  (recorded as "English") are detected by Turkish letters.
+- **Left to check:** Run Detail of a Turkish run and an imported one (decision card, Raporlar,
+  Tartışmalar); English runs must be unchanged. The live feed (`Canlı akış`) still shows tool output
+  in English — that is market data, not report text; decide with the user whether to leave it.
+
+### KI-3 Pipeline should look like the diagrams in the TradingAgents README (request)
+- **Today:** `artifact/frontend/src/components/AgentPipeline.vue` shows five columns of tags
+  ("Piyasa Analisti · Çalışıyor"), which the user finds too plain.
+- **Wanted:** a visual flow like https://github.com/TauricResearch/TradingAgents (schema images):
+  Analyst Team → Researcher Team (Bull ⇄ Bear, Research Manager) → Trader → Risk Management
+  (Aggressive / Conservative / Neutral) → Portfolio Manager, with arrows between stages and per-agent
+  cards (icon, name, live status: pending / running with animation / done / error). Must work in dark
+  and light themes and at phone width, and only show the analysts selected for the run.
+- **Data:** already there — `view.agents` from `agent_status` events (`domain/runView.ts`, `PIPELINE`).
+
+### KI-4 Charts next to report tables (request)
+- **Wanted:** in Run Detail → Raporlar, charts beside the markdown tables so they are easier to read.
+- **What the tables look like** (checked in `~/.tradingagents/logs`): free-form LLM output. Numeric
+  ones: fundamentals by year/quarter (rows = metrics, columns = FY2022…/Q2'25…), MACD/Signal/Histogram
+  by date, moving averages (10 EMA / 50 SMA / 200 SMA with values), Bollinger bands. Many are text only
+  (scenarios, news factors) — no chart for those.
+- **Plan agreed so far:**
+  1. Auto-chart numeric tables: a table qualifies with a label column and ≥ 3 rows of parseable numbers
+     (handle `282,836`, `$1,037.35`, `59.5%`, `−5.91`, `**11.34**`, `~994`); pick bar vs line by whether
+     the columns/rows are periods or dates; skip mixed units.
+  2. A price chart above the market report: close + 10 EMA / 50 SMA / 200 SMA + volume, trade date
+     marked. Data: upstream's yfinance cache, `<data-dir>/cache/<TICKER>-YFin-data-<start>-<end>.csv`
+     (columns `Date,Close,High,Low,Open,Volume`, ~5 years daily; honour `TRADINGAGENTS_CACHE_DIR`).
+     Needs a read-only backend endpoint (report domain: e.g. `GET /api/analyses/{id}/prices`, choose
+     the newest file whose end date ≥ trade date, return ~1 year up to the trade date).
+- **Library:** ECharts (already planned for Phase 3, §3.8). Load the `dataviz` skill before writing
+  chart code.
+
+### How to pick this up
+- Tooling on this Mac: Gradle needs `JAVA_HOME=/usr/local/opt/openjdk@17`; `uv` is at
+  `~/Library/Python/3.9/bin/uv`; frontend commands via
+  `artifact/frontend/.gradle/pnpm/pnpm-v12.6.0/bin/pnpm` with `artifact/frontend/.gradle/nodejs/*/bin`
+  on `PATH`.
+- `make test JAVA_HOME=/usr/local/opt/openjdk@17 UV=~/Library/Python/3.9/bin/uv` must stay green;
+  after API changes regenerate `artifact/frontend/openapi.json` + `src/api/schema.d.ts`
+  (`pnpm run api:types`).
+- To try things without touching `~/.tradingagents`, start with `PLATFORM_HOME`,
+  `TRADINGAGENTS_RESULTS_DIR`, `TRADINGAGENTS_CACHE_DIR`, `TRADINGAGENTS_MEMORY_LOG_PATH` pointing
+  to a temp dir (see README).
 
 ## 7. Security
 
