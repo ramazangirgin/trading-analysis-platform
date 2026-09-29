@@ -68,8 +68,10 @@ Press **Start analysis**. **Save as preset** keeps the provider, model and analy
 The analysis page updates live: the agent pipeline (analysts → research debate → trader → risk
 debate → portfolio manager), a feed of agent messages and tool calls, the runner log, and token
 counts. A full run with all four analysts can take 20 minutes or more, depending on the model and
-the debate rounds (the example above: 42 LLM calls, ~1.6M input tokens, 20 minutes). **Stop** ends it; **Run again**
+the debate rounds (the example above: 41 LLM calls, ~1.1M input tokens, 18 minutes). **Stop** ends it; **Run again**
 repeats it with the same settings.
+
+![A running analysis: pipeline status and the live feed](docs/screenshots/run-live.png)
 
 When it finishes, the decision card shows the portfolio manager's rating (Buy / Overweight / Hold /
 Underweight / Sell) with its reasoning, and the tabs hold everything behind it:
@@ -88,13 +90,15 @@ Runs made with the TradingAgents CLI are imported from `~/.tradingagents/logs` (
 
 ![Analyses list](docs/screenshots/analyses.png)
 
+The **Dashboard** shows the running analyses and the latest decisions at a glance.
+
+![Dashboard](docs/screenshots/dashboard.png)
+
 ### Language
 
 The UI is Turkish by default; switch to English in the header (the choice is remembered per
 browser). Reports stay in the language the analysis was started with; the analysis page shows it
-as a "Report language" tag.
-
-![Dashboard in Turkish](docs/screenshots/dashboard-tr.png)
+as a "Report language" tag. The screenshots above are the English UI with an analysis run in English.
 
 ## Commands
 
