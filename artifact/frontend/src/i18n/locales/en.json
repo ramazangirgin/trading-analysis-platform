@@ -154,7 +154,11 @@
     "round": "Round {round}",
     "investmentDebate": "Research debate",
     "riskDebate": "Risk debate",
-    "importedNote": "This analysis ran outside the platform (CLI or GUI) and was imported from the data dir: there is no live event log, the reports are read from its files."
+    "importedNote": "This analysis ran outside the platform (CLI or GUI) and was imported from the data dir: there is no live event log, the reports are read from its files.",
+    "logs": "Log",
+    "logsFilter": "Search the log",
+    "noLogs": "No log for this analysis.",
+    "refreshLogs": "Refresh"
   },
   "errors": {
     "invalid_spec": "Invalid value: {field}",
@@ -206,5 +210,16 @@
     "saved": "\"{name}\" saved.",
     "delete": "Delete",
     "none": "No saved presets"
+  },
+  "health": {
+    "runner_unavailable": "ta-runner cannot be run: {detail}. Has \"uv sync\" been run in artifact/ta-runner?",
+    "runner_protocol_mismatch": "ta-runner {runnerVersion} speaks event protocol v{protocolVersion}; this platform expects v1.",
+    "no_provider_keys": "No LLM provider has an API key. Add one on the Settings page.",
+    "data_dir_empty": "No reports in the data dir yet.",
+    "data_dir_unreadable": "The data dir cannot be read: {detail}",
+    "runner_ok": "ta-runner {runnerVersion} · TradingAgents {upstreamVersion}",
+    "provider_keys_ok": "Providers with a key: {providers}",
+    "data_dir_ok": "{reports} reports in the data dir",
+    "queue_ok": "{running} running, {queued} queued"
   }
 }

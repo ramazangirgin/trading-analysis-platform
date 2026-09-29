@@ -17,11 +17,13 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.AnalysesAp
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.ApiException;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisUseCase;
@@ -46,6 +48,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final RerunAnalysisUseCase rerunAnalysis;
     private final SubscribeAnalysisEventsUseCase subscribeEvents;
     private final GetAnalysisReportUseCase getReport;
+    private final ReadAnalysisLogsUseCase readLogs;
     private final StartAnalysisRequestToAnalysisSpecMapper specMapper;
     private final AnalysisToAnalysisDtoMapper analysisMapper;
     private final RunEventToRunEventDtoMapper eventMapper;
@@ -61,6 +64,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                             RerunAnalysisUseCase rerunAnalysis,
                             SubscribeAnalysisEventsUseCase subscribeEvents,
                             GetAnalysisReportUseCase getReport,
+                            ReadAnalysisLogsUseCase readLogs,
                             StartAnalysisRequestToAnalysisSpecMapper specMapper,
                             AnalysisToAnalysisDtoMapper analysisMapper,
                             RunEventToRunEventDtoMapper eventMapper,
@@ -75,6 +79,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.rerunAnalysis = rerunAnalysis;
         this.subscribeEvents = subscribeEvents;
         this.getReport = getReport;
+        this.readLogs = readLogs;
         this.specMapper = specMapper;
         this.analysisMapper = analysisMapper;
         this.eventMapper = eventMapper;
@@ -118,6 +123,11 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "report_not_found",
                         "No report files for analysis " + id, Map.of("id", id)));
+    }
+
+    @Override
+    public ResponseEntity<RunLogDto> getLogs(String id, int tail) {
+        return ResponseEntity.ok(new RunLogDto(call(() -> readLogs.tailLogs(idMapper.map(id), tail))));
     }
 
     @Override

@@ -43,6 +43,13 @@ val pnpmTest = tasks.register<PnpmTask>("pnpmTest") {
     outputs.upToDateWhen { true }
 }
 
+// Vite dev server with hot reload; proxies /api to bootRun (see vite.config.ts). Runs until stopped.
+tasks.register<PnpmTask>("pnpmDev") {
+    description = "Starts the Vite dev server on http://localhost:5173"
+    dependsOn(tasks.pnpmInstall)
+    args.set(listOf("run", "dev"))
+}
+
 tasks.assemble { dependsOn(pnpmBuild) }
 tasks.check { dependsOn(pnpmLint, pnpmTest) }
 tasks.clean { delete("dist") }

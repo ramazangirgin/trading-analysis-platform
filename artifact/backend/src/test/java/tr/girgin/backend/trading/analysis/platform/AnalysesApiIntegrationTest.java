@@ -39,6 +39,8 @@ class AnalysesApiIntegrationTest {
     private static final String SCRIPT = """
             #!/bin/sh
             OUT="$5"
+            echo "INFO loading tradingagents" >&2
+            echo "ERROR Incorrect API key provided: sk-proj-abcdEFGH12345678xyz" >&2
             [ "$SLOW_TICKER" != "" ] && grep -q "\\"ticker\\": *\\"$SLOW_TICKER\\"" "$3" && sleep 3
             # Like ta-runner: each event goes to <out>/events.jsonl first, then to stdout.
             line() { printf '{"v":1,"ts":"2026-09-29T10:00:0%sZ","run_id":"x","seq":%s,"type":"%s"%s}\\n' "$1" "$1" "$2" "$3" | tee -a "$OUT/events.jsonl"; }
@@ -90,6 +92,28 @@ class AnalysesApiIntegrationTest {
         assertThat(done.get("rating").asString()).isEqualTo("HOLD");
         assertThat(done.get("decision").asString()).isEqualTo("**Rating**: Hold");
         assertThat(done.get("endedAt").isNull()).isFalse();
+    }
+
+    @Test
+    void servesTheRunLogWithKeysMasked() throws Exception {
+        String id = JSON.readTree(post("/api/analyses", request("AMD")).body()).get("id").asString();
+        awaitStatus(id, "COMPLETED");
+
+        JsonNode logs = JSON.readTree(get("/api/analyses/" + id + "/logs?tail=10").body());
+
+        assertThat(logs.get("lines").valueStream().map(JsonNode::asString)).containsExactly(
+                "INFO loading tradingagents", "ERROR Incorrect API key provided: sk-proj-abcd****");
+    }
+
+    @Test
+    void reportsSystemHealth() throws Exception {
+        JsonNode health = JSON.readTree(get("/api/health").body());
+
+        // The runner here is a shell script that knows no "version" command.
+        assertThat(health.get("overall").asString()).isEqualTo("DOWN");
+        assertThat(health.get("checks").valueStream().map(c -> c.get("name").asString()))
+                .containsExactly("runner", "keys", "dataDir", "queue");
+        assertThat(health.at("/checks/0/code").asString()).isEqualTo("runner_unavailable");
     }
 
     @Test

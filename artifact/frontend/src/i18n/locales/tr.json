@@ -154,7 +154,11 @@
     "round": "Tur {round}",
     "investmentDebate": "Araştırma tartışması",
     "riskDebate": "Risk tartışması",
-    "importedNote": "Bu analiz platform dışında çalıştırıldı (CLI veya GUI) ve veri klasöründen içe aktarıldı; canlı olay kaydı yok, raporlar dosyalardan okunuyor."
+    "importedNote": "Bu analiz platform dışında çalıştırıldı (CLI veya GUI) ve veri klasöründen içe aktarıldı; canlı olay kaydı yok, raporlar dosyalardan okunuyor.",
+    "logs": "Günlük",
+    "logsFilter": "Günlükte ara",
+    "noLogs": "Bu analiz için günlük yok.",
+    "refreshLogs": "Yenile"
   },
   "errors": {
     "invalid_spec": "Geçersiz değer: {field}",
@@ -206,5 +210,16 @@
     "saved": "\"{name}\" kaydedildi.",
     "delete": "Sil",
     "none": "Kayıtlı hazır ayar yok"
+  },
+  "health": {
+    "runner_unavailable": "ta-runner çalıştırılamıyor: {detail}. artifact/ta-runner içinde \"uv sync\" çalıştırıldı mı?",
+    "runner_protocol_mismatch": "ta-runner {runnerVersion} olay protokolü v{protocolVersion} konuşuyor; bu platform v1 bekliyor.",
+    "no_provider_keys": "Hiçbir LLM sağlayıcısı için API anahtarı tanımlı değil. Ayarlar sayfasından ekleyin.",
+    "data_dir_empty": "Veri klasöründe henüz rapor yok.",
+    "data_dir_unreadable": "Veri klasörü okunamıyor: {detail}",
+    "runner_ok": "ta-runner {runnerVersion} · TradingAgents {upstreamVersion}",
+    "provider_keys_ok": "Anahtarı olan sağlayıcılar: {providers}",
+    "data_dir_ok": "Veri klasöründe {reports} rapor",
+    "queue_ok": "{running} çalışıyor, {queued} sırada"
   }
 }

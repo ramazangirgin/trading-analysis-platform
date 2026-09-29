@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { NAlert, NButton, NCard, NEmpty, NSpace } from 'naive-ui'
 import { ACTIVE_STATUSES, api, type Analysis } from '@/api/client'
 import AnalysisTable from '@/components/AnalysisTable.vue'
+import HealthAlerts from '@/components/HealthAlerts.vue'
 import { useLabels } from '@/composables/useLabels'
 import { usePolling } from '@/composables/usePolling'
 
@@ -30,6 +31,7 @@ usePolling(refresh, () => active.value.length > 0 || failure.value !== null)
 
 <template>
   <NSpace vertical :size="16">
+    <HealthAlerts />
     <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
     <NCard :title="t('dashboard.active')">
       <template #header-extra>

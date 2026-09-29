@@ -45,6 +45,11 @@ export type AnalysisReport = Omit<
   debates: Record<string, string>
 }
 export type ImportResult = Present<Schemas['ImportResultDto']>
+export type HealthCheck = Omit<Present<Schemas['HealthCheckDto']>, 'params'> & {
+  status: 'UP' | 'WARN' | 'DOWN'
+  params: Record<string, unknown>
+}
+export type SystemHealth = { overall: 'UP' | 'WARN' | 'DOWN'; checks: HealthCheck[] }
 export type SecretStatus = Present<Schemas['SecretStatusDto']>
 export type Preset = Omit<Present<Schemas['PresetDto']>, 'values'> & {
   values: Record<string, unknown>
@@ -123,6 +128,12 @@ export const api = {
   },
   rescanReports(): Promise<ImportResult> {
     return request('/api/reports/rescan', { method: 'POST' })
+  },
+  getLogs(id: string, tail = 1000): Promise<{ lines: string[] }> {
+    return request(`/api/analyses/${encodeURIComponent(id)}/logs?tail=${tail}`)
+  },
+  getHealth(): Promise<SystemHealth> {
+    return request('/api/health')
   },
   listSecrets(): Promise<SecretStatus[]> {
     return request('/api/secrets')

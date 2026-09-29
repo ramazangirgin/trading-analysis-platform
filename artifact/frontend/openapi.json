@@ -363,6 +363,26 @@
                 }
             }
         },
+        "/api/health": {
+            "get": {
+                "tags": [
+                    "health-api-controller"
+                ],
+                "operationId": "getHealth",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SystemHealthDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/catalog": {
             "get": {
                 "tags": [
@@ -436,6 +456,46 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/AnalysisReportDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analyses/{id}/logs": {
+            "get": {
+                "tags": [
+                    "analyses-api-controller"
+                ],
+                "operationId": "getLogs",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "tail",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 1000
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RunLogDto"
                                 }
                             }
                         }
@@ -789,6 +849,38 @@
                     }
                 }
             },
+            "HealthCheckDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    },
+                    "params": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                }
+            },
+            "SystemHealthDto": {
+                "type": "object",
+                "properties": {
+                    "overall": {
+                        "type": "string"
+                    },
+                    "checks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/HealthCheckDto"
+                        }
+                    }
+                }
+            },
             "AnalystOptionDto": {
                 "type": "object",
                 "properties": {
@@ -915,6 +1007,17 @@
                     "modifiedAt": {
                         "type": "string",
                         "format": "date-time"
+                    }
+                }
+            },
+            "RunLogDto": {
+                "type": "object",
+                "properties": {
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 }
             },

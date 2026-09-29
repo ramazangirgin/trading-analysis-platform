@@ -25,6 +25,7 @@ import { usePolling } from '@/composables/usePolling'
 import AgentPipeline from '@/components/AgentPipeline.vue'
 import MarkdownView from '@/components/MarkdownView.vue'
 import RatingTag from '@/components/RatingTag.vue'
+import RunLog from '@/components/RunLog.vue'
 import StatusTag from '@/components/StatusTag.vue'
 
 const route = useRoute()
@@ -262,6 +263,10 @@ async function rerun() {
               </article>
             </section>
           </template>
+        </NTabPane>
+
+        <NTabPane name="logs" :tab="t('detail.logs')" display-directive="show:lazy">
+          <RunLog :analysis-id="id" :live="active" />
         </NTabPane>
 
         <NTabPane name="stats" :tab="t('detail.stats')">

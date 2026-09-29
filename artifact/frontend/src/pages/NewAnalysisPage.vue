@@ -26,6 +26,7 @@ import {
 import { api, type Analyst, type ModelOption, type Preset } from '@/api/client'
 import { useCatalogStore } from '@/stores/catalog'
 import { useLabels } from '@/composables/useLabels'
+import HealthAlerts from '@/components/HealthAlerts.vue'
 
 const router = useRouter()
 const { locale } = useI18n()
@@ -209,6 +210,7 @@ const futureDate = (millis: number) => {
 <template>
   <NCard :title="t('form.title')" class="new-analysis">
     <NSpace vertical :size="12">
+      <HealthAlerts />
       <NAlert v-if="catalogStore.error" type="warning" :title="t('form.catalogUnavailable')" />
       <div class="presets">
         <NSelect
