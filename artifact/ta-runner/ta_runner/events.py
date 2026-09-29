@@ -42,11 +42,13 @@ class EventWriter:
                 **payload,
             }
             line = json.dumps(event, ensure_ascii=False, default=str) + "\n"
-            self._stream.write(line)
-            self._stream.flush()
+            # File first: once the platform has read a line from stdout, a reconnecting client
+            # replaying events.jsonl must already find it there.
             if self._file:
                 self._file.write(line)
                 self._file.flush()
+            self._stream.write(line)
+            self._stream.flush()
 
     def close(self) -> None:
         with self._lock:

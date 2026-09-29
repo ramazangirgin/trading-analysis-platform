@@ -32,7 +32,9 @@ upstream or third-party code cannot corrupt the stream.
 | `2` | Stopped by SIGTERM / SIGINT | `run_finished{status: "stopped"}` |
 
 A process that exits without a `run_finished` event (killed with SIGKILL, OOM) is treated by the
-backend as `error` with `error_code = runner_died`.
+backend as `error` with `error_code = runner_died`; the backend then appends that `run_finished`
+event to `events.jsonl` itself (next `seq`, payload `status`, `error_code`, `error`), so replays
+end the same way live streams do.
 
 **Stop:** the backend sends SIGTERM, waits a grace period, then SIGKILL. A second SIGTERM
 terminates immediately.
@@ -134,7 +136,8 @@ Same layout as the upstream CLI and TradingAgents-GUI, so the importer reads bot
 
 Runner output is **untrusted input**:
 
-- A line that is not valid JSON, or lacks the envelope, is kept as a raw `log` event (level `WARN`).
+- A line that is not valid JSON, or lacks the envelope (`seq`, `type`), is skipped with a backend
+  warning. It has no `seq`, so it cannot take part in ordering or replay; `run.log` keeps stderr.
 - An unknown `type` is kept as a `log` event; it never fails the run.
 - An unknown `rating` becomes `REVIEW`; unknown `status` values become `error`.
 - Payloads over the backend's own limits are truncated again.

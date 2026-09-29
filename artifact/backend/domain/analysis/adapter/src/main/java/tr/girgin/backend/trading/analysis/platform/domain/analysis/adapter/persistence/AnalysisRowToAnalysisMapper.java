@@ -1,0 +1,20 @@
+package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.persistence;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+
+@Mapper(uses = {
+        StringToAnalysisIdMapper.class,
+        StringToTimestampMapper.class,
+        AnalysisRowToAnalysisSpecMapper.class,
+        AnalysisRowToRunStatsMapper.class})
+interface AnalysisRowToAnalysisMapper {
+
+    // Single-argument transitions on Analysis look like fluent setters to MapStruct.
+    @Mapping(target = "running", ignore = true)
+    @Mapping(target = "withStats", ignore = true)
+    @Mapping(target = "spec", source = ".")
+    @Mapping(target = "stats", source = ".")
+    Analysis map(AnalysisRow source);
+}

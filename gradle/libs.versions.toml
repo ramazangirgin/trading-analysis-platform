@@ -20,10 +20,17 @@ spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies"
 # Versions below come from the BOM.
 spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
 spring-context = { module = "org.springframework:spring-context" }
+spring-jdbc = { module = "org.springframework:spring-jdbc" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind" }
+flyway-core = { module = "org.flywaydb:flyway-core" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 

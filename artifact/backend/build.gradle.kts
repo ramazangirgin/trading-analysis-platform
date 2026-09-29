@@ -15,6 +15,9 @@ val frontend = configurations.create("frontend") {
 dependencies {
     implementation(libs.spring.boot.starter)
     implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.jdbc)
+    implementation(libs.spring.boot.starter.flyway)
+    runtimeOnly(libs.sqlite.jdbc)
 
     // Runtime only: the application assembles the modules but never compiles against them.
     runtimeOnly(project(":backend:bff:api"))
@@ -35,6 +38,13 @@ dependencies {
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.mapstruct)
     testImplementation(libs.spring.boot.starter.webmvc.test)
+    testImplementation(libs.jackson.databind)
+}
+
+// Run from the repository root, so relative paths in application.properties (the ta-runner
+// checkout, its .env) resolve the same as with `java -jar` from the root.
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    workingDir = rootDir
 }
 
 tasks.processResources {
