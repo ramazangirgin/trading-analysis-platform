@@ -11,6 +11,10 @@ export function useLabels() {
   const agent = (name: string): string =>
     te(`agents.${agentKey(name)}`) ? t(`agents.${agentKey(name)}`) : name
 
+  /** Upstream language name ("Turkish") in the UI language; custom names are shown as typed. */
+  const language = (name: string): string =>
+    te(`languages.${name}`) ? t(`languages.${name}`) : name
+
   const error = (e: unknown): string => {
     if (e instanceof ApiError) {
       return te(`errors.${e.errorCode}`) ? t(`errors.${e.errorCode}`, e.params) : e.message
@@ -30,7 +34,9 @@ export function useLabels() {
     if (ms === null || ms <= 0) return '—'
     const seconds = Math.round(ms / 1000)
     const minutes = Math.floor(seconds / 60)
-    return minutes > 0 ? `${minutes}m ${seconds % 60}s` : `${seconds}s`
+    return minutes > 0
+      ? t('common.durationMinutes', { minutes, seconds: seconds % 60 })
+      : t('common.durationSeconds', { seconds })
   }
 
   const integer = (value: number | null | undefined): string =>
@@ -45,5 +51,5 @@ export function useLabels() {
           maximumFractionDigits: 4,
         }).format(value)
 
-  return { t, d, n, agent, error, errorCode, dateTime, duration, integer, usd }
+  return { t, d, n, agent, language, error, errorCode, dateTime, duration, integer, usd }
 }

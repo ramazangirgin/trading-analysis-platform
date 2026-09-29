@@ -33,6 +33,15 @@ function looksTurkish(text: string): boolean {
   return (text.match(/[ğışĞİŞ]/g)?.length ?? 0) >= 10
 }
 
+/** The language a run's reports are written in; for imported runs the text itself decides. */
+export function reportLanguage(
+  recorded: string,
+  source: 'PLATFORM' | 'EXTERNAL',
+  sample: string | undefined,
+): string {
+  return source === 'EXTERNAL' && sample && looksTurkish(sample) ? 'Turkish' : recorded
+}
+
 export function localizeReport(markdown: string, language?: string | null): string {
   // Imported runs are recorded as "English" whatever they contain, so the text decides too.
   if (language !== 'Turkish' && !looksTurkish(markdown)) return markdown

@@ -476,10 +476,24 @@ Still open from §3.6 (moved to Phase 2): importing TradingAgents-GUI's `runs.js
 Reported by the user after Phase 1, in this order of priority. Each item says what is known so far
 and where to start. Mark items ✅ here when done.
 
-### KI-1 UI language switch is wrong (bug, not yet reproduced)
+### KI-1 UI language switch is wrong — ✅ fixed (uncommitted), see notes
 - **Symptoms (user):** with Türkçe selected the UI looks as if English were selected; with English
   selected some texts stay Turkish.
-- **Not yet investigated.** Suspects to check first:
+- **Reproduced 2026-09-29 (partly fixed, uncommitted):** the switcher itself works — header, pages,
+  tables, Naive UI strings and the title all follow it and survive a reload. What did not follow:
+  - ✅ New Analysis "Rapor dili" stayed at the language of page load → now follows the UI language
+    until the viewer (or a preset) picks another one.
+  - ✅ Report-language option names were fixed English ("Turkish", "German"…) → `languages.*` keys.
+  - ✅ Durations were "20m 1s" in Turkish too → `common.duration*` keys ("20 dk 1 sn").
+  - ✅ `setLocale()` in `i18n/index.ts` + `i18n/index.spec.ts` cover the switch and reload.
+  - ✅ Report/decision text stays in the run's output language, not the UI language — **by design**
+    (user decision, option (a)). The run page header now shows a "Rapor dili: …" tag (blue when it
+    differs from the UI language, tooltip explains why). Imported runs are recorded as "English"
+    (`Analysis.java`), so the tag reads their language from the decision text
+    (`reportLanguage()` in `domain/reportLanguage.ts`); locally 5 of 7 runs are Turkish, 2 English.
+  - Follow-up (optional): detect the language at import time in the backend instead of hardcoding
+    "English", so the list/API are right too.
+- Original suspects (kept for reference):
   - `artifact/frontend/src/components/LocaleSwitcher.vue`: the `NSelect` value vs `locale` of the
     global vue-i18n composer (`legacy: false`); whether `useI18n()` returns the global scope there.
   - `artifact/frontend/src/i18n/index.ts`: initial locale from `localStorage['tap.locale']`, fallback `tr`.

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   NAlert,
   NButton,
@@ -16,9 +17,12 @@ import {
   NTabPane,
   NTabs,
   NTag,
+  NTooltip,
 } from 'naive-ui'
 import { ACTIVE_STATUSES, api, type Analysis, type AnalysisReport } from '@/api/client'
+import { reportLanguage } from '@/domain/reportLanguage'
 import { SECTIONS } from '@/domain/runView'
+import { outputLanguageFor } from '@/i18n'
 import { useRunStream } from '@/composables/useRunStream'
 import { useLabels } from '@/composables/useLabels'
 import { usePolling } from '@/composables/usePolling'
@@ -30,7 +34,8 @@ import StatusTag from '@/components/StatusTag.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { t, error: errorLabel, errorCode, dateTime, duration, integer, usd } = useLabels()
+const { t, language, error: errorLabel, errorCode, dateTime, duration, integer, usd } = useLabels()
+const { locale } = useI18n()
 
 const id = computed(() => String(route.params.id))
 const analysis = ref<Analysis | null>(null)
@@ -63,6 +68,19 @@ async function loadReportIfNeeded() {
 const active = computed(() => !!analysis.value && ACTIVE_STATUSES.includes(analysis.value.status))
 const rating = computed(() => analysis.value?.rating ?? view.decision?.rating ?? null)
 const sections = computed(() => SECTIONS.filter((key) => sectionText(key)))
+// Reports stay in the run's language whatever the UI shows (KI-1); the header says which one.
+const outputLanguage = computed(() =>
+  analysis.value
+    ? reportLanguage(
+        analysis.value.spec.outputLanguage,
+        analysis.value.source,
+        sectionText('final_trade_decision') ?? analysis.value.decision ?? undefined,
+      )
+    : null,
+)
+const languageDiffers = computed(
+  () => !!outputLanguage.value && outputLanguage.value !== outputLanguageFor(locale.value),
+)
 const feed = computed(() => [...view.feed].reverse())
 const debates = computed(() => ({
   investment: view.debates.filter((turn) => turn.debate === 'investment'),
@@ -133,6 +151,14 @@ async function rerun() {
           <span class="subtitle">{{ analysis.spec.tradeDate }}</span>
           <StatusTag :status="analysis.status" />
           <RatingTag :rating="rating" size="medium" />
+          <NTooltip v-if="outputLanguage">
+            <template #trigger>
+              <NTag size="small" :bordered="false" :type="languageDiffers ? 'info' : 'default'">
+                {{ t('detail.reportLanguage', { language: language(outputLanguage) }) }}
+              </NTag>
+            </template>
+            {{ t('detail.reportLanguageNote') }}
+          </NTooltip>
         </NSpace>
       </template>
       <template #header-extra>
@@ -178,7 +204,7 @@ async function rerun() {
       :title="t('detail.decision')"
     >
       <MarkdownView
-        :language="analysis?.spec.outputLanguage"
+        :language="outputLanguage"
         :source="sectionText('final_trade_decision') ?? analysis?.decision ?? ''"
       />
     </NCard>
@@ -217,10 +243,7 @@ async function rerun() {
               :name="key"
               :title="t(`sections.${key}`)"
             >
-              <MarkdownView
-                :language="analysis?.spec.outputLanguage"
-                :source="sectionText(key) ?? ''"
-              />
+              <MarkdownView :language="outputLanguage" :source="sectionText(key) ?? ''" />
             </NCollapseItem>
           </NCollapse>
         </NTabPane>
@@ -244,7 +267,7 @@ async function rerun() {
                   :class="['debate__turn', `debate__turn--${turn.speaker}`]"
                 >
                   <header class="debate__speaker">{{ t(`speakers.${turn.speaker}`) }}</header>
-                  <MarkdownView :language="analysis?.spec.outputLanguage" :source="turn.content" />
+                  <MarkdownView :language="outputLanguage" :source="turn.content" />
                 </article>
               </section>
             </template>
@@ -265,7 +288,7 @@ async function rerun() {
                     t('detail.round', { round: turn.round })
                   }}</span>
                 </header>
-                <MarkdownView :language="analysis?.spec.outputLanguage" :source="turn.content" />
+                <MarkdownView :language="outputLanguage" :source="turn.content" />
               </article>
             </section>
           </template>
@@ -312,7 +335,7 @@ async function rerun() {
               analysis.spec.maxRiskDiscussRounds
             }}</NDescriptionsItem>
             <NDescriptionsItem :label="t('form.outputLanguage')">{{
-              analysis.spec.outputLanguage
+              language(outputLanguage ?? analysis.spec.outputLanguage)
             }}</NDescriptionsItem>
             <NDescriptionsItem :label="t('runs.created')">{{
               dateTime(analysis.createdAt)

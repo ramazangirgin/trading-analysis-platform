@@ -14,7 +14,9 @@
     "loading": "Loading…",
     "none": "—",
     "retry": "Retry",
-    "back": "Back"
+    "back": "Back",
+    "durationMinutes": "{minutes}m {seconds}s",
+    "durationSeconds": "{seconds}s"
   },
   "status": {
     "QUEUED": "Queued",
@@ -128,6 +130,15 @@
     "catalogUnavailable": "Could not load the model list. Is ta-runner installed?",
     "noKeyHint": "This provider needs its key ({env}) set."
   },
+  "languages": {
+    "Turkish": "Turkish",
+    "English": "English",
+    "German": "German",
+    "French": "French",
+    "Spanish": "Spanish",
+    "Chinese": "Chinese",
+    "Japanese": "Japanese"
+  },
   "detail": {
     "stop": "Stop",
     "rerun": "Run again",
@@ -158,7 +169,9 @@
     "logs": "Log",
     "logsFilter": "Search the log",
     "noLogs": "No log for this analysis.",
-    "refreshLogs": "Refresh"
+    "refreshLogs": "Refresh",
+    "reportLanguage": "Report language: {language}",
+    "reportLanguageNote": "Reports are written in the language the analysis was started with; switching the UI language does not translate them."
   },
   "errors": {
     "invalid_spec": "Invalid value: {field}",

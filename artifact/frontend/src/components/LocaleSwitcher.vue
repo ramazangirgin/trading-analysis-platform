@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { NSelect } from 'naive-ui'
-import { isAppLocale, storeLocale, type AppLocale } from '@/i18n'
+import { isAppLocale, setLocale, type AppLocale } from '@/i18n'
 
 const { t, locale } = useI18n()
 
@@ -13,10 +13,7 @@ const options = [
 
 const selected = computed<AppLocale>({
   get: () => (isAppLocale(locale.value) ? locale.value : 'tr'),
-  set: (value) => {
-    locale.value = value
-    storeLocale(value)
-  },
+  set: setLocale,
 })
 </script>
 

@@ -33,9 +33,20 @@ export function storeLocale(locale: AppLocale): void {
 
 export const messages: Record<AppLocale, MessageSchema> = { tr, en }
 
-export const i18n = createI18n<[MessageSchema], AppLocale>({
+export const i18n = createI18n<[MessageSchema], AppLocale, false>({
   legacy: false,
   locale: loadStoredLocale(),
   fallbackLocale: DEFAULT_LOCALE,
   messages,
 })
+
+/** Switches the whole UI (the global composer every `useI18n()` reads) and remembers the choice. */
+export function setLocale(locale: AppLocale): void {
+  i18n.global.locale.value = locale
+  storeLocale(locale)
+}
+
+/** The report language a new analysis starts with: the one the UI is shown in. */
+export function outputLanguageFor(locale: string): string {
+  return locale === 'tr' ? 'Turkish' : 'English'
+}

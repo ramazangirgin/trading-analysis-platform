@@ -24,13 +24,14 @@ import {
   type FormRules,
 } from 'naive-ui'
 import { api, type Analyst, type ModelOption, type Preset } from '@/api/client'
+import { outputLanguageFor } from '@/i18n'
 import { useCatalogStore } from '@/stores/catalog'
 import { useLabels } from '@/composables/useLabels'
 import HealthAlerts from '@/components/HealthAlerts.vue'
 
 const router = useRouter()
 const { locale } = useI18n()
-const { t, error: errorLabel } = useLabels()
+const { t, language, error: errorLabel } = useLabels()
 const catalogStore = useCatalogStore()
 
 const ANALYSTS: Analyst[] = ['MARKET', 'SOCIAL', 'NEWS', 'FUNDAMENTALS']
@@ -54,7 +55,7 @@ const form = reactive({
   quickThinkLlm: null as string | null,
   maxDebateRounds: 1,
   maxRiskDiscussRounds: 1,
-  outputLanguage: locale.value === 'tr' ? 'Turkish' : 'English',
+  outputLanguage: outputLanguageFor(locale.value),
   checkpointEnabled: false,
 })
 
@@ -73,6 +74,9 @@ const PRESET_FIELDS = [
 const message = useMessage()
 const presets = ref<Preset[]>([])
 const presetName = ref('')
+const languageOptions = computed(() =>
+  LANGUAGES.map((value) => ({ value, label: language(value) })),
+)
 const presetOptions = computed(() => presets.value.map((p) => ({ label: p.name, value: p.id })))
 
 async function loadPresets() {
@@ -139,6 +143,12 @@ watch(
     form.quickThinkLlm = keep(form.quickThinkLlm, provider.value.quickModels)
   },
 )
+
+// The report language follows the UI language until the viewer picks another one (or a preset does).
+watch(locale, (next, previous) => {
+  if (form.outputLanguage === outputLanguageFor(previous))
+    form.outputLanguage = outputLanguageFor(next)
+})
 
 // Crypto pairs are detected as they are typed, like the upstream CLI does.
 watch(
@@ -309,7 +319,7 @@ const futureDate = (millis: number) => {
           <NFormItem :label="t('form.outputLanguage')">
             <NSelect
               v-model:value="form.outputLanguage"
-              :options="LANGUAGES.map((value) => ({ value, label: value }))"
+              :options="languageOptions"
               filterable
               tag
             />

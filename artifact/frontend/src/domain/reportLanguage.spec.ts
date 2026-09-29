@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { localizeReport } from './reportLanguage'
+import { localizeReport, reportLanguage } from './reportLanguage'
 
 describe('localizeReport', () => {
   it('translates upstream labels and ratings in a Turkish report', () => {
@@ -29,5 +29,21 @@ describe('localizeReport', () => {
   it('leaves English reports alone', () => {
     const english = '**Rating**: Overweight\n\n**Executive Summary**: Build gradually.'
     expect(localizeReport(english, 'English')).toBe(english)
+  })
+})
+
+describe('reportLanguage', () => {
+  const turkish =
+    'Yönetici Özeti: kazanç öncesi işlem risk azaltmadır; ağırlık düşürülmeli, şirket işareti ışığında aşağı yönlü'
+
+  it('trusts the recorded language of platform runs', () => {
+    expect(reportLanguage('English', 'PLATFORM', turkish)).toBe('English')
+    expect(reportLanguage('German', 'PLATFORM', undefined)).toBe('German')
+  })
+
+  it('reads the language of imported runs from their text', () => {
+    expect(reportLanguage('English', 'EXTERNAL', turkish)).toBe('Turkish')
+    expect(reportLanguage('English', 'EXTERNAL', 'Executive Summary: trim longs')).toBe('English')
+    expect(reportLanguage('English', 'EXTERNAL', undefined)).toBe('English')
   })
 })
