@@ -43,6 +43,13 @@ val pnpmTest = tasks.register<PnpmTask>("pnpmTest") {
     outputs.upToDateWhen { true }
 }
 
+// Regenerates src/api/schema.d.ts from openapi.json (`mise run api-types` refreshes both).
+tasks.register<PnpmTask>("pnpmApiTypes") {
+    description = "Generates the TypeScript API types from openapi.json"
+    dependsOn(tasks.pnpmInstall)
+    args.set(listOf("run", "api:types"))
+}
+
 // Vite dev server with hot reload; proxies /api to bootRun (see vite.config.ts). Runs until stopped.
 tasks.register<PnpmTask>("pnpmDev") {
     description = "Starts the Vite dev server on http://localhost:5173"

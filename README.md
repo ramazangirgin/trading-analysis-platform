@@ -30,13 +30,16 @@ git clone https://github.com/ramazangirgin/trading-analysis-platform.git
 cd trading-analysis-platform
 mise trust && mise install   # once: Java 25 and uv for this repository
 mise run setup               # once: ta-runner (downloads TradingAgents) and the UI packages
-mise run dev                 # backend on :8080 + UI with hot reload
+mise run run                 # builds the app if needed and serves it on :8080
 ```
 
-Open **http://localhost:5173**. The first start takes a few minutes (Gradle, Node, the UI packages).
+Open **http://127.0.0.1:8080**. One process serves both the UI and the API; keep the terminal open
+while you use it, and stop it with Ctrl+C. The first start takes a few minutes (Gradle's
+dependencies, Node, building the UI and the backend); after that it starts in seconds, and after a
+`git pull` it rebuilds only what changed. Analyses, presets and keys live on disk
+([Where things live](#where-things-live)), so they survive restarts.
 
-To run it the way it ships instead — one jar serving both the API and the UI — use
-`mise run build && mise run run` and open http://127.0.0.1:8080.
+Changing the code instead? See [Development](#development) — it runs the UI with hot reload.
 
 ### 3. Add an API key
 
@@ -106,21 +109,6 @@ The UI is Turkish by default; switch to English in the header (the choice is rem
 browser). Reports stay in the language the analysis was started with; the analysis page shows it
 as a "Report language" tag. The screenshots above are the English UI with an analysis run in English.
 
-## Commands
-
-```sh
-mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages
-mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173
-mise run build         # all tests (ArchUnit included), lint, and the single jar
-mise run run           # the jar on http://127.0.0.1:8080
-mise run test          # backend + frontend + ta-runner tests
-mise run runner-test   # ta-runner tests and lint only
-```
-
-`mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
-needs overriding; with [mise activated](https://mise.jdx.dev/getting-started.html#activate-mise) in
-your shell, plain `./gradlew` and `uv` in this directory use the same versions.
-
 ## Where things live
 
 
@@ -132,7 +120,49 @@ your shell, plain `./gradlew` and `uv` in this directory use the same versions.
 
 Override with `PLATFORM_HOME`, `TRADINGAGENTS_HOME` or `TRADINGAGENTS_RESULTS_DIR`.
 
-## ta-runner
+## Development
+
+### Dev servers
+
+```sh
+mise run dev
+```
+
+This starts two processes, and keeps them running until Ctrl+C:
+
+| Process | Port | What it does |
+|---|---|---|
+| Spring Boot backend | 8080 | The API (`/api/...`), the database, starting and stopping analyses (it launches ta-runner) |
+| Vite dev server | 5173 | Serves the Vue UI straight from `artifact/frontend/src`, reloads the browser on every change, and forwards `/api/...` to the backend |
+
+Open **http://localhost:5173** (not :8080) while developing. UI changes show up immediately; backend
+changes need a restart of `mise run dev`. Nothing listens on 5173 unless `mise run dev` is running —
+to just use the app, `mise run run` is enough.
+
+### Tasks
+
+```sh
+mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages
+mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173
+mise run build         # all tests (ArchUnit included), lint, and the single jar
+mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
+mise run test          # backend + frontend + ta-runner tests
+mise run runner-test   # ta-runner tests and lint only
+mise run api-types     # refresh the frontend's API types from the running backend
+```
+
+`mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
+needs overriding; with [mise activated](https://mise.jdx.dev/getting-started.html#activate-mise) in
+your shell, plain `./gradlew` and `uv` in this directory use the same versions.
+
+### Before pushing
+
+- `mise run test` must pass.
+- After changing the REST API: with `mise run dev` running (restarted after the change), run
+  `mise run api-types`. It saves the backend's OpenAPI spec as `artifact/frontend/openapi.json` and
+  regenerates `artifact/frontend/src/api/schema.d.ts`; commit both.
+
+### ta-runner
 
 ```sh
 cd artifact/ta-runner
