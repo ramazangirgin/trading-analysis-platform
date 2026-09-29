@@ -141,7 +141,7 @@ async function rerun() {
 </script>
 
 <template>
-  <NSpace vertical :size="16">
+  <NSpace vertical :size="16" :wrap-item="false">
     <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
 
     <NCard v-if="analysis">
@@ -179,7 +179,7 @@ async function rerun() {
         </NSpace>
       </template>
 
-      <NSpace vertical :size="16">
+      <NSpace vertical :size="16" :wrap-item="false">
         <NAlert
           v-if="analysis.status === 'FAILED'"
           type="error"
@@ -243,7 +243,7 @@ async function rerun() {
               :name="key"
               :title="t(`sections.${key}`)"
             >
-              <MarkdownView :language="outputLanguage" :source="sectionText(key) ?? ''" />
+              <MarkdownView :language="outputLanguage" :source="sectionText(key) ?? ''" charts />
             </NCollapseItem>
           </NCollapse>
         </NTabPane>
