@@ -17,7 +17,8 @@ roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner cont
 ### 1. Prerequisites
 
 - A JDK 17+ to launch Gradle. Java 25 itself is downloaded by the Gradle toolchain.
-- [uv](https://docs.astral.sh/uv/) for `ta-runner` (it downloads Python 3.12).
+- [uv](https://docs.astral.sh/uv/) for `ta-runner` (it downloads Python 3.12). `make setup` installs it to
+  `~/.local/bin` when it is not on `PATH` or in a usual install location.
 - An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
   Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
 - Nothing else: Node.js and pnpm are downloaded by the build.
@@ -27,7 +28,7 @@ roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner cont
 ```sh
 git clone https://github.com/ramazangirgin/trading-analysis-platform.git
 cd trading-analysis-platform
-make setup      # once: installs ta-runner (downloads TradingAgents) and the UI packages
+make setup      # once: installs uv if missing, ta-runner (downloads TradingAgents) and the UI packages
 make dev        # backend on :8080 + UI with hot reload
 ```
 
@@ -109,7 +110,7 @@ as a "Report language" tag. The screenshots above are the English UI with an ana
 ## Commands
 
 ```sh
-make setup      # uv sync for ta-runner (downloads TradingAgents), frontend packages
+make setup      # uv if missing, uv sync for ta-runner (downloads TradingAgents), frontend packages
 make dev        # backend on :8080 + Vite with hot reload on http://localhost:5173
 make build      # all tests (ArchUnit included), lint, and the single jar
 make run        # the jar on http://127.0.0.1:8080 (needs Java 25: make run JAVA=/path/to/java)
