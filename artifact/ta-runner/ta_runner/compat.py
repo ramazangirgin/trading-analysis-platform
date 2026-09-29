@@ -116,7 +116,7 @@ class UpstreamRun:
         return bool(getattr(self._graph, "_resuming", False))
 
     def save_reports(self, final_state: dict[str, Any]) -> Path:
-        """Report tree in the same place the CLI and TradingAgents-GUI use:
+        """Report tree in the same place the upstream CLI uses:
         ``<results_dir>/<TICKER>/<DATE>/reports`` (PLAN.md section 3.6)."""
         s = self._spec
         target = self.results_dir / safe_ticker_component(s.ticker) / s.trade_date / "reports"

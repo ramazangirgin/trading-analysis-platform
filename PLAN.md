@@ -28,8 +28,6 @@ A management platform that runs on top of the [TauricResearch/TradingAgents](htt
 - Log viewing (live tail + history), report reader (markdown), export (md/html/pdf)
 - Settings: API key management, provider/model lists, presets, health checks
 
-Reference UX: [TheLocalLab/TradingAgents-GUI](https://github.com/TheLocalLab/TradingAgents-GUI) (Analyze / Reports / Chat / Health tabs, visual pipeline, decision card).
-
 ### Out of scope (for now)
 - Real order placement / broker integration
 - Multi-user support (D6: first release is single-user; the `analyses`/`presets` tables are designed so an `owner_id` can be added later, but there is no user/role management for now)
@@ -48,18 +46,10 @@ Reference UX: [TheLocalLab/TradingAgents-GUI](https://github.com/TheLocalLab/Tra
 | Checkpoint | `checkpoint_enabled` + SQLite (`begin_checkpoint`/`checkpoint_input`/`end_checkpoint`) | "Resume where it left off" comes for free |
 | Docker | `python:3.12-slim`, `ENTRYPOINT ["tradingagents"]`, volume `/home/appuser/.tradingagents` | The image is reused as the base of the runner image |
 
-### 2.2 `TradingAgents-GUI` (TheLocalLab fork)
-- Flask + a single `index.html` (vanilla JS), mixed into the upstream code as a **fork** (the model we want to avoid).
-- Good ideas (to adopt): run manager + event queue + **SSE** stream, `agent_map` (node → agent mapping), live cost calculation, run history persistence, report export, presets, health tab, first-run wizard.
-- Weaknesses (to avoid):
-  - Analyses run as **threads in the same process** → Stop is "cooperative" (only between chunks), a crash affects the whole server, weak parallelism.
-  - Builds `init_state` by hand → skips upstream's `past_context` / `instrument_context` / memory-log logic (drifts from upstream).
-  - Being a fork of upstream makes pulling updates hard.
-
-### 2.3 Reference backend: `job-radar`
+### 2.2 Reference backend: `job-radar`
 Spring Boot 4.1.1, Java 25, Gradle 9.7.1 (Kotlin DSL, version catalog, convention plugins in `build-logic/`), MapStruct 1.6.3, ArchUnit 1.5.0. Each architectural layer is its own Gradle subproject under `artifact/backend/`, so dependency rules are enforced by the compile classpath first and by `ArchitectureTest` second. This plan copies that structure, build setup and rule set 1:1 and adds the platform's domains (§3.4).
 
-### 2.4 Local environment notes
+### 2.3 Local environment notes
 - Docker 29.8 installed.
 - JDK: only 7/8/17 installed → Java 25 is provisioned by the Gradle toolchain (foojay resolver), no manual install needed.
 - System Python is 3.9 (upstream needs ≥3.10); `ta-runner` gets its own `uv`-managed Python 3.12 venv. `uv` installed in Phase 0 (`pip install --user uv`; the local Homebrew is too old to have it).
@@ -193,7 +183,7 @@ tr.girgin.backend.trading.analysis.platform
 | Domain | Responsibility | Inbound ports (examples) | Outbound port types → adapters |
 |---|---|---|---|
 | `analysis` | Run lifecycle: validate spec, queue (concurrency limit, one active run per ticker+date), start/stop/rerun, event fan-out, logs | `StartAnalysisUseCase`, `StopAnalysisUseCase`, `RerunAnalysisUseCase`, `GetAnalysisUseCase`, `ListAnalysesUseCase`, `SubscribeAnalysisEventsUseCase`, `ReadAnalysisLogsUseCase` | `runner` → `ProcessRunnerAdapter` (Phase 1), `DockerRunnerAdapter` (Phase 2); `persistence` → JDBC; `eventstore` → `events.jsonl` file adapter; `credentials` → reads provider keys from the secrets file to pass as env to the runner |
-| `report` | Report index and reading, sections, debates, export md/html/pdf, import of existing `~/.tradingagents` data | `ListReportsUseCase`, `GetReportUseCase`, `ExportReportUseCase`, `ScanDataDirUseCase` | `datadir` → file-system reader for upstream/GUI outputs (§3.6); `persistence` → JDBC; `export` → HTML/PDF renderer |
+| `report` | Report index and reading, sections, debates, export md/html/pdf, import of existing `~/.tradingagents` data | `ListReportsUseCase`, `GetReportUseCase`, `ExportReportUseCase`, `ScanDataDirUseCase` | `datadir` → file-system reader for upstream and third-party outputs (§3.6); `persistence` → JDBC; `export` → HTML/PDF renderer |
 | `catalog` | Providers, models, analysts available in the installed upstream version | `GetCatalogUseCase`, `GetEngineVersionUseCase` | `runner` → runs `ta-runner catalog` / `version`, cached |
 | `settings` | Settings, presets, API keys (write + masked read + test) | `GetSettingsUseCase`, `UpdateSettingsUseCase`, `ManageSecretsUseCase`, `ManagePresetsUseCase` | `secrets` → `.env` file (0600); `persistence` → JDBC; `keytest` → minimal provider call to validate a key |
 
@@ -282,9 +272,9 @@ Scanned sources (found locally):
 | Source | Content | Imported as |
 |---|---|---|
 | `logs/<TICKER>/<DATE>/reports/` (`1_analysts…5_portfolio`, `complete_report.md`) | Report tree | Analysis record + sections |
-| `logs/<TICKER>/<DATE>/reports/run.json` | TradingAgents-GUI metadata (run_id, stats, cost) | Stats/cost fields |
+| `logs/<TICKER>/<DATE>/reports/run.json` | Third-party run metadata (run_id, stats, cost) | Stats/cost fields |
 | `logs/<TICKER>/TradingAgentsStrategy_logs/full_states_log_<date>.json` | Full state | Debates, decision |
-| `runs.json` | TradingAgents-GUI run history (status, error) | Interrupted / failed runs |
+| `runs.json` | Third-party run history (status, error) | Interrupted / failed runs |
 | `reports/*.md` (e.g. `MU_deep_2026-09-28.md`) | `deep-analysis` skill output | "External report" |
 | `memory/trading_memory.md` | Upstream memory log | Read-only, "Decision history" view (Phase 3) |
 
@@ -449,10 +439,10 @@ Phase 1 decisions and deviations:
 - **Stop** signals through `ProcessHandle`: `Process.destroy()` also closes the child's stdout, which killed the runner with SIGPIPE before it could report `run_finished{stopped}`.
 - **Build:** unique Gradle group per subproject (all `core` modules otherwise resolve as one module), `-parameters` on every module, fully qualified bean names (same-named MapStruct mappers in different modules).
 
-Still open from §3.6 (moved to Phase 2): importing TradingAgents-GUI's `runs.json` (failed/interrupted runs) and the `reports/*_deep_*.md` files; watching the data dir with `WatchService` (today: import at startup + "scan data dir" button).
+Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrupted runs) and the `reports/*_deep_*.md` files; watching the data dir with `WatchService` (today: import at startup + "scan data dir" button).
 
 ### Phase 2 — Docker and hardening (1 week)
-- [ ] Import GUI `runs.json` and `reports/*_deep_*.md`; data dir `WatchService` (carried over from Phase 1)
+- [ ] Import `runs.json` and `reports/*_deep_*.md`; data dir `WatchService` (carried over from Phase 1)
 - [ ] LLM cost per run (`cost_usd`): a price table per provider/model in `ta-runner`
 - [ ] `artifact/ta-runner/Dockerfile` (upstream image as base), `DockerRunnerAdapter` (D8), docker-socket-proxy, resource limits and security flags, label-based orphan container reconciliation
 - [ ] `deploy/Dockerfile` (single platform image: backend + UI), PostgreSQL profile, `deploy/docker-compose.yml` (platform + docker-socket-proxy; optional Caddy for TLS)

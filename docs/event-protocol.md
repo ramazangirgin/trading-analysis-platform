@@ -124,7 +124,7 @@ Payload fields sit next to the envelope fields. Long texts are truncated and end
 
 ## 5. Files a completed run leaves behind
 
-Same layout as the upstream CLI and TradingAgents-GUI, so the importer reads both the same way:
+Same layout as the upstream CLI, so the importer reads both the same way:
 
 ```
 <results_dir>/<TICKER>/<DATE>/reports/            1_analysts/ … 5_portfolio/, complete_report.md

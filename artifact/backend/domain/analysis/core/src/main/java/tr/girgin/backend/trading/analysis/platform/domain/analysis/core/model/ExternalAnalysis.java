@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A run found in the data dir that the platform did not start (CLI, TradingAgents-GUI, an older
+ * A run found in the data dir that the platform did not start (CLI, a third-party UI, an older
  * platform install). Only what the files tell is known; a null decision means it never finished.
  */
 public record ExternalAnalysis(

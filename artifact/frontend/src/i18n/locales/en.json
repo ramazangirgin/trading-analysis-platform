@@ -169,7 +169,7 @@
     "round": "Round {round}",
     "investmentDebate": "Research debate",
     "riskDebate": "Risk debate",
-    "importedNote": "This analysis ran outside the platform (CLI or GUI) and was imported from the data dir: there is no live event log, the reports are read from its files.",
+    "importedNote": "This analysis ran outside the platform (e.g. with the CLI) and was imported from the data dir: there is no live event log, the reports are read from its files.",
     "logs": "Log",
     "logsFilter": "Search the log",
     "noLogs": "No log for this analysis.",

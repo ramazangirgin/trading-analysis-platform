@@ -169,7 +169,7 @@
     "round": "Tur {round}",
     "investmentDebate": "Araştırma tartışması",
     "riskDebate": "Risk tartışması",
-    "importedNote": "Bu analiz platform dışında çalıştırıldı (CLI veya GUI) ve veri klasöründen içe aktarıldı; canlı olay kaydı yok, raporlar dosyalardan okunuyor.",
+    "importedNote": "Bu analiz platform dışında çalıştırıldı (ör. CLI ile) ve veri klasöründen içe aktarıldı; canlı olay kaydı yok, raporlar dosyalardan okunuyor.",
     "logs": "Günlük",
     "logsFilter": "Günlükte ara",
     "noLogs": "Bu analiz için günlük yok.",
