@@ -176,6 +176,18 @@
     "reportLanguage": "Report language: {language}",
     "reportLanguageNote": "Reports are written in the language the analysis was started with; switching the UI language does not translate them."
   },
+  "prices": {
+    "title": "{ticker} price",
+    "close": "Close",
+    "volume": "Volume",
+    "lastData": "Last data: {date}",
+    "source": "Source: TradingAgents' price cache (yfinance, daily). Averages are computed the way the market analyst computes them.",
+    "range": {
+      "3m": "3M",
+      "6m": "6M",
+      "1y": "1Y"
+    }
+  },
   "errors": {
     "invalid_spec": "Invalid value: {field}",
     "invalid_request": "Missing or invalid field: {field}",
@@ -195,7 +207,8 @@
     "invalid_secret_value": "Invalid value.",
     "secret_not_managed": "This value is not in the platform's file; it comes from an external file.",
     "invalid_preset": "Invalid preset.",
-    "preset_not_found": "Preset not found."
+    "preset_not_found": "Preset not found.",
+    "prices_not_found": "No cached prices for this analysis."
   },
   "notFound": {
     "heading": "Page not found",

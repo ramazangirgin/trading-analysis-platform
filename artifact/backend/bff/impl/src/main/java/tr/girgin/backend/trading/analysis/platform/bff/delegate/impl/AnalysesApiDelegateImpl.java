@@ -17,6 +17,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.AnalysesAp
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.ApiException;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
@@ -33,6 +34,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
+import tr.girgin.backend.trading.analysis.platform.orchestration.report.GetAnalysisPricesUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.GetAnalysisReportUseCase;
 
 @Service
@@ -48,6 +50,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final RerunAnalysisUseCase rerunAnalysis;
     private final SubscribeAnalysisEventsUseCase subscribeEvents;
     private final GetAnalysisReportUseCase getReport;
+    private final GetAnalysisPricesUseCase getPrices;
     private final ReadAnalysisLogsUseCase readLogs;
     private final StartAnalysisRequestToAnalysisSpecMapper specMapper;
     private final AnalysisToAnalysisDtoMapper analysisMapper;
@@ -56,6 +59,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final AnalysisStatusDtoToAnalysisStatusMapper statusMapper;
     private final AnalysisExceptionToApiExceptionMapper errorMapper;
     private final ReportToAnalysisReportDtoMapper reportMapper;
+    private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
 
     AnalysesApiDelegateImpl(StartAnalysisUseCase startAnalysis,
                             ListAnalysesUseCase listAnalyses,
@@ -64,6 +68,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                             RerunAnalysisUseCase rerunAnalysis,
                             SubscribeAnalysisEventsUseCase subscribeEvents,
                             GetAnalysisReportUseCase getReport,
+                            GetAnalysisPricesUseCase getPrices,
                             ReadAnalysisLogsUseCase readLogs,
                             StartAnalysisRequestToAnalysisSpecMapper specMapper,
                             AnalysisToAnalysisDtoMapper analysisMapper,
@@ -71,7 +76,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                             StringToAnalysisIdMapper idMapper,
                             AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
                             AnalysisExceptionToApiExceptionMapper errorMapper,
-                            ReportToAnalysisReportDtoMapper reportMapper) {
+                            ReportToAnalysisReportDtoMapper reportMapper,
+                            PriceHistoryToPriceHistoryDtoMapper pricesMapper) {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
@@ -79,6 +85,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.rerunAnalysis = rerunAnalysis;
         this.subscribeEvents = subscribeEvents;
         this.getReport = getReport;
+        this.getPrices = getPrices;
         this.readLogs = readLogs;
         this.specMapper = specMapper;
         this.analysisMapper = analysisMapper;
@@ -87,6 +94,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.statusMapper = statusMapper;
         this.errorMapper = errorMapper;
         this.reportMapper = reportMapper;
+        this.pricesMapper = pricesMapper;
     }
 
     @Override
@@ -123,6 +131,15 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "report_not_found",
                         "No report files for analysis " + id, Map.of("id", id)));
+    }
+
+    @Override
+    public ResponseEntity<PriceHistoryDto> getPrices(String id) {
+        return call(() -> getPrices.getPrices(idMapper.map(id)))
+                .map(pricesMapper::map)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "prices_not_found",
+                        "No cached prices for analysis " + id, Map.of("id", id)));
     }
 
     @Override

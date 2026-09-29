@@ -463,6 +463,36 @@
                 }
             }
         },
+        "/api/analyses/{id}/prices": {
+            "get": {
+                "tags": [
+                    "analyses-api-controller"
+                ],
+                "operationId": "getPrices",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PriceHistoryDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/analyses/{id}/logs": {
             "get": {
                 "tags": [
@@ -1007,6 +1037,53 @@
                     "modifiedAt": {
                         "type": "string",
                         "format": "date-time"
+                    }
+                }
+            },
+            "PriceHistoryDto": {
+                "type": "object",
+                "properties": {
+                    "ticker": {
+                        "type": "string"
+                    },
+                    "tradeDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "points": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PricePointDto"
+                        }
+                    }
+                }
+            },
+            "PricePointDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "close": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "volume": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "ema10": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "sma50": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "sma200": {
+                        "type": "number",
+                        "format": "double"
                     }
                 }
             },

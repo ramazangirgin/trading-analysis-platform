@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -31,6 +31,9 @@ import MarkdownView from '@/components/MarkdownView.vue'
 import RatingTag from '@/components/RatingTag.vue'
 import RunLog from '@/components/RunLog.vue'
 import StatusTag from '@/components/StatusTag.vue'
+
+// ECharts is loaded only when the reports tab shows a chart.
+const PriceChart = defineAsyncComponent(() => import('@/components/PriceChart.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -243,6 +246,7 @@ async function rerun() {
               :name="key"
               :title="t(`sections.${key}`)"
             >
+              <PriceChart v-if="key === 'market_report'" :analysis-id="id" />
               <MarkdownView :language="outputLanguage" :source="sectionText(key) ?? ''" charts />
             </NCollapseItem>
           </NCollapse>

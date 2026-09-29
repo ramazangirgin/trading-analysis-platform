@@ -44,6 +44,10 @@ export type AnalysisReport = Omit<
   sections: Record<string, string>
   debates: Record<string, string>
 }
+export type PricePoint = Present<Schemas['PricePointDto']>
+export type PriceHistory = Omit<Present<Schemas['PriceHistoryDto']>, 'points'> & {
+  points: PricePoint[]
+}
 export type ImportResult = Present<Schemas['ImportResultDto']>
 export type HealthCheck = Omit<Present<Schemas['HealthCheckDto']>, 'params'> & {
   status: 'UP' | 'WARN' | 'DOWN'
@@ -125,6 +129,9 @@ export const api = {
   },
   getReport(id: string): Promise<AnalysisReport> {
     return request(`/api/analyses/${encodeURIComponent(id)}/report`)
+  },
+  getPrices(id: string): Promise<PriceHistory> {
+    return request(`/api/analyses/${encodeURIComponent(id)}/prices`)
   },
   rescanReports(): Promise<ImportResult> {
     return request('/api/reports/rescan', { method: 'POST' })

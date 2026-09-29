@@ -535,7 +535,7 @@ and where to start. Mark items ✅ here when done.
   and a team status from `stageStatus()` (tested). Colours come from Naive UI theme vars (dark + light);
   under 860px the flow runs top to bottom. Only agents the runner reports (= selected analysts) show.
 
-### KI-4 Charts next to report tables (request)
+### KI-4 Charts next to report tables — ✅ done
 - **Wanted:** in Run Detail → Raporlar, charts beside the markdown tables so they are easier to read.
 - **What the tables look like** (checked in `~/.tradingagents/logs`): free-form LLM output. Numeric
   ones: fundamentals by year/quarter (rows = metrics, columns = FY2022…/Q2'25…), MACD/Signal/Histogram
@@ -552,6 +552,16 @@ and where to start. Mark items ✅ here when done.
      the newest file whose end date ≥ trade date, return ~1 year up to the trade date).
 - **Library:** ECharts (already planned for Phase 3, §3.8). Load the `dataviz` skill before writing
   chart code.
+- **Done:**
+  1. `domain/tableChart.ts` (tested against every table in the local reports: 22 of 78 qualify,
+     all period tables) + `ReportTableChart.vue`: lines (bars for one series), up to 8 metrics of one
+     unit with the first 4 switched on, beside the table (below it when the table is wide).
+  2. `GET /api/analyses/{id}/prices` (report domain: `PriceCachePort` → `CsvPriceCacheAdapter`,
+     `PriceHistoryService`; `platform.cache-dir` honours `TRADINGAGENTS_CACHE_DIR`) returns 252 days
+     with 10 EMA / 50 SMA / 200 SMA computed like stockstats (checked equal on MU 2026-09-25).
+     `PriceChart.vue` above the market report: close + averages, volume in its own panel, 3M/6M/1Y.
+  - ECharts is a lazy chunk (~540 kB, prod). In `make dev` Vite serves ECharts' full dev bundles
+    (~5 MB), so the first chart after a Vite restart is slow on a busy machine; prod is unaffected.
 
 ### How to pick this up
 - Tooling on this Mac: Gradle needs `JAVA_HOME=/usr/local/opt/openjdk@17`; `uv` is at

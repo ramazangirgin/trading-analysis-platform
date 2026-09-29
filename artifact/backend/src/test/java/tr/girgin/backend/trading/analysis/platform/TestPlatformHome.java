@@ -27,5 +27,6 @@ final class TestPlatformHome {
         registry.add("platform.secrets.env-file", () -> home.resolve("secrets.env").toString());
         registry.add("platform.secrets.external-env-files", () -> "");
         registry.add("platform.results-dir", () -> home.resolve("logs").toString());
+        registry.add("platform.cache-dir", () -> home.resolve("cache").toString());
     }
 }

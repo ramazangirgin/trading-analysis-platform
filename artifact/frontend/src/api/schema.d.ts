@@ -196,6 +196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analyses/{id}/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPrices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analyses/{id}/logs": {
         parameters: {
             query?: never;
@@ -383,6 +399,26 @@ export interface components {
             sources?: string[];
             /** Format: date-time */
             modifiedAt?: string;
+        };
+        PriceHistoryDto: {
+            ticker?: string;
+            /** Format: date */
+            tradeDate?: string;
+            points?: components["schemas"]["PricePointDto"][];
+        };
+        PricePointDto: {
+            /** Format: date */
+            date?: string;
+            /** Format: double */
+            close?: number;
+            /** Format: int64 */
+            volume?: number;
+            /** Format: double */
+            ema10?: number;
+            /** Format: double */
+            sma50?: number;
+            /** Format: double */
+            sma200?: number;
         };
         RunLogDto: {
             lines?: string[];
@@ -747,6 +783,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalysisReportDto"];
+                };
+            };
+        };
+    };
+    getPrices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceHistoryDto"];
                 };
             };
         };

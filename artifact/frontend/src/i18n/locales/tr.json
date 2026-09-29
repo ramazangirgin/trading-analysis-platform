@@ -176,6 +176,18 @@
     "reportLanguage": "Rapor dili: {language}",
     "reportLanguageNote": "Raporlar analizin başlatıldığı dilde yazılır; arayüz dilini değiştirmek raporları çevirmez."
   },
+  "prices": {
+    "title": "{ticker} fiyatı",
+    "close": "Kapanış",
+    "volume": "Hacim",
+    "lastData": "Son veri: {date}",
+    "source": "Kaynak: TradingAgents fiyat önbelleği (yfinance, günlük). Ortalamalar, market analistinin kullandığı yöntemle hesaplanır.",
+    "range": {
+      "3m": "3A",
+      "6m": "6A",
+      "1y": "1Y"
+    }
+  },
   "errors": {
     "invalid_spec": "Geçersiz değer: {field}",
     "invalid_request": "Eksik veya hatalı alan: {field}",
@@ -195,7 +207,8 @@
     "invalid_secret_value": "Geçersiz değer.",
     "secret_not_managed": "Bu değer platform dosyasında değil; harici dosyadan geliyor.",
     "invalid_preset": "Geçersiz hazır ayar.",
-    "preset_not_found": "Hazır ayar bulunamadı."
+    "preset_not_found": "Hazır ayar bulunamadı.",
+    "prices_not_found": "Bu analiz için önbellekte fiyat yok."
   },
   "notFound": {
     "heading": "Sayfa bulunamadı",

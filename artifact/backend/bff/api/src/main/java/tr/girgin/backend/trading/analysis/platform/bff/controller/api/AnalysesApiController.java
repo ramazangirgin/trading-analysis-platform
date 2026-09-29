@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
@@ -60,6 +61,12 @@ public class AnalysesApiController {
     @GetMapping(path = "/{id}/report", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AnalysisReportDto> getReport(@PathVariable String id) {
         return delegate.getReport(id);
+    }
+
+    /** About a year of daily prices with moving averages up to the trade date, from upstream's price cache. */
+    @GetMapping(path = "/{id}/prices", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<PriceHistoryDto> getPrices(@PathVariable String id) {
+        return delegate.getPrices(id);
     }
 
     /** The end of the runner's stderr log, API keys masked. */
