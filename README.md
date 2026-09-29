@@ -16,28 +16,27 @@ roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner cont
 
 ### 1. Prerequisites
 
-- A JDK 17+ to launch Gradle. Java 25 itself is downloaded by the Gradle toolchain.
-- [uv](https://docs.astral.sh/uv/) for `ta-runner` (it downloads Python 3.12). `make setup` installs it to
-  `~/.local/bin` when it is not on `PATH` or in a usual install location.
+- [mise](https://mise.jdx.dev/) — it installs the rest: Java 25 (Temurin) and
+  [uv](https://docs.astral.sh/uv/), pinned in [`mise.toml`](mise.toml), into its own directory.
+  Install it with `curl https://mise.run | sh` (or `brew install mise`).
 - An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
   Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
-- Nothing else: Node.js and pnpm are downloaded by the build.
+- Nothing else: Node.js and pnpm are downloaded by the build, Python 3.12 by uv.
 
 ### 2. Start the platform
 
 ```sh
 git clone https://github.com/ramazangirgin/trading-analysis-platform.git
 cd trading-analysis-platform
-make setup      # once: installs uv if missing, ta-runner (downloads TradingAgents) and the UI packages
-make dev        # backend on :8080 + UI with hot reload
+mise trust && mise install   # once: Java 25 and uv for this repository
+mise run setup               # once: ta-runner (downloads TradingAgents) and the UI packages
+mise run dev                 # backend on :8080 + UI with hot reload
 ```
 
-Open **http://localhost:5173**. If Gradle picks up a JDK older than 17, point it at a newer one:
-`make dev JAVA_HOME=/path/to/jdk17+`. The first start takes a few minutes (Gradle, Java 25, Node).
+Open **http://localhost:5173**. The first start takes a few minutes (Gradle, Node, the UI packages).
 
 To run it the way it ships instead — one jar serving both the API and the UI — use
-`make build && make run` and open http://127.0.0.1:8080 (the jar needs Java 25:
-`make run JAVA=/path/to/jdk25/bin/java`).
+`mise run build && mise run run` and open http://127.0.0.1:8080.
 
 ### 3. Add an API key
 
@@ -110,14 +109,17 @@ as a "Report language" tag. The screenshots above are the English UI with an ana
 ## Commands
 
 ```sh
-make setup      # uv if missing, uv sync for ta-runner (downloads TradingAgents), frontend packages
-make dev        # backend on :8080 + Vite with hot reload on http://localhost:5173
-make build      # all tests (ArchUnit included), lint, and the single jar
-make run        # the jar on http://127.0.0.1:8080 (needs Java 25: make run JAVA=/path/to/java)
-make test       # backend + frontend + ta-runner tests
+mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages
+mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173
+mise run build         # all tests (ArchUnit included), lint, and the single jar
+mise run run           # the jar on http://127.0.0.1:8080
+mise run test          # backend + frontend + ta-runner tests
+mise run runner-test   # ta-runner tests and lint only
 ```
 
-`make help` lists the targets; `JAVA_HOME`, `UV` and `JAVA` can be overridden on the command line.
+`mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
+needs overriding; with [mise activated](https://mise.jdx.dev/getting-started.html#activate-mise) in
+your shell, plain `./gradlew` and `uv` in this directory use the same versions.
 
 ## Where things live
 

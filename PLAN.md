@@ -436,7 +436,7 @@ Phase 0 notes:
 - [x] `orchestration`: `ImportExistingRunsUseCase` (tested against real `~/.tradingagents` data), `SystemHealthUseCase`
 - [x] BFF: controllers + delegates + DTO mappers for all of the above; `ApiExceptionHandler` with `error_code`
 - [x] Frontend: layout + router, New Analysis form, Runs list, Run Detail (pipeline + live feed + reports + decision card + stop), Logs tab; `tr` (default) + `en`
-- [x] Dev startup: `./gradlew :backend:bootRun` + `pnpm dev` (Vite proxy to `/api`), wrapped by a `Makefile`; production = one jar
+- [x] Dev startup: `./gradlew :backend:bootRun` + `pnpm dev` (Vite proxy to `/api`), wrapped by a `Makefile` (replaced by `mise.toml` tasks on 2026-09-29); production = one jar
 
 Verified end to end on 2026-09-29: a DeepSeek run started from the New Analysis form streamed live into Run Detail (pipeline, feed, debates) and finished `Overweight`; the six runs in `~/.tradingagents/logs` were imported with their ratings.
 
@@ -501,7 +501,7 @@ and where to start. Mark items ✅ here when done.
     in `App.vue`), `document.title`, the New Analysis "Rapor dili" default (`outputLanguage` is set
     once from the UI locale at form creation and does not follow later switches), LLM-written text
     (always in the run's output language, by design), agent names in the live feed.
-- **How to reproduce:** `make dev JAVA_HOME=/usr/local/opt/openjdk@17`, open http://localhost:5173,
+- **How to reproduce:** `mise run dev`, open http://localhost:5173,
   switch the language in the header on each page (Dashboard, Analizler, Yeni analiz, a run's page,
   Ayarlar) and list every text that does not follow.
 - **Done when:** every platform-owned text follows the switch on every page, the choice survives a
@@ -560,15 +560,15 @@ and where to start. Mark items ✅ here when done.
      `PriceHistoryService`; `platform.cache-dir` honours `TRADINGAGENTS_CACHE_DIR`) returns 252 days
      with 10 EMA / 50 SMA / 200 SMA computed like stockstats (checked equal on MU 2026-09-25).
      `PriceChart.vue` above the market report: close + averages, volume in its own panel, 3M/6M/1Y.
-  - ECharts is a lazy chunk (~540 kB, prod). In `make dev` Vite serves ECharts' full dev bundles
+  - ECharts is a lazy chunk (~540 kB, prod). In `mise run dev` Vite serves ECharts' full dev bundles
     (~5 MB), so the first chart after a Vite restart is slow on a busy machine; prod is unaffected.
 
 ### How to pick this up
-- Tooling on this Mac: Gradle needs `JAVA_HOME=/usr/local/opt/openjdk@17`; `uv` is at
-  `~/Library/Python/3.9/bin/uv`; frontend commands via
+- Tooling: `mise.toml` pins Java 25 and uv (`mise install`); run everything through `mise run <task>`
+  or with mise activated. Frontend commands via
   `artifact/frontend/.gradle/pnpm/pnpm-v12.6.0/bin/pnpm` with `artifact/frontend/.gradle/nodejs/*/bin`
   on `PATH`.
-- `make test JAVA_HOME=/usr/local/opt/openjdk@17 UV=~/Library/Python/3.9/bin/uv` must stay green;
+- `mise run test` must stay green;
   after API changes regenerate `artifact/frontend/openapi.json` + `src/api/schema.d.ts`
   (`pnpm run api:types`).
 - To try things without touching `~/.tradingagents`, start with `PLATFORM_HOME`,
@@ -612,7 +612,7 @@ and where to start. Mark items ✅ here when done.
 | Parallel runs writing to the same cache/memory files | Race conditions | Concurrency limit; one active run per ticker+date lock |
 | LLM cost blow-up | Bill | Cost estimate, per-run / daily budget limit, `max_tokens` |
 | Rate limits (429) | Run failure | Expose the `llm_max_retries` setting in the UI |
-| Three toolchains (JVM + Python + Node) | Setup friction | Gradle toolchain auto-provisions Java 25; `uv` pins Python; one `Makefile` for dev startup |
+| Three toolchains (JVM + Python + Node) | Setup friction | Gradle toolchain auto-provisions Java 25; `uv` pins Python; `mise.toml` pins the JDK and uv and holds the dev tasks |
 
 ---
 

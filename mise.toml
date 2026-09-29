@@ -1,0 +1,45 @@
+# Developer entry points and the tools they need. `mise install` fetches the tools below into mise's
+# own directory (nothing system-wide); `mise run <task>` runs a task with them on PATH and
+# JAVA_HOME set. `mise tasks` lists the tasks.
+#
+# One JDK serves everything: Gradle runs on it, the backend's Java 25 toolchain finds it, and the
+# jar runs on it. Node.js and pnpm are still downloaded by the build; uv downloads Python 3.12.
+
+[tools]
+java = "temurin-25"
+uv = "0.12"
+
+[tasks.setup]
+description = "Install ta-runner (TradingAgents + deps) and the frontend's packages"
+run = [
+  "cd artifact/ta-runner && uv sync",
+  "./gradlew :frontend:pnpmInstall",
+]
+
+[tasks.dev]
+description = "Backend on :8080 and Vite (hot reload) on :5173, together; open http://localhost:5173"
+run = "./gradlew --parallel --console=plain :backend:bootRun :frontend:pnpmDev"
+
+[tasks.build]
+description = "Test everything and build the single jar (backend + UI)"
+run = "./gradlew build"
+
+[tasks.runner-test]
+description = "ta-runner tests and lint"
+dir = "artifact/ta-runner"
+run = ["uv run ruff check .", "uv run pytest -q"]
+
+[tasks.test]
+description = "All tests: backend, frontend, ta-runner"
+depends = ["build", "runner-test"]
+
+[tasks.run]
+description = "Run the built jar from the repository root on http://127.0.0.1:8080"
+run = [
+  "test -f artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar || ./gradlew :backend:bootJar",
+  "java -jar artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar",
+]
+
+[tasks.clean]
+description = "Remove build outputs"
+run = "./gradlew clean"
