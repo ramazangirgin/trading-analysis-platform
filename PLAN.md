@@ -1,6 +1,6 @@
 # TradingAgents Platform — Detailed Plan
 
-> Status: **v0.11** (2026-09-28) · All open decisions resolved (✅). Phase 0 done except the real-LLM end-to-end run; next step: Phase 1.
+> Status: **v0.11** (2026-09-28) · All open decisions resolved (✅). Phase 0 done; next step: Phase 1.
 
 ### Decisions
 | # | Topic | Decision |
@@ -420,7 +420,7 @@ TradingAgents-Platform/
 - [x] Empty modules: `bff:api`, `bff:impl`, `orchestration`, `domain:{analysis,report,catalog,settings}:{core,adapter}`; context-load test green
 - [x] Frontend skeleton (`artifact/frontend` as Gradle subproject `:frontend`, pnpm, Vite, Vue 3.5, Naive UI, vue-i18n, eslint/prettier); `bootJar` bundles it and serves `index.html` at `/` (SPA fallback for client routes; unknown `/api` paths and missing assets stay 404)
 - [x] `ta-runner` skeleton (`uv`, Python 3.12, upstream pinned) + spike: spec → `graph.stream` → JSONL, with `compat.py`, event tracker, callbacks, SIGTERM handling and contract tests against the real v0.5.1 graph
-- [ ] **Open:** end-to-end run with a real ticker and a cheap model. Verified up to the first LLM call with a dummy key (clean stdout, `events.jsonl` identical, `run_finished{error}` on 401); needs a real provider key to finish
+- [x] End-to-end run with a real ticker and a cheap model (2026-09-29): NVDA / 2026-09-25, market analyst only, DeepSeek `deepseek-v4-flash` → `Overweight` in 4m20s, 12 LLM calls, ~77k tokens in / 48k out; 88 events with gapless `seq`, `events.jsonl` identical to stdout, full report tree + `full_states_log` + memory-log entry written, API key absent from all output
 - [x] Event protocol v1 document (`docs/event-protocol.md`)
 
 Phase 0 notes:
