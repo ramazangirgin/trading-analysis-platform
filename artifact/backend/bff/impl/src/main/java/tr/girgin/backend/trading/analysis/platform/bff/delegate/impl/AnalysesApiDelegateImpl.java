@@ -4,15 +4,19 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.AnalysesApiDelegate;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.ApiException;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
@@ -27,6 +31,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
+import tr.girgin.backend.trading.analysis.platform.orchestration.report.GetAnalysisReportUseCase;
 
 @Service
 class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
@@ -40,12 +45,14 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final StopAnalysisUseCase stopAnalysis;
     private final RerunAnalysisUseCase rerunAnalysis;
     private final SubscribeAnalysisEventsUseCase subscribeEvents;
+    private final GetAnalysisReportUseCase getReport;
     private final StartAnalysisRequestToAnalysisSpecMapper specMapper;
     private final AnalysisToAnalysisDtoMapper analysisMapper;
     private final RunEventToRunEventDtoMapper eventMapper;
     private final StringToAnalysisIdMapper idMapper;
     private final AnalysisStatusDtoToAnalysisStatusMapper statusMapper;
     private final AnalysisExceptionToApiExceptionMapper errorMapper;
+    private final ReportToAnalysisReportDtoMapper reportMapper;
 
     AnalysesApiDelegateImpl(StartAnalysisUseCase startAnalysis,
                             ListAnalysesUseCase listAnalyses,
@@ -53,24 +60,28 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                             StopAnalysisUseCase stopAnalysis,
                             RerunAnalysisUseCase rerunAnalysis,
                             SubscribeAnalysisEventsUseCase subscribeEvents,
+                            GetAnalysisReportUseCase getReport,
                             StartAnalysisRequestToAnalysisSpecMapper specMapper,
                             AnalysisToAnalysisDtoMapper analysisMapper,
                             RunEventToRunEventDtoMapper eventMapper,
                             StringToAnalysisIdMapper idMapper,
                             AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
-                            AnalysisExceptionToApiExceptionMapper errorMapper) {
+                            AnalysisExceptionToApiExceptionMapper errorMapper,
+                            ReportToAnalysisReportDtoMapper reportMapper) {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
         this.stopAnalysis = stopAnalysis;
         this.rerunAnalysis = rerunAnalysis;
         this.subscribeEvents = subscribeEvents;
+        this.getReport = getReport;
         this.specMapper = specMapper;
         this.analysisMapper = analysisMapper;
         this.eventMapper = eventMapper;
         this.idMapper = idMapper;
         this.statusMapper = statusMapper;
         this.errorMapper = errorMapper;
+        this.reportMapper = reportMapper;
     }
 
     @Override
@@ -98,6 +109,15 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     public ResponseEntity<AnalysisDto> rerunAnalysis(String id) {
         return created(call(() -> rerunAnalysis.rerun(idMapper.map(id))));
+    }
+
+    @Override
+    public ResponseEntity<AnalysisReportDto> getReport(String id) {
+        return call(() -> getReport.getReport(idMapper.map(id)))
+                .map(reportMapper::map)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "report_not_found",
+                        "No report files for analysis " + id, Map.of("id", id)));
     }
 
     @Override

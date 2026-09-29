@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
 
@@ -52,6 +53,12 @@ public class AnalysesApiController {
     @PostMapping(path = "/{id}/rerun", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AnalysisDto> rerunAnalysis(@PathVariable String id) {
         return delegate.rerunAnalysis(id);
+    }
+
+    /** The report files in the data dir for this analysis' ticker and date. */
+    @GetMapping(path = "/{id}/report", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AnalysisReportDto> getReport(@PathVariable String id) {
+        return delegate.getReport(id);
     }
 
     /**

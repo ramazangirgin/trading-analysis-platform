@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { NAlert, NButton, NCard, NEmpty, NInput, NSelect, NSpace } from 'naive-ui'
+import { NAlert, NButton, NCard, NEmpty, NInput, NSelect, NSpace, useMessage } from 'naive-ui'
 import { ACTIVE_STATUSES, api, type Analysis, type AnalysisStatus } from '@/api/client'
 import AnalysisTable from '@/components/AnalysisTable.vue'
 import { useLabels } from '@/composables/useLabels'
@@ -12,6 +12,8 @@ const loading = ref(true)
 const failure = ref<unknown>(null)
 const ticker = ref('')
 const status = ref<AnalysisStatus | null>(null)
+const scanning = ref(false)
+const message = useMessage()
 
 const statusOptions = computed(() =>
   (['QUEUED', 'RUNNING', 'COMPLETED', 'STOPPED', 'FAILED'] as const).map((value) => ({
@@ -34,6 +36,18 @@ async function refresh() {
   }
 }
 
+async function rescan() {
+  scanning.value = true
+  try {
+    message.success(t('runs.rescanned', { ...(await api.rescanReports()) }))
+    await refresh()
+  } catch (e) {
+    message.error(errorLabel(e))
+  } finally {
+    scanning.value = false
+  }
+}
+
 watch([status, ticker], refresh)
 usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.status)))
 </script>
@@ -41,9 +55,12 @@ usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.
 <template>
   <NCard :title="t('runs.title')">
     <template #header-extra>
-      <RouterLink :to="{ name: 'new-analysis' }" custom v-slot="{ navigate }">
-        <NButton type="primary" @click="navigate">{{ t('nav.newAnalysis') }}</NButton>
-      </RouterLink>
+      <NSpace>
+        <NButton secondary :loading="scanning" @click="rescan">{{ t('runs.rescan') }}</NButton>
+        <RouterLink :to="{ name: 'new-analysis' }" custom v-slot="{ navigate }">
+          <NButton type="primary" @click="navigate">{{ t('nav.newAnalysis') }}</NButton>
+        </RouterLink>
+      </NSpace>
     </template>
     <NSpace vertical :size="12">
       <div class="filters">

@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/reports/rescan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rescan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analyses": {
         parameters: {
             query?: never;
@@ -84,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analyses/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analyses/{id}/events": {
         parameters: {
             query?: never;
@@ -104,6 +136,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ImportResultDto: {
+            /** Format: int32 */
+            scanned?: number;
+            /** Format: int32 */
+            created?: number;
+            /** Format: int32 */
+            updated?: number;
+            /** Format: int32 */
+            unchanged?: number;
+        };
         StartAnalysisRequest: {
             ticker: string;
             /** Format: date */
@@ -198,6 +240,19 @@ export interface components {
             quickModels?: components["schemas"]["ModelOptionDto"][];
             deepModels?: components["schemas"]["ModelOptionDto"][];
         };
+        AnalysisReportDto: {
+            sections?: {
+                [key: string]: string;
+            };
+            debates?: {
+                [key: string]: string;
+            };
+            /** @enum {string} */
+            rating?: "BUY" | "OVERWEIGHT" | "HOLD" | "UNDERWEIGHT" | "SELL" | "REVIEW";
+            sources?: string[];
+            /** Format: date-time */
+            modifiedAt?: string;
+        };
         SseEmitter: {
             /** Format: int64 */
             timeout?: number;
@@ -211,6 +266,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    rescan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResultDto"];
+                };
+            };
+        };
+    };
     listAnalyses: {
         parameters: {
             query?: {
@@ -340,6 +415,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalysisDto"];
+                };
+            };
+        };
+    };
+    getReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisReportDto"];
                 };
             };
         };

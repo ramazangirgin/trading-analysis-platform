@@ -5,6 +5,8 @@ plugins {
 description = "Use cases spanning more than one domain"
 
 dependencies {
+    implementation(libs.spring.context)
+    implementation(libs.slf4j.api)
     implementation(project(":backend:domain:analysis:core"))
     implementation(project(":backend:domain:report:core"))
     implementation(project(":backend:domain:catalog:core"))

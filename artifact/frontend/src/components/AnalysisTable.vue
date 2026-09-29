@@ -31,7 +31,10 @@ const columns = computed<DataTableColumns<Analysis>>(() => {
       {
         title: t('runs.model'),
         key: 'model',
-        render: (row) => `${row.spec.llmProvider} / ${row.spec.deepThinkLlm}`,
+        render: (row) =>
+          row.source === 'EXTERNAL'
+            ? t('runs.imported')
+            : `${row.spec.llmProvider} / ${row.spec.deepThinkLlm}`,
       },
       { title: t('runs.created'), key: 'created', render: (row) => dateTime(row.createdAt) },
       {

@@ -78,7 +78,9 @@
     "judge": "Hakem",
     "aggressive": "Agresif",
     "conservative": "Muhafazakâr",
-    "neutral": "Nötr"
+    "neutral": "Nötr",
+    "research_judge": "Araştırma Yöneticisi",
+    "risk_judge": "Portföy Yöneticisi"
   },
   "dashboard": {
     "active": "Aktif analizler",
@@ -98,7 +100,10 @@
     "duration": "Süre",
     "filterTicker": "Sembole göre filtrele",
     "filterStatus": "Durum",
-    "empty": "Henüz analiz yok."
+    "empty": "Henüz analiz yok.",
+    "rescan": "Veri klasörünü tara",
+    "rescanned": "{scanned} rapor tarandı: {created} yeni, {updated} güncellendi.",
+    "imported": "İçe aktarıldı"
   },
   "form": {
     "title": "Yeni analiz",
@@ -147,7 +152,8 @@
     "spec": "Ayarlar",
     "round": "Tur {round}",
     "investmentDebate": "Araştırma tartışması",
-    "riskDebate": "Risk tartışması"
+    "riskDebate": "Risk tartışması",
+    "importedNote": "Bu analiz platform dışında çalıştırıldı (CLI veya GUI) ve veri klasöründen içe aktarıldı; canlı olay kaydı yok, raporlar dosyalardan okunuyor."
   },
   "errors": {
     "invalid_spec": "Geçersiz değer: {field}",
@@ -161,7 +167,9 @@
     "runner_error": "Analiz sırasında hata",
     "runner_died": "ta-runner beklenmedik şekilde sonlandı",
     "runner_start_failed": "ta-runner başlatılamadı",
-    "platform_restarted": "Platform yeniden başladığı için analiz yarıda kaldı"
+    "platform_restarted": "Platform yeniden başladığı için analiz yarıda kaldı",
+    "report_not_found": "Bu analiz için rapor dosyası bulunamadı.",
+    "incomplete_report": "Rapor dosyalarında nihai karar yok"
   },
   "notFound": {
     "heading": "Sayfa bulunamadı",

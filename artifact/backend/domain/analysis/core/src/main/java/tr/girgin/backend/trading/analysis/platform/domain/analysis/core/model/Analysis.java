@@ -32,6 +32,22 @@ public record Analysis(
                 null, null, RunStats.EMPTY, now, null, null, null, null);
     }
 
+    /** Upstream's model choices are not in its output files, so an imported run says "unknown". */
+    public static final String UNKNOWN = "unknown";
+
+    public static Analysis imported(AnalysisId id, ExternalAnalysis external) {
+        AnalysisSpec spec = new AnalysisSpec(external.ticker(), external.tradeDate(), AssetType.STOCK,
+                external.analysts(), UNKNOWN, UNKNOWN, UNKNOWN, 1, 1, "English", false);
+        boolean finished = external.decision() != null;
+        return new Analysis(id, spec, finished ? AnalysisStatus.COMPLETED : AnalysisStatus.FAILED,
+                AnalysisSource.EXTERNAL, external.rating(), external.decision(), RunStats.EMPTY,
+                external.finishedAt(), external.finishedAt(), external.finishedAt(),
+                finished ? null : INCOMPLETE_REPORT, null);
+    }
+
+    /** Error code of an imported run whose files hold no final decision. */
+    public static final String INCOMPLETE_REPORT = "incomplete_report";
+
     public Analysis running(Instant now) {
         return new Analysis(id, spec, AnalysisStatus.RUNNING, source, rating, decision, stats,
                 createdAt, now, endedAt, errorCode, errorMessage);

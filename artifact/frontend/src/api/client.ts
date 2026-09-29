@@ -37,6 +37,15 @@ export type Catalog = Omit<
   analysts: Present<Schemas['AnalystOptionDto']>[]
 }
 
+export type AnalysisReport = Omit<
+  Present<Schemas['AnalysisReportDto'], 'rating'>,
+  'sections' | 'debates'
+> & {
+  sections: Record<string, string>
+  debates: Record<string, string>
+}
+export type ImportResult = Present<Schemas['ImportResultDto']>
+
 /** One runner event from the SSE stream (docs/event-protocol.md, section 4). */
 export interface RunEvent {
   seq: number
@@ -103,6 +112,12 @@ export const api = {
   },
   rerunAnalysis(id: string): Promise<Analysis> {
     return request(`/api/analyses/${encodeURIComponent(id)}/rerun`, { method: 'POST' })
+  },
+  getReport(id: string): Promise<AnalysisReport> {
+    return request(`/api/analyses/${encodeURIComponent(id)}/report`)
+  },
+  rescanReports(): Promise<ImportResult> {
+    return request('/api/reports/rescan', { method: 'POST' })
   },
   getCatalog(): Promise<Catalog> {
     return request('/api/catalog')

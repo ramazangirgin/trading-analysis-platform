@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
 
@@ -18,6 +19,8 @@ public interface AnalysesApiDelegate {
     ResponseEntity<AnalysisDto> stopAnalysis(String id);
 
     ResponseEntity<AnalysisDto> rerunAnalysis(String id);
+
+    ResponseEntity<AnalysisReportDto> getReport(String id);
 
     SseEmitter streamEvents(String id, long afterSeq);
 }

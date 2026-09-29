@@ -58,6 +58,11 @@ class AnalysesApiIntegrationTest {
     static void properties(DynamicPropertyRegistry registry) throws IOException {
         Files.writeString(RUNNER, SCRIPT);
         Files.writeString(HOME.resolve("secrets.env"), "SLOW_TICKER=SLOW\n");
+        // A run TradingAgents' CLI left in the data dir, to be imported.
+        Path reports = Files.createDirectories(HOME.resolve("logs/BE/2026-09-24/reports/5_portfolio"));
+        Files.createDirectories(HOME.resolve("logs/BE/2026-09-24/reports/1_analysts"));
+        Files.writeString(reports.resolve("decision.md"), "**Rating**: Underweight\nTrim into strength.");
+        Files.writeString(HOME.resolve("logs/BE/2026-09-24/reports/1_analysts/market.md"), "# BE market");
         TestPlatformHome.register(registry, HOME, RUNNER);
     }
 
@@ -148,6 +153,28 @@ class AnalysesApiIntegrationTest {
         assertThat(list.valueStream().map(n -> n.get("id").asString())).contains(id);
         assertThat(list.valueStream().map(n -> n.at("/spec/ticker").asString())).containsOnly("GOOG");
         assertThat(get("/api/analyses?status=BOGUS").statusCode()).isEqualTo(400);
+    }
+
+    @Test
+    void importsRunsFoundInTheDataDirAndServesTheirReport() throws Exception {
+        HttpResponse<String> rescan = post("/api/reports/rescan", "");
+
+        assertThat(rescan.statusCode()).isEqualTo(200);
+        assertThat(JSON.readTree(rescan.body()).get("scanned").asInt()).isGreaterThanOrEqualTo(1);
+        JsonNode imported = JSON.readTree(get("/api/analyses?ticker=BE").body()).get(0);
+        assertThat(imported.get("source").asString()).isEqualTo("EXTERNAL");
+        assertThat(imported.get("status").asString()).isEqualTo("COMPLETED");
+        assertThat(imported.get("rating").asString()).isEqualTo("UNDERWEIGHT");
+        assertThat(imported.at("/spec/analysts").toString()).isEqualTo("[\"MARKET\"]");
+
+        JsonNode report = JSON.readTree(get("/api/analyses/" + imported.get("id").asString() + "/report").body());
+        assertThat(report.at("/sections/market_report").asString()).isEqualTo("# BE market");
+        assertThat(report.at("/debates/risk_judge").asString()).startsWith("**Rating**: Underweight");
+
+        // A second scan changes nothing.
+        JsonNode again = JSON.readTree(post("/api/reports/rescan", "").body());
+        assertThat(again.get("created").asInt()).isZero();
+        assertThat(JSON.readTree(get("/api/analyses?ticker=BE").body()).size()).isEqualTo(1);
     }
 
     private static String request(String ticker) {

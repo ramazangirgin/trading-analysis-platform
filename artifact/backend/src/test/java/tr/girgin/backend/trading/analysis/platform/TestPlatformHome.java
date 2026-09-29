@@ -25,5 +25,6 @@ final class TestPlatformHome {
         registry.add("platform.runner.process.command", () -> "/bin/sh," + runnerScript);
         registry.add("platform.runner.process.working-dir", home::toString);
         registry.add("platform.secrets.env-file", () -> home.resolve("secrets.env").toString());
+        registry.add("platform.results-dir", () -> home.resolve("logs").toString());
     }
 }

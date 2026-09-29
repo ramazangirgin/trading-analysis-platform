@@ -78,7 +78,9 @@
     "judge": "Judge",
     "aggressive": "Aggressive",
     "conservative": "Conservative",
-    "neutral": "Neutral"
+    "neutral": "Neutral",
+    "research_judge": "Research Manager",
+    "risk_judge": "Portfolio Manager"
   },
   "dashboard": {
     "active": "Active analyses",
@@ -98,7 +100,10 @@
     "duration": "Duration",
     "filterTicker": "Filter by ticker",
     "filterStatus": "Status",
-    "empty": "No analyses yet."
+    "empty": "No analyses yet.",
+    "rescan": "Scan data dir",
+    "rescanned": "Scanned {scanned} reports: {created} new, {updated} updated.",
+    "imported": "Imported"
   },
   "form": {
     "title": "New analysis",
@@ -147,7 +152,8 @@
     "spec": "Settings",
     "round": "Round {round}",
     "investmentDebate": "Research debate",
-    "riskDebate": "Risk debate"
+    "riskDebate": "Risk debate",
+    "importedNote": "This analysis ran outside the platform (CLI or GUI) and was imported from the data dir: there is no live event log, the reports are read from its files."
   },
   "errors": {
     "invalid_spec": "Invalid value: {field}",
@@ -161,7 +167,9 @@
     "runner_error": "Error during the analysis",
     "runner_died": "ta-runner exited unexpectedly",
     "runner_start_failed": "ta-runner could not be started",
-    "platform_restarted": "The platform restarted while this analysis was running"
+    "platform_restarted": "The platform restarted while this analysis was running",
+    "report_not_found": "No report files found for this analysis.",
+    "incomplete_report": "The report files hold no final decision"
   },
   "notFound": {
     "heading": "Page not found",

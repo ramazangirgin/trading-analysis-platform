@@ -38,7 +38,11 @@ final class Fakes {
     }
 
     static AnalysisSpec spec(String ticker) {
-        return new AnalysisSpec(ticker, LocalDate.of(2026, 9, 25), AssetType.STOCK, List.of(Analyst.MARKET),
+        return spec(ticker, LocalDate.of(2026, 9, 25));
+    }
+
+    static AnalysisSpec spec(String ticker, LocalDate tradeDate) {
+        return new AnalysisSpec(ticker, tradeDate, AssetType.STOCK, List.of(Analyst.MARKET),
                 "deepseek", "deepseek-v4-flash", "deepseek-v4-flash", 1, 1, "English", false);
     }
 

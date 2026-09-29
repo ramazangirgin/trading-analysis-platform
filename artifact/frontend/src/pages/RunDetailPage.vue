@@ -17,7 +17,7 @@ import {
   NTabs,
   NTag,
 } from 'naive-ui'
-import { ACTIVE_STATUSES, api, type Analysis } from '@/api/client'
+import { ACTIVE_STATUSES, api, type Analysis, type AnalysisReport } from '@/api/client'
 import { SECTIONS } from '@/domain/runView'
 import { useRunStream } from '@/composables/useRunStream'
 import { useLabels } from '@/composables/useLabels'
@@ -35,11 +35,33 @@ const id = computed(() => String(route.params.id))
 const analysis = ref<Analysis | null>(null)
 const failure = ref<unknown>(null)
 const acting = ref(false)
+const report = ref<AnalysisReport | null>(null)
 const { view, connected, ended } = useRunStream(id)
+
+// Runs without events (imported, or older than their event log) are shown from their report files.
+const DEBATE_ORDER = {
+  investment: ['bull', 'bear', 'research_judge'],
+  risk: ['aggressive', 'conservative', 'neutral', 'risk_judge'],
+} as const
+const sectionText = (key: string): string | undefined =>
+  view.sections[key] ?? report.value?.sections[key]
+const reportDebates = computed(() => {
+  const debates = report.value?.debates ?? {}
+  const turns = (speakers: readonly string[]) =>
+    speakers
+      .filter((speaker) => debates[speaker])
+      .map((speaker) => ({ speaker, content: debates[speaker]! }))
+  return { investment: turns(DEBATE_ORDER.investment), risk: turns(DEBATE_ORDER.risk) }
+})
+
+async function loadReportIfNeeded() {
+  if (!analysis.value || active.value || report.value || Object.keys(view.sections).length) return
+  report.value = await api.getReport(id.value).catch(() => null)
+}
 
 const active = computed(() => !!analysis.value && ACTIVE_STATUSES.includes(analysis.value.status))
 const rating = computed(() => analysis.value?.rating ?? view.decision?.rating ?? null)
-const sections = computed(() => SECTIONS.filter((key) => view.sections[key]))
+const sections = computed(() => SECTIONS.filter((key) => sectionText(key)))
 const feed = computed(() => [...view.feed].reverse())
 const debates = computed(() => ({
   investment: view.debates.filter((turn) => turn.debate === 'investment'),
@@ -62,6 +84,7 @@ async function refresh() {
   try {
     analysis.value = await api.getAnalysis(id.value)
     failure.value = null
+    await loadReportIfNeeded()
   } catch (e) {
     failure.value = e
   }
@@ -69,7 +92,10 @@ async function refresh() {
 
 usePolling(refresh, () => active.value)
 watch(ended, (isEnded) => isEnded && refresh())
-watch(id, refresh)
+watch(id, () => {
+  report.value = null
+  void refresh()
+})
 
 async function stop() {
   acting.value = true
@@ -116,9 +142,13 @@ async function rerun() {
             </template>
             {{ t('detail.stopConfirm') }}
           </NPopconfirm>
-          <NButton v-else secondary :loading="acting" @click="rerun">{{
-            t('detail.rerun')
-          }}</NButton>
+          <NButton
+            v-else-if="analysis.source === 'PLATFORM'"
+            secondary
+            :loading="acting"
+            @click="rerun"
+            >{{ t('detail.rerun') }}</NButton
+          >
         </NSpace>
       </template>
 
@@ -135,15 +165,18 @@ async function rerun() {
           type="warning"
           :title="t('detail.reconnecting')"
         />
-        <AgentPipeline :agents="view.agents" />
+        <NAlert v-if="analysis.source === 'EXTERNAL'" type="info" :show-icon="false">
+          {{ t('detail.importedNote') }}
+        </NAlert>
+        <AgentPipeline v-if="Object.keys(view.agents).length" :agents="view.agents" />
       </NSpace>
     </NCard>
 
     <NCard
-      v-if="view.sections.final_trade_decision || analysis?.decision"
+      v-if="sectionText('final_trade_decision') || analysis?.decision"
       :title="t('detail.decision')"
     >
-      <MarkdownView :source="view.sections.final_trade_decision ?? analysis?.decision ?? ''" />
+      <MarkdownView :source="sectionText('final_trade_decision') ?? analysis?.decision ?? ''" />
     </NCard>
 
     <NCard>
@@ -180,13 +213,35 @@ async function rerun() {
               :name="key"
               :title="t(`sections.${key}`)"
             >
-              <MarkdownView :source="view.sections[key] ?? ''" />
+              <MarkdownView :source="sectionText(key) ?? ''" />
             </NCollapseItem>
           </NCollapse>
         </NTabPane>
 
         <NTabPane name="debates" :tab="t('detail.debates')">
-          <NEmpty v-if="!view.debates.length" :description="t('detail.noDebates')" />
+          <NEmpty
+            v-if="
+              !view.debates.length && !reportDebates.investment.length && !reportDebates.risk.length
+            "
+            :description="t('detail.noDebates')"
+          />
+          <template v-if="!view.debates.length">
+            <template v-for="kind in ['investment', 'risk'] as const" :key="`report-${kind}`">
+              <section v-if="reportDebates[kind].length" class="debate">
+                <h3>
+                  {{ t(kind === 'investment' ? 'detail.investmentDebate' : 'detail.riskDebate') }}
+                </h3>
+                <article
+                  v-for="turn in reportDebates[kind]"
+                  :key="turn.speaker"
+                  :class="['debate__turn', `debate__turn--${turn.speaker}`]"
+                >
+                  <header class="debate__speaker">{{ t(`speakers.${turn.speaker}`) }}</header>
+                  <MarkdownView :source="turn.content" />
+                </article>
+              </section>
+            </template>
+          </template>
           <template v-for="kind in ['investment', 'risk'] as const" :key="kind">
             <section v-if="debates[kind].length" class="debate">
               <h3>
@@ -323,7 +378,9 @@ async function rerun() {
   border-left-color: #d03050;
 }
 
-.debate__turn--judge {
+.debate__turn--judge,
+.debate__turn--research_judge,
+.debate__turn--risk_judge {
   border-left-color: #2080f0;
 }
 
