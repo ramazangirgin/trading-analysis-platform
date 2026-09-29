@@ -1,0 +1,513 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:18080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/api/analyses": {
+      "get": {
+        "tags": ["analyses-api-controller"],
+        "operationId": "listAnalyses",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["QUEUED", "RUNNING", "COMPLETED", "STOPPED", "FAILED"]
+            }
+          },
+          {
+            "name": "ticker",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnalysisDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["analyses-api-controller"],
+        "operationId": "startAnalysis",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartAnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyses/{id}/stop": {
+      "post": {
+        "tags": ["analyses-api-controller"],
+        "operationId": "stopAnalysis",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyses/{id}/rerun": {
+      "post": {
+        "tags": ["analyses-api-controller"],
+        "operationId": "rerunAnalysis",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalog": {
+      "get": {
+        "tags": ["catalog-api-controller"],
+        "operationId": "getCatalog",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyses/{id}": {
+      "get": {
+        "tags": ["analyses-api-controller"],
+        "operationId": "getAnalysis",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyses/{id}/events": {
+      "get": {
+        "tags": ["analyses-api-controller"],
+        "operationId": "streamEvents",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEmitter"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StartAnalysisRequest": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tradeDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": ["STOCK", "CRYPTO"]
+          },
+          "analysts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["MARKET", "SOCIAL", "NEWS", "FUNDAMENTALS"]
+            },
+            "minItems": 1
+          },
+          "llmProvider": {
+            "type": "string",
+            "minLength": 1
+          },
+          "deepThinkLlm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quickThinkLlm": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxDebateRounds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxRiskDiscussRounds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outputLanguage": {
+            "type": "string"
+          },
+          "checkpointEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "analysts",
+          "deepThinkLlm",
+          "llmProvider",
+          "quickThinkLlm",
+          "ticker",
+          "tradeDate"
+        ]
+      },
+      "AnalysisDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/AnalysisSpecDto"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["QUEUED", "RUNNING", "COMPLETED", "STOPPED", "FAILED"]
+          },
+          "source": {
+            "type": "string",
+            "enum": ["PLATFORM", "EXTERNAL"]
+          },
+          "rating": {
+            "type": "string",
+            "enum": ["BUY", "OVERWEIGHT", "HOLD", "UNDERWEIGHT", "SELL", "REVIEW"]
+          },
+          "decision": {
+            "type": "string"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/RunStatsDto"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "errorMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "AnalysisSpecDto": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string"
+          },
+          "tradeDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "assetType": {
+            "type": "string",
+            "enum": ["STOCK", "CRYPTO"]
+          },
+          "analysts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["MARKET", "SOCIAL", "NEWS", "FUNDAMENTALS"]
+            }
+          },
+          "llmProvider": {
+            "type": "string"
+          },
+          "deepThinkLlm": {
+            "type": "string"
+          },
+          "quickThinkLlm": {
+            "type": "string"
+          },
+          "maxDebateRounds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maxRiskDiscussRounds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outputLanguage": {
+            "type": "string"
+          },
+          "checkpointEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RunStatsDto": {
+        "type": "object",
+        "properties": {
+          "llmCalls": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "toolCalls": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tokensIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tokensOut": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "costUsd": {
+            "type": "number"
+          },
+          "elapsedMs": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AnalystOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agent": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogDto": {
+        "type": "object",
+        "properties": {
+          "upstreamVersion": {
+            "type": "string"
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/ModelDefaultsDto"
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderDto"
+            }
+          },
+          "analysts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalystOptionDto"
+            }
+          },
+          "assetTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ModelDefaultsDto": {
+        "type": "object",
+        "properties": {
+          "llmProvider": {
+            "type": "string"
+          },
+          "deepThinkLlm": {
+            "type": "string"
+          },
+          "quickThinkLlm": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "ProviderDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "apiKeyEnv": {
+            "type": "string"
+          },
+          "customModelAllowed": {
+            "type": "boolean"
+          },
+          "quickModels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelOptionDto"
+            }
+          },
+          "deepModels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelOptionDto"
+            }
+          }
+        }
+      },
+      "SseEmitter": {
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    }
+  }
+}

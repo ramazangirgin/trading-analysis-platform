@@ -4,17 +4,164 @@
     "language": "Language"
   },
   "nav": {
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "analyses": "Analyses",
+    "newAnalysis": "New analysis"
   },
-  "home": {
-    "heading": "Welcome",
-    "intro": "The platform skeleton is running. Starting analyses, the live stream and reports come in the next phases.",
-    "backend": "Backend status",
-    "status": {
-      "checking": "Checking…",
-      "up": "Up",
-      "down": "Unreachable"
-    }
+  "common": {
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "none": "—",
+    "retry": "Retry",
+    "back": "Back"
+  },
+  "status": {
+    "QUEUED": "Queued",
+    "RUNNING": "Running",
+    "COMPLETED": "Completed",
+    "STOPPED": "Stopped",
+    "FAILED": "Failed"
+  },
+  "rating": {
+    "BUY": "Buy",
+    "OVERWEIGHT": "Overweight",
+    "HOLD": "Hold",
+    "UNDERWEIGHT": "Underweight",
+    "SELL": "Sell",
+    "REVIEW": "Review"
+  },
+  "agentStatus": {
+    "pending": "Pending",
+    "in_progress": "Running",
+    "completed": "Done",
+    "error": "Error"
+  },
+  "agents": {
+    "market_analyst": "Market Analyst",
+    "sentiment_analyst": "Sentiment Analyst",
+    "news_analyst": "News Analyst",
+    "fundamentals_analyst": "Fundamentals Analyst",
+    "bull_researcher": "Bull Researcher",
+    "bear_researcher": "Bear Researcher",
+    "research_manager": "Research Manager",
+    "trader": "Trader",
+    "aggressive_analyst": "Aggressive Analyst",
+    "conservative_analyst": "Conservative Analyst",
+    "neutral_analyst": "Neutral Analyst",
+    "portfolio_manager": "Portfolio Manager"
+  },
+  "analysts": {
+    "MARKET": "Market",
+    "SOCIAL": "Sentiment (social media)",
+    "NEWS": "News",
+    "FUNDAMENTALS": "Fundamentals"
+  },
+  "stages": {
+    "analysts": "Analysts",
+    "research": "Research debate",
+    "trading": "Trader",
+    "risk": "Risk debate",
+    "portfolio": "Portfolio"
+  },
+  "sections": {
+    "market_report": "Market report",
+    "sentiment_report": "Sentiment report",
+    "news_report": "News report",
+    "fundamentals_report": "Fundamentals report",
+    "investment_plan": "Investment plan",
+    "trader_investment_plan": "Trader plan",
+    "final_trade_decision": "Final decision"
+  },
+  "speakers": {
+    "bull": "Bull",
+    "bear": "Bear",
+    "judge": "Judge",
+    "aggressive": "Aggressive",
+    "conservative": "Conservative",
+    "neutral": "Neutral"
+  },
+  "dashboard": {
+    "active": "Active analyses",
+    "noActive": "No analysis is running right now.",
+    "recent": "Recent decisions",
+    "noRecent": "No completed analysis yet.",
+    "start": "Start a new analysis"
+  },
+  "runs": {
+    "title": "Analyses",
+    "ticker": "Ticker",
+    "tradeDate": "Date",
+    "status": "Status",
+    "rating": "Decision",
+    "model": "Model",
+    "created": "Started",
+    "duration": "Duration",
+    "filterTicker": "Filter by ticker",
+    "filterStatus": "Status",
+    "empty": "No analyses yet."
+  },
+  "form": {
+    "title": "New analysis",
+    "ticker": "Ticker",
+    "tickerPlaceholder": "e.g. NVDA, THYAO.IS, BTC-USD",
+    "tradeDate": "Analysis date",
+    "assetType": "Asset type",
+    "stock": "Stock",
+    "crypto": "Crypto",
+    "analysts": "Analysts",
+    "provider": "Provider",
+    "deepModel": "Deep-thinking model",
+    "quickModel": "Quick-thinking model",
+    "customModelHint": "You can type a model id that is not listed",
+    "debateRounds": "Research debate rounds",
+    "riskRounds": "Risk debate rounds",
+    "outputLanguage": "Report language",
+    "outputLanguageNote": "Agents debate internally in English; reports and the decision are written in this language.",
+    "checkpoint": "Resume where it left off (checkpoint)",
+    "submit": "Start analysis",
+    "catalogUnavailable": "Could not load the model list. Is ta-runner installed?",
+    "noKeyHint": "This provider needs its key ({env}) set."
+  },
+  "detail": {
+    "stop": "Stop",
+    "rerun": "Run again",
+    "stopConfirm": "Stop this analysis?",
+    "pipeline": "Pipeline",
+    "feed": "Live feed",
+    "reports": "Reports",
+    "debates": "Debates",
+    "stats": "Stats",
+    "decision": "Decision",
+    "noReports": "No reports yet.",
+    "noDebates": "No debate yet.",
+    "noFeed": "No events yet.",
+    "waiting": "Waiting for events…",
+    "reconnecting": "Connection lost, reconnecting…",
+    "llmCalls": "LLM calls",
+    "toolCalls": "Tool calls",
+    "tokensIn": "Tokens in",
+    "tokensOut": "Tokens out",
+    "cost": "Cost",
+    "elapsed": "Elapsed",
+    "failed": "The analysis failed",
+    "spec": "Settings",
+    "round": "Round {round}",
+    "investmentDebate": "Research debate",
+    "riskDebate": "Risk debate"
+  },
+  "errors": {
+    "invalid_spec": "Invalid value: {field}",
+    "invalid_request": "Missing or invalid field: {field}",
+    "already_running": "An analysis for {ticker} on {tradeDate} is already running.",
+    "not_found": "Analysis not found.",
+    "not_running": "The analysis is not running.",
+    "catalog_unavailable": "Could not load the model list.",
+    "network_error": "Cannot reach the server.",
+    "unexpected_error": "Something unexpected went wrong.",
+    "runner_error": "Error during the analysis",
+    "runner_died": "ta-runner exited unexpectedly",
+    "runner_start_failed": "ta-runner could not be started",
+    "platform_restarted": "The platform restarted while this analysis was running"
   },
   "notFound": {
     "heading": "Page not found",

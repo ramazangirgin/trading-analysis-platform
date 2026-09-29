@@ -35,6 +35,11 @@ watchEffect(() => {
       <NLayout class="app">
         <NLayoutHeader bordered class="app__header">
           <RouterLink to="/" class="app__brand">{{ t('app.title') }}</RouterLink>
+          <nav class="app__nav">
+            <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
+            <RouterLink :to="{ name: 'analyses' }">{{ t('nav.analyses') }}</RouterLink>
+            <RouterLink :to="{ name: 'new-analysis' }">{{ t('nav.newAnalysis') }}</RouterLink>
+          </nav>
           <LocaleSwitcher />
         </NLayoutHeader>
         <NLayoutContent class="app__content">
@@ -66,6 +71,24 @@ body {
   font-weight: 600;
   color: inherit;
   text-decoration: none;
+}
+
+.app__nav {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.app__nav a {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.75;
+}
+
+.app__nav a.router-link-exact-active {
+  opacity: 1;
+  font-weight: 600;
 }
 
 .app__content {

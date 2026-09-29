@@ -1,29 +1,48 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { NCard, NSpace, NTag, NText } from 'naive-ui'
-import { fetchBackendStatus, type BackendStatus } from '@/api/health'
+import { computed, ref } from 'vue'
+import { NAlert, NButton, NCard, NEmpty, NSpace } from 'naive-ui'
+import { ACTIVE_STATUSES, api, type Analysis } from '@/api/client'
+import AnalysisTable from '@/components/AnalysisTable.vue'
+import { useLabels } from '@/composables/useLabels'
+import { usePolling } from '@/composables/usePolling'
 
-const { t } = useI18n()
-const status = ref<BackendStatus | 'checking'>('checking')
-const controller = new AbortController()
+const { t, error: errorLabel } = useLabels()
+const analyses = ref<Analysis[]>([])
+const loading = ref(true)
+const failure = ref<unknown>(null)
 
-onMounted(async () => {
-  status.value = await fetchBackendStatus(controller.signal)
-})
-onBeforeUnmount(() => controller.abort())
+const active = computed(() => analyses.value.filter((a) => ACTIVE_STATUSES.includes(a.status)))
+const recent = computed(() => analyses.value.filter((a) => a.status === 'COMPLETED').slice(0, 8))
 
-const tagType = { checking: 'default', up: 'success', down: 'error' } as const
+async function refresh() {
+  try {
+    analyses.value = await api.listAnalyses()
+    failure.value = null
+  } catch (e) {
+    failure.value = e
+  } finally {
+    loading.value = false
+  }
+}
+
+usePolling(refresh, () => active.value.length > 0 || failure.value !== null)
 </script>
 
 <template>
-  <NCard :title="t('home.heading')">
-    <NSpace vertical>
-      <NText>{{ t('home.intro') }}</NText>
-      <NSpace align="center">
-        <NText depth="3">{{ t('home.backend') }}</NText>
-        <NTag :type="tagType[status]" size="small" round>{{ t(`home.status.${status}`) }}</NTag>
-      </NSpace>
-    </NSpace>
-  </NCard>
+  <NSpace vertical :size="16">
+    <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
+    <NCard :title="t('dashboard.active')">
+      <template #header-extra>
+        <RouterLink :to="{ name: 'new-analysis' }" custom v-slot="{ navigate }">
+          <NButton type="primary" @click="navigate">{{ t('dashboard.start') }}</NButton>
+        </RouterLink>
+      </template>
+      <AnalysisTable v-if="active.length" :analyses="active" compact />
+      <NEmpty v-else-if="!loading" :description="t('dashboard.noActive')" />
+    </NCard>
+    <NCard :title="t('dashboard.recent')">
+      <AnalysisTable v-if="recent.length" :analyses="recent" compact />
+      <NEmpty v-else-if="!loading" :description="t('dashboard.noRecent')" />
+    </NCard>
+  </NSpace>
 </template>

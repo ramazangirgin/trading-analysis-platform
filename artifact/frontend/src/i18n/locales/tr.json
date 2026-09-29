@@ -4,17 +4,164 @@
     "language": "Dil"
   },
   "nav": {
-    "dashboard": "Gösterge Paneli"
+    "dashboard": "Gösterge Paneli",
+    "analyses": "Analizler",
+    "newAnalysis": "Yeni analiz"
   },
-  "home": {
-    "heading": "Hoş geldiniz",
-    "intro": "Platform iskeleti çalışıyor. Analiz başlatma, canlı akış ve raporlar sonraki aşamalarda eklenecek.",
-    "backend": "Backend durumu",
-    "status": {
-      "checking": "Kontrol ediliyor…",
-      "up": "Çalışıyor",
-      "down": "Ulaşılamıyor"
-    }
+  "common": {
+    "refresh": "Yenile",
+    "loading": "Yükleniyor…",
+    "none": "—",
+    "retry": "Tekrar dene",
+    "back": "Geri"
+  },
+  "status": {
+    "QUEUED": "Sırada",
+    "RUNNING": "Çalışıyor",
+    "COMPLETED": "Tamamlandı",
+    "STOPPED": "Durduruldu",
+    "FAILED": "Başarısız"
+  },
+  "rating": {
+    "BUY": "Al",
+    "OVERWEIGHT": "Ağırlık Artır",
+    "HOLD": "Tut",
+    "UNDERWEIGHT": "Ağırlık Azalt",
+    "SELL": "Sat",
+    "REVIEW": "İncele"
+  },
+  "agentStatus": {
+    "pending": "Bekliyor",
+    "in_progress": "Çalışıyor",
+    "completed": "Tamamlandı",
+    "error": "Hata"
+  },
+  "agents": {
+    "market_analyst": "Piyasa Analisti",
+    "sentiment_analyst": "Duyarlılık Analisti",
+    "news_analyst": "Haber Analisti",
+    "fundamentals_analyst": "Temel Analiz Analisti",
+    "bull_researcher": "Boğa Araştırmacı",
+    "bear_researcher": "Ayı Araştırmacı",
+    "research_manager": "Araştırma Yöneticisi",
+    "trader": "Trader",
+    "aggressive_analyst": "Agresif Risk Analisti",
+    "conservative_analyst": "Muhafazakâr Risk Analisti",
+    "neutral_analyst": "Nötr Risk Analisti",
+    "portfolio_manager": "Portföy Yöneticisi"
+  },
+  "analysts": {
+    "MARKET": "Piyasa",
+    "SOCIAL": "Duyarlılık (sosyal medya)",
+    "NEWS": "Haberler",
+    "FUNDAMENTALS": "Temel analiz"
+  },
+  "stages": {
+    "analysts": "Analistler",
+    "research": "Araştırma tartışması",
+    "trading": "Trader",
+    "risk": "Risk tartışması",
+    "portfolio": "Portföy"
+  },
+  "sections": {
+    "market_report": "Piyasa raporu",
+    "sentiment_report": "Duyarlılık raporu",
+    "news_report": "Haber raporu",
+    "fundamentals_report": "Temel analiz raporu",
+    "investment_plan": "Yatırım planı",
+    "trader_investment_plan": "Trader planı",
+    "final_trade_decision": "Nihai karar"
+  },
+  "speakers": {
+    "bull": "Boğa",
+    "bear": "Ayı",
+    "judge": "Hakem",
+    "aggressive": "Agresif",
+    "conservative": "Muhafazakâr",
+    "neutral": "Nötr"
+  },
+  "dashboard": {
+    "active": "Aktif analizler",
+    "noActive": "Şu anda çalışan analiz yok.",
+    "recent": "Son kararlar",
+    "noRecent": "Henüz tamamlanmış analiz yok.",
+    "start": "Yeni analiz başlat"
+  },
+  "runs": {
+    "title": "Analizler",
+    "ticker": "Sembol",
+    "tradeDate": "Tarih",
+    "status": "Durum",
+    "rating": "Karar",
+    "model": "Model",
+    "created": "Başlatıldı",
+    "duration": "Süre",
+    "filterTicker": "Sembole göre filtrele",
+    "filterStatus": "Durum",
+    "empty": "Henüz analiz yok."
+  },
+  "form": {
+    "title": "Yeni analiz",
+    "ticker": "Sembol",
+    "tickerPlaceholder": "ör. NVDA, THYAO.IS, BTC-USD",
+    "tradeDate": "Analiz tarihi",
+    "assetType": "Varlık türü",
+    "stock": "Hisse",
+    "crypto": "Kripto",
+    "analysts": "Analistler",
+    "provider": "Sağlayıcı",
+    "deepModel": "Derin düşünme modeli",
+    "quickModel": "Hızlı düşünme modeli",
+    "customModelHint": "Listede olmayan bir model adı yazabilirsiniz",
+    "debateRounds": "Araştırma tartışma turu",
+    "riskRounds": "Risk tartışma turu",
+    "outputLanguage": "Rapor dili",
+    "outputLanguageNote": "Ajanların iç tartışmaları İngilizce yürür; raporlar ve karar bu dilde yazılır.",
+    "checkpoint": "Kaldığı yerden devam (checkpoint)",
+    "submit": "Analizi başlat",
+    "catalogUnavailable": "Model listesi alınamadı. ta-runner kurulu mu?",
+    "noKeyHint": "Bu sağlayıcının anahtarı ({env}) tanımlı olmalı."
+  },
+  "detail": {
+    "stop": "Durdur",
+    "rerun": "Yeniden çalıştır",
+    "stopConfirm": "Analiz durdurulsun mu?",
+    "pipeline": "Akış",
+    "feed": "Canlı akış",
+    "reports": "Raporlar",
+    "debates": "Tartışmalar",
+    "stats": "İstatistikler",
+    "decision": "Karar",
+    "noReports": "Henüz rapor yok.",
+    "noDebates": "Henüz tartışma yok.",
+    "noFeed": "Henüz olay yok.",
+    "waiting": "Olaylar bekleniyor…",
+    "reconnecting": "Bağlantı koptu, yeniden bağlanılıyor…",
+    "llmCalls": "LLM çağrısı",
+    "toolCalls": "Araç çağrısı",
+    "tokensIn": "Girdi token",
+    "tokensOut": "Çıktı token",
+    "cost": "Maliyet",
+    "elapsed": "Geçen süre",
+    "failed": "Analiz başarısız oldu",
+    "spec": "Ayarlar",
+    "round": "Tur {round}",
+    "investmentDebate": "Araştırma tartışması",
+    "riskDebate": "Risk tartışması"
+  },
+  "errors": {
+    "invalid_spec": "Geçersiz değer: {field}",
+    "invalid_request": "Eksik veya hatalı alan: {field}",
+    "already_running": "{ticker} için {tradeDate} tarihli bir analiz zaten çalışıyor.",
+    "not_found": "Analiz bulunamadı.",
+    "not_running": "Analiz çalışmıyor.",
+    "catalog_unavailable": "Model listesi alınamadı.",
+    "network_error": "Sunucuya ulaşılamadı.",
+    "unexpected_error": "Beklenmeyen bir hata oluştu.",
+    "runner_error": "Analiz sırasında hata",
+    "runner_died": "ta-runner beklenmedik şekilde sonlandı",
+    "runner_start_failed": "ta-runner başlatılamadı",
+    "platform_restarted": "Platform yeniden başladığı için analiz yarıda kaldı"
   },
   "notFound": {
     "heading": "Sayfa bulunamadı",

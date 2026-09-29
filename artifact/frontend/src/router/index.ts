@@ -5,6 +5,17 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'dashboard', component: () => import('@/pages/DashboardPage.vue') },
+    { path: '/analyses', name: 'analyses', component: () => import('@/pages/RunsPage.vue') },
+    {
+      path: '/analyses/new',
+      name: 'new-analysis',
+      component: () => import('@/pages/NewAnalysisPage.vue'),
+    },
+    {
+      path: '/analyses/:id',
+      name: 'analysis',
+      component: () => import('@/pages/RunDetailPage.vue'),
+    },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
