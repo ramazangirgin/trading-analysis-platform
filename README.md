@@ -177,3 +177,10 @@ uv run python -m ta_runner run --spec example-spec.json --out /tmp/ta-run
 
 Events stream to stdout as JSONL and are copied to `<out>/events.jsonl`; reports land under
 `~/.tradingagents/logs/<TICKER>/<DATE>/reports/` (override with `TRADINGAGENTS_RESULTS_DIR`).
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE). Copyright 2026 Ramazan Girgin.
+
+[TradingAgents](https://github.com/TauricResearch/TradingAgents), which `ta-runner` installs, is
+also Apache-2.0-licensed and remains under its authors' copyright.
