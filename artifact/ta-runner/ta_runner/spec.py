@@ -7,6 +7,7 @@ deliverable and must not turn a malformed spec into a path or a provider call.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import date
@@ -51,6 +52,18 @@ class RunSpec:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             raise SpecError(f"cannot read spec {path}: {exc}") from exc
+        return cls.from_dict(raw)
+
+    @classmethod
+    def from_env(cls, name: str) -> RunSpec:
+        """The spec as JSON in an environment variable: how a runner container gets it."""
+        text = os.environ.get(name)
+        if not text:
+            raise SpecError(f"environment variable {name} is not set")
+        try:
+            raw = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise SpecError(f"cannot read spec from {name}: {exc}") from exc
         return cls.from_dict(raw)
 
     @classmethod

@@ -1,6 +1,7 @@
 """CLI entry point.
 
     python -m ta_runner run --spec <run_dir>/spec.json --out <run_dir>
+    python -m ta_runner run --spec-env TA_RUNNER_SPEC --out /tmp/run    (in a container)
     python -m ta_runner version
     python -m ta_runner catalog
 
@@ -29,7 +30,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ta-runner")
     commands = parser.add_subparsers(dest="command", required=True)
     run_cmd = commands.add_parser("run", help="run one analysis and stream JSONL events")
-    run_cmd.add_argument("--spec", type=Path, required=True)
+    source = run_cmd.add_mutually_exclusive_group(required=True)
+    source.add_argument("--spec", type=Path, help="spec.json file")
+    source.add_argument(
+        "--spec-env", metavar="NAME", help="environment variable holding the spec JSON"
+    )
     run_cmd.add_argument("--out", type=Path, required=True, help="run directory (events.jsonl)")
     commands.add_parser("version", help="print runner and upstream versions as JSON")
     commands.add_parser("catalog", help="print providers, models and analysts as JSON")
@@ -39,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         return _version()
     if args.command == "catalog":
         return _catalog()
-    return _run(args.spec, args.out)
+    return _run(args.spec, args.spec_env, args.out)
 
 
 def _version() -> int:
@@ -64,12 +69,12 @@ def _catalog() -> int:
     return 0
 
 
-def _run(spec_path: Path, out_dir: Path) -> int:
+def _run(spec_path: Path | None, spec_env: str | None, out_dir: Path) -> int:
     protocol = _claim_stdout()
     _configure_logging()
 
     try:
-        spec = RunSpec.from_file(spec_path)
+        spec = RunSpec.from_env(spec_env) if spec_env else RunSpec.from_file(spec_path)
     except SpecError as exc:
         EventWriter("", protocol).emit(
             "run_finished", status="error", error_type="SpecError", error=str(exc)

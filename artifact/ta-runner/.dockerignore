@@ -1,0 +1,7 @@
+# Allow-list: the image gets the lock file and the runner's code, nothing else. In particular never
+# .env (provider keys), .venv or caches.
+*
+!pyproject.toml
+!uv.lock
+!ta_runner/
+ta_runner/**/__pycache__

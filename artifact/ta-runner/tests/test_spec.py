@@ -73,3 +73,19 @@ def test_reports_unreadable_spec_file(tmp_path):
 
     with pytest.raises(SpecError, match="cannot read spec"):
         RunSpec.from_file(path)
+
+
+def test_reads_the_spec_from_an_environment_variable(monkeypatch, spec_dict):
+    monkeypatch.setenv("TA_RUNNER_SPEC", json.dumps(spec_dict))
+
+    assert RunSpec.from_env("TA_RUNNER_SPEC").run_id == "r_test"
+
+
+def test_a_missing_or_malformed_spec_variable_is_a_spec_error(monkeypatch):
+    monkeypatch.delenv("TA_RUNNER_SPEC", raising=False)
+    with pytest.raises(SpecError, match="not set"):
+        RunSpec.from_env("TA_RUNNER_SPEC")
+
+    monkeypatch.setenv("TA_RUNNER_SPEC", "{ nope")
+    with pytest.raises(SpecError, match="cannot read spec"):
+        RunSpec.from_env("TA_RUNNER_SPEC")
