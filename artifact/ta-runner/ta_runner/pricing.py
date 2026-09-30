@@ -19,6 +19,8 @@ from typing import Any
 log = logging.getLogger(__name__)
 
 OVERRIDE_ENV = "TA_RUNNER_PRICES"
+# The same, as JSON text: how a runner container gets it, having no platform directory mounted.
+OVERRIDE_JSON_ENV = "TA_RUNNER_PRICES_JSON"
 PER_TOKENS = 1_000_000
 
 
@@ -41,17 +43,10 @@ class PriceTable:
             resources.files(__package__).joinpath("prices.json").read_text("utf-8")
         )
         providers = shipped["providers"]
-        path = override or _override_path()
-        if path and path.is_file():
-            try:
-                extra = json.loads(path.read_text("utf-8")).get("providers", {})
-            except (OSError, ValueError) as exc:
-                log.warning("Ignoring unreadable price file %s: %s", path, exc)
-                extra = {}
-            for provider, entry in extra.items():
-                merged = providers.setdefault(provider, {"models": {}, "aliases": {}})
-                merged.setdefault("models", {}).update(entry.get("models", {}))
-                merged.setdefault("aliases", {}).update(entry.get("aliases", {}))
+        for provider, entry in _override(override).items():
+            merged = providers.setdefault(provider, {"models": {}, "aliases": {}})
+            merged.setdefault("models", {}).update(entry.get("models", {}))
+            merged.setdefault("aliases", {}).update(entry.get("aliases", {}))
         return cls(providers)
 
     def cost(self, provider: str, model: str, usage: Usage, at: datetime) -> float | None:
@@ -102,9 +97,26 @@ def _peak_multiplier(peak: dict[str, Any] | None, at: datetime) -> float:
     return 1.0
 
 
-def _override_path() -> Path | None:
-    value = os.environ.get(OVERRIDE_ENV)
-    return Path(value) if value else None
+def _override(path: Path | None) -> dict[str, Any]:
+    """The user's prices: a file (given, or named by TA_RUNNER_PRICES) or TA_RUNNER_PRICES_JSON."""
+    text, origin = None, None
+    inline = os.environ.get(OVERRIDE_JSON_ENV)
+    if path is None and inline:
+        text, origin = inline, OVERRIDE_JSON_ENV
+    else:
+        path = path or (Path(os.environ[OVERRIDE_ENV]) if os.environ.get(OVERRIDE_ENV) else None)
+        if path and path.is_file():
+            try:
+                text, origin = path.read_text("utf-8"), str(path)
+            except OSError as exc:
+                log.warning("Ignoring unreadable price file %s: %s", path, exc)
+    if not text:
+        return {}
+    try:
+        return json.loads(text).get("providers", {})
+    except (ValueError, AttributeError) as exc:
+        log.warning("Ignoring unreadable prices from %s: %s", origin, exc)
+        return {}
 
 
 class CostMeter:

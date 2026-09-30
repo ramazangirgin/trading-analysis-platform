@@ -14,6 +14,7 @@ OFF_PEAK = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
 @pytest.fixture
 def table(monkeypatch):
     monkeypatch.delenv("TA_RUNNER_PRICES", raising=False)
+    monkeypatch.delenv("TA_RUNNER_PRICES_JSON", raising=False)
     return PriceTable.load()
 
 
@@ -93,3 +94,21 @@ def test_a_run_with_an_unpriced_call_has_no_cost(table):
 
     meter.add("gpt-5.6", Usage(10, 10), WEEKEND)
     assert meter.usd is None
+
+
+def test_prices_can_come_as_json_in_the_environment(monkeypatch):
+    monkeypatch.delenv("TA_RUNNER_PRICES", raising=False)
+    monkeypatch.setenv(
+        "TA_RUNNER_PRICES_JSON",
+        json.dumps(
+            {"providers": {"ollama": {"models": {"qwen3:latest": [{"input": 0, "output": 0}]}}}}
+        ),
+    )
+
+    assert PriceTable.load().cost("ollama", "qwen3:latest", Usage(10, 10), WEEKEND) == 0
+
+
+def test_unreadable_override_json_is_ignored(monkeypatch):
+    monkeypatch.setenv("TA_RUNNER_PRICES_JSON", "{ nope")
+
+    assert PriceTable.load().cost("openai", "gpt-5.5", Usage(1_000_000, 0), WEEKEND) == 5.0
