@@ -1,6 +1,6 @@
 # TradingAgents Platform — Detailed Plan
 
-> Status: **v0.14** (2026-09-30) · Phase 0, Phase 1 and the known issues in §6a done (one browser check left, KI-2). Next: Phase 2.
+> Status: **v0.15** (2026-09-30) · Phase 0, Phase 1 and §6a done; Phase 2: imports, watcher, restart reconciliation, cost, reports/export/presets and Docker packaging done. Next: Testcontainers (PostgreSQL) for the DB tests, then auth, settings/health wizard.
 
 ### Decisions
 | # | Topic | Decision |
@@ -17,6 +17,7 @@
 | D10 | Dependency boundary | ✅ Platform (backend + frontend) has **no dependency on TradingAgents code**; only the separately installed `ta-runner` imports it (§3.2) |
 | D11 | Backend stack & structure | ✅ Java + Spring Boot, following [job-radar](https://github.com/ramazangirgin/job-radar): **a modular monolith with a backend-for-frontend (BFF) in front and hexagonal domains behind it. All code lives under `tr.girgin.backend.trading.analysis.platform`** (§3.4) |
 | D12 | Packaging | ✅ Frontend and backend ship as **one artifact / one container**: the Vue build is bundled into the Spring Boot jar and served by it. Code lives in `artifact/backend` and `artifact/frontend`; `artifact/ta-runner` is the third, separate artifact (§3.9) |
+| D13 | Database in Docker | ✅ The Docker Compose setup always uses **PostgreSQL** (`postgres:18.6`, the newest release), with its data in a folder on the host (`${PLATFORM_DATA}/postgres`), so restarts and `down`/`up` keep it. Native runs keep SQLite. Tests of DB code move to PostgreSQL in Testcontainers (next step) |
 
 ## 1. Goals and Scope
 
@@ -445,8 +446,17 @@ Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrup
 - [x] Import `runs.json` and `reports/*_deep_*.md` (2026-09-30): a completed history run adds its models, usage and times to its ticker/date's report record; a failed or stopped one becomes its own EXTERNAL record with the error; a deep report is a "Deep analysis" section of its ticker/date's report. Records are keyed by `external_ref`, so rescans stay idempotent
 - [x] Data dir `WatchService` (2026-09-30): the results tree, `runs.json` and `reports/` are watched (not the cache); a burst of changes triggers one import after 5 s of quiet (at most 60 s after the first change). A report without a decision changed in the last 10 min is held back as possibly still running and looked at again once settled. On macOS the JDK polls, so a new run shows up within ~5-10 s. Properties: `platform.import.watch.{enabled,quiet-period-ms,max-delay-seconds}`, `platform.import.settle-minutes`
 - [x] LLM cost per run (`cost_usd`, 2026-09-30): `ta_runner/prices.json` seeded from the official pages of DeepSeek, OpenAI, Anthropic and Google (peak hours, dated changes, long-context tiers, cached input); each call is priced by the model it asked for; `${platform.home}/prices.json` overrides per model; an unpriced model leaves the run's cost null
-- [ ] `artifact/ta-runner/Dockerfile` (upstream image as base), `DockerRunnerAdapter` (D8), docker-socket-proxy, resource limits and security flags, label-based orphan container reconciliation
-- [ ] `deploy/Dockerfile` (single platform image: backend + UI), PostgreSQL profile, `deploy/docker-compose.yml` (platform + docker-socket-proxy; optional Caddy for TLS)
+- [x] `artifact/ta-runner/Dockerfile`, `DockerRunnerAdapter` (D8), docker-socket-proxy, resource limits and security flags, label-based orphan container reconciliation (2026-09-30)
+  - Base: upstream publishes no image, only a Dockerfile on `python:3.12-slim`; the runner image uses that base and installs the upstream release pinned by `uv.lock` (upstream code untouched). Allow-list build context (the runner's `.env` never gets in).
+  - The spec goes in as `TA_RUNNER_SPEC` (`run --spec-env`), the user's prices as `TA_RUNNER_PRICES_JSON`; no platform folder is mounted, only the TradingAgents data dir. Events come back on stdout; the adapter writes `events.jsonl` (file first) and `run.log`, and reopens the log stream from the last timestamp when it breaks.
+  - Containers: read-only root + tmpfs `/tmp`, `--cap-drop ALL`, no-new-privileges, 2 GB / 2 CPUs, non-root, only the configured image; label `ta.platform.run_id`; removed only after their exit is recorded, so `reattach` after a restart follows a running container or reads the outcome of one that ended meanwhile; exited leftovers are removed.
+  - The catalog and runner health check run `ta-runner catalog/version` in a short-lived container. Podman answers a missing container with 500 instead of 404; both count as gone. `platform.runner=process|docker` picks the adapters.
+- [x] `deploy/Dockerfile` (single platform image: backend + UI), PostgreSQL profile, `deploy/docker-compose.yml` (2026-09-30)
+  - Platform image: the jar on `eclipse-temurin:25-jre-noble`, non-root; `mise run docker-build` builds both images.
+  - PostgreSQL (D13): `postgres` profile; `V4_1` (PostgreSQL only) widens `cost_usd` to double precision and the counters to bigint, which SQLite stores as 8 bytes anyway.
+  - Compose: init step (folder owners), postgres, docker-socket-proxy v0.5.0 (`CONTAINERS`, `POST`, `ALLOW_START`, `ALLOW_STOP` only), platform on 127.0.0.1. All data under `PLATFORM_DATA`. `:z` on bind mounts and the SELinux shared label on the runner's data mount (Podman machines and Fedora/RHEL enforce SELinux). Verified with Podman 5.8 and Compose v5.5.1: stack up, health UP, an analysis container started and removed through the proxy, data kept across a PostgreSQL restart and `down`/`up`.
+  - Not done: Caddy for TLS (comes with auth); images in a registry.
+- [ ] Testcontainers with PostgreSQL (`postgres:18.6`, Testcontainers 2.0.5) for the tests of DB code (repository adapters, integration tests), replacing SQLite there
 - [x] Finding/reconciling orphaned runs on backend restart (2026-09-30, process runner): `runner_ref` is stored when a run starts; on startup a RUNNING run's recorded events are replayed first (a run that ended while the platform was down gets its real outcome), a runner still alive is followed again through its `events.jsonl` (live view and stop work again), one that is gone is failed with `platform_restarted`; QUEUED runs are queued again in order. `ta-runner` keeps writing `events.jsonl` when its stdout breaks. The Docker adapter needs the same `reattach` by container id
 - [x] Reports page (3 panes), export md/html/pdf, rerun, presets UI (2026-09-30): `/reports` = index (one entry per ticker/date, the newest finished analysis) / contents (sections and their h1-h3, debates) / reader, folding to one column on phones; export is built in the browser from the same sanitized, localized rendering (Markdown, standalone HTML, PDF through the print dialog), not in the backend; presets can be renamed and deleted in Settings; rerun was already on Run Detail
 - [ ] Single-user auth (D6): Spring Security, password from config → session cookie; mandatory when exposed beyond localhost, optional on localhost

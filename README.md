@@ -11,6 +11,11 @@ roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner cont
 |---|---|---|
 | Platform (backend + UI, one jar) | `artifact/backend`, `artifact/frontend` | Java 25, Spring Boot 4.1 · Vue 3.5, Vite, Naive UI |
 | Runner (installed into the TradingAgents runtime) | `artifact/ta-runner` | Python 3.12, uv, TradingAgents `v0.5.1` |
+| Docker images and Compose setup | `deploy/`, `artifact/ta-runner/Dockerfile` | Temurin 25 JRE · PostgreSQL 18 · docker-socket-proxy |
+
+Two ways to run it: on your machine with `mise run run` ([Quick start](#quick-start)), or with
+Docker Compose, where each analysis runs in its own container and the data is kept in PostgreSQL
+([Run with Docker Compose](#run-with-docker-compose)).
 
 ## Quick start
 
@@ -141,6 +146,64 @@ folds into one column, with the list as a picker and the contents folded above t
 The UI is in English. Reports are written in the language chosen in the New Analysis form's
 "Report language" field; the analysis page shows it as a tag.
 
+## Run with Docker Compose
+
+For a server (or any machine with Docker or Podman): the platform, PostgreSQL and a socket proxy
+run as containers, and every analysis runs in a container of its own that is removed afterwards.
+
+```
+browser ──▶ 127.0.0.1:8080 ──▶ platform ──▶ postgres
+                                  │
+                                  └──▶ docker-socket-proxy ──▶ Docker / Podman engine
+                                                                  │  one per analysis
+                                                                  ▼
+                                                          ta-runner container
+```
+
+**Needs:** Docker with Compose v2, or Podman with `docker compose` pointed at its socket; and
+[mise](https://mise.jdx.dev/) to build the images.
+
+```sh
+cp deploy/.env.example deploy/.env      # set PLATFORM_DATA and POSTGRES_PASSWORD
+mise run docker-build                   # builds trading-analysis-platform:0.0.1 and ta-runner:0.1.0
+docker compose -f deploy/docker-compose.yml up -d
+```
+
+Open **http://127.0.0.1:8080** (or the `PLATFORM_PORT` you set) and add an API key under
+**Settings**, as in the [Quick start](#3-add-an-api-key). `docker compose -f deploy/docker-compose.yml
+down` stops everything; `up -d` brings it back with all data.
+
+**Data** stays on the machine, in the folder named by `PLATFORM_DATA` (an absolute path):
+
+| Folder | What |
+|---|---|
+| `postgres/` | The database: analyses and presets. Survives restarts, `down` and image updates. |
+| `platform/` | `secrets.env` (API keys, owner-only), `runs/<id>/` (events and runner logs), optional `prices.json` |
+| `tradingagents/` | TradingAgents' reports, price cache and memory log, written by the analysis containers |
+
+Back up the whole folder; for the database alone, `docker compose -f deploy/docker-compose.yml exec
+postgres pg_dump -U platform platform > platform.sql`.
+
+**How analyses run:** the platform asks the engine, through docker-socket-proxy, for one
+`ta-runner` container per analysis: read-only root filesystem, no Linux capabilities, a non-root
+user, 2 GB of memory and 2 CPUs, and only the `tradingagents/` folder mounted. The proxy lets the
+platform create, start, stop and remove containers and nothing else (no `exec`, images, volumes or
+networks). If the platform restarts during an analysis, the container keeps running and the
+platform picks it up again.
+
+**Notes**
+
+- **SELinux** (Fedora, RHEL, Podman machines): the Compose file labels its folders with `:z`, and
+  the proxy runs without SELinux labelling so it can reach the socket.
+- **Podman on macOS:** `PLATFORM_DATA` must be a folder the Podman machine can see. A machine
+  created without `--volume` shares no macOS folders; use a path inside the machine (e.g.
+  `/var/home/core/trading-analysis-platform`) or recreate it with `podman machine init --volume
+  $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
+  rootful one).
+- **Exposing it beyond localhost** needs authentication and HTTPS first (planned, see
+  [PLAN.md](PLAN.md) §7); the port is published on 127.0.0.1 only.
+- The first start takes about a minute (longer under Podman's VM on macOS).
+
 ## Where things live
 
 
@@ -151,7 +214,8 @@ The UI is in English. Reports are written in the language chosen in the New Anal
 | `~/.tradingagents-platform/prices.json` | Optional: your own LLM prices, over the ones ta-runner ships (see below) |
 | `~/.tradingagents/logs/` | TradingAgents' own reports, shared with its CLI; runs found here are imported (read-only) |
 
-Override with `PLATFORM_HOME`, `TRADINGAGENTS_HOME` or `TRADINGAGENTS_RESULTS_DIR`.
+Override with `PLATFORM_HOME`, `TRADINGAGENTS_HOME` or `TRADINGAGENTS_RESULTS_DIR`. With Docker
+Compose everything is under `PLATFORM_DATA` instead ([Run with Docker Compose](#run-with-docker-compose)).
 
 ### LLM prices
 
@@ -198,6 +262,7 @@ mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when s
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner tests and lint only
 mise run api-types     # refresh the frontend's API types from the running backend
+mise run docker-build  # the platform and ta-runner Docker images
 ```
 
 `mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
@@ -226,6 +291,21 @@ uv run python -m ta_runner run --spec example-spec.json --out /tmp/ta-run
 
 Events stream to stdout as JSONL and are copied to `<out>/events.jsonl`; reports land under
 `~/.tradingagents/logs/<TICKER>/<DATE>/reports/` (override with `TRADINGAGENTS_RESULTS_DIR`).
+
+In a container the spec comes from an environment variable instead of a file:
+
+```sh
+docker run --rm -e TA_RUNNER_SPEC="$(cat example-spec.json)" -e OPENAI_API_KEY \
+  ta-runner:0.1.0 run --spec-env TA_RUNNER_SPEC --out /tmp/run
+```
+
+### Testing the Docker runner
+
+`DockerRunnerAdapterTest` and `DockerEngineInfoAdapterTest` run against a real engine at
+`DOCKER_HOST` (Docker, or Podman's socket) and are skipped when there is none; the latter also
+needs the `ta-runner:0.1.0` image. To run the platform on your machine with the Docker runner
+instead of the local venv: `PLATFORM_RUNNER=docker mise run run` (with a `tradingagents-data`
+volume, or `TA_RUNNER_DATA_MOUNT` set to a folder the engine can mount).
 
 ## License
 
