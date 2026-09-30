@@ -287,7 +287,7 @@ Rules:
 ### 3.7 Language policy (D5)
 - **UI strings:** `artifact/frontend/src/i18n/locales/{en,tr}.json`, English by default.
 - **Analysis output language is a separate setting:** `output_language` (upstream config) in the New Analysis form defaults to the UI language (TR → `Turkish`) but can be changed per run. Upstream keeps internal debates in English; show this as a note in the UI.
-- **Fixed labels are translated:** agent names (Market Analyst → Piyasa Analisti), stages, ratings (Buy → Al, Overweight → Ağırlık Artır, Hold → Tut, Underweight → Ağırlık Azalt, Sell → Sat, REVIEW → İncele). Raw values stay in English in the DB; translation happens only at display time.
+- **Fixed labels are translated:** agent names, stages and ratings (Buy, Overweight, Hold, Underweight, Sell, REVIEW) have Turkish labels in `i18n/locales/tr.json`. Raw values stay in English in the DB; translation happens only at display time.
 - The backend returns an `error_code` + parameters; the frontend translates the text.
 
 ### 3.8 Frontend (Vue 3.5 + Vite 8 + TypeScript)
@@ -468,17 +468,17 @@ Reported by the user after Phase 1, in this order of priority. Each item says wh
 and where to start. Mark items ✅ here when done.
 
 ### KI-1 UI language switch is wrong — ✅ fixed (commit `2a08ee4`)
-- **Symptoms (user):** with Türkçe selected the UI looks as if English were selected; with English
+- **Symptoms (user):** with Turkish selected the UI looks as if English were selected; with English
   selected some texts stay Turkish.
 - **Reproduced 2026-09-29:** the switcher itself works — header, pages,
   tables, Naive UI strings and the title all follow it and survive a reload. What did not follow:
-  - ✅ New Analysis "Rapor dili" stayed at the language of page load → now follows the UI language
+  - ✅ New Analysis "Report language" stayed at the language of page load → now follows the UI language
     until the viewer (or a preset) picks another one.
   - ✅ Report-language option names were fixed English ("Turkish", "German"…) → `languages.*` keys.
-  - ✅ Durations were "20m 1s" in Turkish too → `common.duration*` keys ("20 dk 1 sn").
+  - ✅ Durations were written the English way ("20m 1s") in the Turkish UI too → `common.duration*` keys.
   - ✅ `setLocale()` in `i18n/index.ts` + `i18n/index.spec.ts` cover the switch and reload.
   - ✅ Report/decision text stays in the run's output language, not the UI language — **by design**
-    (user decision, option (a)). The run page header now shows a "Rapor dili: …" tag (blue when it
+    (user decision, option (a)). The run page header now shows a "Report language: …" tag (blue when it
     differs from the UI language, tooltip explains why). Imported runs are recorded as "English"
     (`Analysis.java`), so the tag reads their language from the decision text
     (`reportLanguage()` in `domain/reportLanguage.ts`); locally 5 of 7 runs are Turkish, 2 English.
@@ -489,12 +489,12 @@ and where to start. Mark items ✅ here when done.
     global vue-i18n composer (`legacy: false`); whether `useI18n()` returns the global scope there.
   - `artifact/frontend/src/i18n/index.ts`: initial locale from `localStorage['tap.locale']`, fallback `tr` (now `en`).
   - Texts that do not go through i18n: Naive UI's own strings (`NConfigProvider :locale/:date-locale`
-    in `App.vue`), `document.title`, the New Analysis "Rapor dili" default (`outputLanguage` is set
+    in `App.vue`), `document.title`, the New Analysis "Report language" default (`outputLanguage` is set
     once from the UI locale at form creation and does not follow later switches), LLM-written text
     (always in the run's output language, by design), agent names in the live feed.
 - **How to reproduce:** `mise run dev`, open http://localhost:5173,
-  switch the language in the header on each page (Dashboard, Analizler, Yeni analiz, a run's page,
-  Ayarlar) and list every text that does not follow.
+  switch the language in the header on each page (Dashboard, Analyses, New analysis, a run's page,
+  Settings) and list every text that does not follow.
 - **Done when:** every platform-owned text follows the switch on every page, the choice survives a
   reload, and a test covers the switcher.
 
@@ -508,13 +508,13 @@ and where to start. Mark items ✅ here when done.
 - **Fix:** `artifact/frontend/src/domain/reportLanguage.ts` translates these at display time (files on
   disk unchanged, PLAN §3.7), applied by `MarkdownView` with the run's `outputLanguage`; imported runs
   (recorded as "English") are detected by Turkish letters.
-- **Left to check:** Run Detail of a Turkish run and an imported one (decision card, Raporlar,
-  Tartışmalar); English runs must be unchanged. The live feed (`Canlı akış`) still shows tool output
+- **Left to check:** Run Detail of a Turkish run and an imported one (decision card, Reports,
+  Debates); English runs must be unchanged. The live feed still shows tool output
   in English — that is market data, not report text; decide with the user whether to leave it.
 
 ### KI-3 Pipeline should look like the diagrams in the TradingAgents README — ✅ done
 - **Today:** `artifact/frontend/src/components/AgentPipeline.vue` shows five columns of tags
-  ("Piyasa Analisti · Çalışıyor"), which the user finds too plain.
+  ("Market Analyst · Running"), which the user finds too plain.
 - **Wanted:** a visual flow like https://github.com/TauricResearch/TradingAgents (schema images):
   Analyst Team → Researcher Team (Bull ⇄ Bear, Research Manager) → Trader → Risk Management
   (Aggressive / Conservative / Neutral) → Portfolio Manager, with arrows between stages and per-agent
@@ -527,7 +527,7 @@ and where to start. Mark items ✅ here when done.
   under 860px the flow runs top to bottom. Only agents the runner reports (= selected analysts) show.
 
 ### KI-4 Charts next to report tables — ✅ done
-- **Wanted:** in Run Detail → Raporlar, charts beside the markdown tables so they are easier to read.
+- **Wanted:** in Run Detail → Reports, charts beside the markdown tables so they are easier to read.
 - **What the tables look like** (checked in `~/.tradingagents/logs`): free-form LLM output. Numeric
   ones: fundamentals by year/quarter (rows = metrics, columns = FY2022…/Q2'25…), MACD/Signal/Histogram
   by date, moving averages (10 EMA / 50 SMA / 200 SMA with values), Bollinger bands. Many are text only
