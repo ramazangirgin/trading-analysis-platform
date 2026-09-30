@@ -1,0 +1,140 @@
+# Continuous integration: every push to any branch (main included), every pull request, and on
+# demand. Three jobs; add new ones (image publishing, security scans, ...) next to them.
+#
+#   build   backend + frontend: all Gradle tests (ArchUnit, Docker runner against the runner's
+#           Docker), frontend lint and tests, the single jar
+#   runner  ta-runner: ruff and pytest, upstream contract tests included
+#   images  both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the run in progress; main keeps every run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  # mise asks before using a repository's mise.toml; in CI this checkout is trusted.
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+
+jobs:
+  build:
+    name: Backend and frontend
+    # A branch in this repository already runs on push; pull requests add a run only from forks.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Java and uv (versions from mise.toml)
+        uses: jdx/mise-action@v5
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+
+      # Node and pnpm are downloaded by the build itself (node-gradle); keep them and pnpm's store.
+      - name: Node, pnpm and packages cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            artifact/frontend/.gradle/nodejs
+            artifact/frontend/.gradle/pnpm
+            ~/.local/share/pnpm/store
+          key: frontend-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'artifact/frontend/pnpm-lock.yaml') }}
+          restore-keys: frontend-${{ runner.os }}-
+
+      - name: Build and test
+        run: mise run build
+
+      - name: Test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            artifact/**/build/reports/tests/
+            artifact/**/build/test-results/
+          if-no-files-found: ignore
+
+      - name: Platform jar (for the images job)
+        uses: actions/upload-artifact@v7
+        with:
+          name: platform-jar
+          path: artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar
+          if-no-files-found: error
+          retention-days: 3
+
+  runner:
+    name: ta-runner
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Java and uv (versions from mise.toml)
+        uses: jdx/mise-action@v5
+
+      - name: uv cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('artifact/ta-runner/uv.lock') }}
+          restore-keys: uv-${{ runner.os }}-
+
+      - name: Lint and test
+        run: mise run runner-test
+
+  images:
+    name: Docker images and Compose smoke test
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Platform jar
+        uses: actions/download-artifact@v8
+        with:
+          name: platform-jar
+          path: artifact/backend/build/libs
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: ta-runner image
+        uses: docker/build-push-action@v7
+        with:
+          context: artifact/ta-runner
+          tags: ta-runner:0.1.0
+          load: true
+          cache-from: type=gha,scope=ta-runner
+          cache-to: type=gha,scope=ta-runner,mode=max
+
+      - name: Platform image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/Dockerfile
+          tags: trading-analysis-platform:0.0.1
+          load: true
+          cache-from: type=gha,scope=platform
+          cache-to: type=gha,scope=platform,mode=max
+
+      - name: ta-runner image under the platform's lockdown
+        run: |
+          flags=(--rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --memory 1g --cpus 1)
+          docker run "${flags[@]}" ta-runner:0.1.0 version
+          docker run "${flags[@]}" ta-runner:0.1.0 catalog | jq -e '.providers | length > 0'
+
+      - name: Docker Compose smoke test
+        run: deploy/smoke-test.sh "$RUNNER_TEMP/platform-data"
