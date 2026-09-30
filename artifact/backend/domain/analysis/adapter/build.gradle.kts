@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.spring.jdbc)
     implementation(libs.jackson.databind)
     implementation(libs.slf4j.api)
+    implementation(libs.docker.java.core)
+    implementation(libs.docker.java.transport.httpclient5)
 
     testImplementation(libs.flyway.core)
     testRuntimeOnly(libs.sqlite.jdbc)

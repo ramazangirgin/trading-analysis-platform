@@ -7,6 +7,8 @@ springBoot = "4.1.1"
 springdoc = "3.1.1"
 archunit = "1.5.0"
 mapstruct = "1.6.3"
+# Docker Engine API client for the Docker runner (also talks to Podman's Docker-compatible API).
+dockerJava = "3.7.1"
 # Frontend toolchain, downloaded by the node-gradle plugin: no global Node needed for a build.
 nodeGradle = "7.1.0"
 node = "24.21.0"
@@ -38,6 +40,8 @@ springdoc-openapi-webmvc-api = { module = "org.springdoc:springdoc-openapi-start
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
 mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+docker-java-core = { module = "com.github.docker-java:docker-java-core", version.ref = "dockerJava" }
+docker-java-transport-httpclient5 = { module = "com.github.docker-java:docker-java-transport-httpclient5", version.ref = "dockerJava" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }

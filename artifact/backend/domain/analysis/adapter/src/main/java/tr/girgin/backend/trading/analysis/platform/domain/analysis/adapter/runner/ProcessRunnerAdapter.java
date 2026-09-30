@@ -18,6 +18,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
@@ -40,6 +41,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
  * the {@code events.jsonl} it keeps writing, since its stdout went with the old platform.
  */
 @Component
+@Conditional(RunnerKind.Process.class)
 class ProcessRunnerAdapter implements RunnerPort {
 
     private static final Logger log = LoggerFactory.getLogger(ProcessRunnerAdapter.class);

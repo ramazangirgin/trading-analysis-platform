@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
@@ -23,6 +24,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.outbound.
 
 /** Runs {@code ta-runner catalog} / {@code version} with the same command the process runner uses. */
 @Component
+@Conditional(RunnerKind.Process.class)
 class TaRunnerEngineInfoAdapter implements EngineInfoPort {
 
     private static final long TIMEOUT_SECONDS = 120;
