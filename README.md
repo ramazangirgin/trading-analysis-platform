@@ -1,5 +1,7 @@
 # TradingAgents Platform
 
+[![CI](https://github.com/ramazangirgin/trading-analysis-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ramazangirgin/trading-analysis-platform/actions/workflows/ci.yml)
+
 A web platform for running and managing [TradingAgents](https://github.com/TauricResearch/TradingAgents)
 analyses without modifying its code: start an analysis from the browser, watch the agents work live,
 then read the decision, the reports and the debates, and export them. See [PLAN.md](PLAN.md) for the design and
@@ -268,6 +270,21 @@ mise run docker-build  # the platform and ta-runner Docker images
 `mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
 needs overriding; with [mise activated](https://mise.jdx.dev/getting-started.html#activate-mise) in
 your shell, plain `./gradlew` and `uv` in this directory use the same versions.
+
+### Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to any branch (main
+included), on pull requests from forks, and on demand (*Run workflow* on the Actions tab):
+
+| Job | What |
+|---|---|
+| Backend and frontend | `mise run build`: every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
+| ta-runner | `mise run runner-test`: ruff and pytest, upstream contract tests included |
+| Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
+
+Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
+(not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
+`mise run docker-build`.
 
 ### Before pushing
 
