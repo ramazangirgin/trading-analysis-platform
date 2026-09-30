@@ -3,9 +3,11 @@ package tr.girgin.backend.trading.analysis.platform.orchestration.report;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration.Outcome;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
@@ -26,6 +29,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.RunHistoryEntry;
 
 class ImportExistingRunsServiceTest {
+
+    private static final WatchDataDirUseCase NO_WATCH = onSettled -> () -> { };
+    private static final Duration SETTLE_TIME = Duration.ofMinutes(10);
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-30T12:00:00Z"), ZoneOffset.UTC);
 
     private final List<ExternalAnalysis> registered = new ArrayList<>();
 
@@ -43,7 +50,7 @@ class ImportExistingRunsServiceTest {
                     registered.add(external);
                     Outcome outcome = external.ticker().equals("GOOG") ? Outcome.CREATED : Outcome.UNCHANGED;
                     return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), external), outcome);
-                }, false);
+                }, NO_WATCH, false, false, SETTLE_TIME, CLOCK);
 
         ImportResult result = service.importExistingRuns();
 
@@ -75,7 +82,7 @@ class ImportExistingRunsServiceTest {
                 external -> {
                     registered.add(external);
                     return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), external), Outcome.CREATED);
-                }, false);
+                }, NO_WATCH, false, false, SETTLE_TIME, CLOCK);
 
         assertThat(service.importExistingRuns()).isEqualTo(new ImportResult(3, 3, 0, 0));
 
@@ -94,6 +101,27 @@ class ImportExistingRunsServiceTest {
         assertThat(registered.get(1).run().errorMessage()).isEqualTo("Run did not complete (server restart).");
         assertThat(registered.get(2).ticker()).isEqualTo("NVDIA");
         assertThat(registered.get(2).run().status()).isEqualTo(AnalysisStatus.STOPPED);
+    }
+
+    @Test
+    void holdsBackReportsWithoutDecisionThatMayStillBeRunning() {
+        Report running = new Report(new ReportKey("AMD", LocalDate.of(2026, 9, 30)),
+                Map.of(ReportSection.MARKET_REPORT, "m"), Map.of(), null, Set.of(ReportSource.REPORT_TREE),
+                CLOCK.instant().minus(Duration.ofMinutes(2)));
+        Report crashed = new Report(new ReportKey("INTC", LocalDate.of(2026, 9, 30)),
+                Map.of(ReportSection.MARKET_REPORT, "m"), Map.of(), null, Set.of(ReportSource.REPORT_TREE),
+                CLOCK.instant().minus(Duration.ofMinutes(20)));
+        Report finished = new Report(new ReportKey("NVDA", LocalDate.of(2026, 9, 30)),
+                Map.of(ReportSection.FINAL_TRADE_DECISION, "**Rating**: Hold"), Map.of(), Rating.HOLD,
+                Set.of(ReportSource.REPORT_TREE), CLOCK.instant().minus(Duration.ofMinutes(1)));
+        ImportExistingRunsService service = new ImportExistingRunsService(
+                () -> List.of(running, crashed, finished), List::of, external -> {
+                    registered.add(external);
+                    return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), external), Outcome.CREATED);
+                }, NO_WATCH, false, false, SETTLE_TIME, CLOCK);
+
+        assertThat(service.importExistingRuns().scanned()).isEqualTo(2);
+        assertThat(registered).extracting(ExternalAnalysis::ticker).containsExactly("INTC", "NVDA");
     }
 
     private static RunHistoryEntry entry(String id, ReportKey key, RunHistoryEntry.Status status, String error,

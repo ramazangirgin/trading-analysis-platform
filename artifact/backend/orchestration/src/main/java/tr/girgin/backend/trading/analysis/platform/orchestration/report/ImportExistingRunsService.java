@@ -1,13 +1,23 @@
 package tr.girgin.backend.trading.analysis.platform.orchestration.report;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -23,6 +33,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ra
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
@@ -30,10 +41,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.RunH
 
 /**
  * report finds runs in the data dir (report files and the run history); analysis records them as
- * EXTERNAL analyses.
+ * EXTERNAL analyses. Runs at startup, on every settled data dir change and on rescan.
  */
 @Service
-class ImportExistingRunsService implements ImportExistingRunsUseCase {
+class ImportExistingRunsService implements ImportExistingRunsUseCase, DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(ImportExistingRunsService.class);
 
@@ -51,29 +62,86 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase {
     private final ScanReportsUseCase scanReports;
     private final ScanRunHistoryUseCase scanHistory;
     private final RegisterExternalAnalysisUseCase registerExternal;
+    private final WatchDataDirUseCase watchDataDir;
     private final boolean importOnStartup;
+    private final boolean watch;
+    private final Duration settleTime;
+    private final Clock clock;
+    private final ScheduledExecutorService followUps = Executors.newSingleThreadScheduledExecutor(
+            Thread.ofVirtual().name("import-follow-up").factory());
+    private AutoCloseable watchHandle;
+    private ScheduledFuture<?> followUp;
+
+    @Autowired
+    ImportExistingRunsService(ScanReportsUseCase scanReports,
+                              ScanRunHistoryUseCase scanHistory,
+                              RegisterExternalAnalysisUseCase registerExternal,
+                              WatchDataDirUseCase watchDataDir,
+                              @Value("${platform.import.on-startup:true}") boolean importOnStartup,
+                              @Value("${platform.import.watch.enabled:true}") boolean watch,
+                              @Value("${platform.import.settle-time:10m}") Duration settleTime) {
+        this(scanReports, scanHistory, registerExternal, watchDataDir, importOnStartup, watch, settleTime,
+                Clock.systemUTC());
+    }
 
     ImportExistingRunsService(ScanReportsUseCase scanReports,
                               ScanRunHistoryUseCase scanHistory,
                               RegisterExternalAnalysisUseCase registerExternal,
-                              @Value("${platform.import.on-startup:true}") boolean importOnStartup) {
+                              WatchDataDirUseCase watchDataDir,
+                              boolean importOnStartup,
+                              boolean watch,
+                              Duration settleTime,
+                              Clock clock) {
         this.scanReports = scanReports;
         this.scanHistory = scanHistory;
         this.registerExternal = registerExternal;
+        this.watchDataDir = watchDataDir;
         this.importOnStartup = importOnStartup;
+        this.watch = watch;
+        this.settleTime = settleTime;
+        this.clock = clock;
     }
 
-    /** In the background, so a large data dir does not hold up startup. */
+    /**
+     * In the background, so a large data dir does not hold up startup. Then the data dir is
+     * watched, so runs made with the CLI or another UI show up without a rescan.
+     */
     @EventListener(ContextRefreshedEvent.class)
     void importOnStartup() {
         if (importOnStartup) {
             Thread.ofVirtual().name("import-existing-runs").start(() -> {
-                try {
-                    importExistingRuns();
-                } catch (RuntimeException e) {
-                    log.error("Importing existing runs failed", e);
+                importQuietly();
+                if (watch) {
+                    startWatching();
                 }
             });
+        }
+    }
+
+    private synchronized void startWatching() {
+        if (watchHandle == null) {
+            try {
+                watchHandle = watchDataDir.watch(this::importQuietly);
+            } catch (RuntimeException e) {
+                log.warn("Cannot watch the data dir; new runs show up after a rescan: {}", e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public synchronized void destroy() throws Exception {
+        followUps.shutdownNow();
+        if (watchHandle != null) {
+            watchHandle.close();
+            watchHandle = null;
+        }
+    }
+
+    private void importQuietly() {
+        try {
+            importExistingRuns();
+        } catch (RuntimeException e) {
+            log.error("Importing existing runs failed", e);
         }
     }
 
@@ -86,8 +154,18 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase {
                 .filter(entry -> entry.status() == RunHistoryEntry.Status.COMPLETED)
                 .forEach(entry -> latestCompleted.putIfAbsent(entry.key(), entry));
         List<ExternalAnalysis> externals = new ArrayList<>();
+        Instant settledBefore = clock.instant().minus(settleTime);
+        Instant lastUnsettled = null;
         for (Report report : scanReports.scan()) {
+            if (!report.hasDecision() && report.modifiedAt().isAfter(settledBefore)) {
+                // Likely a run still being written: importing it now would show it as failed.
+                lastUnsettled = max(lastUnsettled, report.modifiedAt());
+                continue;
+            }
             externals.add(toExternal(report, latestCompleted.get(report.key())));
+        }
+        if (lastUnsettled != null) {
+            scheduleFollowUp(lastUnsettled.plus(settleTime));
         }
         // A completed run left report files, imported above; one that failed or was stopped left
         // little or nothing, so the history is all there is of it.
@@ -111,6 +189,26 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase {
         ImportResult result = new ImportResult(externals.size(), created, updated, unchanged);
         log.info("Imported existing runs: {}", result);
         return result;
+    }
+
+    /** Looks again once reports held back as possibly running have settled, even if nothing changes. */
+    private void scheduleFollowUp(Instant at) {
+        if (!watch) {
+            return;
+        }
+        if (followUp != null && !followUp.isDone()) {
+            followUp.cancel(false);
+        }
+        long delayMillis = Math.max(0, Duration.between(clock.instant(), at).toMillis()) + 1_000;
+        try {
+            followUp = followUps.schedule(this::importQuietly, delayMillis, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            // Shutting down.
+        }
+    }
+
+    private static Instant max(Instant a, Instant b) {
+        return a == null || b.isAfter(a) ? b : a;
     }
 
     private static ExternalAnalysis toExternal(Report report, RunHistoryEntry run) {

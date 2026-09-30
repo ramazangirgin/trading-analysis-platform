@@ -439,11 +439,11 @@ Phase 1 decisions and deviations:
 - **Stop** signals through `ProcessHandle`: `Process.destroy()` also closes the child's stdout, which killed the runner with SIGPIPE before it could report `run_finished{stopped}`.
 - **Build:** unique Gradle group per subproject (all `core` modules otherwise resolve as one module), `-parameters` on every module, fully qualified bean names (same-named MapStruct mappers in different modules).
 
-Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrupted runs) and the `reports/*_deep_*.md` files (done 2026-09-30); watching the data dir with `WatchService` (today: import at startup + "scan data dir" button).
+Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrupted runs) and the `reports/*_deep_*.md` files and watching the data dir with `WatchService` (both done 2026-09-30).
 
 ### Phase 2 — Docker and hardening (1 week)
 - [x] Import `runs.json` and `reports/*_deep_*.md` (2026-09-30): a completed history run adds its models, usage and times to its ticker/date's report record; a failed or stopped one becomes its own EXTERNAL record with the error; a deep report is a "Deep analysis" section of its ticker/date's report. Records are keyed by `external_ref`, so rescans stay idempotent
-- [ ] Data dir `WatchService` (carried over from Phase 1; today: import at startup + "scan data dir" button)
+- [x] Data dir `WatchService` (2026-09-30): the results tree, `runs.json` and `reports/` are watched (not the cache); a burst of changes triggers one import after 5 s of quiet (at most 60 s after the first change). A report without a decision changed in the last 10 min is held back as possibly still running and looked at again once settled. On macOS the JDK polls, so a new run shows up within ~5-10 s. Properties: `platform.import.watch.{enabled,quiet-period,max-delay}`, `platform.import.settle-time`
 - [ ] LLM cost per run (`cost_usd`): a price table per provider/model in `ta-runner`
 - [ ] `artifact/ta-runner/Dockerfile` (upstream image as base), `DockerRunnerAdapter` (D8), docker-socket-proxy, resource limits and security flags, label-based orphan container reconciliation
 - [ ] `deploy/Dockerfile` (single platform image: backend + UI), PostgreSQL profile, `deploy/docker-compose.yml` (platform + docker-socket-proxy; optional Caddy for TLS)
