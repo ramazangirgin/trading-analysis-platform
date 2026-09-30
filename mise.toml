@@ -50,6 +50,8 @@ run = [
 
 [tasks.docker-build]
 description = "Build the Docker images: the platform (backend + UI jar) and ta-runner (see deploy/)"
+# One after the other: both are bound by writing image layers, and building them side by side only
+# makes them compete for the disk (slow inside Podman's VM on macOS).
 run = [
   "./gradlew --console=plain :backend:bootJar",
   "docker build -f deploy/Dockerfile -t trading-analysis-platform:0.0.1 .",

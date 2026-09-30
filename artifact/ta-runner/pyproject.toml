@@ -4,9 +4,10 @@ version = "0.1.0"
 description = "Non-interactive, single-run executor for TradingAgents that emits JSONL events (see docs/event-protocol.md)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    # The ONLY place the platform touches TradingAgents code. Pinned to a release tag;
-    # bump it together with compat.py and the contract tests (PLAN.md section 10).
-    "tradingagents @ git+https://github.com/TauricResearch/TradingAgents@v0.5.1",
+    # The ONLY place the platform touches TradingAgents code. Pinned to a release tag, fetched as
+    # GitHub's archive of that tag (no git needed, in the image or locally; uv.lock pins its hash).
+    # Bump it together with compat.py and the contract tests (PLAN.md section 10).
+    "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz",
 ]
 
 [project.scripts]

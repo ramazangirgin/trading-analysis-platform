@@ -1166,7 +1166,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "tradingagents", git = "https://github.com/TauricResearch/TradingAgents?rev=v0.5.1" }]
+requires-dist = [{ name = "tradingagents", url = "https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1205,7 +1205,7 @@ wheels = [
 [[package]]
 name = "tradingagents"
 version = "0.5.1"
-source = { git = "https://github.com/TauricResearch/TradingAgents?rev=v0.5.1#90be56b9b2ff2431853b81bfaec9497c65646b1f" }
+source = { url = "https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz" }
 dependencies = [
     { name = "langchain-anthropic" },
     { name = "langchain-core" },
@@ -1224,6 +1224,32 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "yfinance" },
 ]
+sdist = { hash = "sha256:3e387bf964a94dedec24971395177ad8af1c6be6da7924eb120bb3154a526436" }
+
+[package.metadata]
+requires-dist = [
+    { name = "langchain-anthropic", specifier = ">=0.3.15" },
+    { name = "langchain-aws", marker = "extra == 'bedrock'", specifier = ">=1.5.0" },
+    { name = "langchain-core", specifier = ">=0.3.81" },
+    { name = "langchain-google-genai", specifier = ">=4.0.0" },
+    { name = "langchain-openai", specifier = ">=0.3.23" },
+    { name = "langgraph", specifier = ">=0.4.8" },
+    { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.0" },
+    { name = "pandas", specifier = ">=2.3.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-subtests", marker = "extra == 'dev'", specifier = ">=0.13" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "pytz", specifier = ">=2025.2" },
+    { name = "questionary", specifier = ">=2.1.0" },
+    { name = "requests", specifier = ">=2.32.4" },
+    { name = "rich", specifier = ">=14.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15" },
+    { name = "stockstats", specifier = ">=0.6.5" },
+    { name = "typer", specifier = ">=0.21.0" },
+    { name = "typing-extensions", specifier = ">=4.14.0" },
+    { name = "yfinance", specifier = ">=1.4.1" },
+]
+provides-extras = ["dev", "bedrock"]
 
 [[package]]
 name = "truststore"
