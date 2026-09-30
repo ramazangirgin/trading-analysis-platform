@@ -14,6 +14,7 @@ import {
 import { api, type SecretStatus } from '@/api/client'
 import { useCatalogStore } from '@/stores/catalog'
 import { useLabels } from '@/composables/useLabels'
+import PresetManager from '@/components/PresetManager.vue'
 
 interface KeyRow {
   env: string
@@ -153,6 +154,9 @@ onMounted(load)
         size="small"
         :scroll-x="820"
       />
+      <h3 class="heading">{{ t('presets.title') }}</h3>
+      <p class="note">{{ t('presets.note') }}</p>
+      <PresetManager />
     </NSpace>
   </NCard>
 </template>

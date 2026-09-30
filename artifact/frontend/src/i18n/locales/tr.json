@@ -7,6 +7,7 @@
     "dashboard": "Gösterge Paneli",
     "analyses": "Analizler",
     "newAnalysis": "Yeni analiz",
+    "reports": "Raporlar",
     "settings": "Ayarlar"
   },
   "common": {
@@ -240,7 +241,32 @@
     "name": "Ad",
     "saved": "\"{name}\" kaydedildi.",
     "delete": "Sil",
-    "none": "Kayıtlı hazır ayar yok"
+    "none": "Kayıtlı hazır ayar yok",
+    "title": "Hazır ayarlar",
+    "note": "Yeni analiz sayfasında kaydedilir: başlangıç için analistler, modeller, tur sayıları ve rapor dili.",
+    "rename": "Yeniden adlandır",
+    "renamed": "Yeni adı \"{name}\".",
+    "deleted": "\"{name}\" silindi.",
+    "confirmDelete": "\"{name}\" hazır ayarı silinsin mi?",
+    "values": "Ayarlar",
+    "updated": "Güncellendi",
+    "rounds": "{debate} tartışma / {risk} risk turu",
+    "emptyHint": "Henüz hazır ayar yok. Yeni analiz sayfasından kaydedebilirsiniz."
+  },
+  "reports": {
+    "title": "Raporlar",
+    "search": "Hisseye göre süz",
+    "pick": "Bir rapor seçin",
+    "none": "Henüz tamamlanmış analiz yok.",
+    "runs": "{count} çalıştırma",
+    "contents": "İçindekiler",
+    "openRun": "Analizi aç",
+    "latestOnly": "Bu hisse ve tarih için {count} analiz çalıştı; dosyalarda en yenisinin raporu var.",
+    "exportMd": "Markdown",
+    "exportHtml": "HTML",
+    "exportPdf": "PDF",
+    "rating": "Karar",
+    "exported": "Dışa aktarıldı"
   },
   "health": {
     "runner_unavailable": "ta-runner çalıştırılamıyor: {detail}. artifact/ta-runner içinde \"uv sync\" çalıştırıldı mı?",

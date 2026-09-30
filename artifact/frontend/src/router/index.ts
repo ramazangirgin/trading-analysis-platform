@@ -16,6 +16,18 @@ export const router = createRouter({
       name: 'analysis',
       component: () => import('@/pages/RunDetailPage.vue'),
     },
+    {
+      path: '/reports',
+      name: 'reports',
+      component: () => import('@/pages/ReportsPage.vue'),
+      meta: { wide: true },
+    },
+    {
+      path: '/reports/:id',
+      name: 'report',
+      component: () => import('@/pages/ReportsPage.vue'),
+      meta: { wide: true },
+    },
     { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
     {
       path: '/:pathMatch(.*)*',

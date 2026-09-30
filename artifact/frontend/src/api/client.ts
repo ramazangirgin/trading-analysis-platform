@@ -160,6 +160,12 @@ export const api = {
   createPreset(name: string, values: Record<string, unknown>): Promise<Preset> {
     return request('/api/presets', { method: 'POST', body: JSON.stringify({ name, values }) })
   },
+  updatePreset(id: string, name: string, values: Record<string, unknown>): Promise<Preset> {
+    return request(`/api/presets/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, values }),
+    })
+  },
   deletePreset(id: string): Promise<void> {
     return request(`/api/presets/${encodeURIComponent(id)}`, { method: 'DELETE' })
   },

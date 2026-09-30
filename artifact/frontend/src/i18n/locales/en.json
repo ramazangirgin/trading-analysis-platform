@@ -7,6 +7,7 @@
     "dashboard": "Dashboard",
     "analyses": "Analyses",
     "newAnalysis": "New analysis",
+    "reports": "Reports",
     "settings": "Settings"
   },
   "common": {
@@ -240,7 +241,32 @@
     "name": "Name",
     "saved": "\"{name}\" saved.",
     "delete": "Delete",
-    "none": "No saved presets"
+    "none": "No saved presets",
+    "title": "Presets",
+    "note": "Saved on the New Analysis page: the analysts, models, rounds and report language to start from.",
+    "rename": "Rename",
+    "renamed": "Renamed to \"{name}\".",
+    "deleted": "\"{name}\" deleted.",
+    "confirmDelete": "Delete the preset \"{name}\"?",
+    "values": "Settings",
+    "updated": "Updated",
+    "rounds": "{debate} debate / {risk} risk rounds",
+    "emptyHint": "No presets yet. Save one from the New Analysis page."
+  },
+  "reports": {
+    "title": "Reports",
+    "search": "Filter by ticker",
+    "pick": "Pick a report",
+    "none": "No finished analyses yet.",
+    "runs": "{count} runs",
+    "contents": "Contents",
+    "openRun": "Open the analysis",
+    "latestOnly": "{count} analyses ran this ticker and date; the files hold the newest one's report.",
+    "exportMd": "Markdown",
+    "exportHtml": "HTML",
+    "exportPdf": "PDF",
+    "rating": "Rating",
+    "exported": "Exported"
   },
   "health": {
     "runner_unavailable": "ta-runner cannot be run: {detail}. Has \"uv sync\" been run in artifact/ta-runner?",

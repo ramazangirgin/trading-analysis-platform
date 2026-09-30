@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { usePreferredDark } from '@vueuse/core'
 import {
   NConfigProvider,
@@ -17,6 +18,9 @@ import {
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue'
 
 const { t, locale } = useI18n()
+const route = useRoute()
+// /reports/:id is still the Reports page.
+const reportsActive = computed(() => route.name === 'report')
 const preferredDark = usePreferredDark()
 
 const theme = computed(() => (preferredDark.value ? darkTheme : null))
@@ -39,11 +43,16 @@ watchEffect(() => {
             <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
             <RouterLink :to="{ name: 'analyses' }">{{ t('nav.analyses') }}</RouterLink>
             <RouterLink :to="{ name: 'new-analysis' }">{{ t('nav.newAnalysis') }}</RouterLink>
+            <RouterLink
+              :to="{ name: 'reports' }"
+              :class="{ 'router-link-exact-active': reportsActive }"
+              >{{ t('nav.reports') }}</RouterLink
+            >
             <RouterLink :to="{ name: 'settings' }">{{ t('nav.settings') }}</RouterLink>
           </nav>
           <LocaleSwitcher />
         </NLayoutHeader>
-        <NLayoutContent class="app__content">
+        <NLayoutContent :class="['app__content', { 'app__content--wide': route.meta.wide }]">
           <RouterView />
         </NLayoutContent>
       </NLayout>
@@ -96,5 +105,10 @@ body {
   padding: 24px 16px;
   max-width: 1100px;
   margin: 0 auto;
+}
+
+/* Pages with side panes (Reports) use the room a wide screen has. */
+.app__content--wide {
+  max-width: 1600px;
 }
 </style>
