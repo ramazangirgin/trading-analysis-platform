@@ -1,6 +1,6 @@
 # TradingAgents Platform — Detailed Plan
 
-> Status: **v0.13** (2026-09-29) · Phase 0 and Phase 1 done. Next: the known issues in §6a, then Phase 2.
+> Status: **v0.14** (2026-09-30) · Phase 0, Phase 1 and the known issues in §6a done (one browser check left, KI-2). Next: Phase 2.
 
 ### Decisions
 | # | Topic | Decision |
@@ -285,7 +285,7 @@ Rules:
 - **Triggering:** full scan on startup, then change watching (`java.nio.file.WatchService`) + a "Rescan" button in the UI.
 
 ### 3.7 Language policy (D5)
-- **UI strings:** `artifact/frontend/src/i18n/{en,tr}.json`, English by default.
+- **UI strings:** `artifact/frontend/src/i18n/locales/{en,tr}.json`, English by default.
 - **Analysis output language is a separate setting:** `output_language` (upstream config) in the New Analysis form defaults to the UI language (TR → `Turkish`) but can be changed per run. Upstream keeps internal debates in English; show this as a note in the UI.
 - **Fixed labels are translated:** agent names (Market Analyst → Piyasa Analisti), stages, ratings (Buy → Al, Overweight → Ağırlık Artır, Hold → Tut, Underweight → Ağırlık Azalt, Sell → Sat, REVIEW → İncele). Raw values stay in English in the DB; translation happens only at display time.
 - The backend returns an `error_code` + parameters; the frontend translates the text.
@@ -304,7 +304,7 @@ Current versions (npm, 2026-09-28): `vue 3.5.43`, `vite 8.3.1`, `vue-router 5.3.
 | **Settings** | API keys (masked), default provider/model, runner selection, concurrency limit, theme, language |
 | **Health** | Diagnostics checklist, first-run wizard |
 
-Technical: `EventSource` composable (`useRunStream(runId)` — reconnect + `Last-Event-ID`), Pinia stores (`runs`, `settings`, `catalog`), `markdown-it` + `DOMPurify` for report rendering, `vue-virtual-scroller` for the log list, ECharts (cost/decision charts, Phase 3), vue-i18n (**default `tr`**, `en` as second language; chosen in Settings and stored in localStorage; date/number/currency formatting per locale via `Intl`; CI test that catches missing translation keys), TS client generated from the backend's OpenAPI spec (`openapi-typescript`).
+Technical: `EventSource` composable (`useRunStream(runId)` — reconnect + `Last-Event-ID`), Pinia stores (`runs`, `settings`, `catalog`), `markdown-it` + `DOMPurify` for report rendering, `vue-virtual-scroller` for the log list, ECharts (cost/decision charts, Phase 3), vue-i18n (**default `en`**, `tr` as second language; chosen in Settings and stored in localStorage; date/number/currency formatting per locale via `Intl`; CI test that catches missing translation keys), TS client generated from the backend's OpenAPI spec (`openapi-typescript`).
 
 ### 3.9 Packaging: one artifact, one container (D12)
 Frontend and backend are developed in separate folders but **built, shipped and run together**:
@@ -425,7 +425,7 @@ Phase 0 notes:
 - [x] `catalog` and `settings` domains (secrets `.env`, presets)
 - [x] `orchestration`: `ImportExistingRunsUseCase` (tested against real `~/.tradingagents` data), `SystemHealthUseCase`
 - [x] BFF: controllers + delegates + DTO mappers for all of the above; `ApiExceptionHandler` with `error_code`
-- [x] Frontend: layout + router, New Analysis form, Runs list, Run Detail (pipeline + live feed + reports + decision card + stop), Logs tab; `tr` (default) + `en`
+- [x] Frontend: layout + router, New Analysis form, Runs list, Run Detail (pipeline + live feed + reports + decision card + stop), Logs tab; `tr` (default at the time; English became the default on 2026-09-29, commit `23fd1c7`) + `en`
 - [x] Dev startup: `./gradlew :backend:bootRun` + `pnpm dev` (Vite proxy to `/api`), wrapped by a `Makefile` (replaced by `mise.toml` tasks on 2026-09-29); production = one jar
 
 Verified end to end on 2026-09-29: a DeepSeek run started from the New Analysis form streamed live into Run Detail (pipeline, feed, debates) and finished `Overweight`; the six runs in `~/.tradingagents/logs` were imported with their ratings.
@@ -466,10 +466,10 @@ Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrup
 Reported by the user after Phase 1, in this order of priority. Each item says what is known so far
 and where to start. Mark items ✅ here when done.
 
-### KI-1 UI language switch is wrong — ✅ fixed (uncommitted), see notes
+### KI-1 UI language switch is wrong — ✅ fixed (commit `2a08ee4`)
 - **Symptoms (user):** with Türkçe selected the UI looks as if English were selected; with English
   selected some texts stay Turkish.
-- **Reproduced 2026-09-29 (partly fixed, uncommitted):** the switcher itself works — header, pages,
+- **Reproduced 2026-09-29:** the switcher itself works — header, pages,
   tables, Naive UI strings and the title all follow it and survive a reload. What did not follow:
   - ✅ New Analysis "Rapor dili" stayed at the language of page load → now follows the UI language
     until the viewer (or a preset) picks another one.
@@ -486,7 +486,7 @@ and where to start. Mark items ✅ here when done.
 - Original suspects (kept for reference):
   - `artifact/frontend/src/components/LocaleSwitcher.vue`: the `NSelect` value vs `locale` of the
     global vue-i18n composer (`legacy: false`); whether `useI18n()` returns the global scope there.
-  - `artifact/frontend/src/i18n/index.ts`: initial locale from `localStorage['tap.locale']`, fallback `tr`.
+  - `artifact/frontend/src/i18n/index.ts`: initial locale from `localStorage['tap.locale']`, fallback `tr` (now `en`).
   - Texts that do not go through i18n: Naive UI's own strings (`NConfigProvider :locale/:date-locale`
     in `App.vue`), `document.title`, the New Analysis "Rapor dili" default (`outputLanguage` is set
     once from the UI locale at form creation and does not follow later switches), LLM-written text
@@ -612,7 +612,7 @@ and where to start. Mark items ✅ here when done.
 2. ✅ Docker model on the server → D8 (one container per analysis)
 3. ✅ Number of users → D6 (single user for now)
 4. ✅ UI library → D3 (Naive UI)
-5. ✅ UI language → D5 (TR + EN, TR default)
+5. ✅ UI language → D5 (TR + EN; TR default at first, English default since 2026-09-29)
 6. ✅ Nothing pulled forward from Phase 3 → D9
 7. ✅ Existing data → D7 (imported, data dir shared)
 8. ✅ Upstream source → D4 (pinned GitHub tag; local clone for reference only)
