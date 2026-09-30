@@ -2,7 +2,7 @@
 
 A web platform for running and managing [TradingAgents](https://github.com/TauricResearch/TradingAgents)
 analyses without modifying its code: start an analysis from the browser, watch the agents work live,
-then read the decision, the reports and the debates. See [PLAN.md](PLAN.md) for the design and
+then read the decision, the reports and the debates, and export them. See [PLAN.md](PLAN.md) for the design and
 roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner contract.
 
 ![An analysis: agent pipeline and the final decision](docs/screenshots/run-decision.png)
@@ -39,6 +39,10 @@ dependencies, Node, building the UI and the backend); after that it starts in se
 `git pull` it rebuilds only what changed. Analyses, presets and keys live on disk
 ([Where things live](#where-things-live)), so they survive restarts.
 
+If the platform stops while an analysis runs (a crash, a `kill`), the analysis keeps going; the
+restarted platform follows it again, or records its result if it finished meanwhile, and starts
+queued analyses again. Ctrl+C in the terminal stops the running analyses too.
+
 Changing the code instead? See [Development](#development) — it runs the UI with hot reload.
 
 ### 3. Add an API key
@@ -62,9 +66,12 @@ Open **New analysis** and fill in:
 | Debate rounds | 1 is enough to start; every extra round adds LLM calls |
 | Report language | The language of the reports and the decision; follows the UI language by default |
 
-Press **Start analysis**. **Save as preset** keeps the provider, model and analyst choices for next time.
+Press **Start analysis**. **Save as preset** keeps the provider, model and analyst choices for next
+time; **Settings** lists the presets with what each holds, and renames or deletes them.
 
 ![New analysis form](docs/screenshots/new-analysis.png)
+
+![Presets in Settings](docs/screenshots/presets.png)
 
 ### 5. Watch it and read the results
 
@@ -85,6 +92,9 @@ Underweight / Sell) with its reasoning, and the tabs hold everything behind it:
 
 ![Stats tab: calls, tokens, cost, duration and the run's settings](docs/screenshots/run-stats.png)
 
+The cost is worked out per LLM call from the provider's published prices
+([LLM prices](#llm-prices)); a model without a known price shows no cost.
+
 The market report opens with a price chart — close, 10 EMA, 50 SMA and 200 SMA with volume, over
 3 months to a year up to the analysis date, from the price data TradingAgents itself downloaded —
 and report tables that are series over periods (quarterly or yearly figures) get a chart beside them:
@@ -95,14 +105,36 @@ and report tables that are series over periods (quarterly or yearly figures) get
 
 **Analyses** lists every run with its analysis date and start time, decision, model and duration,
 filterable by ticker and status.
-Runs made with the TradingAgents CLI are imported from `~/.tradingagents/logs` (read-only) —
-**Scan data dir** picks up new ones.
+Runs made outside the platform are imported (read-only) and show up by themselves within about
+10 seconds, as the data dir is watched; **Scan data dir** forces a rescan:
+
+- reports the TradingAgents CLI (or another UI) left in `~/.tradingagents/logs`;
+- a third-party UI's run history, `~/.tradingagents/runs.json`: its failed runs with their errors,
+  and the models, token counts, cost and timing of the finished ones;
+- deep-analysis write-ups, `~/.tradingagents/reports/<TICKER>_deep_<DATE>.md`, as a
+  *Deep analysis* section of that ticker and date's report.
+
+A run whose report files are still being written is not shown as failed; it appears once it
+finishes.
 
 ![Analyses list](docs/screenshots/analyses.png)
 
 The **Dashboard** shows the running analyses and the latest decisions at a glance.
 
 ![Dashboard](docs/screenshots/dashboard.png)
+
+### 7. Reports and export
+
+**Reports** gathers every finished report in one place: the list of tickers and dates on the left,
+the report's contents in the middle (each section with its headings, then the debates), and the
+report itself with its charts on the right. The data dir keeps one report per ticker and date, so
+when a ticker and date ran several times, this is the newest run's report.
+
+**Markdown**, **HTML** and **PDF** export the open report: the HTML file is a single page that
+opens anywhere, and PDF goes through the browser's print dialog (*Save as PDF*). On a phone the page
+folds into one column, with the list as a picker and the contents folded above the report.
+
+![Reports: list, contents and the report](docs/screenshots/reports.png)
 
 ### Language
 
