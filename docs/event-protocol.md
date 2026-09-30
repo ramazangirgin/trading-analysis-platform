@@ -117,7 +117,7 @@ Payload fields sit next to the envelope fields. Long texts are truncated and end
 | `tool_result` | `tool`, `duration_ms`, `error` (null on success), `output` (≤ 2,000 chars) | |
 | `report_section` | `section`, `agent`, `markdown` (≤ 100,000 chars) | Sections: `market_report`, `sentiment_report`, `news_report`, `fundamentals_report`, `investment_plan`, `trader_investment_plan`, `final_trade_decision`. Re-emitted when the text changes |
 | `debate` | `debate` ∈ `investment` / `risk`, `speaker` ∈ `bull` / `bear` / `aggressive` / `conservative` / `neutral` / `judge`, `round`, `content` | `content` is the new turn only, not the whole transcript |
-| `stats` | `llm_calls`, `tool_calls`, `tokens_in`, `tokens_out`, `cost_usd` (null until pricing lands in Phase 1), `elapsed_s` | At most every 2 s while running, and once before `run_finished` |
+| `stats` | `llm_calls`, `tool_calls`, `tokens_in`, `tokens_out`, `cost_usd` (USD, each LLM call priced from `ta_runner/prices.json` plus the file named by `TA_RUNNER_PRICES`; null while any call's model has no price), `elapsed_s` | At most every 2 s while running, and once before `run_finished` |
 | `log` | `level`, `logger`, `message` (≤ 4,000 chars) | Upstream (`tradingagents.*`) INFO+ and any WARNING+ |
 | `decision` | `rating` ∈ `Buy` / `Overweight` / `Hold` / `Underweight` / `Sell` / `REVIEW`, `raw` | `REVIEW` = upstream could not parse a rating |
 | `run_finished` | `status` ∈ `completed` / `stopped` / `error`; on completed: `resumed`, `report_dir`; on error: `error_type`, `error`, `traceback` | Always the last event |

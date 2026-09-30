@@ -83,6 +83,20 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     }
 
     @Test
+    void pointsTheRunnerAtThePlatformsPriceFile() throws Exception {
+        script("""
+                printf '{"v":1,"ts":"2026-09-29T10:00:00Z","run_id":"x","seq":1,"type":"log","message":"%s"}\\n' "$TA_RUNNER_PRICES"
+                """);
+        RecordingSink sink = new RecordingSink();
+
+        runner.start(AnalysisId.newId(), spec("MU"), Map.of(), sink);
+
+        sink.awaitExit();
+        assertThat(sink.events.getFirst().payload().get("message"))
+                .isEqualTo(HOME.resolve("prices.json").toAbsolutePath().toString());
+    }
+
+    @Test
     void stopSendsSigtermAndTheRunnerEndsCleanly() throws Exception {
         script("""
                 STOPPED='{"v":1,"ts":"2026-09-29T10:00:09Z","run_id":"x","seq":2,"type":"run_finished","status":"stopped"}'

@@ -12,6 +12,7 @@ from . import __version__
 from .agent_map import ANALYST_AGENTS, ANALYST_REPORTS, DEBATE_FIELDS, REPORT_SECTIONS
 from .callbacks import EventCallbackHandler
 from .events import EventWriter, truncate
+from .pricing import CostMeter, PriceTable
 from .spec import RunSpec
 
 EXIT_COMPLETED, EXIT_ERROR, EXIT_STOPPED = 0, 1, 2
@@ -54,13 +55,12 @@ def execute(
     spec: RunSpec, writer: EventWriter, upstream_factory: UpstreamFactory, upstream_version: str
 ) -> int:
     started = time.monotonic()
-    callbacks = EventCallbackHandler(writer)
+    callbacks = EventCallbackHandler(writer, CostMeter(PriceTable.load(), spec.llm_provider))
     tracker = StateTracker(writer, spec)
 
     def stats() -> dict[str, Any]:
         return {
             **callbacks.stats(),
-            "cost_usd": None,
             "elapsed_s": round(time.monotonic() - started, 1),
         }
 

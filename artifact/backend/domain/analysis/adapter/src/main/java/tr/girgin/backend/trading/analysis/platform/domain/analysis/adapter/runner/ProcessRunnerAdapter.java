@@ -53,6 +53,7 @@ class ProcessRunnerAdapter implements RunnerPort {
     private final List<String> command;
     private final Path workingDir;
     private final Path runsDir;
+    private final Path pricesFile;
     private final Duration stopGrace;
     private final Duration followInterval;
     private final Map<String, ProcessHandle> processes = new ConcurrentHashMap<>();
@@ -69,6 +70,7 @@ class ProcessRunnerAdapter implements RunnerPort {
         this.command = absoluteExecutable(List.of(command));
         this.workingDir = workingDir.toAbsolutePath();
         this.runsDir = platformHome.resolve("runs").toAbsolutePath();
+        this.pricesFile = platformHome.resolve("prices.json").toAbsolutePath();
         this.stopGrace = Duration.ofSeconds(stopGraceSeconds);
         this.followInterval = Duration.ofMillis(followIntervalMs);
     }
@@ -88,6 +90,8 @@ class ProcessRunnerAdapter implements RunnerPort {
                     .redirectInput(ProcessBuilder.Redirect.from(Path.of("/dev/null").toFile()))
                     .redirectError(ProcessBuilder.Redirect.appendTo(runDir.resolve("run.log").toFile()));
             builder.environment().putAll(environment);
+            // The user's own prices, over the ones ta-runner ships; ignored while the file is absent.
+            builder.environment().put("TA_RUNNER_PRICES", pricesFile.toString());
             process = builder.start();
         } catch (IOException e) {
             throw new UncheckedIOException("Could not start ta-runner for " + id + ": " + e.getMessage(), e);
