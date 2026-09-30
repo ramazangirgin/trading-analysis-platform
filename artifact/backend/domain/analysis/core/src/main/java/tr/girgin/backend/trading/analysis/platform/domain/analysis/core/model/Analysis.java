@@ -1,9 +1,13 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
-/** One analysis run and its outcome. Immutable: transitions return a new instance. */
+/**
+ * One analysis run and its outcome. Immutable: transitions return a new instance.
+ * {@code externalRef} is where an EXTERNAL record came from in the data dir (see {@link ExternalAnalysis#ref()}).
+ */
 public record Analysis(
         AnalysisId id,
         AnalysisSpec spec,
@@ -16,7 +20,8 @@ public record Analysis(
         Instant startedAt,
         Instant endedAt,
         String errorCode,
-        String errorMessage) {
+        String errorMessage,
+        String externalRef) {
 
     public Analysis {
         Objects.requireNonNull(id, "id");
@@ -29,38 +34,63 @@ public record Analysis(
 
     public static Analysis queued(AnalysisId id, AnalysisSpec spec, Instant now) {
         return new Analysis(id, spec, AnalysisStatus.QUEUED, AnalysisSource.PLATFORM,
-                null, null, RunStats.EMPTY, now, null, null, null, null);
+                null, null, RunStats.EMPTY, now, null, null, null, null, null);
     }
 
-    /** Upstream's model choices are not in its output files, so an imported run says "unknown". */
+    /** Upstream's model choices are not in its report files, so a run without run history says "unknown". */
     public static final String UNKNOWN = "unknown";
-
-    public static Analysis imported(AnalysisId id, ExternalAnalysis external) {
-        AnalysisSpec spec = new AnalysisSpec(external.ticker(), external.tradeDate(), AssetType.STOCK,
-                external.analysts(), UNKNOWN, UNKNOWN, UNKNOWN, 1, 1, "English", false);
-        boolean finished = external.decision() != null;
-        return new Analysis(id, spec, finished ? AnalysisStatus.COMPLETED : AnalysisStatus.FAILED,
-                AnalysisSource.EXTERNAL, external.rating(), external.decision(), RunStats.EMPTY,
-                external.finishedAt(), external.finishedAt(), external.finishedAt(),
-                finished ? null : INCOMPLETE_REPORT, null);
-    }
 
     /** Error code of an imported run whose files hold no final decision. */
     public static final String INCOMPLETE_REPORT = "incomplete_report";
 
+    /**
+     * An EXTERNAL record for what the data dir holds. Times are cut to milliseconds, as stored, so
+     * that importing the same files again yields an equal record.
+     */
+    public static Analysis imported(AnalysisId id, ExternalAnalysis external) {
+        ExternalRun run = external.run();
+        AnalysisSpec spec = run == null
+                ? new AnalysisSpec(external.ticker(), external.tradeDate(), AssetType.STOCK,
+                        external.analysts(), UNKNOWN, UNKNOWN, UNKNOWN, 1, 1, "English", false)
+                : new AnalysisSpec(external.ticker(), external.tradeDate(), AssetType.STOCK,
+                        external.analysts(), run.llmProvider(), run.deepThinkLlm(), run.quickThinkLlm(),
+                        run.debateRounds(), run.debateRounds(), run.outputLanguage(), false);
+        AnalysisStatus status;
+        String errorCode = null;
+        String errorMessage = null;
+        if (external.origin() == ExternalAnalysis.Origin.RUN_HISTORY) {
+            status = run.status();
+            errorMessage = run.errorMessage();
+        } else if (external.decision() != null) {
+            status = AnalysisStatus.COMPLETED;
+        } else {
+            status = AnalysisStatus.FAILED;
+            errorCode = INCOMPLETE_REPORT;
+        }
+        Instant endedAt = millis(external.finishedAt());
+        Instant startedAt = run == null || run.startedAt() == null ? endedAt : millis(run.startedAt());
+        return new Analysis(id, spec, status, AnalysisSource.EXTERNAL, external.rating(), external.decision(),
+                run == null ? RunStats.EMPTY : run.stats(), startedAt, startedAt, endedAt,
+                errorCode, errorMessage, external.ref());
+    }
+
+    private static Instant millis(Instant instant) {
+        return instant.truncatedTo(ChronoUnit.MILLIS);
+    }
+
     public Analysis running(Instant now) {
         return new Analysis(id, spec, AnalysisStatus.RUNNING, source, rating, decision, stats,
-                createdAt, now, endedAt, errorCode, errorMessage);
+                createdAt, now, endedAt, errorCode, errorMessage, externalRef);
     }
 
     public Analysis withStats(RunStats newStats) {
         return new Analysis(id, spec, status, source, rating, decision, newStats,
-                createdAt, startedAt, endedAt, errorCode, errorMessage);
+                createdAt, startedAt, endedAt, errorCode, errorMessage, externalRef);
     }
 
     public Analysis withDecision(Rating newRating, String newDecision) {
         return new Analysis(id, spec, status, source, newRating, newDecision, stats,
-                createdAt, startedAt, endedAt, errorCode, errorMessage);
+                createdAt, startedAt, endedAt, errorCode, errorMessage, externalRef);
     }
 
     public Analysis finished(AnalysisStatus endStatus, Instant now, String code, String message) {
@@ -68,6 +98,6 @@ public record Analysis(
             throw new IllegalArgumentException("Not a terminal status: " + endStatus);
         }
         return new Analysis(id, spec, endStatus, source, rating, decision, stats,
-                createdAt, startedAt, now, code, message);
+                createdAt, startedAt, now, code, message, externalRef);
     }
 }

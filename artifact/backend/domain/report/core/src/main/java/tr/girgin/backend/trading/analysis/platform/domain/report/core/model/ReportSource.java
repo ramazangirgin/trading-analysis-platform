@@ -7,5 +7,7 @@ public enum ReportSource {
     /** {@code logs/<T>/TradingAgentsStrategy_logs/full_states_log_<D>.json}. */
     FULL_STATE,
     /** {@code logs/<T>/<D>/reports/run.json}, written by third-party UIs. */
-    GUI_RUN
+    GUI_RUN,
+    /** {@code <data-dir>/reports/<T>_deep_<D>.md}, a deep-analysis skill's write-up of a run. */
+    DEEP_REPORT
 }

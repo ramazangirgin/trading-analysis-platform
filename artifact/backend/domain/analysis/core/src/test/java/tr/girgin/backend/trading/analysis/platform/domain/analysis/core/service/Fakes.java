@@ -83,6 +83,16 @@ final class Fakes {
         }
 
         @Override
+        public void replaceImported(Analysis analysis) {
+            rows.put(analysis.id(), analysis);
+        }
+
+        @Override
+        public Optional<Analysis> findByExternalRef(String externalRef) {
+            return rows.values().stream().filter(a -> externalRef.equals(a.externalRef())).findFirst();
+        }
+
+        @Override
         public Optional<Analysis> findById(AnalysisId id) {
             return Optional.ofNullable(rows.get(id));
         }

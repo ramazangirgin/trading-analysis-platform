@@ -77,7 +77,7 @@ export function stageStatus(
   return statuses.includes('completed') ? 'in_progress' : 'pending'
 }
 
-/** Report sections in pipeline order. */
+/** Report sections in pipeline order; `deep_analysis` is a deep-analysis write-up found in the data dir. */
 export const SECTIONS = [
   'market_report',
   'sentiment_report',
@@ -86,6 +86,7 @@ export const SECTIONS = [
   'investment_plan',
   'trader_investment_plan',
   'final_trade_decision',
+  'deep_analysis',
 ] as const
 
 export function emptyRunView(): RunView {

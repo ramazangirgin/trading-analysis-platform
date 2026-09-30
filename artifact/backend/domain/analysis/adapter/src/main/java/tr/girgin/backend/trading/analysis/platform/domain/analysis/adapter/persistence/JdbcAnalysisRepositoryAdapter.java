@@ -23,11 +23,11 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
             INSERT INTO analyses (id, ticker, trade_date, asset_type, analysts, llm_provider, deep_think_llm,
                 quick_think_llm, max_debate_rounds, max_risk_discuss_rounds, output_language, checkpoint_enabled,
                 status, source, rating, decision, llm_calls, tool_calls, tokens_in, tokens_out, cost_usd,
-                elapsed_ms, created_at, started_at, ended_at, error_code, error_message)
+                elapsed_ms, created_at, started_at, ended_at, error_code, error_message, external_ref)
             VALUES (:id, :ticker, :tradeDate, :assetType, :analysts, :llmProvider, :deepThinkLlm,
                 :quickThinkLlm, :maxDebateRounds, :maxRiskDiscussRounds, :outputLanguage, :checkpointEnabled,
                 :status, :source, :rating, :decision, :llmCalls, :toolCalls, :tokensIn, :tokensOut, :costUsd,
-                :elapsedMs, :createdAt, :startedAt, :endedAt, :errorCode, :errorMessage)
+                :elapsedMs, :createdAt, :startedAt, :endedAt, :errorCode, :errorMessage, :externalRef)
             """;
 
     // The spec and creation time never change after insert.
@@ -37,6 +37,20 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
                 cost_usd = :costUsd, elapsed_ms = :elapsedMs, started_at = :startedAt, ended_at = :endedAt,
                 error_code = :errorCode, error_message = :errorMessage
             WHERE id = :id
+            """;
+
+    // An imported record follows its files, spec and creation time included.
+    private static final String REPLACE_IMPORTED = """
+            UPDATE analyses SET ticker = :ticker, trade_date = :tradeDate, asset_type = :assetType,
+                analysts = :analysts, llm_provider = :llmProvider, deep_think_llm = :deepThinkLlm,
+                quick_think_llm = :quickThinkLlm, max_debate_rounds = :maxDebateRounds,
+                max_risk_discuss_rounds = :maxRiskDiscussRounds, output_language = :outputLanguage,
+                checkpoint_enabled = :checkpointEnabled, status = :status, rating = :rating, decision = :decision,
+                llm_calls = :llmCalls, tool_calls = :toolCalls, tokens_in = :tokensIn, tokens_out = :tokensOut,
+                cost_usd = :costUsd, elapsed_ms = :elapsedMs, created_at = :createdAt, started_at = :startedAt,
+                ended_at = :endedAt, error_code = :errorCode, error_message = :errorMessage,
+                external_ref = :externalRef
+            WHERE id = :id AND source = 'EXTERNAL'
             """;
 
     private final JdbcClient jdbc;
@@ -62,6 +76,23 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         if (updated != 1) {
             throw new IllegalStateException("No analysis " + analysis.id() + " to update");
         }
+    }
+
+    @Override
+    public void replaceImported(Analysis analysis) {
+        int updated = jdbc.sql(REPLACE_IMPORTED).paramSource(toRow.map(analysis)).update();
+        if (updated != 1) {
+            throw new IllegalStateException("No imported analysis " + analysis.id() + " to replace");
+        }
+    }
+
+    @Override
+    public Optional<Analysis> findByExternalRef(String externalRef) {
+        return jdbc.sql("SELECT * FROM analyses WHERE external_ref = :externalRef")
+                .param("externalRef", externalRef)
+                .query(AnalysisRow.class)
+                .optional()
+                .map(toAnalysis::map);
     }
 
     @Override

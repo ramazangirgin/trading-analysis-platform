@@ -36,6 +36,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.d
  * <pre>
  * &lt;results&gt;/&lt;TICKER&gt;/&lt;DATE&gt;/reports/{1_analysts..5_portfolio}/*.md   report tree
  * &lt;results&gt;/&lt;TICKER&gt;/TradingAgentsStrategy_logs/full_states_log_&lt;DATE&gt;.json
+ * &lt;data-dir&gt;/reports/&lt;TICKER&gt;_deep_&lt;DATE&gt;.md                    deep-analysis write-up
  * </pre>
  * A missing or corrupt file only drops that file; the rest of the run is still read.
  */
@@ -44,6 +45,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
 
     private static final Logger log = LoggerFactory.getLogger(FileSystemDataDirAdapter.class);
     private static final Pattern FULL_STATE_FILE = Pattern.compile("full_states_log_(\\d{4}-\\d{2}-\\d{2})\\.json");
+    private static final Pattern DEEP_REPORT_FILE = Pattern.compile("(.+)_deep_(\\d{4}-\\d{2}-\\d{2})\\.md");
     private static final String STATE_DIR = "TradingAgentsStrategy_logs";
     private static final long MAX_FILE_BYTES = 20L * 1024 * 1024;
 
@@ -66,13 +68,16 @@ class FileSystemDataDirAdapter implements DataDirPort {
             "5_portfolio/decision.md", DebateSpeaker.RISK_JUDGE);
 
     private final Path resultsDir;
+    private final Path deepReportsDir;
     private final JsonMapper json = JsonMapper.builder()
             .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
 
-    FileSystemDataDirAdapter(@Value("${platform.results-dir}") Path resultsDir) {
+    FileSystemDataDirAdapter(@Value("${platform.results-dir}") Path resultsDir,
+                             @Value("${platform.data-dir}/reports") Path deepReportsDir) {
         this.resultsDir = resultsDir;
+        this.deepReportsDir = deepReportsDir;
     }
 
     @Override
@@ -98,6 +103,14 @@ class FileSystemDataDirAdapter implements DataDirPort {
                 }
             }
         }
+        for (Path deepFile : list(deepReportsDir)) {
+            Matcher matcher = DEEP_REPORT_FILE.matcher(deepFile.getFileName().toString());
+            if (matcher.matches() && ReportKey.isValidTicker(matcher.group(1))) {
+                parseDate(matcher.group(2))
+                        .flatMap(date -> readDeepReport(new ReportKey(matcher.group(1), date)))
+                        .ifPresent(contents::add);
+            }
+        }
         return contents;
     }
 
@@ -106,6 +119,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         List<ReportContent> contents = new ArrayList<>();
         readTree(key).ifPresent(contents::add);
         readFullState(key).ifPresent(contents::add);
+        readDeepReport(key).ifPresent(contents::add);
         return contents;
     }
 
@@ -176,6 +190,12 @@ class FileSystemDataDirAdapter implements DataDirPort {
             putIfPresent(debates, DebateSpeaker.RISK_JUDGE, state.riskDebateState().judgeDecision());
         }
         return Optional.of(new ReportContent(key, ReportSource.FULL_STATE, sections, debates, modifiedAt(file)));
+    }
+
+    private Optional<ReportContent> readDeepReport(ReportKey key) {
+        Path file = deepReportsDir.resolve(key.ticker() + "_deep_" + key.tradeDate() + ".md");
+        return readText(file).map(text -> new ReportContent(key, ReportSource.DEEP_REPORT,
+                Map.of(ReportSection.DEEP_ANALYSIS, text), Map.of(), modifiedAt(file)));
     }
 
     private static <K> void putIfPresent(Map<K, String> target, K key, String value) {

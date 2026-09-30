@@ -65,6 +65,21 @@ class AnalysesApiIntegrationTest {
         Files.createDirectories(HOME.resolve("logs/BE/2026-09-24/reports/1_analysts"));
         Files.writeString(reports.resolve("decision.md"), "**Rating**: Underweight\nTrim into strength.");
         Files.writeString(HOME.resolve("logs/BE/2026-09-24/reports/1_analysts/market.md"), "# BE market");
+        // The run history a third-party UI keeps: the run that wrote BE's files, and one that failed.
+        Files.writeString(HOME.resolve("runs.json"), """
+                {"version": 1, "runs": {
+                  "a1": {"id": "a1", "ticker": "BE", "date": "2026-09-24", "selected": ["market"],
+                    "status": "completed", "started_at": 1790330000.5, "ended_at": 1790331200.25,
+                    "stats": {"llm_calls": 10, "tool_calls": 2, "tokens_in": 68794, "tokens_out": 28916,
+                      "cost_usd": 0.0277, "elapsed_s": 1199.75},
+                    "params": {"provider": "deepseek", "deep_model": "deepseek-v4-pro",
+                      "quick_model": "deepseek-v4-flash", "research_depth": "3", "output_language": "Turkish"}},
+                  "f1": {"id": "f1", "ticker": "ZZFAIL", "date": "2026-09-24", "selected": ["market"],
+                    "status": "error", "started_at": 1790330000.5, "ended_at": 1790330023.8,
+                    "error": "OpenAIError: Missing credentials.", "stats": {}, "params": {"provider": "openai"}}}}
+                """);
+        Files.createDirectories(HOME.resolve("reports"));
+        Files.writeString(HOME.resolve("reports/BE_deep_2026-09-24.md"), "# BE Derin Analiz");
         TestPlatformHome.register(registry, HOME, RUNNER);
     }
 
@@ -190,14 +205,22 @@ class AnalysesApiIntegrationTest {
         assertThat(imported.get("status").asString()).isEqualTo("COMPLETED");
         assertThat(imported.get("rating").asString()).isEqualTo("UNDERWEIGHT");
         assertThat(imported.at("/spec/analysts").toString()).isEqualTo("[\"MARKET\"]");
+        assertThat(imported.at("/spec/llmProvider").asString()).isEqualTo("deepseek");
+        assertThat(imported.at("/spec/outputLanguage").asString()).isEqualTo("Turkish");
+        assertThat(imported.at("/stats/tokensIn").asLong()).isEqualTo(68_794);
+        JsonNode failed = JSON.readTree(get("/api/analyses?ticker=ZZFAIL").body()).get(0);
+        assertThat(failed.get("status").asString()).isEqualTo("FAILED");
+        assertThat(failed.get("errorMessage").asString()).isEqualTo("OpenAIError: Missing credentials.");
 
         JsonNode report = JSON.readTree(get("/api/analyses/" + imported.get("id").asString() + "/report").body());
         assertThat(report.at("/sections/market_report").asString()).isEqualTo("# BE market");
         assertThat(report.at("/debates/risk_judge").asString()).startsWith("**Rating**: Underweight");
+        assertThat(report.at("/sections/deep_analysis").asString()).isEqualTo("# BE Derin Analiz");
 
         // A second scan changes nothing.
         JsonNode again = JSON.readTree(post("/api/reports/rescan", "").body());
         assertThat(again.get("created").asInt()).isZero();
+        assertThat(again.get("updated").asInt()).isZero();
         assertThat(JSON.readTree(get("/api/analyses?ticker=BE").body()).size()).isEqualTo(1);
     }
 

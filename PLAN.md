@@ -259,7 +259,7 @@ AnalysisToAnalysisDtoMapper                 (bff.delegate.impl)
 ```
 
 ### 3.5 Data model (Flyway migrations)
-- `analyses(id, ticker, trade_date, asset_type, analysts, llm_provider, deep_think_llm, quick_think_llm, max_debate_rounds, max_risk_discuss_rounds, output_language, checkpoint_enabled, status, source[PLATFORM|EXTERNAL], rating, decision, llm_calls, tool_calls, tokens_in, tokens_out, cost_usd, elapsed_ms, created_at, started_at, ended_at, error_code, error_message)` (as built in Phase 1; `runner_ref`/`engine_version` come with Phase 2's orphan reconciliation)
+- `analyses(id, ticker, trade_date, asset_type, analysts, llm_provider, deep_think_llm, quick_think_llm, max_debate_rounds, max_risk_discuss_rounds, output_language, checkpoint_enabled, status, source[PLATFORM|EXTERNAL], rating, decision, llm_calls, tool_calls, tokens_in, tokens_out, cost_usd, elapsed_ms, created_at, started_at, ended_at, error_code, error_message, external_ref)` (as built in Phase 1, plus `external_ref` in Phase 2: `report:<T>/<D>` or `run:<id>`, the data dir source an EXTERNAL record came from; `runner_ref`/`engine_version` come with Phase 2's orphan reconciliation)
 - Events stay in `events.jsonl` per run (the DB keeps only the summary, so it stays small).
 - `reports(id, analysis_id, source_path, content_hash, sections_json, indexed_at)`
 - `presets(id, name, spec_json)`, `schedules(id, cron, preset_id, tickers, enabled)` (Phase 3), `settings(key, value)`
@@ -439,10 +439,11 @@ Phase 1 decisions and deviations:
 - **Stop** signals through `ProcessHandle`: `Process.destroy()` also closes the child's stdout, which killed the runner with SIGPIPE before it could report `run_finished{stopped}`.
 - **Build:** unique Gradle group per subproject (all `core` modules otherwise resolve as one module), `-parameters` on every module, fully qualified bean names (same-named MapStruct mappers in different modules).
 
-Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrupted runs) and the `reports/*_deep_*.md` files; watching the data dir with `WatchService` (today: import at startup + "scan data dir" button).
+Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrupted runs) and the `reports/*_deep_*.md` files (done 2026-09-30); watching the data dir with `WatchService` (today: import at startup + "scan data dir" button).
 
 ### Phase 2 — Docker and hardening (1 week)
-- [ ] Import `runs.json` and `reports/*_deep_*.md`; data dir `WatchService` (carried over from Phase 1)
+- [x] Import `runs.json` and `reports/*_deep_*.md` (2026-09-30): a completed history run adds its models, usage and times to its ticker/date's report record; a failed or stopped one becomes its own EXTERNAL record with the error; a deep report is a "Deep analysis" section of its ticker/date's report. Records are keyed by `external_ref`, so rescans stay idempotent
+- [ ] Data dir `WatchService` (carried over from Phase 1; today: import at startup + "scan data dir" button)
 - [ ] LLM cost per run (`cost_usd`): a price table per provider/model in `ta-runner`
 - [ ] `artifact/ta-runner/Dockerfile` (upstream image as base), `DockerRunnerAdapter` (D8), docker-socket-proxy, resource limits and security flags, label-based orphan container reconciliation
 - [ ] `deploy/Dockerfile` (single platform image: backend + UI), PostgreSQL profile, `deploy/docker-compose.yml` (platform + docker-socket-proxy; optional Caddy for TLS)

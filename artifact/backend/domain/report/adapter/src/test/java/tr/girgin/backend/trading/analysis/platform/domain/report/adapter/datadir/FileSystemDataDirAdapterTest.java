@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -15,16 +16,19 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSource;
 
-/** Against a fixture shaped like a real ~/.tradingagents/logs directory. */
+/** Against a fixture shaped like a real ~/.tradingagents directory. */
 class FileSystemDataDirAdapterTest {
 
     @TempDir
-    Path logs;
+    Path dataDir;
+
+    private Path logs;
 
     private FileSystemDataDirAdapter adapter;
 
     @BeforeEach
     void setUp() throws Exception {
+        logs = dataDir.resolve("logs");
         write("GOOG/2026-09-28/reports/1_analysts/market.md", "# Market");
         write("GOOG/2026-09-28/reports/1_analysts/news.md", "# News");
         write("GOOG/2026-09-28/reports/2_research/bull.md", "Bull case");
@@ -44,7 +48,10 @@ class FileSystemDataDirAdapterTest {
         write("MU/2026-09-27/reports/1_analysts/market.md", "# MU market");
         write("not a ticker/2026-09-27/reports/1_analysts/market.md", "ignored");
         write("NVDA/notes.txt", "ignored");
-        adapter = new FileSystemDataDirAdapter(logs);
+        write("../reports/MU_deep_2026-09-27.md", "# MU Derin Analiz");
+        write("../reports/notes_deep_2026-09-27.md", "ignored: not a ticker");
+        write("../reports/DELL_deep_latest.md", "ignored: no date");
+        adapter = new FileSystemDataDirAdapter(logs, dataDir.resolve("reports"));
     }
 
     @Test
@@ -75,20 +82,28 @@ class FileSystemDataDirAdapterTest {
     }
 
     @Test
+    void readsADeepAnalysisBesideTheRun() {
+        assertThat(adapter.read(key("MU", "2026-09-27")))
+                .filteredOn(c -> c.source() == ReportSource.DEEP_REPORT).singleElement()
+                .satisfies(c -> assertThat(c.sections()).containsExactly(
+                        Map.entry(ReportSection.DEEP_ANALYSIS, "# MU Derin Analiz")));
+    }
+
+    @Test
     void aCorruptFileDropsOnlyThatFile() {
-        assertThat(adapter.read(key("MU", "2026-09-27"))).singleElement()
-                .satisfies(c -> assertThat(c.source()).isEqualTo(ReportSource.REPORT_TREE));
+        assertThat(adapter.read(key("MU", "2026-09-27"))).extracting(ReportContent::source)
+                .containsExactlyInAnyOrder(ReportSource.REPORT_TREE, ReportSource.DEEP_REPORT);
     }
 
     @Test
     void scansValidTickersOnly() {
         assertThat(adapter.readAll()).extracting(c -> c.key().ticker() + "/" + c.source())
-                .containsExactlyInAnyOrder("BE/FULL_STATE", "GOOG/REPORT_TREE", "MU/REPORT_TREE");
+                .containsExactlyInAnyOrder("BE/FULL_STATE", "GOOG/REPORT_TREE", "MU/REPORT_TREE", "MU/DEEP_REPORT");
     }
 
     @Test
     void aMissingResultsDirIsEmpty() {
-        assertThat(new FileSystemDataDirAdapter(logs.resolve("absent")).readAll()).isEmpty();
+        assertThat(new FileSystemDataDirAdapter(logs.resolve("absent"), logs.resolve("absent")).readAll()).isEmpty();
     }
 
     private void write(String relative, String content) throws Exception {

@@ -5,6 +5,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ex
 
 public interface RegisterExternalAnalysisUseCase {
 
-    /** Idempotent per ticker and trade date; runs the platform started are never overwritten. */
+    /** Idempotent per data dir source; runs the platform started are never overwritten. */
     ExternalRegistration register(ExternalAnalysis external);
 }

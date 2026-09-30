@@ -14,6 +14,11 @@ public interface AnalysisRepositoryPort {
 
     void update(Analysis analysis);
 
+    /** Rewrites an EXTERNAL record whole; unlike a platform run, its spec follows the data dir. */
+    void replaceImported(Analysis analysis);
+
+    Optional<Analysis> findByExternalRef(String externalRef);
+
     Optional<Analysis> findById(AnalysisId id);
 
     /** Newest first. */

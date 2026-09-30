@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRun;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 
@@ -52,6 +56,33 @@ class JdbcAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         assertThat(repository.findAll(new AnalysisFilter(null, "ZZOLD"))).containsExactly(older);
         assertThat(repository.findAll(new AnalysisFilter(AnalysisStatus.RUNNING, "ZZNEW"))).containsExactly(newer);
         assertThat(repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED))).contains(older).doesNotContain(newer);
+    }
+
+    @Test
+    void findsAndReplacesImportedRecordsByTheirSource() {
+        Instant ended = Instant.parse("2026-09-27T21:34:35.383Z");
+        ExternalRun run = new ExternalRun("zz-a2cd", AnalysisStatus.COMPLETED, null, "deepseek", "deepseek-v4-pro",
+                "deepseek-v4-flash", 5, "English",
+                new RunStats(10, 0, 68_794, 28_916, BigDecimal.valueOf(0.0277), Duration.ofMillis(1_398_650)),
+                ended.minusSeconds(1398), ended);
+        Analysis imported = Analysis.imported(AnalysisId.newId(),
+                ExternalAnalysis.reportFiles("ZZIMP", LocalDate.of(2026, 9, 27), List.of(), null, null, null, ended));
+        repository.insert(imported);
+
+        Analysis replaced = Analysis.imported(imported.id(), ExternalAnalysis.reportFiles("ZZIMP",
+                LocalDate.of(2026, 9, 27), List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, ended));
+        repository.replaceImported(replaced);
+
+        assertThat(repository.findByExternalRef("report:ZZIMP/2026-09-27")).contains(replaced);
+        assertThat(repository.findByExternalRef("run:zz-a2cd")).isEmpty();
+    }
+
+    @Test
+    void platformRunsAreNeverReplacedAsImported() {
+        Analysis queued = Analysis.queued(AnalysisId.newId(), spec("NVDA"), Instant.now());
+        repository.insert(queued);
+
+        assertThatThrownBy(() -> repository.replaceImported(queued)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

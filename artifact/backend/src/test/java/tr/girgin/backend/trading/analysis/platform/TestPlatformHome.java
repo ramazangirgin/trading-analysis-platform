@@ -6,7 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.test.context.DynamicPropertyRegistry;
 
-/** A throwaway platform home per test class, so tests never touch ~/.tradingagents-platform. */
+/**
+ * A throwaway platform home per test class, also used as the data dir, so tests never touch
+ * ~/.tradingagents-platform or ~/.tradingagents.
+ */
 final class TestPlatformHome {
 
     private TestPlatformHome() {
@@ -26,6 +29,7 @@ final class TestPlatformHome {
         registry.add("platform.runner.process.working-dir", home::toString);
         registry.add("platform.secrets.env-file", () -> home.resolve("secrets.env").toString());
         registry.add("platform.secrets.external-env-files", () -> "");
+        registry.add("platform.data-dir", home::toString);
         registry.add("platform.results-dir", () -> home.resolve("logs").toString());
         registry.add("platform.cache-dir", () -> home.resolve("cache").toString());
     }
