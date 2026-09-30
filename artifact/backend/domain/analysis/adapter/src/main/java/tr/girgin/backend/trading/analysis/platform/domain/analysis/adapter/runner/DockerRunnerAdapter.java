@@ -5,13 +5,17 @@ import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.exception.DockerException;
 import com.github.dockerjava.api.exception.NotModifiedException;
+import com.github.dockerjava.api.model.AccessMode;
+import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Capability;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Mount;
 import com.github.dockerjava.api.model.MountType;
+import com.github.dockerjava.api.model.SELContext;
 import com.github.dockerjava.api.model.StreamType;
+import com.github.dockerjava.api.model.Volume;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -223,18 +227,20 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
     }
 
     private HostConfig hostConfig() {
-        Mount data = new Mount()
-                .withType(dataMount.startsWith("/") ? MountType.BIND : MountType.VOLUME)
-                .withSource(dataMount)
-                .withTarget(DATA_DIR);
         HostConfig config = HostConfig.newHostConfig()
                 .withReadonlyRootfs(true)
                 .withTmpFs(Map.of("/tmp", "rw,nosuid,nodev,size=" + tmpSize))
                 .withCapDrop(Capability.ALL)
                 .withSecurityOpts(List.of("no-new-privileges"))
                 .withMemory(memoryBytes)
-                .withNanoCPUs(nanoCpus)
-                .withMounts(List.of(data));
+                .withNanoCPUs(nanoCpus);
+        if (dataMount.startsWith("/")) {
+            // A folder on the host, shared with the platform: labelled for container use on SELinux
+            // hosts, as Compose's :z does (ignored elsewhere).
+            config.withBinds(new Bind(dataMount, new Volume(DATA_DIR), AccessMode.rw, SELContext.shared));
+        } else {
+            config.withMounts(List.of(new Mount().withType(MountType.VOLUME).withSource(dataMount).withTarget(DATA_DIR)));
+        }
         return network.isEmpty() ? config : config.withNetworkMode(network);
     }
 

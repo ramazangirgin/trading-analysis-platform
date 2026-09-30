@@ -1,0 +1,4 @@
+# Build context of deploy/Dockerfile (the repository root): the platform jar and nothing else, so
+# no key files, databases or local data can end up in the image.
+*
+!artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar

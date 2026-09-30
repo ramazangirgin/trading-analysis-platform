@@ -18,6 +18,9 @@ dependencies {
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.flyway)
     runtimeOnly(libs.sqlite.jdbc)
+    // The "postgres" profile (Docker Compose setup).
+    runtimeOnly(libs.postgresql)
+    runtimeOnly(libs.flyway.database.postgresql)
 
     // Runtime only: the application assembles the modules but never compiles against them.
     runtimeOnly(project(":backend:bff:api"))

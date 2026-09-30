@@ -1,0 +1,89 @@
+# TradingAgents Platform on one machine (PLAN.md section 4, deployment 2):
+#   platform            backend + UI, http://127.0.0.1:${PLATFORM_PORT}
+#   postgres            the platform's database; its data lives in ${PLATFORM_DATA}/postgres
+#   docker-socket-proxy the only way to the Docker socket: containers only, no exec, images or volumes
+# Each analysis runs in its own ta-runner container, started by the platform through the proxy.
+#
+#   cp deploy/.env.example deploy/.env    # then edit
+#   mise run docker-build                 # the two images
+#   docker compose -f deploy/docker-compose.yml up -d
+
+name: trading-analysis-platform
+
+services:
+  # Creates the data directories with the owners the other containers run as, then exits.
+  init-dirs:
+    image: ${PLATFORM_IMAGE:-trading-analysis-platform:0.0.1}
+    user: "0"
+    entrypoint:
+      - sh
+      - -c
+      - >-
+        mkdir -p /data/postgres /data/platform /data/tradingagents
+        && (chown -R 10002:10002 /data/platform; chown -R 10001:10001 /data/tradingagents; true)
+    volumes:
+      # :z labels the folders for container use on SELinux hosts (Fedora, RHEL, Podman machines);
+      # elsewhere it is ignored.
+      - ${PLATFORM_DATA:?set PLATFORM_DATA in deploy/.env}:/data:z
+    network_mode: none
+
+  postgres:
+    image: postgres:18.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: platform
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      # PostgreSQL 18 keeps its data in a per-version directory under /var/lib/postgresql.
+      - ${PLATFORM_DATA}/postgres:/var/lib/postgresql:z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platform -d platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      init-dirs:
+        condition: service_completed_successfully
+    networks: [backend]
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      POST: 1
+      ALLOW_START: 1
+      ALLOW_STOP: 1
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    # Reads the engine socket without relabelling it for containers (SELinux hosts).
+    security_opt:
+      - label=disable
+    networks: [backend]
+
+  platform:
+    image: ${PLATFORM_IMAGE:-trading-analysis-platform:0.0.1}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PLATFORM_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      PLATFORM_DB_HOST: postgres
+      PLATFORM_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      TA_RUNNER_IMAGE: ${TA_RUNNER_IMAGE:-ta-runner:0.1.0}
+      # Runner containers are created by the engine itself, so this is a path on this machine.
+      TA_RUNNER_DATA_MOUNT: ${PLATFORM_DATA}/tradingagents
+    volumes:
+      - ${PLATFORM_DATA}/platform:/data/platform:z
+      - ${PLATFORM_DATA}/tradingagents:/data/tradingagents:ro,z
+    depends_on:
+      postgres:
+        condition: service_healthy
+      docker-socket-proxy:
+        condition: service_started
+    networks: [backend]
+
+networks:
+  backend: {}
