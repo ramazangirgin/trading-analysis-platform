@@ -31,9 +31,9 @@ class DataDirWatchService implements WatchDataDirUseCase {
 
     @Autowired
     DataDirWatchService(DataDirWatchPort watcher,
-                        @Value("${platform.import.watch.quiet-period:5s}") Duration quietPeriod,
-                        @Value("${platform.import.watch.max-delay:60s}") Duration maxDelay) {
-        this(watcher, quietPeriod, maxDelay, System::nanoTime);
+                        @Value("${platform.import.watch.quiet-period-ms:5000}") long quietPeriodMs,
+                        @Value("${platform.import.watch.max-delay-seconds:60}") long maxDelaySeconds) {
+        this(watcher, Duration.ofMillis(quietPeriodMs), Duration.ofSeconds(maxDelaySeconds), System::nanoTime);
     }
 
     DataDirWatchService(DataDirWatchPort watcher, Duration quietPeriod, Duration maxDelay, LongSupplier nanoTime) {

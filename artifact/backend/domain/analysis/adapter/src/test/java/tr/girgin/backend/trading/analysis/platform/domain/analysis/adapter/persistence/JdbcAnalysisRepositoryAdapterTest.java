@@ -33,7 +33,7 @@ class JdbcAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         Analysis queued = Analysis.queued(AnalysisId.newId(), spec("NVDA"), created);
         repository.insert(queued);
 
-        Analysis done = queued.running(created.plusSeconds(1))
+        Analysis done = queued.running(created.plusSeconds(1), "4242@1790000000000")
                 .withStats(new RunStats(12, 10, 77137, 48090, new BigDecimal("0.42"), Duration.ofMillis(260_500)))
                 .withDecision(Rating.OVERWEIGHT, "Rating: Overweight")
                 .finished(AnalysisStatus.COMPLETED, created.plusSeconds(261), null, null);
@@ -47,7 +47,7 @@ class JdbcAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     void listsNewestFirstAndFilters() {
         Instant base = Instant.parse("2026-09-29T11:00:00Z");
         Analysis older = Analysis.queued(AnalysisId.newId(), spec("ZZOLD"), base);
-        Analysis newer = Analysis.queued(AnalysisId.newId(), spec("ZZNEW"), base.plusMillis(1)).running(base);
+        Analysis newer = Analysis.queued(AnalysisId.newId(), spec("ZZNEW"), base.plusMillis(1)).running(base, "4243");
         repository.insert(older);
         repository.insert(newer);
 

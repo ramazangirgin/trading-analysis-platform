@@ -6,10 +6,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
@@ -116,6 +118,9 @@ final class Fakes {
 
         final Map<AnalysisId, RunEventSink> sinks = new LinkedHashMap<>();
         final List<RunHandle> stopped = new ArrayList<>();
+        // Runner refs whose runs are still going; reattach() finds only these.
+        final Set<String> alive = new HashSet<>();
+        final Map<AnalysisId, Long> reattachedAfter = new LinkedHashMap<>();
         Map<String, String> lastEnvironment;
         RuntimeException failOnStart;
 
@@ -132,6 +137,16 @@ final class Fakes {
         @Override
         public void stop(RunHandle handle) {
             stopped.add(handle);
+        }
+
+        @Override
+        public boolean reattach(AnalysisId id, RunHandle handle, long afterSeq, RunEventSink sink) {
+            if (!alive.contains(handle.ref())) {
+                return false;
+            }
+            sinks.put(id, sink);
+            reattachedAfter.put(id, afterSeq);
+            return true;
         }
 
         RunEventSink sink(AnalysisId id) {

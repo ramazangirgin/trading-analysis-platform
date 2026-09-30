@@ -12,7 +12,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 interface AnalysisRowToAnalysisMapper {
 
     // Single-argument transitions on Analysis look like fluent setters to MapStruct.
-    @Mapping(target = "running", ignore = true)
     @Mapping(target = "withStats", ignore = true)
     @Mapping(target = "spec", source = ".")
     @Mapping(target = "stats", source = ".")

@@ -15,4 +15,11 @@ public interface RunnerPort {
 
     /** Asks the run to stop (SIGTERM, then a forced kill after a grace period). */
     void stop(RunHandle handle);
+
+    /**
+     * Follows a run that an earlier platform process started, if it is still going: its events
+     * after {@code afterSeq} arrive on {@code sink}, then {@code onExit}, as for a started run, and
+     * {@link #stop} works on it again. Returns false when the run is gone.
+     */
+    boolean reattach(AnalysisId id, RunHandle handle, long afterSeq, RunEventSink sink);
 }

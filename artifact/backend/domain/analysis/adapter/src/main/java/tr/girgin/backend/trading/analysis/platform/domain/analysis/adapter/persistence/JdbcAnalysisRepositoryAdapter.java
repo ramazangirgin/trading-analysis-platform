@@ -23,11 +23,11 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
             INSERT INTO analyses (id, ticker, trade_date, asset_type, analysts, llm_provider, deep_think_llm,
                 quick_think_llm, max_debate_rounds, max_risk_discuss_rounds, output_language, checkpoint_enabled,
                 status, source, rating, decision, llm_calls, tool_calls, tokens_in, tokens_out, cost_usd,
-                elapsed_ms, created_at, started_at, ended_at, error_code, error_message, external_ref)
+                elapsed_ms, created_at, started_at, ended_at, error_code, error_message, external_ref, runner_ref)
             VALUES (:id, :ticker, :tradeDate, :assetType, :analysts, :llmProvider, :deepThinkLlm,
                 :quickThinkLlm, :maxDebateRounds, :maxRiskDiscussRounds, :outputLanguage, :checkpointEnabled,
                 :status, :source, :rating, :decision, :llmCalls, :toolCalls, :tokensIn, :tokensOut, :costUsd,
-                :elapsedMs, :createdAt, :startedAt, :endedAt, :errorCode, :errorMessage, :externalRef)
+                :elapsedMs, :createdAt, :startedAt, :endedAt, :errorCode, :errorMessage, :externalRef, :runnerRef)
             """;
 
     // The spec and creation time never change after insert.
@@ -35,7 +35,7 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
             UPDATE analyses SET status = :status, rating = :rating, decision = :decision,
                 llm_calls = :llmCalls, tool_calls = :toolCalls, tokens_in = :tokensIn, tokens_out = :tokensOut,
                 cost_usd = :costUsd, elapsed_ms = :elapsedMs, started_at = :startedAt, ended_at = :endedAt,
-                error_code = :errorCode, error_message = :errorMessage
+                error_code = :errorCode, error_message = :errorMessage, runner_ref = :runnerRef
             WHERE id = :id
             """;
 

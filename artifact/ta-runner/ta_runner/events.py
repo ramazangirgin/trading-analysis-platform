@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,7 +26,7 @@ class EventWriter:
 
     def __init__(self, run_id: str, stream: TextIO, events_file: Path | None = None) -> None:
         self._run_id = run_id
-        self._stream = stream
+        self._stream: TextIO | None = stream
         self._file = events_file.open("a", encoding="utf-8") if events_file else None
         self._seq = 0
         self._lock = threading.Lock()
@@ -47,8 +48,24 @@ class EventWriter:
             if self._file:
                 self._file.write(line)
                 self._file.flush()
+            if self._stream:
+                self._write_stream(line)
+
+    def _write_stream(self, line: str) -> None:
+        try:
             self._stream.write(line)
             self._stream.flush()
+        except (BrokenPipeError, ValueError, OSError) as exc:
+            if not self._file:
+                raise
+            # The platform that read stdout has gone (restarted, crashed). The run is worth
+            # finishing: events.jsonl still gets every event, and a restarted platform follows it.
+            self._stream = None
+            print(
+                f"ta-runner: stdout is gone ({exc.__class__.__name__}); writing events.jsonl only",
+                file=sys.stderr,
+                flush=True,
+            )
 
     def close(self) -> None:
         with self._lock:

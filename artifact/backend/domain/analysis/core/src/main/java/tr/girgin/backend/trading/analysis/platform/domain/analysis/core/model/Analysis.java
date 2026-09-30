@@ -6,7 +6,9 @@ import java.util.Objects;
 
 /**
  * One analysis run and its outcome. Immutable: transitions return a new instance.
- * {@code externalRef} is where an EXTERNAL record came from in the data dir (see {@link ExternalAnalysis#ref()}).
+ * {@code externalRef} is where an EXTERNAL record came from in the data dir (see {@link ExternalAnalysis#ref()});
+ * {@code runnerRef} is the runner's handle on a started run (a process or container), kept so a
+ * restarted platform can find the run again.
  */
 public record Analysis(
         AnalysisId id,
@@ -21,7 +23,8 @@ public record Analysis(
         Instant endedAt,
         String errorCode,
         String errorMessage,
-        String externalRef) {
+        String externalRef,
+        String runnerRef) {
 
     public Analysis {
         Objects.requireNonNull(id, "id");
@@ -34,7 +37,7 @@ public record Analysis(
 
     public static Analysis queued(AnalysisId id, AnalysisSpec spec, Instant now) {
         return new Analysis(id, spec, AnalysisStatus.QUEUED, AnalysisSource.PLATFORM,
-                null, null, RunStats.EMPTY, now, null, null, null, null, null);
+                null, null, RunStats.EMPTY, now, null, null, null, null, null, null);
     }
 
     /** Upstream's model choices are not in its report files, so a run without run history says "unknown". */
@@ -71,26 +74,26 @@ public record Analysis(
         Instant startedAt = run == null || run.startedAt() == null ? endedAt : millis(run.startedAt());
         return new Analysis(id, spec, status, AnalysisSource.EXTERNAL, external.rating(), external.decision(),
                 run == null ? RunStats.EMPTY : run.stats(), startedAt, startedAt, endedAt,
-                errorCode, errorMessage, external.ref());
+                errorCode, errorMessage, external.ref(), null);
     }
 
     private static Instant millis(Instant instant) {
         return instant.truncatedTo(ChronoUnit.MILLIS);
     }
 
-    public Analysis running(Instant now) {
+    public Analysis running(Instant now, String newRunnerRef) {
         return new Analysis(id, spec, AnalysisStatus.RUNNING, source, rating, decision, stats,
-                createdAt, now, endedAt, errorCode, errorMessage, externalRef);
+                createdAt, now, endedAt, errorCode, errorMessage, externalRef, newRunnerRef);
     }
 
     public Analysis withStats(RunStats newStats) {
         return new Analysis(id, spec, status, source, rating, decision, newStats,
-                createdAt, startedAt, endedAt, errorCode, errorMessage, externalRef);
+                createdAt, startedAt, endedAt, errorCode, errorMessage, externalRef, runnerRef);
     }
 
     public Analysis withDecision(Rating newRating, String newDecision) {
         return new Analysis(id, spec, status, source, newRating, newDecision, stats,
-                createdAt, startedAt, endedAt, errorCode, errorMessage, externalRef);
+                createdAt, startedAt, endedAt, errorCode, errorMessage, externalRef, runnerRef);
     }
 
     public Analysis finished(AnalysisStatus endStatus, Instant now, String code, String message) {
@@ -98,6 +101,6 @@ public record Analysis(
             throw new IllegalArgumentException("Not a terminal status: " + endStatus);
         }
         return new Analysis(id, spec, endStatus, source, rating, decision, stats,
-                createdAt, startedAt, now, code, message, externalRef);
+                createdAt, startedAt, now, code, message, externalRef, runnerRef);
     }
 }

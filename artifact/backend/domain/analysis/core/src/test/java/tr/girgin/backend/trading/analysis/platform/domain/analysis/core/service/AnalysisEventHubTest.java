@@ -28,7 +28,7 @@ class AnalysisEventHubTest {
         repository = new Fakes.Repository();
         eventStore = new Fakes.EventStore();
         hub = new AnalysisEventHub(repository, eventStore);
-        Analysis running = Analysis.queued(AnalysisId.newId(), spec("NVDA"), Instant.now()).running(Instant.now());
+        Analysis running = Analysis.queued(AnalysisId.newId(), spec("NVDA"), Instant.now()).running(Instant.now(), "4242");
         repository.insert(running);
         id = running.id();
     }

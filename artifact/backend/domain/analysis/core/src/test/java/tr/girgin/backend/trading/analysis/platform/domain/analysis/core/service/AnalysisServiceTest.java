@@ -25,6 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 
 class AnalysisServiceTest {
 
@@ -214,14 +215,78 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void failsRunsLeftActiveByAPreviousProcess() {
-        Analysis orphan = Analysis.queued(AnalysisId.newId(), spec("NVDA"), Instant.now()).running(Instant.now());
-        repository.insert(orphan);
+    void failsRunsLeftRunningWhoseRunnerIsGone() {
+        Analysis orphan = orphan("NVDA", "4242");
 
         service.afterSingletonsInstantiated();
 
-        assertThat(service.get(orphan.id()).status()).isEqualTo(AnalysisStatus.FAILED);
-        assertThat(service.get(orphan.id()).errorCode()).isEqualTo(AnalysisService.PLATFORM_RESTARTED);
+        Analysis failed = service.get(orphan.id());
+        assertThat(failed.status()).isEqualTo(AnalysisStatus.FAILED);
+        assertThat(failed.errorCode()).isEqualTo(AnalysisService.PLATFORM_RESTARTED);
+        assertThat(eventStore.read(orphan.id(), 0)).last()
+                .satisfies(e -> assertThat(e.type()).isEqualTo(RunEventType.RUN_FINISHED));
+    }
+
+    @Test
+    void takesTheOutcomeOfRunsThatEndedWhileThePlatformWasDown() {
+        Analysis orphan = orphan("NVDA", "4242");
+        eventStore.append(orphan.id(), stats(1, 12));
+        eventStore.append(orphan.id(), decision(2, Rating.OVERWEIGHT));
+        eventStore.append(orphan.id(), finished(3, RunOutcome.COMPLETED, null));
+
+        service.afterSingletonsInstantiated();
+
+        Analysis done = service.get(orphan.id());
+        assertThat(done.status()).isEqualTo(AnalysisStatus.COMPLETED);
+        assertThat(done.rating()).isEqualTo(Rating.OVERWEIGHT);
+        assertThat(done.stats().llmCalls()).isEqualTo(12);
+        assertThat(runner.reattachedAfter).isEmpty();
+    }
+
+    @Test
+    void followsRunsWhoseRunnerIsStillGoing() {
+        Analysis orphan = orphan("NVDA", "4242");
+        eventStore.append(orphan.id(), stats(1, 3));
+        runner.alive.add("4242");
+
+        service.afterSingletonsInstantiated();
+
+        assertThat(runner.reattachedAfter).containsEntry(orphan.id(), 1L);
+        assertThat(service.get(orphan.id()).status()).isEqualTo(AnalysisStatus.RUNNING);
+        assertThat(service.get(orphan.id()).stats().llmCalls()).isEqualTo(3);
+        assertThatThrownBy(() -> service.start(spec("NVDA")))
+                .isInstanceOfSatisfying(AnalysisException.class,
+                        e -> assertThat(e.error()).isEqualTo(AnalysisError.ALREADY_RUNNING));
+
+        service.stop(orphan.id());
+        assertThat(runner.stopped).extracting(RunHandle::ref).containsExactly("4242");
+
+        runner.sink(orphan.id()).onEvent(finished(2, RunOutcome.STOPPED, null));
+        runner.sink(orphan.id()).onExit(-1);
+        assertThat(service.get(orphan.id()).status()).isEqualTo(AnalysisStatus.STOPPED);
+    }
+
+    @Test
+    void queuesRunsLeftQueuedAgainInTheirOrder() {
+        Instant now = Instant.now();
+        Analysis first = Analysis.queued(AnalysisId.newId(), spec("NVDA"), now.minusSeconds(3));
+        Analysis second = Analysis.queued(AnalysisId.newId(), spec("MU"), now.minusSeconds(2));
+        Analysis third = Analysis.queued(AnalysisId.newId(), spec("GOOG"), now.minusSeconds(1));
+        repository.insert(third);
+        repository.insert(first);
+        repository.insert(second);
+
+        service.afterSingletonsInstantiated();
+
+        assertThat(runner.sinks.keySet()).containsExactly(first.id(), second.id());
+        assertThat(service.get(third.id()).status()).isEqualTo(AnalysisStatus.QUEUED);
+    }
+
+    private Analysis orphan(String ticker, String runnerRef) {
+        Analysis orphan = Analysis.queued(AnalysisId.newId(), spec(ticker), Instant.now())
+                .running(Instant.now(), runnerRef);
+        repository.insert(orphan);
+        return orphan;
     }
 
     @Test

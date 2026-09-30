@@ -79,9 +79,9 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
                               WatchDataDirUseCase watchDataDir,
                               @Value("${platform.import.on-startup:true}") boolean importOnStartup,
                               @Value("${platform.import.watch.enabled:true}") boolean watch,
-                              @Value("${platform.import.settle-time:10m}") Duration settleTime) {
-        this(scanReports, scanHistory, registerExternal, watchDataDir, importOnStartup, watch, settleTime,
-                Clock.systemUTC());
+                              @Value("${platform.import.settle-minutes:10}") long settleMinutes) {
+        this(scanReports, scanHistory, registerExternal, watchDataDir, importOnStartup, watch,
+                Duration.ofMinutes(settleMinutes), Clock.systemUTC());
     }
 
     ImportExistingRunsService(ScanReportsUseCase scanReports,

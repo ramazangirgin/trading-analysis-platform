@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -114,6 +115,85 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         runner.stop(handle);
 
         assertThat(sink.awaitExit()).isNotEqualTo(0);
+    }
+
+    @Test
+    void followsARunnerAnEarlierPlatformStartedThroughItsEventsFile() throws Exception {
+        AnalysisId id = AnalysisId.newId();
+        Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value())).resolve("events.jsonl");
+        // Like a ta-runner whose platform has gone: stdout leads nowhere, events.jsonl gets everything.
+        Process orphan = orphan(events, """
+                line() { printf '{"v":1,"ts":"2026-09-29T10:00:0%s","run_id":"x","seq":%s,"type":"%s"%s}\\n' "$1Z" "$1" "$2" "$3" >> "$EVENTS"; }
+                line 1 run_started ''
+                sleep 1
+                line 2 decision ',"rating":"Hold","raw":"Hold"'
+                line 3 run_finished ',"status":"completed"'
+                """);
+        RecordingSink sink = new RecordingSink();
+
+        boolean followed = runner.reattach(id, new RunHandle(ref(orphan)), 1, sink);
+
+        assertThat(followed).isTrue();
+        assertThat(sink.awaitExit()).isEqualTo(-1);
+        assertThat(sink.events).extracting(RunEvent::seq).containsExactly(2L, 3L);
+        assertThat(sink.events.getLast().outcome()).isEqualTo(RunOutcome.COMPLETED);
+    }
+
+    @Test
+    void stopsARunnerItFollowsAgain() throws Exception {
+        AnalysisId id = AnalysisId.newId();
+        Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value())).resolve("events.jsonl");
+        Process orphan = orphan(events, """
+                STOPPED='{"v":1,"ts":"2026-09-29T10:00:09Z","run_id":"x","seq":2,"type":"run_finished","status":"stopped"}'
+                trap 'echo "$STOPPED" >> "$EVENTS"; exit 2' TERM
+                echo '{"v":1,"ts":"2026-09-29T10:00:00Z","run_id":"x","seq":1,"type":"run_started"}' >> "$EVENTS"
+                while true; do sleep 0.1; done
+                """);
+        RecordingSink sink = new RecordingSink();
+        RunHandle handle = new RunHandle(ref(orphan));
+        assertThat(runner.reattach(id, handle, 0, sink)).isTrue();
+        sink.awaitEvents(1);
+
+        runner.stop(handle);
+
+        assertThat(sink.awaitExit()).isEqualTo(-1);
+        assertThat(sink.events.getLast().outcome()).isEqualTo(RunOutcome.STOPPED);
+    }
+
+    @Test
+    void doesNotFollowAPidThatNowBelongsToAnotherProcess() throws Exception {
+        Process other = new ProcessBuilder("sleep", "5").start();
+        try {
+            RunHandle stale = new RunHandle(other.pid() + "@1000");
+
+            assertThat(runner.reattach(AnalysisId.newId(), stale, 0, new RecordingSink())).isFalse();
+        } finally {
+            other.destroyForcibly();
+        }
+    }
+
+    @Test
+    void doesNotFollowARunnerThatIsGone() throws Exception {
+        Process gone = new ProcessBuilder("true").start();
+        gone.waitFor();
+        String ref = gone.pid() + "@" + Instant.now().toEpochMilli();
+
+        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle(ref), 0, new RecordingSink())).isFalse();
+        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink())).isFalse();
+    }
+
+    /** A runner process this platform instance did not start: its stdout is not read by anyone. */
+    private static Process orphan(Path events, String body) throws IOException {
+        Path script = Files.writeString(events.resolveSibling("orphan.sh"), "#!/bin/sh\n" + body);
+        ProcessBuilder builder = new ProcessBuilder("/bin/sh", script.toString())
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD);
+        builder.environment().put("EVENTS", events.toString());
+        return builder.start();
+    }
+
+    private static String ref(Process process) {
+        return process.pid() + "@" + process.toHandle().info().startInstant().orElseThrow().toEpochMilli();
     }
 
     private static void script(String body) throws IOException {

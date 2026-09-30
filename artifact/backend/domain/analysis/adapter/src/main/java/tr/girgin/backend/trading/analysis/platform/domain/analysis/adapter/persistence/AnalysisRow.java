@@ -29,5 +29,6 @@ record AnalysisRow(
         String endedAt,
         String errorCode,
         String errorMessage,
-        String externalRef) {
+        String externalRef,
+        String runnerRef) {
 }

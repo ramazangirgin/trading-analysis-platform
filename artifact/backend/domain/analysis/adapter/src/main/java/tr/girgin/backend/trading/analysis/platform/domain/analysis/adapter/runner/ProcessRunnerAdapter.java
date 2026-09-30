@@ -10,8 +10,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.event
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.RunnerOutputLineToRunEventMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunEventSink;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunnerPort;
@@ -30,6 +34,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
  * Runs ta-runner as a local child process (PLAN.md section 4, option A): one process per run,
  * started with an argument list (never a shell), stdout read line by line on a virtual thread,
  * stderr kept as {@code run.log} in the run directory.
+ *
+ * <p>A run's handle is {@code <pid>@<process start, epoch ms>}: after a platform restart the pid
+ * alone could by then belong to another process. A run found again that way is followed through
+ * the {@code events.jsonl} it keeps writing, since its stdout went with the old platform.
  */
 @Component
 class ProcessRunnerAdapter implements RunnerPort {
@@ -46,20 +54,23 @@ class ProcessRunnerAdapter implements RunnerPort {
     private final Path workingDir;
     private final Path runsDir;
     private final Duration stopGrace;
-    private final Map<String, Process> processes = new ConcurrentHashMap<>();
+    private final Duration followInterval;
+    private final Map<String, ProcessHandle> processes = new ConcurrentHashMap<>();
 
     ProcessRunnerAdapter(AnalysisSpecToRunnerSpecMapper specMapper,
                          RunnerOutputLineToRunEventMapper eventMapper,
                          @Value("${platform.runner.process.command}") String[] command,
                          @Value("${platform.runner.process.working-dir}") Path workingDir,
                          @Value("${platform.home}") Path platformHome,
-                         @Value("${platform.runner.stop-grace-seconds:15}") long stopGraceSeconds) {
+                         @Value("${platform.runner.stop-grace-seconds:15}") long stopGraceSeconds,
+                         @Value("${platform.runner.follow-interval-ms:500}") long followIntervalMs) {
         this.specMapper = specMapper;
         this.eventMapper = eventMapper;
         this.command = absoluteExecutable(List.of(command));
         this.workingDir = workingDir.toAbsolutePath();
         this.runsDir = platformHome.resolve("runs").toAbsolutePath();
         this.stopGrace = Duration.ofSeconds(stopGraceSeconds);
+        this.followInterval = Duration.ofMillis(followIntervalMs);
     }
 
     @Override
@@ -81,32 +92,102 @@ class ProcessRunnerAdapter implements RunnerPort {
         } catch (IOException e) {
             throw new UncheckedIOException("Could not start ta-runner for " + id + ": " + e.getMessage(), e);
         }
-        String ref = String.valueOf(process.pid());
-        processes.put(ref, process);
+        String ref = ref(process.toHandle());
+        processes.put(ref, process.toHandle());
         Thread.ofVirtual().name("runner-" + id.value()).start(() -> pump(id, ref, process, sink));
         return new RunHandle(ref);
     }
 
     @Override
     public void stop(RunHandle handle) {
-        Process process = processes.get(handle.ref());
+        ProcessHandle process = processes.get(handle.ref());
         if (process == null) {
             return;
         }
         // Signal through the ProcessHandle: Process.destroy() also closes the child's stdout, and
         // the runner would die of SIGPIPE instead of reporting run_finished{stopped}.
-        process.toHandle().destroy();
+        process.destroy();
         Thread.ofVirtual().name("runner-stop-" + handle.ref()).start(() -> {
             try {
-                if (!process.waitFor(stopGrace.toMillis(), TimeUnit.MILLISECONDS)) {
-                    log.warn("Runner {} ignored SIGTERM for {}; killing it", handle.ref(), stopGrace);
-                    process.toHandle().destroyForcibly();
-                }
+                process.onExit().get(stopGrace.toMillis(), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                log.warn("Runner {} ignored SIGTERM for {}; killing it", handle.ref(), stopGrace);
+                process.destroyForcibly();
+            } catch (ExecutionException e) {
+                log.warn("Waiting for runner {} to stop failed: {}", handle.ref(), e.getMessage());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         });
     }
+
+    @Override
+    public boolean reattach(AnalysisId id, RunHandle handle, long afterSeq, RunEventSink sink) {
+        Optional<ProcessHandle> process = find(handle.ref());
+        if (process.isEmpty()) {
+            return false;
+        }
+        processes.put(handle.ref(), process.get());
+        Path events = runsDir.resolve(id.value()).resolve("events.jsonl");
+        Thread.ofVirtual().name("runner-follow-" + id.value())
+                .start(() -> follow(id, handle.ref(), process.get(), events, afterSeq, sink));
+        return true;
+    }
+
+    /** The live process behind a handle, unless its pid has since gone to another process. */
+    private static Optional<ProcessHandle> find(String ref) {
+        String[] parts = ref.split("@", 2);
+        long pid;
+        try {
+            pid = Long.parseLong(parts[0]);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+        return ProcessHandle.of(pid)
+                .filter(ProcessHandle::isAlive)
+                .filter(process -> parts.length == 1 || ref(process).equals(ref));
+    }
+
+    private static String ref(ProcessHandle process) {
+        return process.info().startInstant()
+                .map(start -> process.pid() + "@" + start.toEpochMilli())
+                .orElse(String.valueOf(process.pid()));
+    }
+
+    private void follow(AnalysisId id, String ref, ProcessHandle process, Path events, long afterSeq,
+                        RunEventSink sink) {
+        EventsFileTail tail = new EventsFileTail(events);
+        long lastSeq = afterSeq;
+        try {
+            boolean alive;
+            do {
+                alive = process.isAlive();
+                // Read once more after the exit: the last lines may have come just before it.
+                for (String line : tail.readNewLines()) {
+                    try {
+                        Optional<RunEvent> event = parser.parse(line).map(eventMapper::map);
+                        if (event.isPresent() && event.get().seq() > lastSeq) {
+                            lastSeq = event.get().seq();
+                            sink.onEvent(event.get());
+                        }
+                    } catch (RuntimeException e) {
+                        log.error("{}: failed to handle a runner event", id, e);
+                    }
+                }
+                if (alive) {
+                    Thread.sleep(followInterval);
+                }
+            } while (alive);
+        } catch (IOException e) {
+            log.warn("{}: cannot follow {}: {}", id, events, e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        processes.remove(ref);
+        // Not this platform's child, so its exit code cannot be read.
+        sink.onExit(-1);
+    }
+
 
     private void pump(AnalysisId id, String ref, Process process, RunEventSink sink) {
         try (BufferedReader reader = process.inputReader(StandardCharsets.UTF_8)) {

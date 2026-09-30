@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -83,14 +84,50 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
         this.maxConcurrentRuns = maxConcurrentRuns;
     }
 
-    /** Runs left QUEUED or RUNNING by a previous platform process can no longer be followed. */
+    /**
+     * Picks up what a previous platform process left active: a run whose runner is still going is
+     * followed again, one that ended meanwhile gets its real outcome from its events, and queued
+     * runs go back in the queue, in the order they were asked for.
+     */
     @Override
     public void afterSingletonsInstantiated() {
-        for (Analysis orphan : repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED, AnalysisStatus.RUNNING))) {
-            log.warn("Marking {} as failed: it was {} when the platform stopped", orphan.id(), orphan.status());
-            repository.update(orphan.finished(AnalysisStatus.FAILED, Instant.now(), PLATFORM_RESTARTED,
-                    "The platform restarted while this run was " + orphan.status().name().toLowerCase()));
+        List<Analysis> orphans = repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED, AnalysisStatus.RUNNING))
+                .stream()
+                .sorted(Comparator.comparing(Analysis::createdAt))
+                .toList();
+        synchronized (lock) {
+            orphans.stream().filter(a -> a.status() == AnalysisStatus.RUNNING).forEach(this::reconcile);
+            orphans.stream().filter(a -> a.status() == AnalysisStatus.QUEUED).forEach(queued -> {
+                log.info("Queueing {} again after a platform restart", queued.id());
+                queue.addLast(queued.id());
+                active.put(queued.id(), queued.spec());
+            });
+            dispatch();
         }
+    }
+
+    /** A run that was RUNNING when the platform stopped. Caller holds the lock. */
+    private void reconcile(Analysis orphan) {
+        AnalysisId id = orphan.id();
+        Sink sink = new Sink(id);
+        // Catch up on what the runner wrote while no platform was reading it.
+        List<RunEvent> missed = eventStore.read(id, 0);
+        missed.forEach(sink::onEvent);
+        if (sink.finishedReported) {
+            log.info("{} ended while the platform was down: {}", id, get(id).status());
+            return;
+        }
+        long lastSeq = missed.stream().mapToLong(RunEvent::seq).max().orElse(0);
+        RunHandle handle = orphan.runnerRef() == null ? null : new RunHandle(orphan.runnerRef());
+        if (handle != null && runner.reattach(id, handle, lastSeq, sink)) {
+            running.put(id, handle);
+            active.put(id, orphan.spec());
+            log.info("Following {} again ({}) after a platform restart", id, handle.ref());
+            return;
+        }
+        log.warn("Marking {} as failed: its runner is gone after a platform restart", id);
+        end(get(id), RunOutcome.FAILED, PLATFORM_RESTARTED,
+                "The platform restarted while this run was running, and the runner did not survive");
     }
 
     @Override
@@ -166,7 +203,7 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
             try {
                 RunHandle handle = runner.start(id, analysis.spec(), credentials.environment(), new Sink(id));
                 running.put(id, handle);
-                repository.update(analysis.running(Instant.now()));
+                repository.update(analysis.running(Instant.now(), handle.ref()));
                 log.info("Started {} ({})", id, handle.ref());
             } catch (RuntimeException e) {
                 log.error("Could not start {}", id, e);
