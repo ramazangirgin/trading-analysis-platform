@@ -1,10 +1,15 @@
 # Continuous integration: every push to any branch (main included), every pull request, and on
-# demand. Three jobs; add new ones (image publishing, security scans, ...) next to them.
+# demand. Jobs; add new ones (image publishing, security scans, ...) next to them and list them
+# under ci-passed:
 #
-#   build   backend + frontend: all Gradle tests (ArchUnit, Docker runner against the runner's
-#           Docker), frontend lint and tests, the single jar
-#   runner  ta-runner: ruff and pytest, upstream contract tests included
-#   images  both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
+#   build      backend + frontend: all Gradle tests (ArchUnit, Docker runner against the runner's
+#              Docker), frontend lint and tests, the single jar
+#   runner     ta-runner: ruff and pytest, upstream contract tests included
+#   images     both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
+#   ci-passed  "CI passed": the one check main's ruleset requires before a pull request can merge
+#
+# Pull requests run even when their branch already ran on push: a skipped required check would
+# count as passed.
 
 name: CI
 
@@ -29,8 +34,6 @@ env:
 jobs:
   build:
     name: Backend and frontend
-    # A branch in this repository already runs on push; pull requests add a run only from forks.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -76,7 +79,6 @@ jobs:
 
   runner:
     name: ta-runner
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -138,3 +140,21 @@ jobs:
 
       - name: Docker Compose smoke test
         run: deploy/smoke-test.sh "$RUNNER_TEMP/platform-data"
+
+  # The single required check: it passes only if every job above passed, so new jobs are covered by
+  # adding them to `needs` without touching the repository's rules.
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [build, runner, images]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: All jobs passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || { echo "Not all jobs passed."; exit 1; }
+          done

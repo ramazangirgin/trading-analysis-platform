@@ -274,13 +274,17 @@ your shell, plain `./gradlew` and `uv` in this directory use the same versions.
 ### Continuous integration
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to any branch (main
-included), on pull requests from forks, and on demand (*Run workflow* on the Actions tab):
+included), on every pull request, and on demand (*Run workflow* on the Actions tab):
 
 | Job | What |
 |---|---|
 | Backend and frontend | `mise run build`: every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff and pytest, upstream contract tests included |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
+
+A last job, **CI passed**, succeeds only if all of them did. It is the one check `main` requires:
+changes reach `main` through pull requests, which can merge only once **CI passed** is green. New
+jobs go into its `needs` list, so the rule never has to change.
 
 Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
 (not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
