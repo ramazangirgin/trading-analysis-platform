@@ -282,9 +282,15 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | ta-runner | `mise run runner-test`: ruff and pytest, upstream contract tests included |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
-A last job, **CI passed**, succeeds only if all of them did. It is the one check `main` requires:
-changes reach `main` through pull requests, which can merge only once **CI passed** is green. New
-jobs go into its `needs` list, so the rule never has to change.
+A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so
+the rules on `main` never have to change. Those rules (the repository ruleset "main"):
+
+- Changes reach `main` only through pull requests; no direct or force pushes, and `main` cannot be
+  deleted.
+- A pull request merges once **CI passed** is green, its branch is up to date with `main`, and a
+  code owner has approved it ([`.github/CODEOWNERS`](.github/CODEOWNERS): the admins).
+- Admins can merge their own pull requests without an approval, and can merge one whose checks
+  failed (GitHub's "bypass" option on the pull request). Nothing merges on its own: auto-merge is off.
 
 Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
 (not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
