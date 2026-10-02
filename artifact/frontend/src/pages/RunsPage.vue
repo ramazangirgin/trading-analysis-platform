@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { NAlert, NButton, NCard, NEmpty, NInput, NSelect, NSpace, useMessage } from 'naive-ui'
-import { ACTIVE_STATUSES, api, type Analysis, type AnalysisStatus } from '@/api/client'
-import AnalysisTable from '@/components/AnalysisTable.vue'
-import { useLabels } from '@/composables/useLabels'
-import { usePolling } from '@/composables/usePolling'
+import { ACTIVE_STATUSES, analysisApi, AnalysisTable } from '@/features/analysis'
+import type { Analysis, AnalysisStatus } from '@/shared/api/types'
+import { useLabels } from '@/shared/composables/useLabels'
+import { usePolling } from '@/shared/composables/usePolling'
+import { reportsApi } from '@/features/reports'
 
 const { t, error: errorLabel } = useLabels()
 const analyses = ref<Analysis[]>([])
@@ -24,7 +25,7 @@ const statusOptions = computed(() =>
 
 async function refresh() {
   try {
-    analyses.value = await api.listAnalyses({
+    analyses.value = await analysisApi.listAnalyses({
       status: status.value ?? undefined,
       ticker: ticker.value.trim() || undefined,
     })
@@ -39,7 +40,7 @@ async function refresh() {
 async function rescan() {
   scanning.value = true
   try {
-    message.success(t('runs.rescanned', { ...(await api.rescanReports()) }))
+    message.success(t('runs.rescanned', { ...(await reportsApi.rescanReports()) }))
     await refresh()
   } catch (e) {
     message.error(errorLabel(e))

@@ -17,7 +17,7 @@ node {
 }
 
 val sources = listOf("src", "public", "index.html", "package.json", "pnpm-lock.yaml",
-    "vite.config.ts", "tsconfig.json", "tsconfig.node.json", "env.d.ts")
+    "vite.config.ts", "tsconfig.json", "tsconfig.node.json", "env.d.ts", "pnpm-workspace.yaml")
 
 val pnpmBuild = tasks.register<PnpmTask>("pnpmBuild") {
     description = "Type-checks and builds the frontend into dist/"
@@ -43,7 +43,7 @@ val pnpmTest = tasks.register<PnpmTask>("pnpmTest") {
     outputs.upToDateWhen { true }
 }
 
-// Regenerates src/api/schema.d.ts from openapi.json (`mise run api-types` refreshes both).
+// Regenerates src/shared/api/schema.d.ts from openapi.json (`mise run api-types` refreshes both).
 tasks.register<PnpmTask>("pnpmApiTypes") {
     description = "Generates the TypeScript API types from openapi.json"
     dependsOn(tasks.pnpmInstall)

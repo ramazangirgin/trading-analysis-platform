@@ -301,7 +301,7 @@ Tools come from `mise.toml`, as locally. A newer push to the same branch cancels
 - `mise run test` must pass.
 - After changing the REST API: with `mise run dev` running (restarted after the change), run
   `mise run api-types`. It saves the backend's OpenAPI spec as `artifact/frontend/openapi.json` and
-  regenerates `artifact/frontend/src/api/schema.d.ts`; commit both.
+  regenerates `artifact/frontend/src/shared/api/schema.d.ts`; commit both.
 
 ### ta-runner
 

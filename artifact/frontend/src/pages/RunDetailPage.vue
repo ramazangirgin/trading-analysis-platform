@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -19,21 +19,22 @@ import {
   NTag,
   NTooltip,
 } from 'naive-ui'
-import { ACTIVE_STATUSES, api, type Analysis, type AnalysisReport } from '@/api/client'
-import { reportLanguage } from '@/domain/reportLanguage'
-import { SECTIONS } from '@/domain/runView'
-import { outputLanguageFor } from '@/i18n'
-import { useRunStream } from '@/composables/useRunStream'
-import { useLabels } from '@/composables/useLabels'
-import { usePolling } from '@/composables/usePolling'
-import AgentPipeline from '@/components/AgentPipeline.vue'
-import MarkdownView from '@/components/MarkdownView.vue'
-import RatingTag from '@/components/RatingTag.vue'
-import RunLog from '@/components/RunLog.vue'
-import StatusTag from '@/components/StatusTag.vue'
+import {
+  ACTIVE_STATUSES,
+  AgentPipeline,
+  analysisApi,
+  RunLog,
+  useRunStream,
+} from '@/features/analysis'
+import type { Analysis, AnalysisReport } from '@/shared/api/types'
+import { MarkdownView, PriceChart, reportLanguage, reportsApi, SECTIONS } from '@/features/reports'
+import { outputLanguageFor } from '@/shared/i18n'
+import { useLabels } from '@/shared/composables/useLabels'
+import { usePolling } from '@/shared/composables/usePolling'
+import RatingTag from '@/shared/ui/RatingTag.vue'
+import StatusTag from '@/shared/ui/StatusTag.vue'
 
 // ECharts is loaded only when the reports tab shows a chart.
-const PriceChart = defineAsyncComponent(() => import('@/components/PriceChart.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -75,7 +76,7 @@ const reportDebates = computed(() => {
 
 async function loadReportIfNeeded() {
   if (!analysis.value || active.value || report.value || Object.keys(view.sections).length) return
-  report.value = await api.getReport(id.value).catch(() => null)
+  report.value = await reportsApi.getReport(id.value).catch(() => null)
 }
 
 const active = computed(() => !!analysis.value && ACTIVE_STATUSES.includes(analysis.value.status))
@@ -114,7 +115,7 @@ const stats = computed(() => {
 
 async function refresh() {
   try {
-    analysis.value = await api.getAnalysis(id.value)
+    analysis.value = await analysisApi.getAnalysis(id.value)
     failure.value = null
     await loadReportIfNeeded()
   } catch (e) {
@@ -132,7 +133,7 @@ watch(id, () => {
 async function stop() {
   acting.value = true
   try {
-    analysis.value = await api.stopAnalysis(id.value)
+    analysis.value = await analysisApi.stopAnalysis(id.value)
   } catch (e) {
     failure.value = e
   } finally {
@@ -143,7 +144,7 @@ async function stop() {
 async function rerun() {
   acting.value = true
   try {
-    const next = await api.rerunAnalysis(id.value)
+    const next = await analysisApi.rerunAnalysis(id.value)
     await router.push({ name: 'analysis', params: { id: next.id } })
   } catch (e) {
     failure.value = e
