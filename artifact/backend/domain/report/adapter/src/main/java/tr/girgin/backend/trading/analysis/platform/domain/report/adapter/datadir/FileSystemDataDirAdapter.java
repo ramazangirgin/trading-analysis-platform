@@ -24,6 +24,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.report.adapter.datadir.json.FullStateLog;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.DebateSpeaker;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportContent;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;

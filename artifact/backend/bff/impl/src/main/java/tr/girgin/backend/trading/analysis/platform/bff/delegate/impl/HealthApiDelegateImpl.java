@@ -4,7 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.HealthApiDelegate;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SystemHealthDto;
-import tr.girgin.backend.trading.analysis.platform.orchestration.health.SystemHealthUseCase;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.SystemHealthToSystemHealthDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.orchestration.health.inbound.SystemHealthUseCase;
 
 @Service
 class HealthApiDelegateImpl implements HealthApiDelegate {

@@ -17,8 +17,13 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.json.CatalogJson;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.json.VersionJson;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.mapper.CatalogJsonToCatalogMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.mapper.VersionJsonToEngineVersionMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.support.RunnerKind;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.CatalogUnavailableException;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.outbound.runner.EngineInfoPort;
 

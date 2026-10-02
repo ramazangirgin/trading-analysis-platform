@@ -8,10 +8,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsError;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretSource;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretStatus;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SettingsError;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SettingsException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound.secrets.SecretStorePort;
 
 class SecretsServiceTest {
