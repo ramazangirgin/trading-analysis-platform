@@ -80,11 +80,12 @@ class DataDirWatchService implements WatchDataDirUseCase {
             }
             try {
                 pending = scheduler.schedule(this::fire, quietPeriod.toNanos(), TimeUnit.NANOSECONDS);
-            } catch (RejectedExecutionException e) {
+            } catch (RejectedExecutionException _) {
                 // Closed while a last change was coming in.
             }
         }
 
+        @SuppressWarnings("checkstyle:IllegalCatch") // scheduler thread: log the failure, do not lose it
         private void fire() {
             try {
                 onSettled.run();

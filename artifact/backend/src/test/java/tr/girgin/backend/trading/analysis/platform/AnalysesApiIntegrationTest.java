@@ -36,6 +36,7 @@ class AnalysesApiIntegrationTest {
 
     // A short run: four events, the last one ending it. The ticker named by SLOW_TICKER (set in
     // the secrets file, so it reaches the runner's environment) waits three seconds first.
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     private static final String SCRIPT = """
             #!/bin/sh
             OUT="$5"

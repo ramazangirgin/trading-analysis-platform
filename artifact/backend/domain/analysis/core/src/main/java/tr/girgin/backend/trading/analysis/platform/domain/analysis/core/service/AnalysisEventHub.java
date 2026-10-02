@@ -44,7 +44,7 @@ class AnalysisEventHub implements SubscribeAnalysisEventsUseCase {
         repository.findById(id).orElseThrow(() -> new AnalysisException(AnalysisError.NOT_FOUND,
                 "Analysis not found: " + id, Map.of("id", id.value())));
         Subscriber subscriber = new Subscriber(listener, afterSeq);
-        subscribers.computeIfAbsent(id, key -> new CopyOnWriteArrayList<>()).add(subscriber);
+        subscribers.computeIfAbsent(id, _ -> new CopyOnWriteArrayList<>()).add(subscriber);
         subscriber.replay(eventStore.read(id, afterSeq));
         // A run that ended before (or while) we registered sends no more live events.
         if (repository.findById(id).map(Analysis::status).map(s -> s.isTerminal()).orElse(true)) {
@@ -68,7 +68,7 @@ class AnalysisEventHub implements SubscribeAnalysisEventsUseCase {
     }
 
     private void remove(AnalysisId id, Subscriber subscriber) {
-        subscribers.computeIfPresent(id, (key, list) -> {
+        subscribers.computeIfPresent(id, (_, list) -> {
             list.remove(subscriber);
             return list.isEmpty() ? null : list;
         });
@@ -109,6 +109,7 @@ class AnalysisEventHub implements SubscribeAnalysisEventsUseCase {
             }
         }
 
+        @SuppressWarnings("checkstyle:IllegalCatch") // a failing subscriber must not affect the run
         private void emit(RunEvent event) {
             if (done || event.seq() <= lastSeq) {
                 return;

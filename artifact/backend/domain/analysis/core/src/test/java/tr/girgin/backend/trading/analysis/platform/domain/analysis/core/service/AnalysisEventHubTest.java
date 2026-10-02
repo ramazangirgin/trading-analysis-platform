@@ -1,9 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.event;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.finished;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.spec;
 
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,18 +25,20 @@ class AnalysisEventHubTest {
         repository = new Fakes.Repository();
         eventStore = new Fakes.EventStore();
         hub = new AnalysisEventHub(repository, eventStore);
-        Analysis running = Analysis.queued(AnalysisId.newId(), spec("NVDA"), Instant.now()).running(Instant.now(), "4242");
+        Analysis running = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Instant.now())
+                .running(Instant.now(), "4242");
         repository.insert(running);
         id = running.id();
     }
 
     @Test
     void replaysHistoryAfterTheCursorThenDeliversLiveEvents() {
-        store(event(1, RunEventType.RUN_STARTED), event(2, RunEventType.AGENT_STATUS), event(3, RunEventType.MESSAGE));
+        store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.AGENT_STATUS),
+                Fakes.event(3, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
         hub.subscribe(id, 1, listener);
-        hub.publish(id, event(4, RunEventType.MESSAGE));
+        hub.publish(id, Fakes.event(4, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).containsExactly(2L, 3L, 4L);
         assertThat(listener.completed).isFalse();
@@ -47,13 +46,13 @@ class AnalysisEventHubTest {
 
     @Test
     void dropsLiveEventsAlreadySeenInTheReplay() {
-        store(event(1, RunEventType.RUN_STARTED), event(2, RunEventType.MESSAGE));
+        store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
         hub.subscribe(id, 0, listener);
 
         // The runner writes the file before stdout, so a live event may repeat a replayed one.
-        hub.publish(id, event(2, RunEventType.MESSAGE));
-        hub.publish(id, event(3, RunEventType.MESSAGE));
+        hub.publish(id, Fakes.event(2, RunEventType.MESSAGE));
+        hub.publish(id, Fakes.event(3, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).containsExactly(1L, 2L, 3L);
     }
@@ -63,8 +62,8 @@ class AnalysisEventHubTest {
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
         hub.subscribe(id, 0, listener);
 
-        hub.publish(id, finished(1, RunOutcome.COMPLETED, null));
-        hub.publish(id, event(2, RunEventType.LOG));
+        hub.publish(id, Fakes.finished(1, RunOutcome.COMPLETED, null));
+        hub.publish(id, Fakes.event(2, RunEventType.LOG));
 
         assertThat(listener.seqs).containsExactly(1L);
         assertThat(listener.completed).isTrue();
@@ -72,7 +71,7 @@ class AnalysisEventHubTest {
 
     @Test
     void replaysAFinishedRunAndCompletesAtOnce() {
-        store(event(1, RunEventType.RUN_STARTED), finished(2, RunOutcome.COMPLETED, null));
+        store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.finished(2, RunOutcome.COMPLETED, null));
         repository.update(repository.findById(id).orElseThrow()
                 .finished(AnalysisStatus.COMPLETED, Instant.now(), null, null));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
@@ -89,7 +88,7 @@ class AnalysisEventHubTest {
         EventSubscription subscription = hub.subscribe(id, 0, listener);
 
         subscription.cancel();
-        hub.publish(id, event(1, RunEventType.MESSAGE));
+        hub.publish(id, Fakes.event(1, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).isEmpty();
     }
@@ -105,8 +104,8 @@ class AnalysisEventHubTest {
         });
         hub.subscribe(id, 0, healthy);
 
-        hub.publish(id, event(1, RunEventType.MESSAGE));
-        hub.publish(id, event(2, RunEventType.MESSAGE));
+        hub.publish(id, Fakes.event(1, RunEventType.MESSAGE));
+        hub.publish(id, Fakes.event(2, RunEventType.MESSAGE));
 
         assertThat(healthy.seqs).containsExactly(1L, 2L);
     }

@@ -5,6 +5,7 @@ import java.util.Optional;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
 
+/** Stores presets. */
 public interface PresetRepositoryPort {
 
     List<Preset> findAll();

@@ -46,6 +46,8 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisReportUseCase;
 
 @Service
+// ClassFanOutComplexity: the analyses API's delegate, with a use case and a mapper per endpoint.
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
     /** Sent once the run is over, so the browser closes the EventSource instead of reconnecting. */
@@ -69,6 +71,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final ReportToAnalysisReportDtoMapper reportMapper;
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(StartAnalysisUseCase startAnalysis,
                             ListAnalysesUseCase listAnalyses,
                             GetAnalysisUseCase getAnalysis,
@@ -168,7 +171,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         };
         emitter.onCompletion(cancel);
         emitter.onTimeout(cancel);
-        emitter.onError(error -> cancel.run());
+        emitter.onError(_ -> cancel.run());
         // Events sent before this method returns are buffered by the emitter.
         subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
             @Override

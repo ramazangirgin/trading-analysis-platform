@@ -26,6 +26,12 @@ public record Analysis(
         String externalRef,
         String runnerRef) {
 
+    /** Upstream's model choices are not in its report files, so a run without run history says "unknown". */
+    public static final String UNKNOWN = "unknown";
+
+    /** Error code of an imported run whose files hold no final decision. */
+    public static final String INCOMPLETE_REPORT = "incomplete_report";
+
     public Analysis {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(spec, "spec");
@@ -39,12 +45,6 @@ public record Analysis(
         return new Analysis(id, spec, AnalysisStatus.QUEUED, AnalysisSource.PLATFORM,
                 null, null, RunStats.EMPTY, now, null, null, null, null, null, null);
     }
-
-    /** Upstream's model choices are not in its report files, so a run without run history says "unknown". */
-    public static final String UNKNOWN = "unknown";
-
-    /** Error code of an imported run whose files hold no final decision. */
-    public static final String INCOMPLETE_REPORT = "incomplete_report";
 
     /**
      * An EXTERNAL record for what the data dir holds. Times are cut to milliseconds, as stored, so

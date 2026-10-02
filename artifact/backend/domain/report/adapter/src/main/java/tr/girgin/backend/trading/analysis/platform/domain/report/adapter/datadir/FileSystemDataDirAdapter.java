@@ -221,7 +221,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
     private static Optional<LocalDate> parseDate(String value) {
         try {
             return Optional.of(LocalDate.parse(value));
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _) {
             return Optional.empty();
         }
     }
@@ -241,7 +241,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
     private static Instant modifiedAt(Path file) {
         try {
             return Files.getLastModifiedTime(file).toInstant();
-        } catch (IOException e) {
+        } catch (IOException _) {
             return Instant.EPOCH;
         }
     }
@@ -249,7 +249,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
     private static long size(Path file) {
         try {
             return Files.size(file);
-        } catch (IOException e) {
+        } catch (IOException _) {
             return Long.MAX_VALUE;
         }
     }

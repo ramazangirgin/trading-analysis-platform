@@ -33,6 +33,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.outbound.
 class TaRunnerEngineInfoAdapter implements EngineInfoPort {
 
     private static final long TIMEOUT_SECONDS = 120;
+    private static final long OUTPUT_TIMEOUT_SECONDS = 10;
 
     private final CatalogJsonToCatalogMapper catalogMapper;
     private final VersionJsonToEngineVersionMapper versionMapper;
@@ -85,7 +86,7 @@ class TaRunnerEngineInfoAdapter implements EngineInfoPort {
                 throw new CatalogUnavailableException(
                         "ta-runner " + subcommand + " exited with code " + process.exitValue(), null);
             }
-            return parse.apply(output.get(10, TimeUnit.SECONDS));
+            return parse.apply(output.get(OUTPUT_TIMEOUT_SECONDS, TimeUnit.SECONDS));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             process.destroyForcibly();

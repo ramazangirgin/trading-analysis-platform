@@ -10,7 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 class EnvFileCredentialsAdapterTest {
 
     @TempDir
-    Path dir;
+    private Path dir;
 
     @Test
     void parsesDotenvSyntax() throws Exception {
@@ -39,9 +39,11 @@ class EnvFileCredentialsAdapterTest {
         Path external = dir.resolve("upstream.env");
         Path platform = dir.resolve("secrets.env");
         Files.writeString(external, "DEEPSEEK_API_KEY=sk-upstream\nOPENAI_API_KEY=sk-openai\nPATH=/evil\n");
-        Files.writeString(platform, "DEEPSEEK_API_KEY=\"sk-platform\"\nDYLD_INSERT_LIBRARIES=/evil.dylib\nPYTHONPATH=/evil\n");
+        Files.writeString(platform,
+                "DEEPSEEK_API_KEY=\"sk-platform\"\nDYLD_INSERT_LIBRARIES=/evil.dylib\nPYTHONPATH=/evil\n");
 
-        assertThat(new EnvFileCredentialsAdapter(platform, new String[] {external.toString()}).environment()).containsExactly(
+        EnvFileCredentialsAdapter adapter = new EnvFileCredentialsAdapter(platform, new String[] {external.toString()});
+        assertThat(adapter.environment()).containsExactly(
                 org.assertj.core.api.Assertions.entry("DEEPSEEK_API_KEY", "sk-platform"),
                 org.assertj.core.api.Assertions.entry("OPENAI_API_KEY", "sk-openai"));
     }

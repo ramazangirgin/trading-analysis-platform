@@ -31,7 +31,7 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.model.Im
 
 class ImportExistingRunsServiceTest {
 
-    private static final WatchDataDirUseCase NO_WATCH = onSettled -> () -> { };
+    private static final WatchDataDirUseCase NO_WATCH = _ -> () -> { };
     private static final Duration SETTLE_TIME = Duration.ofMinutes(10);
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-30T12:00:00Z"), ZoneOffset.UTC);
 

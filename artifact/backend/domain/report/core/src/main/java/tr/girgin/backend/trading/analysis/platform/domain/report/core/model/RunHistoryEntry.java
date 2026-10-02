@@ -3,7 +3,6 @@ package tr.girgin.backend.trading.analysis.platform.domain.report.core.model;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 

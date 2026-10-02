@@ -16,7 +16,7 @@ class FileSystemDataDirWatchAdapterTest {
     private static final Duration WAIT = Duration.ofSeconds(30);
 
     @TempDir
-    Path dataDir;
+    private Path dataDir;
 
     private final Semaphore changes = new Semaphore(0);
 
@@ -26,7 +26,7 @@ class FileSystemDataDirWatchAdapterTest {
         FileSystemDataDirWatchAdapter adapter = new FileSystemDataDirWatchAdapter(dataDir, logs,
                 dataDir.resolve("reports"));
 
-        try (AutoCloseable ignored = adapter.watch(changes::release)) {
+        try (AutoCloseable _ = adapter.watch(changes::release)) {
             // A new ticker and date: the directories appear first, then the files in them.
             Path stage = Files.createDirectories(logs.resolve("AMD/2026-09-30/reports/1_analysts"));
             assertChanged();
@@ -47,7 +47,7 @@ class FileSystemDataDirWatchAdapterTest {
         FileSystemDataDirWatchAdapter adapter = new FileSystemDataDirWatchAdapter(dataDir, dataDir.resolve("logs"),
                 dataDir.resolve("reports"));
 
-        try (AutoCloseable ignored = adapter.watch(changes::release)) {
+        try (AutoCloseable _ = adapter.watch(changes::release)) {
             Files.writeString(cache.resolve("AMD-YFin-data.csv"), "Date,Close");
             Files.writeString(dataDir.resolve("ui_state.json"), "{}");
 

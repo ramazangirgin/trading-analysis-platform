@@ -8,6 +8,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 
+/** Stores analysis runs. */
 public interface AnalysisRepositoryPort {
 
     void insert(Analysis analysis);

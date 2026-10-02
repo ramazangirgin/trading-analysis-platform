@@ -14,7 +14,8 @@ class AnalysisLogService implements ReadAnalysisLogsUseCase {
 
     static final int MAX_LINES = 5_000;
     // sk-..., sk-ant-..., AIza... and long bearer-style tokens.
-    private static final Pattern KEY = Pattern.compile("\\b(sk-[A-Za-z]*-?|AIza|xai-|gsk_)([A-Za-z0-9_\\-]{4})[A-Za-z0-9_\\-]{8,}");
+    private static final Pattern KEY =
+            Pattern.compile("\\b(sk-[A-Za-z]*-?|AIza|xai-|gsk_)([A-Za-z0-9_\\-]{4})[A-Za-z0-9_\\-]{8,}");
 
     private final GetAnalysisUseCase getAnalysis;
     private final RunLogPort runLog;

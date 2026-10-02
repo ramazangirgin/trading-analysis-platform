@@ -12,6 +12,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
  * same simple name in different packages (e.g. two DurationToMillisMapper) would otherwise clash.
  */
 @SpringBootApplication(nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor") // Spring instantiates the @SpringBootApplication class
 public class TradingPlatformApplication {
 
     public static void main(String[] args) throws IOException {

@@ -26,6 +26,7 @@ class DockerEngineInfoAdapterTest {
     private static DockerClient docker;
 
     @BeforeAll
+    @SuppressWarnings("checkstyle:IllegalCatch") // any failure means no usable engine: skip
     static void needsTheRunnerImage() {
         docker = DockerClients.create(HOST, Duration.ofMinutes(3));
         try {

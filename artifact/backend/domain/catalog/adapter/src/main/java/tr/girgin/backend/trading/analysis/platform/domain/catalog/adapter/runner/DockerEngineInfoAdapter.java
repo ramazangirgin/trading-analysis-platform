@@ -45,6 +45,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.outbound.
 class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
 
     private static final long TIMEOUT_SECONDS = 120;
+    private static final long OUTPUT_TIMEOUT_SECONDS = 30;
+    private static final Duration RESPONSE_TIMEOUT = Duration.ofMinutes(3);
+    private static final long PROBE_MEMORY_BYTES = 512L * 1024 * 1024;
 
     private final CatalogJsonToCatalogMapper catalogMapper;
     private final VersionJsonToEngineVersionMapper versionMapper;
@@ -60,7 +63,7 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
                             VersionJsonToEngineVersionMapper versionMapper,
                             @Value("${platform.runner.docker.host}") String host,
                             @Value("${platform.runner.docker.image}") String image) {
-        this(catalogMapper, versionMapper, DockerClients.create(host, Duration.ofMinutes(3)), image);
+        this(catalogMapper, versionMapper, DockerClients.create(host, RESPONSE_TIMEOUT), image);
     }
 
     DockerEngineInfoAdapter(CatalogJsonToCatalogMapper catalogMapper,
@@ -99,17 +102,19 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
                             .withTmpFs(Map.of("/tmp", "rw,nosuid,nodev,size=64m"))
                             .withCapDrop(Capability.ALL)
                             .withSecurityOpts(List.of("no-new-privileges"))
-                            .withMemory(512L * 1024 * 1024))
+                            .withMemory(PROBE_MEMORY_BYTES))
                     .exec()
                     .getId();
         } catch (NotFoundException e) {
-            throw new CatalogUnavailableException("The ta-runner image " + image + " is not there: build or pull it", e);
+            throw new CatalogUnavailableException(
+                    "The ta-runner image " + image + " is not there: build or pull it", e);
         } catch (DockerException | IllegalArgumentException e) {
             throw new CatalogUnavailableException("Cannot start ta-runner (" + image + "): " + e.getMessage(), e);
         }
         try {
             docker.startContainerCmd(containerId).exec();
-            Integer exit = docker.waitContainerCmd(containerId).start().awaitStatusCode(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            Integer exit = docker.waitContainerCmd(containerId).start()
+                    .awaitStatusCode(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (exit == null || exit != 0) {
                 throw new CatalogUnavailableException("ta-runner " + subcommand + " exited with code " + exit, null);
             }
@@ -121,7 +126,7 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
         } finally {
             try {
                 docker.removeContainerCmd(containerId).withForce(true).exec();
-            } catch (DockerException e) {
+            } catch (DockerException _) {
                 // Best effort; the Docker runner removes leftovers too.
             }
         }
@@ -139,7 +144,7 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
                             }
                         }
                     })
-                    .awaitCompletion(30, TimeUnit.SECONDS);
+                    .awaitCompletion(OUTPUT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new CatalogUnavailableException("Interrupted while reading ta-runner output", e);

@@ -14,7 +14,7 @@ public interface StringToRunEventTypeMapper {
         }
         try {
             return RunEventType.valueOf(source.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             return RunEventType.LOG;
         }
     }

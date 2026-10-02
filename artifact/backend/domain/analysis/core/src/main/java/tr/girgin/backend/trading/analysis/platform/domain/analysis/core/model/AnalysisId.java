@@ -10,6 +10,7 @@ public record AnalysisId(String value) {
 
     private static final Pattern FORMAT = Pattern.compile("[A-Za-z0-9_-]{1,64}");
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int RANDOM_BYTES = 6;
 
     public AnalysisId {
         Objects.requireNonNull(value, "value");
@@ -19,7 +20,7 @@ public record AnalysisId(String value) {
     }
 
     public static AnalysisId newId() {
-        byte[] bytes = new byte[6];
+        byte[] bytes = new byte[RANDOM_BYTES];
         RANDOM.nextBytes(bytes);
         return new AnalysisId("r_" + HexFormat.of().formatHex(bytes));
     }

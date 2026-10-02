@@ -15,9 +15,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Cat
 class TaRunnerEngineInfoAdapterTest {
 
     @TempDir
-    Path dir;
+    private Path dir;
 
     @Test
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void readsTheCatalogAndVersion() throws Exception {
         TaRunnerEngineInfoAdapter adapter = adapter("""
                 case "$1" in

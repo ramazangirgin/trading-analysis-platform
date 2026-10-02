@@ -2,6 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound
 
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
+/** Streams a run's events: the stored ones first, then live ones. */
 public interface SubscribeAnalysisEventsUseCase {
 
     /**

@@ -21,6 +21,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.p
 class PriceHistoryService implements GetPriceHistoryUseCase {
 
     static final int DAYS_SHOWN = 252;
+    // Moving-average periods, in trading days.
+    private static final int EMA_SHORT = 10;
+    private static final int SMA_MEDIUM = 50;
+    private static final int SMA_LONG = 200;
 
     private final PriceCachePort cache;
 
@@ -38,9 +42,9 @@ class PriceHistoryService implements GetPriceHistoryUseCase {
             return Optional.empty();
         }
         double[] closes = bars.stream().mapToDouble(PriceBar::close).toArray();
-        double[] ema10 = ema(closes, 10);
-        double[] sma50 = sma(closes, 50);
-        double[] sma200 = sma(closes, 200);
+        double[] ema10 = ema(closes, EMA_SHORT);
+        double[] sma50 = sma(closes, SMA_MEDIUM);
+        double[] sma200 = sma(closes, SMA_LONG);
         List<PricePoint> points = new ArrayList<>();
         for (int i = Math.max(0, bars.size() - DAYS_SHOWN); i < bars.size(); i++) {
             PriceBar bar = bars.get(i);

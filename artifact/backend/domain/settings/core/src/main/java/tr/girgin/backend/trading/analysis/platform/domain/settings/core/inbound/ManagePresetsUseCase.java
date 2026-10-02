@@ -4,6 +4,7 @@ import java.util.List;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
 
+/** Named run configurations (presets): list, create, update and delete. */
 public interface ManagePresetsUseCase {
 
     /** By name. */

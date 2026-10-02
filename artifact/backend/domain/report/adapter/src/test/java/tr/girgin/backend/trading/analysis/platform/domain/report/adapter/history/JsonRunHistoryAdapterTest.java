@@ -18,7 +18,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.RunH
 class JsonRunHistoryAdapterTest {
 
     @TempDir
-    Path dataDir;
+    private Path dataDir;
 
     @Test
     void readsFinishedRuns() throws Exception {

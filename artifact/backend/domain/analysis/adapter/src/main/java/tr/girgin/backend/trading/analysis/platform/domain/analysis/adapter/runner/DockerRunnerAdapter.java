@@ -77,17 +77,21 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 @Conditional(RunnerKind.Docker.class)
 class DockerRunnerAdapter implements RunnerPort, DisposableBean {
 
-    private static final Logger log = LoggerFactory.getLogger(DockerRunnerAdapter.class);
-
     static final String LABEL_MANAGED = "ta.platform.managed";
     static final String LABEL_RUN_ID = "ta.platform.run_id";
     static final String SPEC_ENV = "TA_RUNNER_SPEC";
     static final String PRICES_ENV = "TA_RUNNER_PRICES_JSON";
+
+    private static final Logger log = LoggerFactory.getLogger(DockerRunnerAdapter.class);
     private static final String DATA_DIR = "/home/runner/.tradingagents";
     // Exited containers nobody follows are removed once they are this old (a crash between an
     // exit and its removal leaves one behind).
     private static final Duration LEFTOVER_AGE = Duration.ofMinutes(10);
     private static final Duration RECONNECT_PAUSE = Duration.ofSeconds(2);
+    private static final long BYTES_PER_MB = 1024L * 1024;
+    private static final long NANO_CPUS_PER_CPU = 1_000_000_000L;
+    // Docker's short container id, as `docker ps` shows it.
+    private static final int SHORT_ID_LENGTH = 12;
 
     private final AnalysisSpecToRunnerSpecMapper specMapper;
     private final RunnerOutputLineToRunEventMapper eventMapper;
@@ -109,6 +113,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
     private final Set<String> followed = ConcurrentHashMap.newKeySet();
 
     @Autowired
+    @SuppressWarnings("checkstyle:ParameterNumber") // one @Value per runner setting
     DockerRunnerAdapter(AnalysisSpecToRunnerSpecMapper specMapper,
                         RunnerOutputLineToRunEventMapper eventMapper,
                         @Value("${platform.runner.docker.host}") String host,
@@ -125,6 +130,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                 dataMount, network, memoryMb, cpus, tmpSizeMb, platformHome, stopGraceSeconds);
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // the runner settings above, with the Docker client given
     DockerRunnerAdapter(AnalysisSpecToRunnerSpecMapper specMapper,
                         RunnerOutputLineToRunEventMapper eventMapper,
                         DockerClient docker,
@@ -142,8 +148,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         this.image = image;
         this.dataMount = dataMount;
         this.network = network == null ? "" : network.strip();
-        this.memoryBytes = memoryMb * 1024 * 1024;
-        this.nanoCpus = Math.round(cpus * 1_000_000_000L);
+        this.memoryBytes = memoryMb * BYTES_PER_MB;
+        this.nanoCpus = Math.round(cpus * NANO_CPUS_PER_CPU);
         this.tmpSize = tmpSizeMb + "m";
         this.runsDir = platformHome.resolve("runs").toAbsolutePath();
         this.pricesFile = platformHome.resolve("prices.json").toAbsolutePath();
@@ -193,7 +199,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             try {
                 // SIGTERM (ta-runner reports run_finished{stopped}), SIGKILL after the grace period.
                 docker.stopContainerCmd(handle.ref()).withTimeout(stopGraceSeconds).exec();
-            } catch (NotModifiedException e) {
+            } catch (NotModifiedException _) {
                 log.debug("Container {} was not running", shortId(handle.ref()));
             } catch (DockerException e) {
                 if (!DockerClients.isNoSuchContainer(e)) {
@@ -242,7 +248,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             // hosts, as Compose's :z does (ignored elsewhere).
             config.withBinds(new Bind(dataMount, new Volume(DATA_DIR), AccessMode.rw, SELContext.shared));
         } else {
-            config.withMounts(List.of(new Mount().withType(MountType.VOLUME).withSource(dataMount).withTarget(DATA_DIR)));
+            config.withMounts(List.of(
+                    new Mount().withType(MountType.VOLUME).withSource(dataMount).withTarget(DATA_DIR)));
         }
         return network.isEmpty() ? config : config.withNetworkMode(network);
     }
@@ -274,6 +281,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         });
     }
 
+    @SuppressWarnings("checkstyle:IllegalCatch") // keep following the container through any failure
     private int pumpUntilExit(AnalysisId id, String containerId, OutputPump pump) {
         while (true) {
             try {
@@ -286,7 +294,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                 pump.resumeFrom().ifPresent(since -> command.withSince((int) since.getEpochSecond()));
                 command.exec(callback).awaitCompletion();
                 pump.flush();
-                InspectContainerResponse.ContainerState state = docker.inspectContainerCmd(containerId).exec().getState();
+                InspectContainerResponse.ContainerState state =
+                        docker.inspectContainerCmd(containerId).exec().getState();
                 if (state == null || !Boolean.TRUE.equals(state.getRunning())) {
                     Long exit = state == null ? null : state.getExitCodeLong();
                     return exit == null ? -1 : exit.intValue();
@@ -298,7 +307,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                     return -1;
                 }
                 log.warn("{}: following container {} failed ({}); retrying", id, shortId(containerId), e.getMessage());
-            } catch (InterruptedException e) {
+            } catch (InterruptedException _) {
                 Thread.currentThread().interrupt();
                 return -1;
             } catch (RuntimeException e) {
@@ -306,7 +315,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             }
             try {
                 Thread.sleep(RECONNECT_PAUSE);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException _) {
                 Thread.currentThread().interrupt();
                 return -1;
             }
@@ -348,7 +357,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         try {
             String finished = docker.inspectContainerCmd(containerId).exec().getState().getFinishedAt();
             return finished != null && Instant.parse(finished).isBefore(cutoff);
-        } catch (DockerException | DateTimeParseException | NullPointerException e) {
+        } catch (DockerException | DateTimeParseException | NullPointerException _) {
             return false;
         }
     }
@@ -357,13 +366,13 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         try {
             Path runLog = runDir.resolve("run.log");
             return Files.exists(runLog) ? Files.getLastModifiedTime(runLog).toInstant() : null;
-        } catch (IOException e) {
+        } catch (IOException _) {
             return null;
         }
     }
 
     private static String shortId(String containerId) {
-        return containerId.length() > 12 ? containerId.substring(0, 12) : containerId;
+        return containerId.length() > SHORT_ID_LENGTH ? containerId.substring(0, SHORT_ID_LENGTH) : containerId;
     }
 
     private static final class LogCallback extends ResultCallback.Adapter<Frame> {
@@ -412,7 +421,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         }
 
         void accept(StreamType stream, byte[] payload) {
-            StringBuilder buffer = partial.computeIfAbsent(stream, s -> new StringBuilder());
+            StringBuilder buffer = partial.computeIfAbsent(stream, _ -> new StringBuilder());
             buffer.append(new String(payload, StandardCharsets.UTF_8));
             int newline;
             while ((newline = buffer.indexOf("\n")) >= 0) {
@@ -434,23 +443,11 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
 
         private void line(StreamType stream, String raw) {
             int space = raw.indexOf(' ');
-            Instant timestamp = null;
-            String text = raw;
-            if (space > 0) {
-                try {
-                    timestamp = Instant.parse(raw.substring(0, space));
-                    text = raw.substring(space + 1);
-                } catch (DateTimeParseException e) {
-                    // No timestamp prefix: keep the line whole.
-                }
-            }
-            if (timestamp != null) {
-                // A reopened stream repeats lines from the second it resumes at; they are skipped.
-                Instant last = lastTimestamps.get(stream);
-                if (last != null && !timestamp.isAfter(last)) {
-                    return;
-                }
-                lastTimestamps.put(stream, timestamp);
+            Instant timestamp = space > 0 ? timestamp(raw.substring(0, space)) : null;
+            // No timestamp prefix: keep the line whole.
+            String text = timestamp == null ? raw : raw.substring(space + 1);
+            if (timestamp != null && repeated(stream, timestamp)) {
+                return;
             }
             if (stream == StreamType.STDERR) {
                 if (stderrAfter == null || timestamp == null || timestamp.isAfter(stderrAfter)) {
@@ -458,6 +455,29 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                 }
                 return;
             }
+            event(text);
+        }
+
+        private static Instant timestamp(String prefix) {
+            try {
+                return Instant.parse(prefix);
+            } catch (DateTimeParseException _) {
+                return null;
+            }
+        }
+
+        /** A reopened stream repeats lines from the second it resumes at; they are skipped. */
+        private boolean repeated(StreamType stream, Instant timestamp) {
+            Instant last = lastTimestamps.get(stream);
+            if (last != null && !timestamp.isAfter(last)) {
+                return true;
+            }
+            lastTimestamps.put(stream, timestamp);
+            return false;
+        }
+
+        @SuppressWarnings("checkstyle:IllegalCatch") // one bad event must not stop the log stream
+        private void event(String text) {
             try {
                 Optional<RunEvent> event = parser.parse(text).map(eventMapper::map);
                 if (event.isEmpty()) {

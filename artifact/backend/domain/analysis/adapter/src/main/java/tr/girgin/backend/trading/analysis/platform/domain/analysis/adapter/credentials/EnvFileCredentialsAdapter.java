@@ -27,7 +27,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 class EnvFileCredentialsAdapter implements CredentialsPort {
 
     private static final Logger log = LoggerFactory.getLogger(EnvFileCredentialsAdapter.class);
-    private static final Pattern LINE = Pattern.compile("^\\s*(?:export\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.*?)\\s*$");
+    private static final Pattern LINE =
+            Pattern.compile("^\\s*(?:export\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.*?)\\s*$");
 
     private static final Set<String> BLOCKED = Set.of("PATH", "HOME", "USER", "SHELL", "TMPDIR", "VIRTUAL_ENV");
     private static final List<String> BLOCKED_PREFIXES = List.of("LD_", "DYLD_", "PYTHON", "JAVA_", "_JAVA");

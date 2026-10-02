@@ -46,7 +46,8 @@ class SecretsService implements ManageSecretsUseCase {
     public synchronized SecretStatus setSecret(String name, String value) {
         requireWritable(name);
         String trimmed = value == null ? "" : value.strip();
-        if (trimmed.isEmpty() || trimmed.length() > MAX_VALUE_LENGTH || trimmed.chars().anyMatch(Character::isISOControl)) {
+        if (trimmed.isEmpty() || trimmed.length() > MAX_VALUE_LENGTH
+                || trimmed.chars().anyMatch(Character::isISOControl)) {
             throw new SettingsException(SettingsError.INVALID_SECRET_VALUE, "Invalid value for " + name,
                     Map.of("name", name));
         }

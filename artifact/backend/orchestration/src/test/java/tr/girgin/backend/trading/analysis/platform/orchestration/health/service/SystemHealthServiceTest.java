@@ -60,7 +60,7 @@ class SystemHealthServiceTest {
                 () -> {
                     throw new CatalogUnavailableException("Cannot start ta-runner", null);
                 },
-                List::of, secrets(List.of()), filter -> List.of());
+                List::of, secrets(List.of()), _ -> List.of());
 
         assertThat(service.checkHealth().checks().getFirst().code()).isEqualTo("runner_unavailable");
     }
@@ -68,7 +68,7 @@ class SystemHealthServiceTest {
     private static SystemHealthService service(EngineVersion version, List<SecretStatus> secrets, int reports) {
         GetCatalogUseCase catalog = () -> CATALOG;
         return new SystemHealthService(() -> version, catalog,
-                () -> java.util.Collections.nCopies(reports, null), secrets(secrets), filter -> List.of());
+                () -> java.util.Collections.nCopies(reports, null), secrets(secrets), _ -> List.of());
     }
 
     private static ManageSecretsUseCase secrets(List<SecretStatus> statuses) {

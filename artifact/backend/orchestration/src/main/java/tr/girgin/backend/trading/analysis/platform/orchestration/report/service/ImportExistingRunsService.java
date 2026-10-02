@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -86,6 +87,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
                 Duration.ofMinutes(settleMinutes), Clock.systemUTC());
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // the settings above, with the settle time and clock given
     ImportExistingRunsService(ScanReportsUseCase scanReports,
                               ScanRunHistoryUseCase scanHistory,
                               RegisterExternalAnalysisUseCase registerExternal,
@@ -120,6 +122,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
         }
     }
 
+    @SuppressWarnings("checkstyle:IllegalCatch") // watching is optional: rescans still work
     private synchronized void startWatching() {
         if (watchHandle == null) {
             try {
@@ -139,6 +142,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
         }
     }
 
+    @SuppressWarnings("checkstyle:IllegalCatch") // background thread: log the failure, do not lose it
     private void importQuietly() {
         try {
             importExistingRuns();
@@ -177,18 +181,14 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
                         analysts(entry), toRun(entry)))
                 .forEach(externals::add);
 
-        int created = 0;
-        int updated = 0;
-        int unchanged = 0;
+        Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
         for (ExternalAnalysis external : externals) {
-            ExternalRegistration registration = registerExternal.register(external);
-            switch (registration.outcome()) {
-                case CREATED -> created++;
-                case UPDATED -> updated++;
-                case UNCHANGED -> unchanged++;
-            }
+            outcomes.merge(registerExternal.register(external).outcome(), 1, Integer::sum);
         }
-        ImportResult result = new ImportResult(externals.size(), created, updated, unchanged);
+        ImportResult result = new ImportResult(externals.size(),
+                outcomes.getOrDefault(ExternalRegistration.Outcome.CREATED, 0),
+                outcomes.getOrDefault(ExternalRegistration.Outcome.UPDATED, 0),
+                outcomes.getOrDefault(ExternalRegistration.Outcome.UNCHANGED, 0));
         log.info("Imported existing runs: {}", result);
         return result;
     }
@@ -204,7 +204,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
         long delayMillis = Math.max(0, Duration.between(clock.instant(), at).toMillis()) + 1_000;
         try {
             followUp = followUps.schedule(this::importQuietly, delayMillis, TimeUnit.MILLISECONDS);
-        } catch (RejectedExecutionException e) {
+        } catch (RejectedExecutionException _) {
             // Shutting down.
         }
     }

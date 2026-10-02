@@ -11,7 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 class EventsFileTailTest {
 
     @TempDir
-    Path dir;
+    private Path dir;
 
     @Test
     void returnsOnlyNewCompleteLines() throws Exception {

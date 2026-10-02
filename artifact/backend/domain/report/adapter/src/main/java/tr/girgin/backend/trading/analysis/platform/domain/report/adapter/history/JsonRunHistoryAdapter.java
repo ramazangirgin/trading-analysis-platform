@@ -134,7 +134,7 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
         if (node.isString()) {
             try {
                 return Integer.valueOf(node.asString().strip());
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
                 return null;
             }
         }
@@ -151,7 +151,7 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
     private static Optional<LocalDate> date(String value) {
         try {
             return value == null ? Optional.empty() : Optional.of(LocalDate.parse(value));
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _) {
             return Optional.empty();
         }
     }
@@ -159,7 +159,7 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
     private long size() {
         try {
             return Files.size(file);
-        } catch (IOException e) {
+        } catch (IOException _) {
             return Long.MAX_VALUE;
         }
     }
