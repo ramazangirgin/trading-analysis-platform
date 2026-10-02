@@ -1,6 +1,6 @@
 # Git hooks (lefthook, pinned in mise.toml). Install them with `mise run hooks` (`mise run setup`
-# does it too). Fast checks on staged files, no test suites: linters, and the backend's ArchUnit
-# rules only when Java files are staged. `mise run check` runs every structure check, lint and the
+# does it too). Fast checks on staged files, no test suites: linters, and the backend's Checkstyle
+# and ArchUnit rules only when Java files are staged. `mise run check` runs every structure check, lint and the
 # type-check by hand. CI runs every check either way, since hooks can be skipped
 # (`git commit --no-verify`).
 # See doc/coding-convention/README.md.
@@ -34,8 +34,9 @@ pre-commit:
       glob: ["artifact/ta-runner/**/*.py", "artifact/ta-runner/pyproject.toml"]
       run: uv run lint-imports
 
-    # Only ArchitectureTest, no other test. It needs the backend compiled: seconds with a warm Gradle
-    # daemon, longer from a cold one. Gradle compiles the working tree, unstaged edits included.
-    - name: backend package structure (ArchUnit)
+    # Checkstyle on every backend module, and only ArchitectureTest, no other test: one Gradle run.
+    # ArchUnit needs the backend compiled: seconds with a warm Gradle daemon, longer from a cold one.
+    # Gradle checks and compiles the working tree, unstaged edits included.
+    - name: backend Checkstyle and package structure (ArchUnit)
       glob: "artifact/backend/**/*.java"
-      run: ./gradlew --console=plain :backend:test --tests '*ArchitectureTest'
+      run: ./gradlew --console=plain checkstyleMain checkstyleTest :backend:test --tests '*ArchitectureTest'

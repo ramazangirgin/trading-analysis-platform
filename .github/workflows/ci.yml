@@ -2,8 +2,8 @@
 # demand. Jobs; add new ones (image publishing, security scans, ...) next to them and list them
 # under ci-passed:
 #
-#   build      backend + frontend: all Gradle tests (ArchUnit, Docker runner against the runner's
-#              Docker), frontend lint and tests, the single jar
+#   build      backend + frontend: Checkstyle, all Gradle tests (ArchUnit, Docker runner against the
+#              runner's Docker), frontend lint and tests, the single jar
 #   runner     ta-runner: ruff, import-linter (package structure) and pytest, upstream contract
 #              tests included
 #   images     both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
@@ -60,7 +60,7 @@ jobs:
       - name: Build and test
         run: mise run build
 
-      - name: Test reports
+      - name: Test and Checkstyle reports
         if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -68,6 +68,7 @@ jobs:
           path: |
             artifact/**/build/reports/tests/
             artifact/**/build/test-results/
+            artifact/**/build/reports/checkstyle/
           if-no-files-found: ignore
 
       - name: Platform jar (for the images job)

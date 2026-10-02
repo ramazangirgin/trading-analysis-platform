@@ -9,9 +9,11 @@ enforces each rule.
 | [backend-java-package-structure.md](backend-java-package-structure.md) | Backend (Java): modules, packages, which class kind goes where |
 | [frontend-folder-structure.md](frontend-folder-structure.md) | Frontend (Vue): `app` / `pages` / `features` / `shared`, what may import what |
 | [ta-runner-python-package-structure.md](ta-runner-python-package-structure.md) | ta-runner (Python): sub-packages, layer order, the single upstream import point |
+| [backend-java-checkstyle.md](backend-java-checkstyle.md) | Backend (Java): Checkstyle rules (naming, imports, size, bug-prone patterns, design, Javadoc) and how to suppress a finding |
 
-These documents cover package / folder placement and the dependencies between packages only.
-Naming, formatting, error handling and testing conventions will get documents of their own.
+The structure documents cover package / folder placement and the dependencies between packages.
+The Checkstyle document covers the backend's naming, imports, size and coding rules. Formatting,
+error handling and testing conventions will get documents of their own.
 
 ## How the conventions are enforced
 
@@ -20,6 +22,7 @@ Every rule is checked in three places, by the same tool:
 | Part | Tool | Configured in | Build / local run | Git hook |
 |---|---|---|---|---|
 | Backend | [ArchUnit](https://www.archunit.org/) | `artifact/backend/src/test/java/.../ArchitectureTest.java` | `./gradlew :backend:test`, part of `mise run build` and `mise run check` | pre-commit, when Java files are staged |
+| Backend | [Checkstyle](https://checkstyle.org/) | `config/checkstyle/checkstyle.xml` | `checkstyleMain` / `checkstyleTest`, part of `mise run build` and `mise run check` | pre-commit, when Java files are staged |
 | Frontend | [eslint-plugin-boundaries](https://www.jsboundaries.dev/) and `no-restricted-imports` | `artifact/frontend/eslint.config.js` | `pnpm lint`, part of `mise run build` (`:frontend:pnpmLint`) and `mise run check` | pre-commit |
 | ta-runner | [import-linter](https://import-linter.readthedocs.io/) (`lint-imports`) and ruff `TID` | `artifact/ta-runner/pyproject.toml` | `mise run runner-test`, `mise run check` | pre-commit |
 
@@ -44,10 +47,10 @@ mise run hooks    # or `mise run setup`, which installs them as well
 |---|---|---|
 | pre-commit (jobs in parallel) | ESLint + Prettier check on the staged files | staged files under `artifact/frontend/` |
 | | ruff on the staged files; `lint-imports` | staged files under `artifact/ta-runner/` |
-| | `ArchitectureTest` only (no other test) | staged `.java` files under `artifact/backend/` |
+| | Checkstyle on every backend module, and `ArchitectureTest` only (no other test), in one Gradle run | staged `.java` files under `artifact/backend/` |
 
 A commit waits only for the parts it touches: docs-only commits run nothing, frontend and ta-runner
-commits a few seconds. The ArchUnit job compiles the backend first (seconds with a warm Gradle
+commits a few seconds. The backend job compiles the backend first (seconds with a warm Gradle
 daemon, about half a minute from a cold one), and Gradle compiles the working tree: an unstaged edit
 counts too. There is no pre-push hook; the frontend type-check runs in `mise run check`, the build
 and CI.
