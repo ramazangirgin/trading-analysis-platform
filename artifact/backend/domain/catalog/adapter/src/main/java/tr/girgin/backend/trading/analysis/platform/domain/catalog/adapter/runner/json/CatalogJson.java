@@ -10,20 +10,16 @@ public record CatalogJson(
         List<AnalystJson> analysts,
         List<String> assetTypes) {
 
-    public record DefaultsJson(String llmProvider, String deepThinkLlm, String quickThinkLlm) {
-    }
+    public record DefaultsJson(String llmProvider, String deepThinkLlm, String quickThinkLlm) {}
 
     public record ProviderJson(
             String id,
             String apiKeyEnv,
             Boolean customModelAllowed,
             List<ModelJson> quickModels,
-            List<ModelJson> deepModels) {
-    }
+            List<ModelJson> deepModels) {}
 
-    public record ModelJson(String id, String label) {
-    }
+    public record ModelJson(String id, String label) {}
 
-    public record AnalystJson(String id, String agent) {
-    }
+    public record AnalystJson(String id, String agent) {}
 }

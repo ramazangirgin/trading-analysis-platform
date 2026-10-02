@@ -20,5 +20,4 @@ public record RunnerOutputLine(
         Long tokensOut,
         Double costUsd,
         Double elapsedS,
-        Map<String, Object> payload) {
-}
+        Map<String, Object> payload) {}

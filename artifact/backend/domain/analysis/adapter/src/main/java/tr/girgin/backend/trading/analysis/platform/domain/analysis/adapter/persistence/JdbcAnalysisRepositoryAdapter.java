@@ -60,9 +60,8 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
     private final AnalysisToAnalysisRowMapper toRow;
     private final AnalysisRowToAnalysisMapper toAnalysis;
 
-    JdbcAnalysisRepositoryAdapter(JdbcClient jdbc,
-                                  AnalysisToAnalysisRowMapper toRow,
-                                  AnalysisRowToAnalysisMapper toAnalysis) {
+    JdbcAnalysisRepositoryAdapter(
+            JdbcClient jdbc, AnalysisToAnalysisRowMapper toRow, AnalysisRowToAnalysisMapper toAnalysis) {
         this.jdbc = jdbc;
         this.toRow = toRow;
         this.toAnalysis = toAnalysis;
@@ -83,7 +82,8 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
 
     @Override
     public void replaceImported(Analysis analysis) {
-        int updated = jdbc.sql(REPLACE_IMPORTED).paramSource(toRow.map(analysis)).update();
+        int updated =
+                jdbc.sql(REPLACE_IMPORTED).paramSource(toRow.map(analysis)).update();
         if (updated != 1) {
             throw new IllegalStateException("No imported analysis " + analysis.id() + " to replace");
         }
@@ -120,7 +120,8 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
             params.put("ticker", filter.ticker());
         }
         String where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
-        return jdbc.sql("SELECT * FROM analyses" + where + " ORDER BY created_at DESC LIMIT " + LIST_LIMIT)
+        return jdbc
+                .sql("SELECT * FROM analyses" + where + " ORDER BY created_at DESC LIMIT " + LIST_LIMIT)
                 .params(params)
                 .query(AnalysisRow.class)
                 .list()
@@ -134,7 +135,8 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         if (statuses.isEmpty()) {
             return List.of();
         }
-        return jdbc.sql("SELECT * FROM analyses WHERE status IN (:statuses)")
+        return jdbc
+                .sql("SELECT * FROM analyses WHERE status IN (:statuses)")
                 .param("statuses", statuses.stream().map(Enum::name).toList())
                 .query(AnalysisRow.class)
                 .list()

@@ -24,8 +24,7 @@ public class TradingPlatformApplication {
     /** Mirrors platform.home in application.properties, which is not resolvable before startup. */
     static final class PlatformHome {
 
-        private PlatformHome() {
-        }
+        private PlatformHome() {}
 
         static Path resolve() {
             String configured = System.getProperty("platform.home", System.getenv("PLATFORM_HOME"));

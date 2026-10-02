@@ -26,7 +26,9 @@ class PresetService implements ManagePresetsUseCase {
 
     @Override
     public List<Preset> listPresets() {
-        return repository.findAll().stream().sorted(Comparator.comparing(p -> p.name().toLowerCase())).toList();
+        return repository.findAll().stream()
+                .sorted(Comparator.comparing(p -> p.name().toLowerCase()))
+                .toList();
     }
 
     @Override
@@ -61,14 +63,14 @@ class PresetService implements ManagePresetsUseCase {
 
     private static String validPayload(String payload) {
         if (payload == null || payload.isBlank() || payload.length() > MAX_PAYLOAD) {
-            throw new SettingsException(SettingsError.INVALID_PRESET, "Invalid preset payload",
-                    Map.of("field", "payload"));
+            throw new SettingsException(
+                    SettingsError.INVALID_PRESET, "Invalid preset payload", Map.of("field", "payload"));
         }
         return payload;
     }
 
     private static SettingsException notFound(PresetId id) {
-        return new SettingsException(SettingsError.PRESET_NOT_FOUND, "Preset not found: " + id.value(),
-                Map.of("id", id.value()));
+        return new SettingsException(
+                SettingsError.PRESET_NOT_FOUND, "Preset not found: " + id.value(), Map.of("id", id.value()));
     }
 }

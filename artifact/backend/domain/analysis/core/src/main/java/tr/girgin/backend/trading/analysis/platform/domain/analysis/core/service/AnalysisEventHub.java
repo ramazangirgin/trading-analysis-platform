@@ -41,13 +41,19 @@ class AnalysisEventHub implements SubscribeAnalysisEventsUseCase {
 
     @Override
     public EventSubscription subscribe(AnalysisId id, long afterSeq, RunEventListener listener) {
-        repository.findById(id).orElseThrow(() -> new AnalysisException(AnalysisError.NOT_FOUND,
-                "Analysis not found: " + id, Map.of("id", id.value())));
+        repository
+                .findById(id)
+                .orElseThrow(() -> new AnalysisException(
+                        AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value())));
         Subscriber subscriber = new Subscriber(listener, afterSeq);
         subscribers.computeIfAbsent(id, _ -> new CopyOnWriteArrayList<>()).add(subscriber);
         subscriber.replay(eventStore.read(id, afterSeq));
         // A run that ended before (or while) we registered sends no more live events.
-        if (repository.findById(id).map(Analysis::status).map(s -> s.isTerminal()).orElse(true)) {
+        if (repository
+                .findById(id)
+                .map(Analysis::status)
+                .map(s -> s.isTerminal())
+                .orElse(true)) {
             subscriber.complete();
             remove(id, subscriber);
         }

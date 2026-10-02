@@ -20,8 +20,8 @@ class AnalysisReportService implements GetAnalysisReportUseCase, GetAnalysisPric
     private final GetReportUseCase getReport;
     private final GetPriceHistoryUseCase getPrices;
 
-    AnalysisReportService(GetAnalysisUseCase getAnalysis, GetReportUseCase getReport,
-                          GetPriceHistoryUseCase getPrices) {
+    AnalysisReportService(
+            GetAnalysisUseCase getAnalysis, GetReportUseCase getReport, GetPriceHistoryUseCase getPrices) {
         this.getAnalysis = getAnalysis;
         this.getReport = getReport;
         this.getPrices = getPrices;
@@ -40,7 +40,8 @@ class AnalysisReportService implements GetAnalysisReportUseCase, GetAnalysisPric
     private Optional<ReportKey> key(AnalysisId id) {
         Analysis analysis = getAnalysis.get(id);
         return ReportKey.isValidTicker(analysis.spec().ticker())
-                ? Optional.of(new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()))
+                ? Optional.of(
+                        new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()))
                 : Optional.empty();
     }
 }

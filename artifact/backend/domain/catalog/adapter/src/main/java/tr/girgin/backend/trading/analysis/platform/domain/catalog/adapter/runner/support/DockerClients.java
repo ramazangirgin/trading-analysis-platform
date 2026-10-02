@@ -12,8 +12,7 @@ public final class DockerClients {
     private static final int MAX_CONNECTIONS = 32;
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
 
-    private DockerClients() {
-    }
+    private DockerClients() {}
 
     public static DockerClient create(String host, Duration responseTimeout) {
         DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()

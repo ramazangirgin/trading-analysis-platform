@@ -30,15 +30,12 @@ class TradingPlatformApplicationTests {
     }
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 
     @Test
     void servesIndexAtRoot() throws Exception {
         // Spring Boot's welcome page handler forwards "/" to the bundled index.html.
-        mockMvc.perform(get("/"))
-                .andExpect(status().isOk())
-                .andExpect(forwardedUrl("index.html"));
+        mockMvc.perform(get("/")).andExpect(status().isOk()).andExpect(forwardedUrl("index.html"));
     }
 
     @Test

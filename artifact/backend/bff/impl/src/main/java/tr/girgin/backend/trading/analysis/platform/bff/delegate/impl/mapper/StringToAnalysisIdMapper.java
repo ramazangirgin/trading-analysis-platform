@@ -14,8 +14,8 @@ public interface StringToAnalysisIdMapper {
         try {
             return new AnalysisId(source);
         } catch (IllegalArgumentException _) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "not_found", "Analysis not found: " + source,
-                    Map.of("id", source));
+            throw new ApiException(
+                    HttpStatus.NOT_FOUND, "not_found", "Analysis not found: " + source, Map.of("id", source));
         }
     }
 }

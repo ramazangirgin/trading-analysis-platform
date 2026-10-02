@@ -6,12 +6,7 @@ import java.util.Objects;
 
 /** LLM usage and wall time of a run. {@code costUsd} is null until pricing is known. */
 public record RunStats(
-        long llmCalls,
-        long toolCalls,
-        long tokensIn,
-        long tokensOut,
-        BigDecimal costUsd,
-        Duration elapsed) {
+        long llmCalls, long toolCalls, long tokensIn, long tokensOut, BigDecimal costUsd, Duration elapsed) {
 
     public static final RunStats EMPTY = new RunStats(0, 0, 0, 0, null, Duration.ZERO);
 

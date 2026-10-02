@@ -33,11 +33,12 @@ class SystemHealthService implements SystemHealthUseCase {
     private final ManageSecretsUseCase secrets;
     private final ListAnalysesUseCase analyses;
 
-    SystemHealthService(GetEngineVersionUseCase engineVersion,
-                        GetCatalogUseCase catalog,
-                        ScanReportsUseCase scanReports,
-                        ManageSecretsUseCase secrets,
-                        ListAnalysesUseCase analyses) {
+    SystemHealthService(
+            GetEngineVersionUseCase engineVersion,
+            GetCatalogUseCase catalog,
+            ScanReportsUseCase scanReports,
+            ManageSecretsUseCase secrets,
+            ListAnalysesUseCase analyses) {
         this.engineVersion = engineVersion;
         this.catalog = catalog;
         this.scanReports = scanReports;
@@ -53,14 +54,21 @@ class SystemHealthService implements SystemHealthUseCase {
     private HealthCheck runner() {
         try {
             EngineVersion version = engineVersion.getEngineVersion();
-            Map<String, Object> params = Map.of("runnerVersion", String.valueOf(version.runnerVersion()),
-                    "upstreamVersion", String.valueOf(version.upstreamVersion()),
-                    "protocolVersion", version.protocolVersion());
+            Map<String, Object> params = Map.of(
+                    "runnerVersion",
+                    String.valueOf(version.runnerVersion()),
+                    "upstreamVersion",
+                    String.valueOf(version.upstreamVersion()),
+                    "protocolVersion",
+                    version.protocolVersion());
             return version.protocolVersion() == SUPPORTED_PROTOCOL
                     ? new HealthCheck("runner", HealthStatus.UP, "runner_ok", params)
                     : new HealthCheck("runner", HealthStatus.DOWN, "runner_protocol_mismatch", params);
         } catch (CatalogUnavailableException e) {
-            return new HealthCheck("runner", HealthStatus.DOWN, "runner_unavailable",
+            return new HealthCheck(
+                    "runner",
+                    HealthStatus.DOWN,
+                    "runner_unavailable",
                     Map.of("detail", String.valueOf(e.getMessage())));
         }
     }
@@ -75,29 +83,40 @@ class SystemHealthService implements SystemHealthUseCase {
                     .sorted()
                     .toList();
         } catch (CatalogUnavailableException _) {
-            usable = set.stream().filter(name -> name.endsWith("_API_KEY")).sorted().toList();
+            usable = set.stream()
+                    .filter(name -> name.endsWith("_API_KEY"))
+                    .sorted()
+                    .toList();
         }
         return usable.isEmpty()
                 ? new HealthCheck("keys", HealthStatus.WARN, "no_provider_keys", Map.of())
-                : new HealthCheck("keys", HealthStatus.UP, "provider_keys_ok",
-                        Map.of("providers", String.join(", ", usable)));
+                : new HealthCheck(
+                        "keys", HealthStatus.UP, "provider_keys_ok", Map.of("providers", String.join(", ", usable)));
     }
 
     @SuppressWarnings("checkstyle:IllegalCatch") // a health check reports any failure as DOWN
     private HealthCheck dataDir() {
         try {
             int reports = scanReports.scan().size();
-            return new HealthCheck("dataDir", reports > 0 ? HealthStatus.UP : HealthStatus.WARN,
-                    reports > 0 ? "data_dir_ok" : "data_dir_empty", Map.of("reports", reports));
+            return new HealthCheck(
+                    "dataDir",
+                    reports > 0 ? HealthStatus.UP : HealthStatus.WARN,
+                    reports > 0 ? "data_dir_ok" : "data_dir_empty",
+                    Map.of("reports", reports));
         } catch (RuntimeException e) {
-            return new HealthCheck("dataDir", HealthStatus.DOWN, "data_dir_unreadable",
+            return new HealthCheck(
+                    "dataDir",
+                    HealthStatus.DOWN,
+                    "data_dir_unreadable",
                     Map.of("detail", String.valueOf(e.getMessage())));
         }
     }
 
     private HealthCheck queue() {
-        long running = analyses.list(new AnalysisFilter(AnalysisStatus.RUNNING, null)).size();
-        long queued = analyses.list(new AnalysisFilter(AnalysisStatus.QUEUED, null)).size();
+        long running =
+                analyses.list(new AnalysisFilter(AnalysisStatus.RUNNING, null)).size();
+        long queued =
+                analyses.list(new AnalysisFilter(AnalysisStatus.QUEUED, null)).size();
         return new HealthCheck("queue", HealthStatus.UP, "queue_ok", Map.of("running", running, "queued", queued));
     }
 }

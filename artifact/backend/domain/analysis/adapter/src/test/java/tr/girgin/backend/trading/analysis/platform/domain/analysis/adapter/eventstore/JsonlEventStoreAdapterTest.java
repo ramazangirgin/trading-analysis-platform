@@ -42,8 +42,14 @@ class JsonlEventStoreAdapterTest extends AdapterTestSupport {
     @Test
     void appendedEventsReadBackTheSame() {
         AnalysisId id = AnalysisId.newId();
-        RunEvent died = new RunEvent(1, Instant.parse("2026-09-29T10:00:00Z"), RunEventType.RUN_FINISHED, null,
-                RunOutcome.FAILED, null, "Runner exited with code 137",
+        RunEvent died = new RunEvent(
+                1,
+                Instant.parse("2026-09-29T10:00:00Z"),
+                RunEventType.RUN_FINISHED,
+                null,
+                RunOutcome.FAILED,
+                null,
+                "Runner exited with code 137",
                 Map.of("status", "error", "error_code", "runner_died", "error", "Runner exited with code 137"));
 
         store.append(id, died);

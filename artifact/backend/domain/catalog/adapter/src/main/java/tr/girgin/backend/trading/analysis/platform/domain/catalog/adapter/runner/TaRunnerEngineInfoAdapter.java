@@ -44,10 +44,11 @@ class TaRunnerEngineInfoAdapter implements EngineInfoPort {
     private final List<String> command;
     private final Path workingDir;
 
-    TaRunnerEngineInfoAdapter(CatalogJsonToCatalogMapper catalogMapper,
-                              VersionJsonToEngineVersionMapper versionMapper,
-                              @Value("${platform.runner.process.command}") String[] command,
-                              @Value("${platform.runner.process.working-dir}") Path workingDir) {
+    TaRunnerEngineInfoAdapter(
+            CatalogJsonToCatalogMapper catalogMapper,
+            VersionJsonToEngineVersionMapper versionMapper,
+            @Value("${platform.runner.process.command}") String[] command,
+            @Value("${platform.runner.process.working-dir}") Path workingDir) {
         this.catalogMapper = catalogMapper;
         this.versionMapper = versionMapper;
         this.command = absoluteExecutable(List.of(command));
@@ -107,7 +108,8 @@ class TaRunnerEngineInfoAdapter implements EngineInfoPort {
     private static List<String> absoluteExecutable(List<String> command) {
         List<String> resolved = new ArrayList<>(command);
         if (!resolved.isEmpty() && resolved.getFirst().contains("/")) {
-            resolved.set(0, Path.of(resolved.getFirst()).toAbsolutePath().normalize().toString());
+            resolved.set(
+                    0, Path.of(resolved.getFirst()).toAbsolutePath().normalize().toString());
         }
         return resolved;
     }

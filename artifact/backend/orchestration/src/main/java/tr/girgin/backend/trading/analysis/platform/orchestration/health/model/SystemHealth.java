@@ -11,6 +11,9 @@ public record SystemHealth(List<HealthCheck> checks) {
 
     /** The worst of the checks. */
     public HealthStatus overall() {
-        return checks.stream().map(HealthCheck::status).max(Comparator.naturalOrder()).orElse(HealthStatus.UP);
+        return checks.stream()
+                .map(HealthCheck::status)
+                .max(Comparator.naturalOrder())
+                .orElse(HealthStatus.UP);
     }
 }

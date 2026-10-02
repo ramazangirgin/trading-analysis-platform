@@ -35,9 +35,10 @@ class RunnerOutputLineToRunEventMapperTest extends AdapterTestSupport {
         assertThat(event.seq()).isEqualTo(17);
         assertThat(event.timestamp()).isEqualTo(Instant.parse("2026-09-28T10:00:01.123Z"));
         assertThat(event.type()).isEqualTo(RunEventType.AGENT_STATUS);
-        assertThat(event.payload()).containsExactly(
-                org.assertj.core.api.Assertions.entry("agent", "Market Analyst"),
-                org.assertj.core.api.Assertions.entry("status", "in_progress"));
+        assertThat(event.payload())
+                .containsExactly(
+                        org.assertj.core.api.Assertions.entry("agent", "Market Analyst"),
+                        org.assertj.core.api.Assertions.entry("status", "in_progress"));
         // "status" here is an agent status, not a run outcome.
         assertThat(event.outcome()).isNull();
         assertThat(event.stats()).isNull();
@@ -72,9 +73,9 @@ class RunnerOutputLineToRunEventMapperTest extends AdapterTestSupport {
 
     @Test
     void unknownTypesBecomeLogEvents() {
-        assertThat(map("""
-                {"v":1,"ts":"2026-09-28T10:00:01Z","run_id":"r_1","seq":8,"type":"from_the_future"}""").type())
-                .isEqualTo(RunEventType.LOG);
+        RunEvent event = map("""
+                {"v":1,"ts":"2026-09-28T10:00:01Z","run_id":"r_1","seq":8,"type":"from_the_future"}""");
+        assertThat(event.type()).isEqualTo(RunEventType.LOG);
     }
 
     @Test
@@ -94,8 +95,16 @@ class RunnerOutputLineToRunEventMapperTest extends AdapterTestSupport {
     }
 
     @ParameterizedTest
-    @CsvSource({"Buy,BUY", "OVERWEIGHT,OVERWEIGHT", "hold.,HOLD", "**Sell**,SELL", "Under weight,UNDERWEIGHT",
-            "REVIEW,REVIEW", "strong buy,REVIEW", "'',REVIEW"})
+    @CsvSource({
+        "Buy,BUY",
+        "OVERWEIGHT,OVERWEIGHT",
+        "hold.,HOLD",
+        "**Sell**,SELL",
+        "Under weight,UNDERWEIGHT",
+        "REVIEW,REVIEW",
+        "strong buy,REVIEW",
+        "'',REVIEW"
+    })
     void mapsRatingsLeniently(String raw, Rating expected) {
         assertThat(ratingMapper.map(raw)).isEqualTo(expected);
     }

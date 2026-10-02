@@ -72,23 +72,24 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
-    AnalysesApiDelegateImpl(StartAnalysisUseCase startAnalysis,
-                            ListAnalysesUseCase listAnalyses,
-                            GetAnalysisUseCase getAnalysis,
-                            StopAnalysisUseCase stopAnalysis,
-                            RerunAnalysisUseCase rerunAnalysis,
-                            SubscribeAnalysisEventsUseCase subscribeEvents,
-                            GetAnalysisReportUseCase getReport,
-                            GetAnalysisPricesUseCase getPrices,
-                            ReadAnalysisLogsUseCase readLogs,
-                            StartAnalysisRequestToAnalysisSpecMapper specMapper,
-                            AnalysisToAnalysisDtoMapper analysisMapper,
-                            RunEventToRunEventDtoMapper eventMapper,
-                            StringToAnalysisIdMapper idMapper,
-                            AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
-                            AnalysisExceptionToApiExceptionMapper errorMapper,
-                            ReportToAnalysisReportDtoMapper reportMapper,
-                            PriceHistoryToPriceHistoryDtoMapper pricesMapper) {
+    AnalysesApiDelegateImpl(
+            StartAnalysisUseCase startAnalysis,
+            ListAnalysesUseCase listAnalyses,
+            GetAnalysisUseCase getAnalysis,
+            StopAnalysisUseCase stopAnalysis,
+            RerunAnalysisUseCase rerunAnalysis,
+            SubscribeAnalysisEventsUseCase subscribeEvents,
+            GetAnalysisReportUseCase getReport,
+            GetAnalysisPricesUseCase getPrices,
+            ReadAnalysisLogsUseCase readLogs,
+            StartAnalysisRequestToAnalysisSpecMapper specMapper,
+            AnalysisToAnalysisDtoMapper analysisMapper,
+            RunEventToRunEventDtoMapper eventMapper,
+            StringToAnalysisIdMapper idMapper,
+            AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
+            AnalysisExceptionToApiExceptionMapper errorMapper,
+            ReportToAnalysisReportDtoMapper reportMapper,
+            PriceHistoryToPriceHistoryDtoMapper pricesMapper) {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
@@ -115,9 +116,11 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
     @Override
     public ResponseEntity<List<AnalysisDto>> listAnalyses(AnalysisStatusDto status, String ticker) {
-        String normalizedTicker = ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
+        String normalizedTicker =
+                ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
         AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker);
-        return ResponseEntity.ok(listAnalyses.list(filter).stream().map(analysisMapper::map).toList());
+        return ResponseEntity.ok(
+                listAnalyses.list(filter).stream().map(analysisMapper::map).toList());
     }
 
     @Override
@@ -140,8 +143,11 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         return call(() -> getReport.getReport(idMapper.map(id)))
                 .map(reportMapper::map)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "report_not_found",
-                        "No report files for analysis " + id, Map.of("id", id)));
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "report_not_found",
+                        "No report files for analysis " + id,
+                        Map.of("id", id)));
     }
 
     @Override
@@ -149,8 +155,11 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         return call(() -> getPrices.getPrices(idMapper.map(id)))
                 .map(pricesMapper::map)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "prices_not_found",
-                        "No cached prices for analysis " + id, Map.of("id", id)));
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "prices_not_found",
+                        "No cached prices for analysis " + id,
+                        Map.of("id", id)));
     }
 
     @Override
@@ -176,9 +185,11 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
             @Override
             public void onEvent(RunEvent event) {
-                send(emitter, SseEmitter.event()
-                        .id(Long.toString(event.seq()))
-                        .data(eventMapper.map(event), MediaType.APPLICATION_JSON));
+                send(
+                        emitter,
+                        SseEmitter.event()
+                                .id(Long.toString(event.seq()))
+                                .data(eventMapper.map(event), MediaType.APPLICATION_JSON));
             }
 
             @Override
@@ -191,7 +202,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     private ResponseEntity<AnalysisDto> created(Analysis analysis) {
-        return ResponseEntity.created(URI.create("/api/analyses/" + analysis.id().value()))
+        return ResponseEntity.created(
+                        URI.create("/api/analyses/" + analysis.id().value()))
                 .body(analysisMapper.map(analysis));
     }
 

@@ -12,13 +12,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Rati
 final class DecisionRatingParser {
 
     private static final String RATINGS = "(buy|overweight|hold|underweight|sell)";
-    private static final Pattern EXPLICIT = Pattern.compile(
-            "(?i)rating\\W{0,6}\\s*[:\\-]?\\W{0,6}\\s*" + RATINGS + "\\b");
-    private static final Pattern PROPOSAL = Pattern.compile(
-            "(?i)final\\s+transaction\\s+proposal\\W{0,6}\\s*[:\\-]?\\W{0,6}\\s*" + RATINGS + "\\b");
+    private static final Pattern EXPLICIT =
+            Pattern.compile("(?i)rating\\W{0,6}\\s*[:\\-]?\\W{0,6}\\s*" + RATINGS + "\\b");
+    private static final Pattern PROPOSAL =
+            Pattern.compile("(?i)final\\s+transaction\\s+proposal\\W{0,6}\\s*[:\\-]?\\W{0,6}\\s*" + RATINGS + "\\b");
 
-    private DecisionRatingParser() {
-    }
+    private DecisionRatingParser() {}
 
     static Rating parse(String decision) {
         for (Pattern pattern : new Pattern[] {EXPLICIT, PROPOSAL}) {

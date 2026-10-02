@@ -1,8 +1,8 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.runlog;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;

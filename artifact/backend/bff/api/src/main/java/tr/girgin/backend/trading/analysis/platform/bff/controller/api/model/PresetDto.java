@@ -4,5 +4,4 @@ import java.time.Instant;
 import java.util.Map;
 
 /** Saved New Analysis form values; {@code values} is whatever the form stored. */
-public record PresetDto(String id, String name, Map<String, Object> values, Instant updatedAt) {
-}
+public record PresetDto(String id, String name, Map<String, Object> values, Instant updatedAt) {}

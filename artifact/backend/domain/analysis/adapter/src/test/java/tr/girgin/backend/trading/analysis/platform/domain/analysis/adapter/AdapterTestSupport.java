@@ -42,9 +42,18 @@ public abstract class AdapterTestSupport {
     }
 
     protected static AnalysisSpec spec(String ticker) {
-        return new AnalysisSpec(ticker, LocalDate.of(2026, 9, 25), AssetType.STOCK,
-                List.of(Analyst.NEWS, Analyst.MARKET), "deepseek", "deepseek-v4-pro", "deepseek-v4-flash",
-                1, 2, "Turkish", true);
+        return new AnalysisSpec(
+                ticker,
+                LocalDate.of(2026, 9, 25),
+                AssetType.STOCK,
+                List.of(Analyst.NEWS, Analyst.MARKET),
+                "deepseek",
+                "deepseek-v4-pro",
+                "deepseek-v4-flash",
+                1,
+                2,
+                "Turkish",
+                true);
     }
 
     private static Path createTempDirectory() {

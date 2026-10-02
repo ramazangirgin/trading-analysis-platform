@@ -19,25 +19,34 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.Sy
 
 class SystemHealthServiceTest {
 
-    private static final Catalog CATALOG = new Catalog("0.5.1", new ModelDefaults("deepseek", "a", "b"),
-            List.of(new Provider("deepseek", "DEEPSEEK_API_KEY", true, List.of(), List.of()),
+    private static final Catalog CATALOG = new Catalog(
+            "0.5.1",
+            new ModelDefaults("deepseek", "a", "b"),
+            List.of(
+                    new Provider("deepseek", "DEEPSEEK_API_KEY", true, List.of(), List.of()),
                     new Provider("ollama", null, true, List.of(), List.of())),
-            List.of(), List.of("stock"));
+            List.of(),
+            List.of("stock"));
 
     @Test
     void allGood() {
-        SystemHealth health = service(new EngineVersion("0.1.0", 1, "0.5.1"), List.of(
-                new SecretStatus("DEEPSEEK_API_KEY", SecretSource.EXTERNAL_FILE, "••••d1f0")), 3).checkHealth();
+        SystemHealth health = service(
+                        new EngineVersion("0.1.0", 1, "0.5.1"),
+                        List.of(new SecretStatus("DEEPSEEK_API_KEY", SecretSource.EXTERNAL_FILE, "••••d1f0")),
+                        3)
+                .checkHealth();
 
         assertThat(health.overall()).isEqualTo(HealthStatus.UP);
-        assertThat(health.checks()).extracting(HealthCheck::code)
+        assertThat(health.checks())
+                .extracting(HealthCheck::code)
                 .containsExactly("runner_ok", "provider_keys_ok", "data_dir_ok", "queue_ok");
         assertThat(health.checks().get(1).params()).containsEntry("providers", "deepseek");
     }
 
     @Test
     void warnsWithoutKeysOrReports() {
-        SystemHealth health = service(new EngineVersion("0.1.0", 1, "0.5.1"), List.of(), 0).checkHealth();
+        SystemHealth health =
+                service(new EngineVersion("0.1.0", 1, "0.5.1"), List.of(), 0).checkHealth();
 
         assertThat(health.overall()).isEqualTo(HealthStatus.WARN);
         assertThat(health.checks()).extracting(HealthCheck::code).contains("no_provider_keys", "data_dir_empty");
@@ -45,7 +54,8 @@ class SystemHealthServiceTest {
 
     @Test
     void aRunnerSpeakingAnotherProtocolIsDown() {
-        SystemHealth health = service(new EngineVersion("9.0.0", 2, "0.9.0"), List.of(), 1).checkHealth();
+        SystemHealth health =
+                service(new EngineVersion("9.0.0", 2, "0.9.0"), List.of(), 1).checkHealth();
 
         assertThat(health.overall()).isEqualTo(HealthStatus.DOWN);
         assertThat(health.checks().getFirst().code()).isEqualTo("runner_protocol_mismatch");
@@ -60,15 +70,21 @@ class SystemHealthServiceTest {
                 () -> {
                     throw new CatalogUnavailableException("Cannot start ta-runner", null);
                 },
-                List::of, secrets(List.of()), _ -> List.of());
+                List::of,
+                secrets(List.of()),
+                _ -> List.of());
 
         assertThat(service.checkHealth().checks().getFirst().code()).isEqualTo("runner_unavailable");
     }
 
     private static SystemHealthService service(EngineVersion version, List<SecretStatus> secrets, int reports) {
         GetCatalogUseCase catalog = () -> CATALOG;
-        return new SystemHealthService(() -> version, catalog,
-                () -> java.util.Collections.nCopies(reports, null), secrets(secrets), _ -> List.of());
+        return new SystemHealthService(
+                () -> version,
+                catalog,
+                () -> java.util.Collections.nCopies(reports, null),
+                secrets(secrets),
+                _ -> List.of());
     }
 
     private static ManageSecretsUseCase secrets(List<SecretStatus> statuses) {

@@ -14,5 +14,4 @@ public record AnalysisSpecDto(
         int maxDebateRounds,
         int maxRiskDiscussRounds,
         String outputLanguage,
-        boolean checkpointEnabled) {
-}
+        boolean checkpointEnabled) {}

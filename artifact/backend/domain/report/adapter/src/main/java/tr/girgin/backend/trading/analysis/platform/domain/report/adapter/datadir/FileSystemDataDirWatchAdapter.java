@@ -37,9 +37,10 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
     private final Path resultsDir;
     private final Path deepReportsDir;
 
-    FileSystemDataDirWatchAdapter(@Value("${platform.data-dir}") Path dataDir,
-                                  @Value("${platform.results-dir}") Path resultsDir,
-                                  @Value("${platform.data-dir}/reports") Path deepReportsDir) {
+    FileSystemDataDirWatchAdapter(
+            @Value("${platform.data-dir}") Path dataDir,
+            @Value("${platform.results-dir}") Path resultsDir,
+            @Value("${platform.data-dir}/reports") Path deepReportsDir) {
         this.dataDir = dataDir.toAbsolutePath().normalize();
         this.resultsDir = resultsDir.toAbsolutePath().normalize();
         this.deepReportsDir = deepReportsDir.toAbsolutePath().normalize();
@@ -122,14 +123,16 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
                 registerTree(path);
             }
             return path.getFileName().toString().equals(RUN_HISTORY)
-                    || path.equals(deepReportsDir) || path.equals(resultsDir);
+                    || path.equals(deepReportsDir)
+                    || path.equals(resultsDir);
         }
 
         void registerTree(Path root) {
             if (!Files.isDirectory(root)) {
                 return;
             }
-            int level = root.equals(resultsDir) ? 0 : resultsDir.relativize(root).getNameCount();
+            int level =
+                    root.equals(resultsDir) ? 0 : resultsDir.relativize(root).getNameCount();
             if (level > RESULTS_DEPTH) {
                 return;
             }
@@ -145,8 +148,13 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
                 return;
             }
             try {
-                dirs.put(dir.register(service, StandardWatchEventKinds.ENTRY_CREATE,
-                        StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE), dir);
+                dirs.put(
+                        dir.register(
+                                service,
+                                StandardWatchEventKinds.ENTRY_CREATE,
+                                StandardWatchEventKinds.ENTRY_MODIFY,
+                                StandardWatchEventKinds.ENTRY_DELETE),
+                        dir);
             } catch (ClosedWatchServiceException _) {
                 // Closed meanwhile.
             } catch (IOException e) {

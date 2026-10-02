@@ -76,26 +76,35 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
     private ScheduledFuture<?> followUp;
 
     @Autowired
-    ImportExistingRunsService(ScanReportsUseCase scanReports,
-                              ScanRunHistoryUseCase scanHistory,
-                              RegisterExternalAnalysisUseCase registerExternal,
-                              WatchDataDirUseCase watchDataDir,
-                              @Value("${platform.import.on-startup:true}") boolean importOnStartup,
-                              @Value("${platform.import.watch.enabled:true}") boolean watch,
-                              @Value("${platform.import.settle-minutes:10}") long settleMinutes) {
-        this(scanReports, scanHistory, registerExternal, watchDataDir, importOnStartup, watch,
-                Duration.ofMinutes(settleMinutes), Clock.systemUTC());
+    ImportExistingRunsService(
+            ScanReportsUseCase scanReports,
+            ScanRunHistoryUseCase scanHistory,
+            RegisterExternalAnalysisUseCase registerExternal,
+            WatchDataDirUseCase watchDataDir,
+            @Value("${platform.import.on-startup:true}") boolean importOnStartup,
+            @Value("${platform.import.watch.enabled:true}") boolean watch,
+            @Value("${platform.import.settle-minutes:10}") long settleMinutes) {
+        this(
+                scanReports,
+                scanHistory,
+                registerExternal,
+                watchDataDir,
+                importOnStartup,
+                watch,
+                Duration.ofMinutes(settleMinutes),
+                Clock.systemUTC());
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber") // the settings above, with the settle time and clock given
-    ImportExistingRunsService(ScanReportsUseCase scanReports,
-                              ScanRunHistoryUseCase scanHistory,
-                              RegisterExternalAnalysisUseCase registerExternal,
-                              WatchDataDirUseCase watchDataDir,
-                              boolean importOnStartup,
-                              boolean watch,
-                              Duration settleTime,
-                              Clock clock) {
+    ImportExistingRunsService(
+            ScanReportsUseCase scanReports,
+            ScanRunHistoryUseCase scanHistory,
+            RegisterExternalAnalysisUseCase registerExternal,
+            WatchDataDirUseCase watchDataDir,
+            boolean importOnStartup,
+            boolean watch,
+            Duration settleTime,
+            Clock clock) {
         this.scanReports = scanReports;
         this.scanHistory = scanHistory;
         this.registerExternal = registerExternal;
@@ -177,15 +186,16 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
         // little or nothing, so the history is all there is of it.
         history.stream()
                 .filter(entry -> entry.status() != RunHistoryEntry.Status.COMPLETED)
-                .map(entry -> ExternalAnalysis.runHistory(entry.key().ticker(), entry.key().tradeDate(),
-                        analysts(entry), toRun(entry)))
+                .map(entry -> ExternalAnalysis.runHistory(
+                        entry.key().ticker(), entry.key().tradeDate(), analysts(entry), toRun(entry)))
                 .forEach(externals::add);
 
         Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
         for (ExternalAnalysis external : externals) {
             outcomes.merge(registerExternal.register(external).outcome(), 1, Integer::sum);
         }
-        ImportResult result = new ImportResult(externals.size(),
+        ImportResult result = new ImportResult(
+                externals.size(),
                 outcomes.getOrDefault(ExternalRegistration.Outcome.CREATED, 0),
                 outcomes.getOrDefault(ExternalRegistration.Outcome.UPDATED, 0),
                 outcomes.getOrDefault(ExternalRegistration.Outcome.UNCHANGED, 0));
@@ -223,9 +233,15 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
         if (analysts.isEmpty() && run != null) {
             analysts.addAll(analysts(run));
         }
-        Rating rating = report.rating() == null ? null : Rating.valueOf(report.rating().name());
-        return ExternalAnalysis.reportFiles(report.key().ticker(), report.key().tradeDate(), analysts, rating,
-                report.sections().get(ReportSection.FINAL_TRADE_DECISION), run == null ? null : toRun(run),
+        Rating rating =
+                report.rating() == null ? null : Rating.valueOf(report.rating().name());
+        return ExternalAnalysis.reportFiles(
+                report.key().ticker(),
+                report.key().tradeDate(),
+                analysts,
+                rating,
+                report.sections().get(ReportSection.FINAL_TRADE_DECISION),
+                run == null ? null : toRun(run),
                 run == null ? report.modifiedAt() : run.endedAt());
     }
 
@@ -236,15 +252,24 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
             case STOPPED -> AnalysisStatus.STOPPED;
         };
         Integer depth = entry.researchDepth();
-        return new ExternalRun(entry.id(), status, entry.error(),
+        return new ExternalRun(
+                entry.id(),
+                status,
+                entry.error(),
                 Objects.requireNonNullElse(entry.llmProvider(), Analysis.UNKNOWN),
                 Objects.requireNonNullElse(entry.deepThinkLlm(), Analysis.UNKNOWN),
                 Objects.requireNonNullElse(entry.quickThinkLlm(), Analysis.UNKNOWN),
                 depth == null || depth < 1 ? 1 : depth,
                 Objects.requireNonNullElse(entry.outputLanguage(), "English"),
-                new RunStats(entry.llmCalls(), entry.toolCalls(), entry.tokensIn(), entry.tokensOut(),
-                        entry.costUsd(), entry.elapsed()),
-                entry.startedAt(), entry.endedAt());
+                new RunStats(
+                        entry.llmCalls(),
+                        entry.toolCalls(),
+                        entry.tokensIn(),
+                        entry.tokensOut(),
+                        entry.costUsd(),
+                        entry.elapsed()),
+                entry.startedAt(),
+                entry.endedAt());
     }
 
     private static List<Analyst> analysts(RunHistoryEntry entry) {

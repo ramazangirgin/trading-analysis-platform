@@ -31,8 +31,9 @@ class DotenvSecretStoreAdapter implements SecretStorePort {
     private final Path managedFile;
     private final List<Path> externalFiles;
 
-    DotenvSecretStoreAdapter(@Value("${platform.secrets.env-file}") Path managedFile,
-                             @Value("${platform.secrets.external-env-files:}") String[] externalFiles) {
+    DotenvSecretStoreAdapter(
+            @Value("${platform.secrets.env-file}") Path managedFile,
+            @Value("${platform.secrets.external-env-files:}") String[] externalFiles) {
         this.managedFile = managedFile;
         this.externalFiles = java.util.Arrays.stream(externalFiles)
                 .filter(name -> name != null && !name.isBlank())
@@ -55,13 +56,18 @@ class DotenvSecretStoreAdapter implements SecretStorePort {
     @Override
     public synchronized void writeManaged(Map<String, String> secrets) {
         StringBuilder content = new StringBuilder(HEADER);
-        secrets.forEach((name, value) -> content.append(name).append("=\"")
-                .append(value.replace("\\", "\\\\").replace("\"", "\\\"")).append("\"\n"));
+        secrets.forEach((name, value) -> content.append(name)
+                .append("=\"")
+                .append(value.replace("\\", "\\\\").replace("\"", "\\\""))
+                .append("\"\n"));
         try {
             Path dir = managedFile.toAbsolutePath().getParent();
             Files.createDirectories(dir);
-            Path temp = Files.createTempFile(dir, ".secrets", ".tmp", PosixFilePermissions.asFileAttribute(
-                    PosixFilePermissions.fromString("rw-------")));
+            Path temp = Files.createTempFile(
+                    dir,
+                    ".secrets",
+                    ".tmp",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
             Files.writeString(temp, content, StandardCharsets.UTF_8);
             try {
                 Files.move(temp, managedFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);

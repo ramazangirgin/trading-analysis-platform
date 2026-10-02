@@ -38,8 +38,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.p
 class CsvPriceCacheAdapter implements PriceCachePort {
 
     private static final Logger log = LoggerFactory.getLogger(CsvPriceCacheAdapter.class);
-    private static final Pattern RANGED = Pattern.compile(
-            "(?<ticker>.+)-YFin-data-(?<from>\\d{4}-\\d{2}-\\d{2})-(?<to>\\d{4}-\\d{2}-\\d{2})\\.csv");
+    private static final Pattern RANGED =
+            Pattern.compile("(?<ticker>.+)-YFin-data-(?<from>\\d{4}-\\d{2}-\\d{2})-(?<to>\\d{4}-\\d{2}-\\d{2})\\.csv");
     private static final String UNRANGED_SUFFIX = "-YFin-data.csv";
     private static final long MAX_FILE_BYTES = 20L * 1024 * 1024;
     // Dates may carry a time ("2024-01-02 00:00:00-05:00"); the day is the first ten characters.
@@ -95,7 +95,8 @@ class CsvPriceCacheAdapter implements PriceCachePort {
             return List.of();
         }
         List<String> header = List.of(lines.getFirst().trim().split(","));
-        Map<String, Integer> index = IntStream.range(0, header.size()).boxed()
+        Map<String, Integer> index = IntStream.range(0, header.size())
+                .boxed()
                 .collect(Collectors.toMap(header::get, Function.identity(), (a, _) -> a));
         if (!index.keySet().containsAll(COLUMNS)) {
             log.warn("Price cache file {} lacks columns {}", file, COLUMNS);

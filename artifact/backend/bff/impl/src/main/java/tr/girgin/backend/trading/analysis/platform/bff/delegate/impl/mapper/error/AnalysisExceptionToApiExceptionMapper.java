@@ -15,7 +15,7 @@ public interface AnalysisExceptionToApiExceptionMapper {
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ALREADY_RUNNING, NOT_RUNNING -> HttpStatus.CONFLICT;
         };
-        return new ApiException(status, source.error().name().toLowerCase(Locale.ROOT), source.getMessage(),
-                source.params());
+        return new ApiException(
+                status, source.error().name().toLowerCase(Locale.ROOT), source.getMessage(), source.params());
     }
 }

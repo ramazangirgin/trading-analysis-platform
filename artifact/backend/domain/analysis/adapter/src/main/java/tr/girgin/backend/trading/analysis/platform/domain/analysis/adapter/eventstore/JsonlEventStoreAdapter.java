@@ -36,9 +36,10 @@ class JsonlEventStoreAdapter implements EventStorePort {
     private final JsonMapper json = JsonMapper.builder().build();
     private final Path runsDir;
 
-    JsonlEventStoreAdapter(RunnerOutputLineToRunEventMapper eventMapper,
-                           RunEventTypeToStringMapper typeMapper,
-                           @Value("${platform.home}") Path platformHome) {
+    JsonlEventStoreAdapter(
+            RunnerOutputLineToRunEventMapper eventMapper,
+            RunEventTypeToStringMapper typeMapper,
+            @Value("${platform.home}") Path platformHome) {
         this.eventMapper = eventMapper;
         this.typeMapper = typeMapper;
         this.runsDir = platformHome.resolve("runs");
@@ -73,8 +74,12 @@ class JsonlEventStoreAdapter implements EventStorePort {
         Path file = eventsFile(id);
         try {
             Files.createDirectories(file.getParent());
-            Files.writeString(file, json.writeValueAsString(line) + "\n", StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            Files.writeString(
+                    file,
+                    json.writeValueAsString(line) + "\n",
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND);
         } catch (IOException e) {
             throw new UncheckedIOException("Could not append an event for " + id, e);
         }

@@ -12,8 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
  */
 final class TestPlatformHome {
 
-    private TestPlatformHome() {
-    }
+    private TestPlatformHome() {}
 
     static Path create() {
         try {
@@ -27,7 +26,8 @@ final class TestPlatformHome {
         registry.add("platform.home", home::toString);
         registry.add("platform.runner.process.command", () -> "/bin/sh," + runnerScript);
         registry.add("platform.runner.process.working-dir", home::toString);
-        registry.add("platform.secrets.env-file", () -> home.resolve("secrets.env").toString());
+        registry.add(
+                "platform.secrets.env-file", () -> home.resolve("secrets.env").toString());
         registry.add("platform.secrets.external-env-files", () -> "");
         registry.add("platform.data-dir", home::toString);
         registry.add("platform.results-dir", () -> home.resolve("logs").toString());

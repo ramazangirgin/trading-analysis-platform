@@ -42,7 +42,8 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase {
                 .collect(Collectors.groupingBy(ReportContent::key, LinkedHashMap::new, Collectors.toList()));
         return byKey.values().stream()
                 .map(ReportService::merge)
-                .sorted(Comparator.comparing((Report r) -> r.key().tradeDate()).reversed()
+                .sorted(Comparator.comparing((Report r) -> r.key().tradeDate())
+                        .reversed()
                         .thenComparing(r -> r.key().ticker()))
                 .toList();
     }
@@ -67,8 +68,13 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase {
             }
         }
         String decision = sections.get(ReportSection.FINAL_TRADE_DECISION);
-        return new Report(contents.getFirst().key(), sections, debates,
-                decision == null ? null : DecisionRatingParser.parse(decision), sources, modified);
+        return new Report(
+                contents.getFirst().key(),
+                sections,
+                debates,
+                decision == null ? null : DecisionRatingParser.parse(decision),
+                sources,
+                modified);
     }
 
     private static <K> void putNonBlank(Map<K, String> target, Map<K, String> source) {

@@ -25,11 +25,14 @@ class JdbcPresetRepositoryAdapterTest {
 
     @Test
     void savesUpdatesAndDeletes() {
-        Preset preset = new Preset(PresetId.newId(), "Cheap DeepSeek", "{\"llmProvider\":\"deepseek\"}",
+        Preset preset = new Preset(
+                PresetId.newId(),
+                "Cheap DeepSeek",
+                "{\"llmProvider\":\"deepseek\"}",
                 Instant.parse("2026-09-29T10:00:00Z"));
         repository.save(preset);
-        Preset renamed = new Preset(preset.id(), "DeepSeek flash", preset.payload(),
-                Instant.parse("2026-09-29T11:00:00Z"));
+        Preset renamed =
+                new Preset(preset.id(), "DeepSeek flash", preset.payload(), Instant.parse("2026-09-29T11:00:00Z"));
 
         repository.save(renamed);
 
@@ -49,7 +52,12 @@ class JdbcPresetRepositoryAdapterTest {
             Path db = java.nio.file.Files.createTempFile("presets", ".db");
             SingleConnectionDataSource dataSource = new SingleConnectionDataSource("jdbc:sqlite:" + db, true);
             // Only this domain's migration: V1 belongs to another module.
-            Flyway.configure().dataSource(dataSource).baselineVersion("1").baselineOnMigrate(true).load().migrate();
+            Flyway.configure()
+                    .dataSource(dataSource)
+                    .baselineVersion("1")
+                    .baselineOnMigrate(true)
+                    .load()
+                    .migrate();
             return dataSource;
         }
 

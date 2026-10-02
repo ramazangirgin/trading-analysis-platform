@@ -34,11 +34,13 @@ class SecretsService implements ManageSecretsUseCase {
     @Override
     public List<SecretStatus> listSecrets() {
         Map<String, SecretStatus> statuses = new TreeMap<>();
-        store.readExternal().forEach((name, value) ->
-                statuses.put(name, new SecretStatus(name, SecretSource.EXTERNAL_FILE, mask(value))));
+        store.readExternal()
+                .forEach((name, value) ->
+                        statuses.put(name, new SecretStatus(name, SecretSource.EXTERNAL_FILE, mask(value))));
         // The platform's file wins, as it does when the runner's environment is built.
-        store.readManaged().forEach((name, value) ->
-                statuses.put(name, new SecretStatus(name, SecretSource.PLATFORM, mask(value))));
+        store.readManaged()
+                .forEach((name, value) ->
+                        statuses.put(name, new SecretStatus(name, SecretSource.PLATFORM, mask(value))));
         return new ArrayList<>(statuses.values());
     }
 
@@ -46,10 +48,11 @@ class SecretsService implements ManageSecretsUseCase {
     public synchronized SecretStatus setSecret(String name, String value) {
         requireWritable(name);
         String trimmed = value == null ? "" : value.strip();
-        if (trimmed.isEmpty() || trimmed.length() > MAX_VALUE_LENGTH
+        if (trimmed.isEmpty()
+                || trimmed.length() > MAX_VALUE_LENGTH
                 || trimmed.chars().anyMatch(Character::isISOControl)) {
-            throw new SettingsException(SettingsError.INVALID_SECRET_VALUE, "Invalid value for " + name,
-                    Map.of("name", name));
+            throw new SettingsException(
+                    SettingsError.INVALID_SECRET_VALUE, "Invalid value for " + name, Map.of("name", name));
         }
         Map<String, String> managed = new LinkedHashMap<>(store.readManaged());
         managed.put(name, trimmed);
@@ -62,16 +65,20 @@ class SecretsService implements ManageSecretsUseCase {
         requireWritable(name);
         Map<String, String> managed = new LinkedHashMap<>(store.readManaged());
         if (managed.remove(name) == null) {
-            throw new SettingsException(SettingsError.SECRET_NOT_MANAGED,
-                    name + " is not set in the platform's secrets file", Map.of("name", name));
+            throw new SettingsException(
+                    SettingsError.SECRET_NOT_MANAGED,
+                    name + " is not set in the platform's secrets file",
+                    Map.of("name", name));
         }
         store.writeManaged(managed);
     }
 
     private static void requireWritable(String name) {
         if (name == null || !WRITABLE_NAME.matcher(name).matches()) {
-            throw new SettingsException(SettingsError.INVALID_SECRET_NAME,
-                    "Only *_API_KEY and *_BASE_URL names can be set", Map.of("name", String.valueOf(name)));
+            throw new SettingsException(
+                    SettingsError.INVALID_SECRET_NAME,
+                    "Only *_API_KEY and *_BASE_URL names can be set",
+                    Map.of("name", String.valueOf(name)));
         }
     }
 

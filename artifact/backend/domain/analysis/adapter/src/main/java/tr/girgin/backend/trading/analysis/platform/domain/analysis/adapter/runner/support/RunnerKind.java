@@ -12,11 +12,13 @@ public final class RunnerKind {
 
     static final String PROPERTY = "platform.runner";
 
-    private RunnerKind() {
-    }
+    private RunnerKind() {}
 
     static boolean isDocker(ConditionContext context) {
-        return "docker".equalsIgnoreCase(context.getEnvironment().getProperty(PROPERTY, "process").strip());
+        return "docker"
+                .equalsIgnoreCase(context.getEnvironment()
+                        .getProperty(PROPERTY, "process")
+                        .strip());
     }
 
     public static final class Process implements Condition {

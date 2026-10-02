@@ -114,34 +114,46 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
 
     @Autowired
     @SuppressWarnings("checkstyle:ParameterNumber") // one @Value per runner setting
-    DockerRunnerAdapter(AnalysisSpecToRunnerSpecMapper specMapper,
-                        RunnerOutputLineToRunEventMapper eventMapper,
-                        @Value("${platform.runner.docker.host}") String host,
-                        @Value("${platform.runner.docker.image}") String image,
-                        @Value("${platform.runner.docker.data-mount}") String dataMount,
-                        @Value("${platform.runner.docker.network:}") String network,
-                        @Value("${platform.runner.docker.memory-mb:2048}") long memoryMb,
-                        @Value("${platform.runner.docker.cpus:2}") double cpus,
-                        @Value("${platform.runner.docker.tmp-size-mb:512}") long tmpSizeMb,
-                        @Value("${platform.runner.docker.log-silence-minutes:10}") long logSilenceMinutes,
-                        @Value("${platform.home}") Path platformHome,
-                        @Value("${platform.runner.stop-grace-seconds:15}") int stopGraceSeconds) {
-        this(specMapper, eventMapper, DockerClients.create(host, Duration.ofMinutes(logSilenceMinutes)), image,
-                dataMount, network, memoryMb, cpus, tmpSizeMb, platformHome, stopGraceSeconds);
+    DockerRunnerAdapter(
+            AnalysisSpecToRunnerSpecMapper specMapper,
+            RunnerOutputLineToRunEventMapper eventMapper,
+            @Value("${platform.runner.docker.host}") String host,
+            @Value("${platform.runner.docker.image}") String image,
+            @Value("${platform.runner.docker.data-mount}") String dataMount,
+            @Value("${platform.runner.docker.network:}") String network,
+            @Value("${platform.runner.docker.memory-mb:2048}") long memoryMb,
+            @Value("${platform.runner.docker.cpus:2}") double cpus,
+            @Value("${platform.runner.docker.tmp-size-mb:512}") long tmpSizeMb,
+            @Value("${platform.runner.docker.log-silence-minutes:10}") long logSilenceMinutes,
+            @Value("${platform.home}") Path platformHome,
+            @Value("${platform.runner.stop-grace-seconds:15}") int stopGraceSeconds) {
+        this(
+                specMapper,
+                eventMapper,
+                DockerClients.create(host, Duration.ofMinutes(logSilenceMinutes)),
+                image,
+                dataMount,
+                network,
+                memoryMb,
+                cpus,
+                tmpSizeMb,
+                platformHome,
+                stopGraceSeconds);
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber") // the runner settings above, with the Docker client given
-    DockerRunnerAdapter(AnalysisSpecToRunnerSpecMapper specMapper,
-                        RunnerOutputLineToRunEventMapper eventMapper,
-                        DockerClient docker,
-                        String image,
-                        String dataMount,
-                        String network,
-                        long memoryMb,
-                        double cpus,
-                        long tmpSizeMb,
-                        Path platformHome,
-                        int stopGraceSeconds) {
+    DockerRunnerAdapter(
+            AnalysisSpecToRunnerSpecMapper specMapper,
+            RunnerOutputLineToRunEventMapper eventMapper,
+            DockerClient docker,
+            String image,
+            String dataMount,
+            String network,
+            long memoryMb,
+            double cpus,
+            long tmpSizeMb,
+            Path platformHome,
+            int stopGraceSeconds) {
         this.specMapper = specMapper;
         this.eventMapper = eventMapper;
         this.docker = docker;
@@ -186,8 +198,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                     .getId();
             docker.startContainerCmd(containerId).exec();
         } catch (DockerException | IllegalArgumentException e) {
-            throw new IllegalStateException("Could not start a ta-runner container (" + image + ") for " + id
-                    + ": " + e.getMessage(), e);
+            throw new IllegalStateException(
+                    "Could not start a ta-runner container (" + image + ") for " + id + ": " + e.getMessage(), e);
         }
         follow(id, containerId, 0, false, sink);
         return new RunHandle(containerId);
@@ -198,7 +210,9 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         Thread.ofVirtual().name("runner-stop-" + shortId(handle.ref())).start(() -> {
             try {
                 // SIGTERM (ta-runner reports run_finished{stopped}), SIGKILL after the grace period.
-                docker.stopContainerCmd(handle.ref()).withTimeout(stopGraceSeconds).exec();
+                docker.stopContainerCmd(handle.ref())
+                        .withTimeout(stopGraceSeconds)
+                        .exec();
             } catch (NotModifiedException _) {
                 log.debug("Container {} was not running", shortId(handle.ref()));
             } catch (DockerException e) {
@@ -221,7 +235,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             log.warn("Cannot inspect container {} of {}: {}", shortId(handle.ref()), id, e.getMessage());
             return false;
         }
-        Map<String, String> labels = container.getConfig() == null ? null : container.getConfig().getLabels();
+        Map<String, String> labels =
+                container.getConfig() == null ? null : container.getConfig().getLabels();
         if (labels == null || !id.value().equals(labels.get(LABEL_RUN_ID))) {
             return false;
         }
@@ -343,7 +358,9 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             Instant cutoff = Instant.now().minus(LEFTOVER_AGE);
             for (Container container : exited) {
                 if (!followed.contains(container.getId()) && finishedBefore(container.getId(), cutoff)) {
-                    log.info("Removing leftover runner container {} ({})", shortId(container.getId()),
+                    log.info(
+                            "Removing leftover runner container {} ({})",
+                            shortId(container.getId()),
                             container.getLabels().get(LABEL_RUN_ID));
                     remove(container.getId());
                 }
@@ -355,7 +372,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
 
     private boolean finishedBefore(String containerId, Instant cutoff) {
         try {
-            String finished = docker.inspectContainerCmd(containerId).exec().getState().getFinishedAt();
+            String finished =
+                    docker.inspectContainerCmd(containerId).exec().getState().getFinishedAt();
             return finished != null && Instant.parse(finished).isBefore(cutoff);
         } catch (DockerException | DateTimeParseException | NullPointerException _) {
             return false;
@@ -495,8 +513,12 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
 
         private void append(Path file, String line) {
             try {
-                Files.writeString(file, line + "\n", StandardCharsets.UTF_8,
-                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                Files.writeString(
+                        file,
+                        line + "\n",
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND);
             } catch (IOException e) {
                 log.warn("{}: cannot write {}: {}", id, file.getFileName(), e.getMessage());
             }
