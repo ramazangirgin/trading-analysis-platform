@@ -11,10 +11,10 @@ import {
   useMessage,
   type DataTableColumns,
 } from 'naive-ui'
-import { api, type SecretStatus } from '@/api/client'
-import { useCatalogStore } from '@/stores/catalog'
-import { useLabels } from '@/composables/useLabels'
-import PresetManager from '@/components/PresetManager.vue'
+import type { SecretStatus } from '@/shared/api/types'
+import { useCatalogStore } from '@/features/catalog'
+import { useLabels } from '@/shared/composables/useLabels'
+import { PresetManager, settingsApi } from '@/features/settings'
 
 interface KeyRow {
   env: string
@@ -49,7 +49,7 @@ const rows = computed<KeyRow[]>(() => {
 async function load() {
   try {
     await catalogStore.load()
-    secrets.value = await api.listSecrets()
+    secrets.value = await settingsApi.listSecrets()
     failure.value = null
   } catch (e) {
     failure.value = e
@@ -59,10 +59,10 @@ async function load() {
 async function save(env: string) {
   saving.value = env
   try {
-    await api.setSecret(env, drafts[env] ?? '')
+    await settingsApi.setSecret(env, drafts[env] ?? '')
     drafts[env] = ''
     message.success(t('settings.saved', { name: env }))
-    secrets.value = await api.listSecrets()
+    secrets.value = await settingsApi.listSecrets()
   } catch (e) {
     message.error(errorLabel(e))
   } finally {
@@ -73,9 +73,9 @@ async function save(env: string) {
 async function remove(env: string) {
   saving.value = env
   try {
-    await api.removeSecret(env)
+    await settingsApi.removeSecret(env)
     message.success(t('settings.removed', { name: env }))
-    secrets.value = await api.listSecrets()
+    secrets.value = await settingsApi.listSecrets()
   } catch (e) {
     message.error(errorLabel(e))
   } finally {

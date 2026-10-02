@@ -15,7 +15,7 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "api:types": "openapi-typescript openapi.json -o src/api/schema.d.ts"
+    "api:types": "openapi-typescript openapi.json -o src/shared/api/schema.d.ts"
   },
   "dependencies": {
     "@vueuse/core": "15.0.0",
@@ -36,6 +36,8 @@
     "@vue/eslint-config-typescript": "14.9.0",
     "@vue/tsconfig": "0.9.1",
     "eslint": "10.11.0",
+    "eslint-import-resolver-typescript": "4.4.5",
+    "eslint-plugin-boundaries": "7.2.0",
     "eslint-plugin-vue": "10.11.1",
     "openapi-typescript": "7.13.0",
     "prettier": "3.9.9",

@@ -23,11 +23,13 @@ import {
   type FormInst,
   type FormRules,
 } from 'naive-ui'
-import { api, type Analyst, type ModelOption, type Preset } from '@/api/client'
-import { outputLanguageFor } from '@/i18n'
-import { useCatalogStore } from '@/stores/catalog'
-import { useLabels } from '@/composables/useLabels'
-import HealthAlerts from '@/components/HealthAlerts.vue'
+import type { Analyst, ModelOption, Preset } from '@/shared/api/types'
+import { outputLanguageFor } from '@/shared/i18n'
+import { useCatalogStore } from '@/features/catalog'
+import { useLabels } from '@/shared/composables/useLabels'
+import { HealthAlerts } from '@/features/health'
+import { analysisApi } from '@/features/analysis'
+import { settingsApi } from '@/features/settings'
 
 const router = useRouter()
 const { locale } = useI18n()
@@ -80,7 +82,7 @@ const languageOptions = computed(() =>
 const presetOptions = computed(() => presets.value.map((p) => ({ label: p.name, value: p.id })))
 
 async function loadPresets() {
-  presets.value = await api.listPresets().catch(() => [])
+  presets.value = await settingsApi.listPresets().catch(() => [])
 }
 
 function applyPreset(id: string | null) {
@@ -96,7 +98,7 @@ async function savePreset() {
   if (!name) return
   const values = Object.fromEntries(PRESET_FIELDS.map((field) => [field, form[field]]))
   try {
-    await api.createPreset(name, values)
+    await settingsApi.createPreset(name, values)
     message.success(t('presets.saved', { name }))
     presetName.value = ''
     await loadPresets()
@@ -188,7 +190,7 @@ async function submit() {
   submitting.value = true
   failure.value = null
   try {
-    const analysis = await api.startAnalysis({
+    const analysis = await analysisApi.startAnalysis({
       ticker: form.ticker.trim().toUpperCase(),
       tradeDate: isoDate(form.tradeDate!),
       assetType: form.assetType,

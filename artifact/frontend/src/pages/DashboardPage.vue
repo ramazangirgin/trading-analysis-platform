@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { NAlert, NButton, NCard, NEmpty, NSpace } from 'naive-ui'
-import { ACTIVE_STATUSES, api, type Analysis } from '@/api/client'
-import AnalysisTable from '@/components/AnalysisTable.vue'
-import HealthAlerts from '@/components/HealthAlerts.vue'
-import { useLabels } from '@/composables/useLabels'
-import { usePolling } from '@/composables/usePolling'
+import { ACTIVE_STATUSES, analysisApi, AnalysisTable } from '@/features/analysis'
+import type { Analysis } from '@/shared/api/types'
+import { HealthAlerts } from '@/features/health'
+import { useLabels } from '@/shared/composables/useLabels'
+import { usePolling } from '@/shared/composables/usePolling'
 
 const { t, error: errorLabel } = useLabels()
 const analyses = ref<Analysis[]>([])
@@ -17,7 +17,7 @@ const recent = computed(() => analyses.value.filter((a) => a.status === 'COMPLET
 
 async function refresh() {
   try {
-    analyses.value = await api.listAnalyses()
+    analyses.value = await analysisApi.listAnalyses()
     failure.value = null
   } catch (e) {
     failure.value = e

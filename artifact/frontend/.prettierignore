@@ -2,4 +2,4 @@ dist
 .gradle
 pnpm-lock.yaml
 openapi.json
-src/api/schema.d.ts
+src/shared/api/schema.d.ts

@@ -1,0 +1,4 @@
+# pnpm runs no dependency build scripts unless listed here.
+allowBuilds:
+  # Its install script only fetches a native binding when the platform package is missing.
+  unrs-resolver: false

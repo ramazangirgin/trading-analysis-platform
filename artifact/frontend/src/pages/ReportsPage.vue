@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   NAlert,
@@ -13,16 +13,23 @@ import {
   NSpin,
   NTag,
 } from 'naive-ui'
-import { api, type Analysis, type AnalysisReport } from '@/api/client'
-import { headings, reportIndex, reportParts, type ReportPart } from '@/domain/reportDocument'
-import { reportLanguage } from '@/domain/reportLanguage'
-import { useLabels } from '@/composables/useLabels'
-import { useReportExport } from '@/composables/useReportExport'
-import MarkdownView from '@/components/MarkdownView.vue'
-import RatingTag from '@/components/RatingTag.vue'
+import type { Analysis, AnalysisReport } from '@/shared/api/types'
+import {
+  headings,
+  MarkdownView,
+  PriceChart,
+  reportIndex,
+  reportLanguage,
+  type ReportPart,
+  reportParts,
+  reportsApi,
+  useReportExport,
+} from '@/features/reports'
+import { useLabels } from '@/shared/composables/useLabels'
+import RatingTag from '@/shared/ui/RatingTag.vue'
+import { analysisApi } from '@/features/analysis'
 
 // ECharts is loaded only when a market report is open.
-const PriceChart = defineAsyncComponent(() => import('@/components/PriceChart.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -100,7 +107,7 @@ const toc = computed(() => {
 async function loadIndex() {
   loadingIndex.value = true
   try {
-    analyses.value = await api.listAnalyses({ status: 'COMPLETED' })
+    analyses.value = await analysisApi.listAnalyses({ status: 'COMPLETED' })
     failure.value = null
     if (!selectedId.value && index.value.length) {
       await router.replace({ name: 'report', params: { id: index.value[0]!.id } })
@@ -118,7 +125,7 @@ async function loadReport(id: string | null) {
   if (!id) return
   loadingReport.value = true
   try {
-    report.value = await api.getReport(id)
+    report.value = await reportsApi.getReport(id)
     reader.value?.scrollTo({ top: 0 })
   } catch (e) {
     reportFailure.value = e
