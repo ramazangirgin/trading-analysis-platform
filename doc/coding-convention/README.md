@@ -19,14 +19,16 @@ Every rule is checked in three places, by the same tool:
 
 | Part | Tool | Configured in | Build / local run | Git hook |
 |---|---|---|---|---|
-| Backend | [ArchUnit](https://www.archunit.org/) | `artifact/backend/src/test/java/.../ArchitectureTest.java` | `./gradlew :backend:test`, part of `mise run build` | pre-push |
-| Frontend | [eslint-plugin-boundaries](https://www.jsboundaries.dev/) and `no-restricted-imports` | `artifact/frontend/eslint.config.js` | `pnpm lint`, part of `mise run build` (`:frontend:pnpmLint`) | pre-commit (ESLint), pre-push (type-check) |
-| ta-runner | [import-linter](https://import-linter.readthedocs.io/) (`lint-imports`) and ruff `TID` | `artifact/ta-runner/pyproject.toml` | `mise run runner-test` | pre-commit |
+| Backend | [ArchUnit](https://www.archunit.org/) | `artifact/backend/src/test/java/.../ArchitectureTest.java` | `./gradlew :backend:test`, part of `mise run build` and `mise run check` | none (needs compilation) |
+| Frontend | [eslint-plugin-boundaries](https://www.jsboundaries.dev/) and `no-restricted-imports` | `artifact/frontend/eslint.config.js` | `pnpm lint`, part of `mise run build` (`:frontend:pnpmLint`) and `mise run check` | pre-commit |
+| ta-runner | [import-linter](https://import-linter.readthedocs.io/) (`lint-imports`) and ruff `TID` | `artifact/ta-runner/pyproject.toml` | `mise run runner-test`, `mise run check` | pre-commit |
 
 - **CI** runs all of them: the *Backend and frontend* job (`mise run build`) and the *ta-runner* job
   (`mise run runner-test`), see [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). CI is
   the authority: a hook can be skipped, a failing CI check blocks the merge.
-- **Git hooks** catch the same failures before a commit or push. They are configured in
+- **`mise run check`** runs every structure check, lint and the frontend type-check, but no tests:
+  the quick check before pushing (seconds when Gradle is warm).
+- **Git hooks** run the static checks on staged files before a commit. They are configured in
   [`lefthook.yml`](../../lefthook.yml) ([lefthook](https://lefthook.dev/), pinned in `mise.toml`; why:
   [OPS-0006](../adr/OPS-0006-git-hooks-with-lefthook.md)).
 
@@ -41,15 +43,18 @@ mise run hooks    # or `mise run setup`, which installs them as well
 | Hook | Runs | On |
 |---|---|---|
 | pre-commit (in parallel, staged files only) | ESLint + Prettier check; ruff + `lint-imports` | staged files under `artifact/frontend/`; staged files under `artifact/ta-runner/` |
-| pre-push | `ArchitectureTest` (compiles the backend, too slow for every commit); the frontend type-check | pushed changes under `artifact/backend/`; under `artifact/frontend/` |
+
+Hooks run only checks that need no build and take a few seconds. Nothing compiles or runs tests on
+commit or push: the backend's ArchUnit rules need the compiled classes, so they run in
+`mise run check`, `mise run build` and CI instead.
 
 The hooks run lefthook through `mise exec`, so `mise` must be on `PATH` (it is after installing mise
 the usual way). The frontend jobs use the Node.js and pnpm the Gradle build downloads, so run
 `mise run setup` once before the first commit.
 
-- Run a hook by hand: `mise exec -- lefthook run pre-commit` (staged files) or
-  `mise exec -- lefthook run pre-push --all-files`.
-- Skip once: `git commit --no-verify` / `git push --no-verify` (CI still checks), or
+- Run the hook by hand: `mise exec -- lefthook run pre-commit` (staged files) or
+  `mise exec -- lefthook run pre-commit --all-files`.
+- Skip once: `git commit --no-verify` (CI still checks), or
   `LEFTHOOK=0 git ...`.
 - Remove: `mise exec -- lefthook uninstall`.
 
