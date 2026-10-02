@@ -8,13 +8,20 @@
 [tools]
 java = "temurin-25"
 uv = "0.12"
+# Git hooks (lefthook.yml): `mise run hooks` installs them.
+lefthook = "2.1"
 
 [tasks.setup]
-description = "Install ta-runner (TradingAgents + deps) and the frontend's packages"
+description = "Install ta-runner (TradingAgents + deps), the frontend's packages and the Git hooks"
 run = [
   "cd artifact/ta-runner && uv sync",
   "./gradlew :frontend:pnpmInstall",
+  { task = "hooks" },
 ]
+
+[tasks.hooks]
+description = "Install the Git hooks (lefthook.yml): lint and package-structure checks before commit and push"
+run = "lefthook install"
 
 [tasks.dev]
 description = "Backend on :8080 and Vite (hot reload) on :5173, together; open http://localhost:5173"

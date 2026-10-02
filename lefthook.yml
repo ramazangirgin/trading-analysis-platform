@@ -1,0 +1,46 @@
+# Git hooks (lefthook, pinned in mise.toml). Install them with `mise run hooks` (`mise run setup`
+# does it too). They catch the package-structure and lint failures before CI does; CI still runs
+# every check, since hooks can be skipped (`git commit --no-verify`).
+# See doc/coding-convention/README.md.
+
+# Run lefthook, and the commands below, with the tools from mise.toml on PATH (uv, Java).
+lefthook: mise exec -- lefthook
+
+# `**/` also matches no folder at all, so files at a project's root are checked too.
+glob_matcher: doublestar
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: frontend lint
+      root: artifact/frontend/
+      glob: "artifact/frontend/**/*.{ts,vue,js}"
+      run: ./with-node.sh pnpm exec eslint {staged_files}
+
+    - name: frontend format
+      root: artifact/frontend/
+      glob: "artifact/frontend/**/*"
+      run: ./with-node.sh pnpm exec prettier --check --ignore-unknown {staged_files}
+
+    - name: ta-runner lint
+      root: artifact/ta-runner/
+      glob: "artifact/ta-runner/**/*.py"
+      run: uv run ruff check {staged_files}
+
+    - name: ta-runner import contracts
+      root: artifact/ta-runner/
+      glob: ["artifact/ta-runner/**/*.py", "artifact/ta-runner/pyproject.toml"]
+      run: uv run lint-imports
+
+pre-push:
+  parallel: true
+  jobs:
+    # Compiles the backend first: too slow for every commit.
+    - name: backend package structure (ArchUnit)
+      glob: "artifact/backend/**/*.java"
+      run: ./gradlew --console=plain :backend:test --tests '*ArchitectureTest'
+
+    - name: frontend type-check
+      root: artifact/frontend/
+      glob: "artifact/frontend/**/*.{ts,vue}"
+      run: ./with-node.sh pnpm run type-check
