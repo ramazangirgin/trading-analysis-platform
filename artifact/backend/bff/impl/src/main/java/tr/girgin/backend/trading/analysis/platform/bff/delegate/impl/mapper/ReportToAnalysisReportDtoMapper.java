@@ -17,8 +17,12 @@ public interface ReportToAnalysisReportDtoMapper {
         source.sections().forEach((section, text) -> sections.put(section.name().toLowerCase(Locale.ROOT), text));
         Map<String, String> debates = new LinkedHashMap<>();
         source.debates().forEach((speaker, text) -> debates.put(speaker.name().toLowerCase(Locale.ROOT), text));
-        return new AnalysisReportDto(sections, debates,
-                source.rating() == null ? null : RatingDto.valueOf(source.rating().name()),
+        return new AnalysisReportDto(
+                sections,
+                debates,
+                source.rating() == null
+                        ? null
+                        : RatingDto.valueOf(source.rating().name()),
                 source.sources().stream().map(Enum::name).sorted().toList(),
                 source.modifiedAt());
     }

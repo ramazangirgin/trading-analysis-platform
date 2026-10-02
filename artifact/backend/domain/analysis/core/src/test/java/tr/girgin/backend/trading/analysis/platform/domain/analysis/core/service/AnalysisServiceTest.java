@@ -88,14 +88,54 @@ class AnalysisServiceTest {
 
     @Test
     void rejectsInvalidSpecsWithTheOffendingField() {
-        AnalysisSpec future = new AnalysisSpec("NVDA", LocalDate.now().plusDays(1), AssetType.STOCK,
-                List.of(Analyst.MARKET), "openai", "gpt", "gpt", 1, 1, "English", false);
-        AnalysisSpec traversal = new AnalysisSpec("../etc", LocalDate.of(2026, 1, 2), AssetType.STOCK,
-                List.of(Analyst.MARKET), "openai", "gpt", "gpt", 1, 1, "English", false);
-        AnalysisSpec injection = new AnalysisSpec("NVDA", LocalDate.of(2026, 1, 2), AssetType.STOCK,
-                List.of(Analyst.MARKET), "openai", "gpt; rm -rf /", "gpt", 1, 1, "English", false);
-        AnalysisSpec noAnalysts = new AnalysisSpec("NVDA", LocalDate.of(2026, 1, 2), AssetType.STOCK,
-                List.of(), "openai", "gpt", "gpt", 1, 1, "English", false);
+        AnalysisSpec future = new AnalysisSpec(
+                "NVDA",
+                LocalDate.now().plusDays(1),
+                AssetType.STOCK,
+                List.of(Analyst.MARKET),
+                "openai",
+                "gpt",
+                "gpt",
+                1,
+                1,
+                "English",
+                false);
+        AnalysisSpec traversal = new AnalysisSpec(
+                "../etc",
+                LocalDate.of(2026, 1, 2),
+                AssetType.STOCK,
+                List.of(Analyst.MARKET),
+                "openai",
+                "gpt",
+                "gpt",
+                1,
+                1,
+                "English",
+                false);
+        AnalysisSpec injection = new AnalysisSpec(
+                "NVDA",
+                LocalDate.of(2026, 1, 2),
+                AssetType.STOCK,
+                List.of(Analyst.MARKET),
+                "openai",
+                "gpt; rm -rf /",
+                "gpt",
+                1,
+                1,
+                "English",
+                false);
+        AnalysisSpec noAnalysts = new AnalysisSpec(
+                "NVDA",
+                LocalDate.of(2026, 1, 2),
+                AssetType.STOCK,
+                List.of(),
+                "openai",
+                "gpt",
+                "gpt",
+                1,
+                1,
+                "English",
+                false);
 
         assertInvalid(future, "tradeDate");
         assertInvalid(traversal, "ticker");
@@ -193,8 +233,8 @@ class AnalysisServiceTest {
         runner.sink(id).onExit(0);
 
         assertThatThrownBy(() -> service.stop(id))
-                .isInstanceOfSatisfying(AnalysisException.class,
-                        e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_RUNNING));
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_RUNNING));
     }
 
     @Test
@@ -218,7 +258,8 @@ class AnalysisServiceTest {
         Analysis failed = service.get(orphan.id());
         assertThat(failed.status()).isEqualTo(AnalysisStatus.FAILED);
         assertThat(failed.errorCode()).isEqualTo(AnalysisService.PLATFORM_RESTARTED);
-        assertThat(eventStore.read(orphan.id(), 0)).last()
+        assertThat(eventStore.read(orphan.id(), 0))
+                .last()
                 .satisfies(e -> assertThat(e.type()).isEqualTo(RunEventType.RUN_FINISHED));
     }
 
@@ -250,8 +291,8 @@ class AnalysisServiceTest {
         assertThat(service.get(orphan.id()).status()).isEqualTo(AnalysisStatus.RUNNING);
         assertThat(service.get(orphan.id()).stats().llmCalls()).isEqualTo(3);
         assertThatThrownBy(() -> service.start(Fakes.spec("NVDA")))
-                .isInstanceOfSatisfying(AnalysisException.class,
-                        e -> assertThat(e.error()).isEqualTo(AnalysisError.ALREADY_RUNNING));
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.ALREADY_RUNNING));
 
         service.stop(orphan.id());
         assertThat(runner.stopped).extracting(RunHandle::ref).containsExactly("4242");
@@ -290,22 +331,22 @@ class AnalysisServiceTest {
         service.start(Fakes.spec("MU"));
 
         assertThat(service.list(AnalysisFilter.ALL)).hasSize(2);
-        assertThat(service.list(new AnalysisFilter(null, "MU"))).singleElement()
+        assertThat(service.list(new AnalysisFilter(null, "MU")))
+                .singleElement()
                 .satisfies(a -> assertThat(a.spec().ticker()).isEqualTo("MU"));
     }
 
     @Test
     void unknownIdsAreNotFound() {
         assertThatThrownBy(() -> service.get(new AnalysisId("r_missing")))
-                .isInstanceOfSatisfying(AnalysisException.class,
-                        e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }
 
     private void assertInvalid(AnalysisSpec spec, String field) {
-        assertThatThrownBy(() -> service.start(spec))
-                .isInstanceOfSatisfying(AnalysisException.class, e -> {
-                    assertThat(e.error()).isEqualTo(AnalysisError.INVALID_SPEC);
-                    assertThat(e.params()).containsEntry("field", field);
-                });
+        assertThatThrownBy(() -> service.start(spec)).isInstanceOfSatisfying(AnalysisException.class, e -> {
+            assertThat(e.error()).isEqualTo(AnalysisError.INVALID_SPEC);
+            assertThat(e.params()).containsEntry("field", field);
+        });
     }
 }

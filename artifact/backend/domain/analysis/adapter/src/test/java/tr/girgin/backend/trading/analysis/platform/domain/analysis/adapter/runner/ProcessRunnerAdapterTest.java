@@ -55,7 +55,9 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
 
         Path runDir = HOME.resolve("runs").resolve(id.value());
         assertThat(Files.readString(runDir.resolve("run.log"))).contains("upstream noise on stderr");
-        JsonNode spec = JsonMapper.builder().build().readTree(runDir.resolve("spec.json").toFile());
+        JsonNode spec = JsonMapper.builder()
+                .build()
+                .readTree(runDir.resolve("spec.json").toFile());
         assertThat(spec.get("run_id").asString()).isEqualTo(id.value());
         assertThat(spec.get("ticker").asString()).isEqualTo("NVDA");
         assertThat(spec.get("trade_date").asString()).isEqualTo("2026-09-25");
@@ -138,7 +140,8 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void followsARunnerAnEarlierPlatformStartedThroughItsEventsFile() throws Exception {
         AnalysisId id = AnalysisId.newId();
-        Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value())).resolve("events.jsonl");
+        Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value()))
+                .resolve("events.jsonl");
         // Like a ta-runner whose platform has gone: stdout leads nowhere, events.jsonl gets everything.
         Process orphan = orphan(events, """
                 line() { printf '{"v":1,"ts":"2026-09-29T10:00:0%s","run_id":"x","seq":%s,"type":"%s"%s}\\n' "$1Z" "$1" "$2" "$3" >> "$EVENTS"; }
@@ -161,7 +164,8 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void stopsARunnerItFollowsAgain() throws Exception {
         AnalysisId id = AnalysisId.newId();
-        Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value())).resolve("events.jsonl");
+        Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value()))
+                .resolve("events.jsonl");
         Process orphan = orphan(events, """
                 STOPPED='{"v":1,"ts":"2026-09-29T10:00:09Z","run_id":"x","seq":2,"type":"run_finished","status":"stopped"}'
                 trap 'echo "$STOPPED" >> "$EVENTS"; exit 2' TERM
@@ -185,7 +189,8 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         try {
             RunHandle stale = new RunHandle(other.pid() + "@1000");
 
-            assertThat(runner.reattach(AnalysisId.newId(), stale, 0, new RecordingSink())).isFalse();
+            assertThat(runner.reattach(AnalysisId.newId(), stale, 0, new RecordingSink()))
+                    .isFalse();
         } finally {
             other.destroyForcibly();
         }
@@ -197,8 +202,10 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         gone.waitFor();
         String ref = gone.pid() + "@" + Instant.now().toEpochMilli();
 
-        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle(ref), 0, new RecordingSink())).isFalse();
-        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink())).isFalse();
+        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle(ref), 0, new RecordingSink()))
+                .isFalse();
+        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink()))
+                .isFalse();
     }
 
     /**
@@ -216,7 +223,8 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     }
 
     private static String ref(Process process) {
-        return process.pid() + "@" + process.toHandle().info().startInstant().orElseThrow().toEpochMilli();
+        return process.pid() + "@"
+                + process.toHandle().info().startInstant().orElseThrow().toEpochMilli();
     }
 
     private static void script(String body) throws IOException {

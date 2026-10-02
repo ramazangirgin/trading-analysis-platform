@@ -12,6 +12,9 @@ public interface StringToAnalystListMapper {
         if (source == null || source.isBlank()) {
             return List.of();
         }
-        return Arrays.stream(source.split(",")).map(String::trim).map(Analyst::valueOf).toList();
+        return Arrays.stream(source.split(","))
+                .map(String::trim)
+                .map(Analyst::valueOf)
+                .toList();
     }
 }

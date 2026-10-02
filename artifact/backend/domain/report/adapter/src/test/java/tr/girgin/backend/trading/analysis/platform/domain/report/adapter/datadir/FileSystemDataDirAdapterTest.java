@@ -59,12 +59,14 @@ class FileSystemDataDirAdapterTest {
         ReportContent goog = single(adapter.read(key("GOOG", "2026-09-28")));
 
         assertThat(goog.source()).isEqualTo(ReportSource.REPORT_TREE);
-        assertThat(goog.sections()).containsEntry(ReportSection.MARKET_REPORT, "# Market")
+        assertThat(goog.sections())
+                .containsEntry(ReportSection.MARKET_REPORT, "# Market")
                 .containsEntry(ReportSection.NEWS_REPORT, "# News")
                 .containsEntry(ReportSection.INVESTMENT_PLAN, "Plan: hold")
                 .containsEntry(ReportSection.FINAL_TRADE_DECISION, "**Rating**: Hold")
                 .doesNotContainKey(ReportSection.SENTIMENT_REPORT);
-        assertThat(goog.debates()).containsEntry(DebateSpeaker.BULL, "Bull case")
+        assertThat(goog.debates())
+                .containsEntry(DebateSpeaker.BULL, "Bull case")
                 .containsEntry(DebateSpeaker.RESEARCH_JUDGE, "Plan: hold")
                 .containsEntry(DebateSpeaker.RISK_JUDGE, "**Rating**: Hold");
     }
@@ -74,36 +76,42 @@ class FileSystemDataDirAdapterTest {
         ReportContent be = single(adapter.read(key("BE", "2026-09-28")));
 
         assertThat(be.source()).isEqualTo(ReportSource.FULL_STATE);
-        assertThat(be.sections()).containsEntry(ReportSection.TRADER_INVESTMENT_PLAN, "trade")
+        assertThat(be.sections())
+                .containsEntry(ReportSection.TRADER_INVESTMENT_PLAN, "trade")
                 .containsEntry(ReportSection.FINAL_TRADE_DECISION, "**Rating**: Buy")
                 .doesNotContainKey(ReportSection.SENTIMENT_REPORT);
-        assertThat(be.debates()).containsEntry(DebateSpeaker.NEUTRAL, "neu")
+        assertThat(be.debates())
+                .containsEntry(DebateSpeaker.NEUTRAL, "neu")
                 .containsEntry(DebateSpeaker.RISK_JUDGE, "final");
     }
 
     @Test
     void readsADeepAnalysisBesideTheRun() {
         assertThat(adapter.read(key("MU", "2026-09-27")))
-                .filteredOn(c -> c.source() == ReportSource.DEEP_REPORT).singleElement()
-                .satisfies(c -> assertThat(c.sections()).containsExactly(
-                        Map.entry(ReportSection.DEEP_ANALYSIS, "# MU Derin Analiz")));
+                .filteredOn(c -> c.source() == ReportSource.DEEP_REPORT)
+                .singleElement()
+                .satisfies(c -> assertThat(c.sections())
+                        .containsExactly(Map.entry(ReportSection.DEEP_ANALYSIS, "# MU Derin Analiz")));
     }
 
     @Test
     void aCorruptFileDropsOnlyThatFile() {
-        assertThat(adapter.read(key("MU", "2026-09-27"))).extracting(ReportContent::source)
+        assertThat(adapter.read(key("MU", "2026-09-27")))
+                .extracting(ReportContent::source)
                 .containsExactlyInAnyOrder(ReportSource.REPORT_TREE, ReportSource.DEEP_REPORT);
     }
 
     @Test
     void scansValidTickersOnly() {
-        assertThat(adapter.readAll()).extracting(c -> c.key().ticker() + "/" + c.source())
+        assertThat(adapter.readAll())
+                .extracting(c -> c.key().ticker() + "/" + c.source())
                 .containsExactlyInAnyOrder("BE/FULL_STATE", "GOOG/REPORT_TREE", "MU/REPORT_TREE", "MU/DEEP_REPORT");
     }
 
     @Test
     void aMissingResultsDirIsEmpty() {
-        assertThat(new FileSystemDataDirAdapter(logs.resolve("absent"), logs.resolve("absent")).readAll()).isEmpty();
+        assertThat(new FileSystemDataDirAdapter(logs.resolve("absent"), logs.resolve("absent")).readAll())
+                .isEmpty();
     }
 
     private void write(String relative, String content) throws Exception {

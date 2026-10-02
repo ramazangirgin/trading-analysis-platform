@@ -63,13 +63,14 @@ class ProcessRunnerAdapter implements RunnerPort {
     private final Duration followInterval;
     private final Map<String, ProcessHandle> processes = new ConcurrentHashMap<>();
 
-    ProcessRunnerAdapter(AnalysisSpecToRunnerSpecMapper specMapper,
-                         RunnerOutputLineToRunEventMapper eventMapper,
-                         @Value("${platform.runner.process.command}") String[] command,
-                         @Value("${platform.runner.process.working-dir}") Path workingDir,
-                         @Value("${platform.home}") Path platformHome,
-                         @Value("${platform.runner.stop-grace-seconds:15}") long stopGraceSeconds,
-                         @Value("${platform.runner.follow-interval-ms:500}") long followIntervalMs) {
+    ProcessRunnerAdapter(
+            AnalysisSpecToRunnerSpecMapper specMapper,
+            RunnerOutputLineToRunEventMapper eventMapper,
+            @Value("${platform.runner.process.command}") String[] command,
+            @Value("${platform.runner.process.working-dir}") Path workingDir,
+            @Value("${platform.home}") Path platformHome,
+            @Value("${platform.runner.stop-grace-seconds:15}") long stopGraceSeconds,
+            @Value("${platform.runner.follow-interval-ms:500}") long followIntervalMs) {
         this.specMapper = specMapper;
         this.eventMapper = eventMapper;
         this.command = absoluteExecutable(List.of(command));
@@ -92,8 +93,10 @@ class ProcessRunnerAdapter implements RunnerPort {
             args.addAll(List.of("run", "--spec", specFile.toString(), "--out", runDir.toString()));
             ProcessBuilder builder = new ProcessBuilder(args)
                     .directory(workingDir.toFile())
-                    .redirectInput(ProcessBuilder.Redirect.from(Path.of("/dev/null").toFile()))
-                    .redirectError(ProcessBuilder.Redirect.appendTo(runDir.resolve("run.log").toFile()));
+                    .redirectInput(
+                            ProcessBuilder.Redirect.from(Path.of("/dev/null").toFile()))
+                    .redirectError(ProcessBuilder.Redirect.appendTo(
+                            runDir.resolve("run.log").toFile()));
             builder.environment().putAll(environment);
             // The user's own prices, over the ones ta-runner ships; ignored while the file is absent.
             builder.environment().put("TA_RUNNER_PRICES", pricesFile.toString());
@@ -138,7 +141,8 @@ class ProcessRunnerAdapter implements RunnerPort {
         }
         processes.put(handle.ref(), process.get());
         Path events = runsDir.resolve(id.value()).resolve("events.jsonl");
-        Thread.ofVirtual().name("runner-follow-" + id.value())
+        Thread.ofVirtual()
+                .name("runner-follow-" + id.value())
                 .start(() -> follow(id, handle.ref(), process.get(), events, afterSeq, sink));
         return true;
     }
@@ -158,14 +162,15 @@ class ProcessRunnerAdapter implements RunnerPort {
     }
 
     private static String ref(ProcessHandle process) {
-        return process.info().startInstant()
+        return process.info()
+                .startInstant()
                 .map(start -> process.pid() + "@" + start.toEpochMilli())
                 .orElse(String.valueOf(process.pid()));
     }
 
     @SuppressWarnings("checkstyle:IllegalCatch") // one bad event must not stop the run
-    private void follow(AnalysisId id, String ref, ProcessHandle process, Path events, long afterSeq,
-                        RunEventSink sink) {
+    private void follow(
+            AnalysisId id, String ref, ProcessHandle process, Path events, long afterSeq, RunEventSink sink) {
         EventsFileTail tail = new EventsFileTail(events);
         long lastSeq = afterSeq;
         try {
@@ -198,15 +203,18 @@ class ProcessRunnerAdapter implements RunnerPort {
         sink.onExit(-1);
     }
 
-
     @SuppressWarnings("checkstyle:IllegalCatch") // one bad event must not stop the run
     private void pump(AnalysisId id, String ref, Process process, RunEventSink sink) {
         try (BufferedReader reader = process.inputReader(StandardCharsets.UTF_8)) {
             String line;
             while ((line = reader.readLine()) != null) {
                 try {
-                    parser.parse(line).map(eventMapper::map).ifPresentOrElse(sink::onEvent,
-                            () -> log.warn("{}: ignoring a runner output line that is not a protocol event", id));
+                    parser.parse(line)
+                            .map(eventMapper::map)
+                            .ifPresentOrElse(
+                                    sink::onEvent,
+                                    () -> log.warn(
+                                            "{}: ignoring a runner output line that is not a protocol event", id));
                 } catch (RuntimeException e) {
                     log.error("{}: failed to handle a runner event", id, e);
                 }
@@ -237,7 +245,8 @@ class ProcessRunnerAdapter implements RunnerPort {
         }
         List<String> resolved = new ArrayList<>(command);
         if (resolved.getFirst().contains("/")) {
-            resolved.set(0, Path.of(resolved.getFirst()).toAbsolutePath().normalize().toString());
+            resolved.set(
+                    0, Path.of(resolved.getFirst()).toAbsolutePath().normalize().toString());
         }
         return resolved;
     }

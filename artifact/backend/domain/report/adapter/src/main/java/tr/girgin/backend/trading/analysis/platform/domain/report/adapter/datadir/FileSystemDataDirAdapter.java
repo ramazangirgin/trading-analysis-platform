@@ -75,8 +75,9 @@ class FileSystemDataDirAdapter implements DataDirPort {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
 
-    FileSystemDataDirAdapter(@Value("${platform.results-dir}") Path resultsDir,
-                             @Value("${platform.data-dir}/reports") Path deepReportsDir) {
+    FileSystemDataDirAdapter(
+            @Value("${platform.results-dir}") Path resultsDir,
+            @Value("${platform.data-dir}/reports") Path deepReportsDir) {
         this.resultsDir = resultsDir;
         this.deepReportsDir = deepReportsDir;
     }
@@ -96,7 +97,8 @@ class FileSystemDataDirAdapter implements DataDirPort {
                         .ifPresent(contents::add);
             }
             for (Path stateFile : list(tickerDir.resolve(STATE_DIR))) {
-                Matcher matcher = FULL_STATE_FILE.matcher(stateFile.getFileName().toString());
+                Matcher matcher =
+                        FULL_STATE_FILE.matcher(stateFile.getFileName().toString());
                 if (matcher.matches()) {
                     parseDate(matcher.group(1))
                             .flatMap(date -> readFullState(new ReportKey(ticker, date)))
@@ -125,7 +127,10 @@ class FileSystemDataDirAdapter implements DataDirPort {
     }
 
     private Optional<ReportContent> readTree(ReportKey key) {
-        Path reportsDir = resultsDir.resolve(key.ticker()).resolve(key.tradeDate().toString()).resolve("reports");
+        Path reportsDir = resultsDir
+                .resolve(key.ticker())
+                .resolve(key.tradeDate().toString())
+                .resolve("reports");
         if (!Files.isDirectory(reportsDir)) {
             return Optional.empty();
         }
@@ -158,7 +163,9 @@ class FileSystemDataDirAdapter implements DataDirPort {
     }
 
     private Optional<ReportContent> readFullState(ReportKey key) {
-        Path file = resultsDir.resolve(key.ticker()).resolve(STATE_DIR)
+        Path file = resultsDir
+                .resolve(key.ticker())
+                .resolve(STATE_DIR)
                 .resolve("full_states_log_" + key.tradeDate() + ".json");
         if (!Files.isRegularFile(file) || size(file) > MAX_FILE_BYTES) {
             return Optional.empty();
@@ -180,23 +187,36 @@ class FileSystemDataDirAdapter implements DataDirPort {
         putIfPresent(sections, ReportSection.FINAL_TRADE_DECISION, state.finalTradeDecision());
         Map<DebateSpeaker, String> debates = new EnumMap<>(DebateSpeaker.class);
         if (state.investmentDebateState() != null) {
-            putIfPresent(debates, DebateSpeaker.BULL, state.investmentDebateState().bullHistory());
-            putIfPresent(debates, DebateSpeaker.BEAR, state.investmentDebateState().bearHistory());
-            putIfPresent(debates, DebateSpeaker.RESEARCH_JUDGE, state.investmentDebateState().judgeDecision());
+            putIfPresent(
+                    debates, DebateSpeaker.BULL, state.investmentDebateState().bullHistory());
+            putIfPresent(
+                    debates, DebateSpeaker.BEAR, state.investmentDebateState().bearHistory());
+            putIfPresent(
+                    debates,
+                    DebateSpeaker.RESEARCH_JUDGE,
+                    state.investmentDebateState().judgeDecision());
         }
         if (state.riskDebateState() != null) {
-            putIfPresent(debates, DebateSpeaker.AGGRESSIVE, state.riskDebateState().aggressiveHistory());
-            putIfPresent(debates, DebateSpeaker.CONSERVATIVE, state.riskDebateState().conservativeHistory());
+            putIfPresent(
+                    debates, DebateSpeaker.AGGRESSIVE, state.riskDebateState().aggressiveHistory());
+            putIfPresent(
+                    debates, DebateSpeaker.CONSERVATIVE, state.riskDebateState().conservativeHistory());
             putIfPresent(debates, DebateSpeaker.NEUTRAL, state.riskDebateState().neutralHistory());
-            putIfPresent(debates, DebateSpeaker.RISK_JUDGE, state.riskDebateState().judgeDecision());
+            putIfPresent(
+                    debates, DebateSpeaker.RISK_JUDGE, state.riskDebateState().judgeDecision());
         }
         return Optional.of(new ReportContent(key, ReportSource.FULL_STATE, sections, debates, modifiedAt(file)));
     }
 
     private Optional<ReportContent> readDeepReport(ReportKey key) {
         Path file = deepReportsDir.resolve(key.ticker() + "_deep_" + key.tradeDate() + ".md");
-        return readText(file).map(text -> new ReportContent(key, ReportSource.DEEP_REPORT,
-                Map.of(ReportSection.DEEP_ANALYSIS, text), Map.of(), modifiedAt(file)));
+        return readText(file)
+                .map(text -> new ReportContent(
+                        key,
+                        ReportSource.DEEP_REPORT,
+                        Map.of(ReportSection.DEEP_ANALYSIS, text),
+                        Map.of(),
+                        modifiedAt(file)));
     }
 
     private static <K> void putIfPresent(Map<K, String> target, K key, String value) {

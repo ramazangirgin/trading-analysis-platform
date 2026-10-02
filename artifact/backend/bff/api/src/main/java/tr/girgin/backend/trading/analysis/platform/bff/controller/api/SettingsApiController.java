@@ -32,10 +32,12 @@ public class SettingsApiController {
         return delegate.listSecrets();
     }
 
-    @PutMapping(path = "/secrets/{name}", consumes = MediaType.APPLICATION_JSON_VALUE,
+    @PutMapping(
+            path = "/secrets/{name}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SecretStatusDto> setSecret(@PathVariable String name,
-                                                     @Valid @RequestBody SetSecretRequest request) {
+    public ResponseEntity<SecretStatusDto> setSecret(
+            @PathVariable String name, @Valid @RequestBody SetSecretRequest request) {
         return delegate.setSecret(name, request.value());
     }
 
@@ -49,16 +51,20 @@ public class SettingsApiController {
         return delegate.listPresets();
     }
 
-    @PostMapping(path = "/presets", consumes = MediaType.APPLICATION_JSON_VALUE,
+    @PostMapping(
+            path = "/presets",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PresetDto> createPreset(@Valid @RequestBody SavePresetRequest request) {
         return delegate.createPreset(request);
     }
 
-    @PutMapping(path = "/presets/{id}", consumes = MediaType.APPLICATION_JSON_VALUE,
+    @PutMapping(
+            path = "/presets/{id}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<PresetDto> updatePreset(@PathVariable String id,
-                                                  @Valid @RequestBody SavePresetRequest request) {
+    public ResponseEntity<PresetDto> updatePreset(
+            @PathVariable String id, @Valid @RequestBody SavePresetRequest request) {
         return delegate.updatePreset(id, request);
     }
 

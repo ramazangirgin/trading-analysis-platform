@@ -35,8 +35,9 @@ class EnvFileCredentialsAdapter implements CredentialsPort {
 
     private final List<Path> files;
 
-    EnvFileCredentialsAdapter(@Value("${platform.secrets.env-file}") Path envFile,
-                              @Value("${platform.secrets.external-env-files:}") String[] externalFiles) {
+    EnvFileCredentialsAdapter(
+            @Value("${platform.secrets.env-file}") Path envFile,
+            @Value("${platform.secrets.external-env-files:}") String[] externalFiles) {
         List<Path> ordered = new java.util.ArrayList<>(java.util.Arrays.stream(externalFiles)
                 .filter(name -> name != null && !name.isBlank())
                 .map(Path::of)
@@ -82,8 +83,8 @@ class EnvFileCredentialsAdapter implements CredentialsPort {
     }
 
     private static String unquote(String value) {
-        if (value.length() >= 2 && (value.startsWith("\"") && value.endsWith("\"")
-                || value.startsWith("'") && value.endsWith("'"))) {
+        if (value.length() >= 2
+                && (value.startsWith("\"") && value.endsWith("\"") || value.startsWith("'") && value.endsWith("'"))) {
             return value.substring(1, value.length() - 1);
         }
         int comment = value.indexOf(" #");

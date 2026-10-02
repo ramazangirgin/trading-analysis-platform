@@ -59,17 +59,19 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
     private final String image;
 
     @Autowired
-    DockerEngineInfoAdapter(CatalogJsonToCatalogMapper catalogMapper,
-                            VersionJsonToEngineVersionMapper versionMapper,
-                            @Value("${platform.runner.docker.host}") String host,
-                            @Value("${platform.runner.docker.image}") String image) {
+    DockerEngineInfoAdapter(
+            CatalogJsonToCatalogMapper catalogMapper,
+            VersionJsonToEngineVersionMapper versionMapper,
+            @Value("${platform.runner.docker.host}") String host,
+            @Value("${platform.runner.docker.image}") String image) {
         this(catalogMapper, versionMapper, DockerClients.create(host, RESPONSE_TIMEOUT), image);
     }
 
-    DockerEngineInfoAdapter(CatalogJsonToCatalogMapper catalogMapper,
-                            VersionJsonToEngineVersionMapper versionMapper,
-                            DockerClient docker,
-                            String image) {
+    DockerEngineInfoAdapter(
+            CatalogJsonToCatalogMapper catalogMapper,
+            VersionJsonToEngineVersionMapper versionMapper,
+            DockerClient docker,
+            String image) {
         this.catalogMapper = catalogMapper;
         this.versionMapper = versionMapper;
         this.docker = docker;
@@ -113,8 +115,8 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
         }
         try {
             docker.startContainerCmd(containerId).exec();
-            Integer exit = docker.waitContainerCmd(containerId).start()
-                    .awaitStatusCode(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            Integer exit =
+                    docker.waitContainerCmd(containerId).start().awaitStatusCode(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (exit == null || exit != 0) {
                 throw new CatalogUnavailableException("ta-runner " + subcommand + " exited with code " + exit, null);
             }
@@ -135,7 +137,9 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
     private String stdout(String containerId) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            docker.logContainerCmd(containerId).withStdOut(true).withStdErr(false)
+            docker.logContainerCmd(containerId)
+                    .withStdOut(true)
+                    .withStdErr(false)
                     .exec(new ResultCallback.Adapter<Frame>() {
                         @Override
                         public void onNext(Frame frame) {

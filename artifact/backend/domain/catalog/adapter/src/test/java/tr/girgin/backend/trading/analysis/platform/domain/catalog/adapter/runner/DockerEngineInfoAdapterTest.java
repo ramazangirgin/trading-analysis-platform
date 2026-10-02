@@ -55,7 +55,7 @@ class DockerEngineInfoAdapterTest {
     }
 
     private static DockerEngineInfoAdapter adapter(String image) {
-        return new DockerEngineInfoAdapter(new CatalogJsonToCatalogMapperImpl(),
-                new VersionJsonToEngineVersionMapperImpl(), docker, image);
+        return new DockerEngineInfoAdapter(
+                new CatalogJsonToCatalogMapperImpl(), new VersionJsonToEngineVersionMapperImpl(), docker, image);
     }
 }

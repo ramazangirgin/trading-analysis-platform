@@ -9,7 +9,8 @@ import org.mapstruct.Mapper;
 @Mapper
 public interface InstantToStringMapper {
 
-    DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX").withZone(ZoneOffset.UTC);
+    DateTimeFormatter FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX").withZone(ZoneOffset.UTC);
 
     default String map(Instant source) {
         return source == null ? null : FORMAT.format(source);

@@ -23,9 +23,10 @@ class PriceHistoryServiceTest {
     @Test
     void emaMatchesPandasAdjustedEwm() {
         // pandas: Series([10, 11, 12, 11, 13, 14]).ewm(span=3, adjust=True, min_periods=1).mean()
-        assertThat(PriceHistoryService.ema(new double[] {10, 11, 12, 11, 13, 14}, 3)).containsExactly(
-                new double[] {10.0, 10.6666666667, 11.4285714286, 11.2, 12.1290322581, 13.0793650794},
-                within(1e-9));
+        assertThat(PriceHistoryService.ema(new double[] {10, 11, 12, 11, 13, 14}, 3))
+                .containsExactly(
+                        new double[] {10.0, 10.6666666667, 11.4285714286, 11.2, 12.1290322581, 13.0793650794},
+                        within(1e-9));
     }
 
     @Test
@@ -37,7 +38,8 @@ class PriceHistoryServiceTest {
 
     @Test
     void returnsTheLastYearUpToTheTradeDateWithAveragesOverTheWholeHistory() {
-        List<PriceBar> bars = IntStream.range(0, 400).mapToObj(day -> bar(day, day)).toList();
+        List<PriceBar> bars =
+                IntStream.range(0, 400).mapToObj(day -> bar(day, day)).toList();
         LocalDate tradeDate = START.plusDays(299);
         PriceHistoryService service = new PriceHistoryService((_, _) -> bars);
 

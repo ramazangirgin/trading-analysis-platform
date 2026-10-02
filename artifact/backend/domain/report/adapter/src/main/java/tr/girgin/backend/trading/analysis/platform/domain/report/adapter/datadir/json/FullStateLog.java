@@ -12,10 +12,8 @@ public record FullStateLog(
         String investmentPlan,
         String finalTradeDecision) {
 
-    public record InvestmentDebate(String bullHistory, String bearHistory, String judgeDecision) {
-    }
+    public record InvestmentDebate(String bullHistory, String bearHistory, String judgeDecision) {}
 
-    public record RiskDebate(String aggressiveHistory, String conservativeHistory, String neutralHistory,
-                      String judgeDecision) {
-    }
+    public record RiskDebate(
+            String aggressiveHistory, String conservativeHistory, String neutralHistory, String judgeDecision) {}
 }

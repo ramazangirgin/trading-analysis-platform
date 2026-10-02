@@ -26,13 +26,18 @@ class JdbcPresetRepositoryAdapter implements PresetRepositoryPort {
 
     @Override
     public List<Preset> findAll() {
-        return jdbc.sql("SELECT * FROM presets").query(PresetRow.class).list().stream().map(toPreset::map).toList();
+        return jdbc.sql("SELECT * FROM presets").query(PresetRow.class).list().stream()
+                .map(toPreset::map)
+                .toList();
     }
 
     @Override
     public Optional<Preset> findById(PresetId id) {
-        return jdbc.sql("SELECT * FROM presets WHERE id = :id").param("id", id.value())
-                .query(PresetRow.class).optional().map(toPreset::map);
+        return jdbc.sql("SELECT * FROM presets WHERE id = :id")
+                .param("id", id.value())
+                .query(PresetRow.class)
+                .optional()
+                .map(toPreset::map);
     }
 
     @Override
@@ -46,6 +51,9 @@ class JdbcPresetRepositoryAdapter implements PresetRepositoryPort {
 
     @Override
     public boolean delete(PresetId id) {
-        return jdbc.sql("DELETE FROM presets WHERE id = :id").param("id", id.value()).update() == 1;
+        return jdbc.sql("DELETE FROM presets WHERE id = :id")
+                        .param("id", id.value())
+                        .update()
+                == 1;
     }
 }

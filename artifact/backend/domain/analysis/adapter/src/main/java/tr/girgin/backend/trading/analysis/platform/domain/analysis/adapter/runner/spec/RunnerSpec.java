@@ -15,5 +15,4 @@ public record RunnerSpec(
         int maxDebateRounds,
         int maxRiskDiscussRounds,
         String outputLanguage,
-        boolean checkpointEnabled) {
-}
+        boolean checkpointEnabled) {}

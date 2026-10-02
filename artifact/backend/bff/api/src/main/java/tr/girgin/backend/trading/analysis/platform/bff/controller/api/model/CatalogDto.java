@@ -9,20 +9,16 @@ public record CatalogDto(
         List<AnalystOptionDto> analysts,
         List<String> assetTypes) {
 
-    public record ModelDefaultsDto(String llmProvider, String deepThinkLlm, String quickThinkLlm) {
-    }
+    public record ModelDefaultsDto(String llmProvider, String deepThinkLlm, String quickThinkLlm) {}
 
     public record ProviderDto(
             String id,
             String apiKeyEnv,
             boolean customModelAllowed,
             List<ModelOptionDto> quickModels,
-            List<ModelOptionDto> deepModels) {
-    }
+            List<ModelOptionDto> deepModels) {}
 
-    public record ModelOptionDto(String id, String label) {
-    }
+    public record ModelOptionDto(String id, String label) {}
 
-    public record AnalystOptionDto(String id, String agent) {
-    }
+    public record AnalystOptionDto(String id, String agent) {}
 }

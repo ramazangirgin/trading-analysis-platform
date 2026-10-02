@@ -112,13 +112,16 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void servesTheRunLogWithKeysMasked() throws Exception {
-        String id = JSON.readTree(post("/api/analyses", request("AMD")).body()).get("id").asString();
+        String id = JSON.readTree(post("/api/analyses", request("AMD")).body())
+                .get("id")
+                .asString();
         awaitStatus(id, "COMPLETED");
 
-        JsonNode logs = JSON.readTree(get("/api/analyses/" + id + "/logs?tail=10").body());
+        JsonNode logs =
+                JSON.readTree(get("/api/analyses/" + id + "/logs?tail=10").body());
 
-        assertThat(logs.get("lines").valueStream().map(JsonNode::asString)).containsExactly(
-                "INFO loading tradingagents", "ERROR Incorrect API key provided: sk-proj-abcd****");
+        assertThat(logs.get("lines").valueStream().map(JsonNode::asString))
+                .containsExactly("INFO loading tradingagents", "ERROR Incorrect API key provided: sk-proj-abcd****");
     }
 
     @Test
@@ -134,7 +137,9 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void resumesTheStreamAfterLastEventId() throws Exception {
-        String id = JSON.readTree(post("/api/analyses", request("MU")).body()).get("id").asString();
+        String id = JSON.readTree(post("/api/analyses", request("MU")).body())
+                .get("id")
+                .asString();
         awaitStatus(id, "COMPLETED");
 
         List<SseEvent> events = readStream(id, "2");
@@ -144,7 +149,9 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void rejectsASecondRunForTheSameTickerAndDate() throws Exception {
-        String first = JSON.readTree(post("/api/analyses", request("SLOW")).body()).get("id").asString();
+        String first = JSON.readTree(post("/api/analyses", request("SLOW")).body())
+                .get("id")
+                .asString();
 
         HttpResponse<String> second = post("/api/analyses", request("slow"));
 
@@ -165,10 +172,13 @@ class AnalysesApiIntegrationTest {
 
         assertThat(badTicker.statusCode()).isEqualTo(400);
         assertThat(JSON.readTree(badTicker.body()).get("errorCode").asString()).isEqualTo("invalid_spec");
-        assertThat(JSON.readTree(badTicker.body()).at("/params/field").asString()).isEqualTo("ticker");
+        assertThat(JSON.readTree(badTicker.body()).at("/params/field").asString())
+                .isEqualTo("ticker");
         assertThat(missingModel.statusCode()).isEqualTo(400);
-        assertThat(JSON.readTree(missingModel.body()).get("errorCode").asString()).isEqualTo("invalid_request");
-        assertThat(JSON.readTree(missingModel.body()).at("/params/field").asString()).isEqualTo("deepThinkLlm");
+        assertThat(JSON.readTree(missingModel.body()).get("errorCode").asString())
+                .isEqualTo("invalid_request");
+        assertThat(JSON.readTree(missingModel.body()).at("/params/field").asString())
+                .isEqualTo("deepThinkLlm");
         assertThat(garbage.statusCode()).isEqualTo(400);
     }
 
@@ -184,10 +194,13 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void listsAndFiltersRuns() throws Exception {
-        String id = JSON.readTree(post("/api/analyses", request("GOOG")).body()).get("id").asString();
+        String id = JSON.readTree(post("/api/analyses", request("GOOG")).body())
+                .get("id")
+                .asString();
         awaitStatus(id, "COMPLETED");
 
-        JsonNode list = JSON.readTree(get("/api/analyses?ticker=goog&status=COMPLETED").body());
+        JsonNode list =
+                JSON.readTree(get("/api/analyses?ticker=goog&status=COMPLETED").body());
 
         assertThat(list.isArray()).isTrue();
         assertThat(list.valueStream().map(n -> n.get("id").asString())).contains(id);
@@ -209,11 +222,14 @@ class AnalysesApiIntegrationTest {
         assertThat(imported.at("/spec/llmProvider").asString()).isEqualTo("deepseek");
         assertThat(imported.at("/spec/outputLanguage").asString()).isEqualTo("Turkish");
         assertThat(imported.at("/stats/tokensIn").asLong()).isEqualTo(68_794);
-        JsonNode failed = JSON.readTree(get("/api/analyses?ticker=ZZFAIL").body()).get(0);
+        JsonNode failed =
+                JSON.readTree(get("/api/analyses?ticker=ZZFAIL").body()).get(0);
         assertThat(failed.get("status").asString()).isEqualTo("FAILED");
         assertThat(failed.get("errorMessage").asString()).isEqualTo("OpenAIError: Missing credentials.");
 
-        JsonNode report = JSON.readTree(get("/api/analyses/" + imported.get("id").asString() + "/report").body());
+        JsonNode report =
+                JSON.readTree(get("/api/analyses/" + imported.get("id").asString() + "/report")
+                        .body());
         assertThat(report.at("/sections/market_report").asString()).isEqualTo("# BE market");
         assertThat(report.at("/debates/risk_judge").asString()).startsWith("**Rating**: Underweight");
         assertThat(report.at("/sections/deep_analysis").asString()).isEqualTo("# BE Derin Analiz");
@@ -237,28 +253,42 @@ class AnalysesApiIntegrationTest {
         String listed = get("/api/secrets").body();
         assertThat(listed).contains("OPENAI_API_KEY").doesNotContain("sk-test-secret");
         assertThat(Files.readString(HOME.resolve("secrets.env"))).contains("OPENAI_API_KEY=\"sk-test-secret-9876\"");
-        assertThat(http.send(HttpRequest.newBuilder(uri("/api/secrets/OPENAI_API_KEY")).DELETE().build(),
-                HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(204);
+        assertThat(http.send(
+                                HttpRequest.newBuilder(uri("/api/secrets/OPENAI_API_KEY"))
+                                        .DELETE()
+                                        .build(),
+                                HttpResponse.BodyHandlers.ofString())
+                        .statusCode())
+                .isEqualTo(204);
     }
 
     @Test
     void storesPresetsAsGiven() throws Exception {
-        HttpResponse<String> created = post("/api/presets",
+        HttpResponse<String> created = post(
+                "/api/presets",
                 "{\"name\":\"Cheap\",\"values\":{\"llmProvider\":\"deepseek\",\"analysts\":[\"MARKET\"]}}");
 
         assertThat(created.statusCode()).isEqualTo(201);
         String id = JSON.readTree(created.body()).get("id").asString();
         JsonNode listed = JSON.readTree(get("/api/presets").body());
-        assertThat(listed.valueStream().filter(p -> p.get("id").asString().equals(id)).findFirst().orElseThrow()
-                .at("/values/analysts/0").asString()).isEqualTo("MARKET");
-        assertThat(put("/api/presets/nope", "{\"name\":\"x\",\"values\":{}}").statusCode()).isEqualTo(404);
+        assertThat(listed.valueStream()
+                        .filter(p -> p.get("id").asString().equals(id))
+                        .findFirst()
+                        .orElseThrow()
+                        .at("/values/analysts/0")
+                        .asString())
+                .isEqualTo("MARKET");
+        assertThat(put("/api/presets/nope", "{\"name\":\"x\",\"values\":{}}").statusCode())
+                .isEqualTo(404);
     }
 
     private HttpResponse<String> put(String path, String body) throws Exception {
-        return http.send(HttpRequest.newBuilder(uri(path))
-                .header("Content-Type", "application/json")
-                .PUT(HttpRequest.BodyPublishers.ofString(body))
-                .build(), HttpResponse.BodyHandlers.ofString());
+        return http.send(
+                HttpRequest.newBuilder(uri(path))
+                        .header("Content-Type", "application/json")
+                        .PUT(HttpRequest.BodyPublishers.ofString(body))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
     }
 
     private static String request(String ticker) {
@@ -291,8 +321,8 @@ class AnalysesApiIntegrationTest {
                 http.send(request.build(), HttpResponse.BodyHandlers.ofInputStream());
         assertThat(response.statusCode()).isEqualTo(200);
         List<SseEvent> events = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader =
+                new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
             String eventId = null;
             String name = null;
             StringBuilder data = new StringBuilder();
@@ -318,10 +348,12 @@ class AnalysesApiIntegrationTest {
     }
 
     private HttpResponse<String> post(String path, String body) throws Exception {
-        return http.send(HttpRequest.newBuilder(uri(path))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build(), HttpResponse.BodyHandlers.ofString());
+        return http.send(
+                HttpRequest.newBuilder(uri(path))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
     }
 
     private HttpResponse<String> get(String path) throws Exception {
@@ -332,6 +364,5 @@ class AnalysesApiIntegrationTest {
         return URI.create("http://localhost:" + port + path);
     }
 
-    private record SseEvent(String id, String name, String data) {
-    }
+    private record SseEvent(String id, String name, String data) {}
 }

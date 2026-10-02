@@ -14,7 +14,7 @@ public interface PresetToPresetDtoMapper {
     JsonMapper JSON = JsonMapper.builder().build();
 
     default PresetDto map(Preset source) {
-        Map<String, Object> values = JSON.readValue(source.payload(), new TypeReference<Map<String, Object>>() { });
+        Map<String, Object> values = JSON.readValue(source.payload(), new TypeReference<Map<String, Object>>() {});
         return new PresetDto(source.id().value(), source.name(), values, source.updatedAt());
     }
 }

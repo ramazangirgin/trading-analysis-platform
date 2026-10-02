@@ -39,7 +39,9 @@ public final class RunnerOutputLineParser {
         } catch (JacksonException _) {
             return Optional.empty();
         }
-        boolean valid = node.isObject() && node.path("seq").canConvertToLong() && node.path("type").isString();
+        boolean valid = node.isObject()
+                && node.path("seq").canConvertToLong()
+                && node.path("type").isString();
         return valid ? Optional.of(node) : Optional.empty();
     }
 

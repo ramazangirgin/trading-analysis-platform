@@ -23,8 +23,8 @@ class FileSystemDataDirWatchAdapterTest {
     @Test
     void noticesNewRunsInTheResultsTreeAndTheRunHistory() throws Exception {
         Path logs = Files.createDirectories(dataDir.resolve("logs"));
-        FileSystemDataDirWatchAdapter adapter = new FileSystemDataDirWatchAdapter(dataDir, logs,
-                dataDir.resolve("reports"));
+        FileSystemDataDirWatchAdapter adapter =
+                new FileSystemDataDirWatchAdapter(dataDir, logs, dataDir.resolve("reports"));
 
         try (AutoCloseable _ = adapter.watch(changes::release)) {
             // A new ticker and date: the directories appear first, then the files in them.
@@ -44,8 +44,8 @@ class FileSystemDataDirWatchAdapterTest {
     @Test
     void ignoresFilesTheImportDoesNotRead() throws Exception {
         Path cache = Files.createDirectories(dataDir.resolve("cache"));
-        FileSystemDataDirWatchAdapter adapter = new FileSystemDataDirWatchAdapter(dataDir, dataDir.resolve("logs"),
-                dataDir.resolve("reports"));
+        FileSystemDataDirWatchAdapter adapter =
+                new FileSystemDataDirWatchAdapter(dataDir, dataDir.resolve("logs"), dataDir.resolve("reports"));
 
         try (AutoCloseable _ = adapter.watch(changes::release)) {
             Files.writeString(cache.resolve("AMD-YFin-data.csv"), "Date,Close");
@@ -56,7 +56,9 @@ class FileSystemDataDirWatchAdapterTest {
     }
 
     private void assertChanged() throws InterruptedException {
-        assertThat(changes.tryAcquire(WAIT.toSeconds(), TimeUnit.SECONDS)).as("change noticed").isTrue();
+        assertThat(changes.tryAcquire(WAIT.toSeconds(), TimeUnit.SECONDS))
+                .as("change noticed")
+                .isTrue();
     }
 
     private void drain() {

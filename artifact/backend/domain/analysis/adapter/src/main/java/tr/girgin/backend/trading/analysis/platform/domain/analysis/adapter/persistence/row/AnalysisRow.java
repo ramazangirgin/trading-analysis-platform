@@ -30,5 +30,4 @@ public record AnalysisRow(
         String errorCode,
         String errorMessage,
         String externalRef,
-        String runnerRef) {
-}
+        String runnerRef) {}

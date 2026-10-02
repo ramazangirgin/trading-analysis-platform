@@ -26,7 +26,10 @@ public record ExternalAnalysis(
         ExternalRun run,
         Instant finishedAt) {
 
-    public enum Origin { REPORT_FILES, RUN_HISTORY }
+    public enum Origin {
+        REPORT_FILES,
+        RUN_HISTORY
+    }
 
     public ExternalAnalysis {
         Objects.requireNonNull(origin, "origin");
@@ -39,17 +42,21 @@ public record ExternalAnalysis(
         analysts = List.copyOf(analysts);
     }
 
-    public static ExternalAnalysis reportFiles(String ticker, LocalDate tradeDate, List<Analyst> analysts,
-                                               Rating rating, String decision, ExternalRun run,
-                                               Instant finishedAt) {
-        return new ExternalAnalysis(Origin.REPORT_FILES, ticker, tradeDate, analysts, rating, decision, run,
-                finishedAt);
+    public static ExternalAnalysis reportFiles(
+            String ticker,
+            LocalDate tradeDate,
+            List<Analyst> analysts,
+            Rating rating,
+            String decision,
+            ExternalRun run,
+            Instant finishedAt) {
+        return new ExternalAnalysis(
+                Origin.REPORT_FILES, ticker, tradeDate, analysts, rating, decision, run, finishedAt);
     }
 
-    public static ExternalAnalysis runHistory(String ticker, LocalDate tradeDate, List<Analyst> analysts,
-                                              ExternalRun run) {
-        return new ExternalAnalysis(Origin.RUN_HISTORY, ticker, tradeDate, analysts, null, null, run,
-                run.endedAt());
+    public static ExternalAnalysis runHistory(
+            String ticker, LocalDate tradeDate, List<Analyst> analysts, ExternalRun run) {
+        return new ExternalAnalysis(Origin.RUN_HISTORY, ticker, tradeDate, analysts, null, null, run, run.endedAt());
     }
 
     /** Stable identity in the data dir, so a rescan finds the same record. */

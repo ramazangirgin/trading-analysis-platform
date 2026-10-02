@@ -15,7 +15,7 @@ public interface SettingsExceptionToApiExceptionMapper {
             case SECRET_NOT_MANAGED -> HttpStatus.CONFLICT;
             case PRESET_NOT_FOUND -> HttpStatus.NOT_FOUND;
         };
-        return new ApiException(status, source.error().name().toLowerCase(Locale.ROOT), source.getMessage(),
-                source.params());
+        return new ApiException(
+                status, source.error().name().toLowerCase(Locale.ROOT), source.getMessage(), source.params());
     }
 }

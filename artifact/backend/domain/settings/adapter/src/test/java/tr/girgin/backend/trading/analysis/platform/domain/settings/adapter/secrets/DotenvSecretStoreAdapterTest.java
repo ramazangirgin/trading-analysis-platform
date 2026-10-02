@@ -26,7 +26,8 @@ class DotenvSecretStoreAdapterTest {
         store.writeManaged(secrets);
 
         assertThat(store.readManaged()).isEqualTo(secrets);
-        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(managed))).isEqualTo("rw-------");
+        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(managed)))
+                .isEqualTo("rw-------");
         assertThat(Files.list(managed.getParent())).containsExactly(managed);
     }
 
@@ -36,8 +37,9 @@ class DotenvSecretStoreAdapterTest {
         Path second = dir.resolve("second.env");
         Files.writeString(first, "DEEPSEEK_API_KEY=sk-first\nOPENAI_API_KEY=\n");
         Files.writeString(second, "export DEEPSEEK_API_KEY='sk-second'\n# comment\n");
-        DotenvSecretStoreAdapter store = new DotenvSecretStoreAdapter(dir.resolve("secrets.env"),
-                new String[] {first.toString(), second.toString(), dir.resolve("missing.env").toString()});
+        DotenvSecretStoreAdapter store = new DotenvSecretStoreAdapter(dir.resolve("secrets.env"), new String[] {
+            first.toString(), second.toString(), dir.resolve("missing.env").toString()
+        });
 
         assertThat(store.readExternal())
                 .containsExactly(org.assertj.core.api.Assertions.entry("DEEPSEEK_API_KEY", "sk-second"));

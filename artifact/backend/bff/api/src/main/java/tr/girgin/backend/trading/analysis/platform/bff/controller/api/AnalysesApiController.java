@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
 
 @RestController
@@ -37,8 +37,7 @@ public class AnalysesApiController {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<AnalysisDto>> listAnalyses(
-            @RequestParam(required = false) AnalysisStatusDto status,
-            @RequestParam(required = false) String ticker) {
+            @RequestParam(required = false) AnalysisStatusDto status, @RequestParam(required = false) String ticker) {
         return delegate.listAnalyses(status, ticker);
     }
 
@@ -71,8 +70,7 @@ public class AnalysesApiController {
 
     /** The end of the runner's stderr log, API keys masked. */
     @GetMapping(path = "/{id}/logs", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<RunLogDto> getLogs(@PathVariable String id,
-                                             @RequestParam(defaultValue = "1000") int tail) {
+    public ResponseEntity<RunLogDto> getLogs(@PathVariable String id, @RequestParam(defaultValue = "1000") int tail) {
         return delegate.getLogs(id, tail);
     }
 

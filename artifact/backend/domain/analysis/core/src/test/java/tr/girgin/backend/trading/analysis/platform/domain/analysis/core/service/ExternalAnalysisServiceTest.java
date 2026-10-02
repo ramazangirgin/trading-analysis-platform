@@ -45,7 +45,8 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void importsARunWithoutDecisionAsIncomplete() {
-        Analysis analysis = service.register(external("NVDA", null, null, FINISHED)).analysis();
+        Analysis analysis =
+                service.register(external("NVDA", null, null, FINISHED)).analysis();
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.FAILED);
         assertThat(analysis.errorCode()).isEqualTo(Analysis.INCOMPLETE_REPORT);
@@ -55,11 +56,13 @@ class ExternalAnalysisServiceTest {
     void isIdempotentAndFollowsChangedFiles() {
         service.register(external("GOOG", null, null, FINISHED));
 
-        assertThat(service.register(external("GOOG", null, null, FINISHED)).outcome()).isEqualTo(Outcome.UNCHANGED);
+        assertThat(service.register(external("GOOG", null, null, FINISHED)).outcome())
+                .isEqualTo(Outcome.UNCHANGED);
         var updated = service.register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)));
 
         assertThat(updated.outcome()).isEqualTo(Outcome.UPDATED);
-        assertThat(repository.findAll(AnalysisFilter.ALL)).singleElement()
+        assertThat(repository.findAll(AnalysisFilter.ALL))
+                .singleElement()
                 .satisfies(a -> assertThat(a.status()).isEqualTo(AnalysisStatus.COMPLETED));
     }
 
@@ -79,8 +82,9 @@ class ExternalAnalysisServiceTest {
     void takesModelsUsageAndTimesFromTheRunHistory() {
         ExternalRun run = run("a2cd", AnalysisStatus.COMPLETED, null);
 
-        Analysis analysis = service.register(ExternalAnalysis.reportFiles("GOOG", DATE,
-                List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, FINISHED)).analysis();
+        Analysis analysis = service.register(ExternalAnalysis.reportFiles(
+                        "GOOG", DATE, List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, FINISHED))
+                .analysis();
 
         assertThat(analysis.spec().llmProvider()).isEqualTo("deepseek");
         assertThat(analysis.spec().deepThinkLlm()).isEqualTo("deepseek-v4-pro");
@@ -96,9 +100,15 @@ class ExternalAnalysisServiceTest {
     @Test
     void importsEachFailedRunOfTheHistoryOnItsOwn() {
         service.register(external("NVDA", Rating.BUY, "Buy", FINISHED));
-        var failed = service.register(ExternalAnalysis.runHistory("NVDA", DATE, List.of(Analyst.MARKET),
+        var failed = service.register(ExternalAnalysis.runHistory(
+                "NVDA",
+                DATE,
+                List.of(Analyst.MARKET),
                 run("6d10", AnalysisStatus.FAILED, "OpenAIError: Missing credentials.")));
-        service.register(ExternalAnalysis.runHistory("NVDA", DATE, List.of(Analyst.MARKET),
+        service.register(ExternalAnalysis.runHistory(
+                "NVDA",
+                DATE,
+                List.of(Analyst.MARKET),
                 run("83b0", AnalysisStatus.FAILED, "Run did not complete (server restart).")));
 
         assertThat(failed.outcome()).isEqualTo(Outcome.CREATED);
@@ -107,8 +117,12 @@ class ExternalAnalysisServiceTest {
         assertThat(failed.analysis().errorMessage()).isEqualTo("OpenAIError: Missing credentials.");
         assertThat(failed.analysis().externalRef()).isEqualTo("run:6d10");
         assertThat(repository.findAll(AnalysisFilter.ALL)).hasSize(3);
-        assertThat(service.register(ExternalAnalysis.runHistory("NVDA", DATE, List.of(Analyst.MARKET),
-                run("6d10", AnalysisStatus.FAILED, "OpenAIError: Missing credentials."))).outcome())
+        assertThat(service.register(ExternalAnalysis.runHistory(
+                                "NVDA",
+                                DATE,
+                                List.of(Analyst.MARKET),
+                                run("6d10", AnalysisStatus.FAILED, "OpenAIError: Missing credentials.")))
+                        .outcome())
                 .isEqualTo(Outcome.UNCHANGED);
     }
 
@@ -116,20 +130,29 @@ class ExternalAnalysisServiceTest {
     void importsFailedRunsEvenWhenThePlatformRanTheTickerAndDate() {
         repository.insert(Analysis.queued(AnalysisId.newId(), Fakes.spec("MU", DATE), Instant.now()));
 
-        var failed = service.register(ExternalAnalysis.runHistory("MU", DATE, List.of(Analyst.MARKET),
-                run("fe90", AnalysisStatus.FAILED, "boom")));
+        var failed = service.register(ExternalAnalysis.runHistory(
+                "MU", DATE, List.of(Analyst.MARKET), run("fe90", AnalysisStatus.FAILED, "boom")));
 
         assertThat(failed.outcome()).isEqualTo(Outcome.CREATED);
     }
 
     private static ExternalRun run(String id, AnalysisStatus status, String error) {
-        return new ExternalRun(id, status, error, "deepseek", "deepseek-v4-pro", "deepseek-v4-flash", 3,
-                "Turkish", new RunStats(11, 0, 93_557, 29_480, new BigDecimal("0.0318"), Duration.ofMillis(1_582_790)),
-                STARTED, FINISHED);
+        return new ExternalRun(
+                id,
+                status,
+                error,
+                "deepseek",
+                "deepseek-v4-pro",
+                "deepseek-v4-flash",
+                3,
+                "Turkish",
+                new RunStats(11, 0, 93_557, 29_480, new BigDecimal("0.0318"), Duration.ofMillis(1_582_790)),
+                STARTED,
+                FINISHED);
     }
 
     private static ExternalAnalysis external(String ticker, Rating rating, String decision, Instant finishedAt) {
-        return ExternalAnalysis.reportFiles(ticker, DATE, List.of(Analyst.NEWS, Analyst.MARKET), rating, decision,
-                null, finishedAt);
+        return ExternalAnalysis.reportFiles(
+                ticker, DATE, List.of(Analyst.NEWS, Analyst.MARKET), rating, decision, null, finishedAt);
     }
 }

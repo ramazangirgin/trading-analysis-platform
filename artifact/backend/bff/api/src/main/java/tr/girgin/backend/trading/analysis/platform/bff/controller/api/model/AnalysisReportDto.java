@@ -13,5 +13,4 @@ public record AnalysisReportDto(
         Map<String, String> debates,
         RatingDto rating,
         List<String> sources,
-        Instant modifiedAt) {
-}
+        Instant modifiedAt) {}

@@ -21,5 +21,4 @@ public record StartAnalysisRequest(
         Integer maxDebateRounds,
         Integer maxRiskDiscussRounds,
         String outputLanguage,
-        Boolean checkpointEnabled) {
-}
+        Boolean checkpointEnabled) {}

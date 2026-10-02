@@ -21,8 +21,7 @@ final class AnalysisSpecValidator {
     private static final LocalDate EARLIEST = LocalDate.of(1990, 1, 1);
     private static final int MAX_ROUNDS = 10;
 
-    private AnalysisSpecValidator() {
-    }
+    private AnalysisSpecValidator() {}
 
     static void validate(AnalysisSpec spec, LocalDate today) {
         require(TICKER.matcher(spec.ticker()).matches(), "ticker");

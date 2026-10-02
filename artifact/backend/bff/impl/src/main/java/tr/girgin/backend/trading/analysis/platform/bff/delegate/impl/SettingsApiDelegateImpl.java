@@ -29,12 +29,13 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     private final MapToJsonStringMapper jsonMapper;
     private final SettingsExceptionToApiExceptionMapper errorMapper;
 
-    SettingsApiDelegateImpl(ManageSecretsUseCase secrets,
-                            ManagePresetsUseCase presets,
-                            SecretStatusToSecretStatusDtoMapper secretMapper,
-                            PresetToPresetDtoMapper presetMapper,
-                            MapToJsonStringMapper jsonMapper,
-                            SettingsExceptionToApiExceptionMapper errorMapper) {
+    SettingsApiDelegateImpl(
+            ManageSecretsUseCase secrets,
+            ManagePresetsUseCase presets,
+            SecretStatusToSecretStatusDtoMapper secretMapper,
+            PresetToPresetDtoMapper presetMapper,
+            MapToJsonStringMapper jsonMapper,
+            SettingsExceptionToApiExceptionMapper errorMapper) {
         this.secrets = secrets;
         this.presets = presets;
         this.secretMapper = secretMapper;
@@ -45,7 +46,8 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
 
     @Override
     public ResponseEntity<List<SecretStatusDto>> listSecrets() {
-        return ResponseEntity.ok(secrets.listSecrets().stream().map(secretMapper::map).toList());
+        return ResponseEntity.ok(
+                secrets.listSecrets().stream().map(secretMapper::map).toList());
     }
 
     @Override
@@ -64,19 +66,21 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
 
     @Override
     public ResponseEntity<List<PresetDto>> listPresets() {
-        return ResponseEntity.ok(presets.listPresets().stream().map(presetMapper::map).toList());
+        return ResponseEntity.ok(
+                presets.listPresets().stream().map(presetMapper::map).toList());
     }
 
     @Override
     public ResponseEntity<PresetDto> createPreset(SavePresetRequest request) {
         Preset preset = call(() -> presets.createPreset(request.name(), jsonMapper.map(request.values())));
-        return ResponseEntity.created(URI.create("/api/presets/" + preset.id().value())).body(presetMapper.map(preset));
+        return ResponseEntity.created(URI.create("/api/presets/" + preset.id().value()))
+                .body(presetMapper.map(preset));
     }
 
     @Override
     public ResponseEntity<PresetDto> updatePreset(String id, SavePresetRequest request) {
-        return ResponseEntity.ok(presetMapper.map(call(() ->
-                presets.updatePreset(new PresetId(id), request.name(), jsonMapper.map(request.values())))));
+        return ResponseEntity.ok(presetMapper.map(
+                call(() -> presets.updatePreset(new PresetId(id), request.name(), jsonMapper.map(request.values())))));
     }
 
     @Override

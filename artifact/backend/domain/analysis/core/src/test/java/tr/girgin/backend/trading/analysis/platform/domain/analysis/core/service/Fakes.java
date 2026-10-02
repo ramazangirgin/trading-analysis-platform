@@ -36,16 +36,25 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 /** In-memory stand-ins for the analysis domain's outbound ports. */
 final class Fakes {
 
-    private Fakes() {
-    }
+    private Fakes() {}
 
     static AnalysisSpec spec(String ticker) {
         return spec(ticker, LocalDate.of(2026, 9, 25));
     }
 
     static AnalysisSpec spec(String ticker, LocalDate tradeDate) {
-        return new AnalysisSpec(ticker, tradeDate, AssetType.STOCK, List.of(Analyst.MARKET),
-                "deepseek", "deepseek-v4-flash", "deepseek-v4-flash", 1, 1, "English", false);
+        return new AnalysisSpec(
+                ticker,
+                tradeDate,
+                AssetType.STOCK,
+                List.of(Analyst.MARKET),
+                "deepseek",
+                "deepseek-v4-flash",
+                "deepseek-v4-flash",
+                1,
+                1,
+                "English",
+                false);
     }
 
     static RunEvent event(long seq, RunEventType type) {
@@ -53,12 +62,26 @@ final class Fakes {
     }
 
     static RunEvent stats(long seq, long llmCalls) {
-        return new RunEvent(seq, Instant.now(), RunEventType.STATS, null, null,
-                new RunStats(llmCalls, 1, 100, 50, null, Duration.ofSeconds(3)), null, Map.of());
+        return new RunEvent(
+                seq,
+                Instant.now(),
+                RunEventType.STATS,
+                null,
+                null,
+                new RunStats(llmCalls, 1, 100, 50, null, Duration.ofSeconds(3)),
+                null,
+                Map.of());
     }
 
     static RunEvent decision(long seq, Rating rating) {
-        return new RunEvent(seq, Instant.now(), RunEventType.DECISION, rating, null, null, null,
+        return new RunEvent(
+                seq,
+                Instant.now(),
+                RunEventType.DECISION,
+                rating,
+                null,
+                null,
+                null,
                 Map.of("rating", rating.name(), "raw", "Rating: " + rating));
     }
 
@@ -92,7 +115,9 @@ final class Fakes {
 
         @Override
         public Optional<Analysis> findByExternalRef(String externalRef) {
-            return rows.values().stream().filter(a -> externalRef.equals(a.externalRef())).findFirst();
+            return rows.values().stream()
+                    .filter(a -> externalRef.equals(a.externalRef()))
+                    .findFirst();
         }
 
         @Override
@@ -111,7 +136,9 @@ final class Fakes {
 
         @Override
         public List<Analysis> findByStatusIn(Collection<AnalysisStatus> statuses) {
-            return rows.values().stream().filter(a -> statuses.contains(a.status())).toList();
+            return rows.values().stream()
+                    .filter(a -> statuses.contains(a.status()))
+                    .toList();
         }
     }
 
@@ -163,7 +190,9 @@ final class Fakes {
 
         @Override
         public List<RunEvent> read(AnalysisId id, long afterSeq) {
-            return events.getOrDefault(id, List.of()).stream().filter(e -> e.seq() > afterSeq).toList();
+            return events.getOrDefault(id, List.of()).stream()
+                    .filter(e -> e.seq() > afterSeq)
+                    .toList();
         }
 
         @Override

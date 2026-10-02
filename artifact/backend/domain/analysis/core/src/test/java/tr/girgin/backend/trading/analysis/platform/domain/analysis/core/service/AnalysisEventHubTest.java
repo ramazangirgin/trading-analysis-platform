@@ -33,7 +33,9 @@ class AnalysisEventHubTest {
 
     @Test
     void replaysHistoryAfterTheCursorThenDeliversLiveEvents() {
-        store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.AGENT_STATUS),
+        store(
+                Fakes.event(1, RunEventType.RUN_STARTED),
+                Fakes.event(2, RunEventType.AGENT_STATUS),
                 Fakes.event(3, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
@@ -72,8 +74,8 @@ class AnalysisEventHubTest {
     @Test
     void replaysAFinishedRunAndCompletesAtOnce() {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.finished(2, RunOutcome.COMPLETED, null));
-        repository.update(repository.findById(id).orElseThrow()
-                .finished(AnalysisStatus.COMPLETED, Instant.now(), null, null));
+        repository.update(
+                repository.findById(id).orElseThrow().finished(AnalysisStatus.COMPLETED, Instant.now(), null, null));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
         hub.subscribe(id, 0, listener);

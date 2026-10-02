@@ -14,5 +14,4 @@ public record AnalysisDto(
         Instant startedAt,
         Instant endedAt,
         String errorCode,
-        String errorMessage) {
-}
+        String errorMessage) {}

@@ -15,8 +15,7 @@ public final class DockerClients {
     private static final int HTTP_INTERNAL_SERVER_ERROR = 500;
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
 
-    private DockerClients() {
-    }
+    private DockerClients() {}
 
     /**
      * {@code responseTimeout} bounds how long a followed log stream may stay silent before it is
@@ -40,6 +39,7 @@ public final class DockerClients {
     public static boolean isNoSuchContainer(DockerException e) {
         return e instanceof NotFoundException
                 || e.getHttpStatus() == HTTP_INTERNAL_SERVER_ERROR
-                        && e.getMessage() != null && e.getMessage().contains("no such container");
+                        && e.getMessage() != null
+                        && e.getMessage().contains("no such container");
     }
 }

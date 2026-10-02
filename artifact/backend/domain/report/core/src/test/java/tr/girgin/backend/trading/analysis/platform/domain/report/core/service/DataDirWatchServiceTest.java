@@ -14,10 +14,14 @@ class DataDirWatchServiceTest {
     private boolean closed;
     private final AtomicInteger settled = new AtomicInteger();
 
-    private final DataDirWatchService service = new DataDirWatchService(onChange -> {
-        change = onChange;
-        return () -> closed = true;
-    }, QUIET, Duration.ofSeconds(1), System::nanoTime);
+    private final DataDirWatchService service = new DataDirWatchService(
+            onChange -> {
+                change = onChange;
+                return () -> closed = true;
+            },
+            QUIET,
+            Duration.ofSeconds(1),
+            System::nanoTime);
 
     @Test
     void aBurstOfChangesSettlesOnce() throws Exception {
@@ -39,10 +43,14 @@ class DataDirWatchServiceTest {
 
     @Test
     void changesThatNeverStopStillSettleAfterTheMaximumDelay() throws Exception {
-        DataDirWatchService impatient = new DataDirWatchService(onChange -> {
-            change = onChange;
-            return () -> { };
-        }, QUIET, Duration.ofMillis(500), System::nanoTime);
+        DataDirWatchService impatient = new DataDirWatchService(
+                onChange -> {
+                    change = onChange;
+                    return () -> {};
+                },
+                QUIET,
+                Duration.ofMillis(500),
+                System::nanoTime);
 
         try (AutoCloseable _ = impatient.watch(settled::incrementAndGet)) {
             // A change every 50 ms never leaves the quiet period, like runs.json during a run.

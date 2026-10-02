@@ -33,7 +33,11 @@ public record RunHistoryEntry(
         Instant startedAt,
         Instant endedAt) {
 
-    public enum Status { COMPLETED, FAILED, STOPPED }
+    public enum Status {
+        COMPLETED,
+        FAILED,
+        STOPPED
+    }
 
     public RunHistoryEntry {
         Objects.requireNonNull(id, "id");

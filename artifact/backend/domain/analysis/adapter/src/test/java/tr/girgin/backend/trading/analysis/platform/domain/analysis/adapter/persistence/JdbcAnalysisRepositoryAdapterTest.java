@@ -47,30 +47,45 @@ class JdbcAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     void listsNewestFirstAndFilters() {
         Instant base = Instant.parse("2026-09-29T11:00:00Z");
         Analysis older = Analysis.queued(AnalysisId.newId(), spec("ZZOLD"), base);
-        Analysis newer = Analysis.queued(AnalysisId.newId(), spec("ZZNEW"), base.plusMillis(1)).running(base, "4243");
+        Analysis newer = Analysis.queued(AnalysisId.newId(), spec("ZZNEW"), base.plusMillis(1))
+                .running(base, "4243");
         repository.insert(older);
         repository.insert(newer);
 
         List<Analysis> all = repository.findAll(AnalysisFilter.ALL);
         assertThat(all.indexOf(newer)).isLessThan(all.indexOf(older));
         assertThat(repository.findAll(new AnalysisFilter(null, "ZZOLD"))).containsExactly(older);
-        assertThat(repository.findAll(new AnalysisFilter(AnalysisStatus.RUNNING, "ZZNEW"))).containsExactly(newer);
-        assertThat(repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED))).contains(older).doesNotContain(newer);
+        assertThat(repository.findAll(new AnalysisFilter(AnalysisStatus.RUNNING, "ZZNEW")))
+                .containsExactly(newer);
+        assertThat(repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED)))
+                .contains(older)
+                .doesNotContain(newer);
     }
 
     @Test
     void findsAndReplacesImportedRecordsByTheirSource() {
         Instant ended = Instant.parse("2026-09-27T21:34:35.383Z");
-        ExternalRun run = new ExternalRun("zz-a2cd", AnalysisStatus.COMPLETED, null, "deepseek", "deepseek-v4-pro",
-                "deepseek-v4-flash", 5, "English",
+        ExternalRun run = new ExternalRun(
+                "zz-a2cd",
+                AnalysisStatus.COMPLETED,
+                null,
+                "deepseek",
+                "deepseek-v4-pro",
+                "deepseek-v4-flash",
+                5,
+                "English",
                 new RunStats(10, 0, 68_794, 28_916, BigDecimal.valueOf(0.0277), Duration.ofMillis(1_398_650)),
-                ended.minusSeconds(1398), ended);
-        Analysis imported = Analysis.imported(AnalysisId.newId(),
+                ended.minusSeconds(1398),
+                ended);
+        Analysis imported = Analysis.imported(
+                AnalysisId.newId(),
                 ExternalAnalysis.reportFiles("ZZIMP", LocalDate.of(2026, 9, 27), List.of(), null, null, null, ended));
         repository.insert(imported);
 
-        Analysis replaced = Analysis.imported(imported.id(), ExternalAnalysis.reportFiles("ZZIMP",
-                LocalDate.of(2026, 9, 27), List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, ended));
+        Analysis replaced = Analysis.imported(
+                imported.id(),
+                ExternalAnalysis.reportFiles(
+                        "ZZIMP", LocalDate.of(2026, 9, 27), List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, ended));
         repository.replaceImported(replaced);
 
         assertThat(repository.findByExternalRef("report:ZZIMP/2026-09-27")).contains(replaced);

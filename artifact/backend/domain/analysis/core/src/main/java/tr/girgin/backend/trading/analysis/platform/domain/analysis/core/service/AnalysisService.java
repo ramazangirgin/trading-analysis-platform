@@ -43,8 +43,13 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
  * transitions driven by runner events.
  */
 @Service
-class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, RerunAnalysisUseCase,
-        GetAnalysisUseCase, ListAnalysesUseCase, SmartInitializingSingleton {
+class AnalysisService
+        implements StartAnalysisUseCase,
+                StopAnalysisUseCase,
+                RerunAnalysisUseCase,
+                GetAnalysisUseCase,
+                ListAnalysesUseCase,
+                SmartInitializingSingleton {
 
     // Error codes stored on failed runs; the frontend translates them.
     static final String RUNNER_ERROR = "runner_error";
@@ -67,12 +72,13 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
     private final Map<AnalysisId, RunHandle> running = new HashMap<>();
     private final Map<AnalysisId, AnalysisSpec> active = new LinkedHashMap<>();
 
-    AnalysisService(AnalysisRepositoryPort repository,
-                    RunnerPort runner,
-                    CredentialsPort credentials,
-                    EventStorePort eventStore,
-                    AnalysisEventHub hub,
-                    @Value("${platform.analysis.max-concurrent-runs:2}") int maxConcurrentRuns) {
+    AnalysisService(
+            AnalysisRepositoryPort repository,
+            RunnerPort runner,
+            CredentialsPort credentials,
+            EventStorePort eventStore,
+            AnalysisEventHub hub,
+            @Value("${platform.analysis.max-concurrent-runs:2}") int maxConcurrentRuns) {
         if (maxConcurrentRuns < 1) {
             throw new IllegalArgumentException("platform.analysis.max-concurrent-runs must be at least 1");
         }
@@ -91,10 +97,10 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
      */
     @Override
     public void afterSingletonsInstantiated() {
-        List<Analysis> orphans = repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED, AnalysisStatus.RUNNING))
-                .stream()
-                .sorted(Comparator.comparing(Analysis::createdAt))
-                .toList();
+        List<Analysis> orphans =
+                repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED, AnalysisStatus.RUNNING)).stream()
+                        .sorted(Comparator.comparing(Analysis::createdAt))
+                        .toList();
         synchronized (lock) {
             orphans.stream().filter(a -> a.status() == AnalysisStatus.RUNNING).forEach(this::reconcile);
             orphans.stream().filter(a -> a.status() == AnalysisStatus.QUEUED).forEach(queued -> {
@@ -126,7 +132,10 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
             return;
         }
         log.warn("Marking {} as failed: its runner is gone after a platform restart", id);
-        end(get(id), RunOutcome.FAILED, PLATFORM_RESTARTED,
+        end(
+                get(id),
+                RunOutcome.FAILED,
+                PLATFORM_RESTARTED,
                 "The platform restarted while this run was running, and the runner did not survive");
     }
 
@@ -163,7 +172,9 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
             handle = running.get(id);
         }
         if (handle == null) {
-            throw new AnalysisException(AnalysisError.NOT_RUNNING, "Analysis is not running: " + id,
+            throw new AnalysisException(
+                    AnalysisError.NOT_RUNNING,
+                    "Analysis is not running: " + id,
                     Map.of("id", id.value(), "status", analysis.status().name()));
         }
         log.info("Stopping {}", id);
@@ -173,8 +184,10 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
 
     @Override
     public Analysis get(AnalysisId id) {
-        return repository.findById(id).orElseThrow(() -> new AnalysisException(AnalysisError.NOT_FOUND,
-                "Analysis not found: " + id, Map.of("id", id.value())));
+        return repository
+                .findById(id)
+                .orElseThrow(() -> new AnalysisException(
+                        AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value())));
     }
 
     @Override
@@ -188,10 +201,16 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
                         && e.getValue().tradeDate().equals(spec.tradeDate()))
                 .findFirst()
                 .ifPresent(e -> {
-                    throw new AnalysisException(AnalysisError.ALREADY_RUNNING,
+                    throw new AnalysisException(
+                            AnalysisError.ALREADY_RUNNING,
                             "An analysis for " + spec.ticker() + " on " + spec.tradeDate() + " is already active",
-                            Map.of("id", e.getKey().value(), "ticker", spec.ticker(),
-                                    "tradeDate", spec.tradeDate().toString()));
+                            Map.of(
+                                    "id",
+                                    e.getKey().value(),
+                                    "ticker",
+                                    spec.ticker(),
+                                    "tradeDate",
+                                    spec.tradeDate().toString()));
                 });
     }
 
@@ -220,19 +239,25 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
      */
     private void end(Analysis analysis, RunOutcome outcome, String errorCode, String message) {
         repository.update(analysis.finished(outcome.toStatus(), Instant.now(), errorCode, message));
-        long seq = eventStore.read(analysis.id(), 0).stream().mapToLong(RunEvent::seq).max().orElse(0) + 1;
+        long seq = eventStore.read(analysis.id(), 0).stream()
+                        .mapToLong(RunEvent::seq)
+                        .max()
+                        .orElse(0)
+                + 1;
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("status", switch (outcome) {
-            case COMPLETED -> "completed";
-            case STOPPED -> "stopped";
-            case FAILED -> "error";
-        });
+        payload.put(
+                "status",
+                switch (outcome) {
+                    case COMPLETED -> "completed";
+                    case STOPPED -> "stopped";
+                    case FAILED -> "error";
+                });
         if (errorCode != null) {
             payload.put("error_code", errorCode);
             payload.put("error", message);
         }
-        RunEvent event = new RunEvent(seq, Instant.now(), RunEventType.RUN_FINISHED, null, outcome, null,
-                message, payload);
+        RunEvent event =
+                new RunEvent(seq, Instant.now(), RunEventType.RUN_FINISHED, null, outcome, null, message, payload);
         eventStore.append(analysis.id(), event);
         hub.publish(analysis.id(), event);
     }
@@ -253,7 +278,9 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
                 Analysis analysis = get(id);
                 Analysis updated = switch (event.type()) {
                     case STATS -> event.stats() == null ? analysis : analysis.withStats(event.stats());
-                    case DECISION -> analysis.withDecision(event.rating(), (String) event.payload().get("raw"));
+                    case DECISION ->
+                        analysis.withDecision(
+                                event.rating(), (String) event.payload().get("raw"));
                     case RUN_FINISHED -> {
                         finishedReported = true;
                         RunOutcome outcome = event.outcome() == null ? RunOutcome.FAILED : event.outcome();

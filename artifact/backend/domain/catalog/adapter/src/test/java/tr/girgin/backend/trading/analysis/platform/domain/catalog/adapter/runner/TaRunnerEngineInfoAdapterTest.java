@@ -53,14 +53,16 @@ class TaRunnerEngineInfoAdapterTest {
 
     @Test
     void reportsGarbageOutputAsUnavailable() throws Exception {
-        assertThatThrownBy(adapter("echo 'not json'\n")::fetchVersion)
-                .isInstanceOf(CatalogUnavailableException.class);
+        assertThatThrownBy(adapter("echo 'not json'\n")::fetchVersion).isInstanceOf(CatalogUnavailableException.class);
     }
 
     @Test
     void reportsAMissingRunnerAsUnavailable() {
-        TaRunnerEngineInfoAdapter adapter = new TaRunnerEngineInfoAdapter(new CatalogJsonToCatalogMapperImpl(),
-                new VersionJsonToEngineVersionMapperImpl(), new String[] {dir.resolve("nope").toString()}, dir);
+        TaRunnerEngineInfoAdapter adapter = new TaRunnerEngineInfoAdapter(
+                new CatalogJsonToCatalogMapperImpl(),
+                new VersionJsonToEngineVersionMapperImpl(),
+                new String[] {dir.resolve("nope").toString()},
+                dir);
 
         assertThatThrownBy(adapter::fetchCatalog).isInstanceOf(CatalogUnavailableException.class);
     }
@@ -68,7 +70,10 @@ class TaRunnerEngineInfoAdapterTest {
     private TaRunnerEngineInfoAdapter adapter(String script) throws Exception {
         Path file = dir.resolve("runner.sh");
         Files.writeString(file, "#!/bin/sh\n" + script);
-        return new TaRunnerEngineInfoAdapter(new CatalogJsonToCatalogMapperImpl(),
-                new VersionJsonToEngineVersionMapperImpl(), new String[] {"/bin/sh", file.toString()}, dir);
+        return new TaRunnerEngineInfoAdapter(
+                new CatalogJsonToCatalogMapperImpl(),
+                new VersionJsonToEngineVersionMapperImpl(),
+                new String[] {"/bin/sh", file.toString()},
+                dir);
     }
 }
