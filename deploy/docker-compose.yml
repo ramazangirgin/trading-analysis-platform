@@ -13,7 +13,7 @@ name: trading-analysis-platform
 services:
   # Creates the data directories with the owners the other containers run as, then exits.
   init-dirs:
-    image: ${PLATFORM_IMAGE:-trading-analysis-platform:0.0.1}
+    image: ${PLATFORM_IMAGE:-trading-analysis-platform:latest}
     user: "0"
     entrypoint:
       - sh
@@ -63,7 +63,7 @@ services:
     networks: [backend]
 
   platform:
-    image: ${PLATFORM_IMAGE:-trading-analysis-platform:0.0.1}
+    image: ${PLATFORM_IMAGE:-trading-analysis-platform:latest}
     restart: unless-stopped
     ports:
       - "127.0.0.1:${PLATFORM_PORT:-8080}:8080"
@@ -72,7 +72,7 @@ services:
       PLATFORM_DB_HOST: postgres
       PLATFORM_DB_PASSWORD: ${POSTGRES_PASSWORD}
       DOCKER_HOST: tcp://docker-socket-proxy:2375
-      TA_RUNNER_IMAGE: ${TA_RUNNER_IMAGE:-ta-runner:0.1.0}
+      TA_RUNNER_IMAGE: ${TA_RUNNER_IMAGE:-ta-runner:latest}
       # Runner containers are created by the engine itself, so this is a path on this machine.
       TA_RUNNER_DATA_MOUNT: ${PLATFORM_DATA}/tradingagents
     volumes:

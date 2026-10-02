@@ -21,8 +21,8 @@ PLATFORM_DATA=$DATA
 POSTGRES_PASSWORD=smoke-test-only
 PLATFORM_PORT=$PORT
 DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
-PLATFORM_IMAGE=${PLATFORM_IMAGE:-trading-analysis-platform:0.0.1}
-TA_RUNNER_IMAGE=${TA_RUNNER_IMAGE:-ta-runner:0.1.0}
+PLATFORM_IMAGE=${PLATFORM_IMAGE:-trading-analysis-platform:latest}
+TA_RUNNER_IMAGE=${TA_RUNNER_IMAGE:-ta-runner:latest}
 EOF
 
 compose() { docker compose -f "$DIR/docker-compose.yml" --env-file "$ENV_FILE" "$@"; }

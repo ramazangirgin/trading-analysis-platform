@@ -16,12 +16,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Cat
 
 /**
  * Against a real Docker Engine API and the real ta-runner image ({@code docker build -t
- * ta-runner:0.1.0 artifact/ta-runner}). Skipped when there is no engine or no image.
+ * ta-runner:latest artifact/ta-runner}). Skipped when there is no engine or no image.
  */
 class DockerEngineInfoAdapterTest {
 
     private static final String HOST = System.getenv().getOrDefault("DOCKER_HOST", "unix:///var/run/docker.sock");
-    private static final String IMAGE = System.getenv().getOrDefault("TA_RUNNER_IMAGE", "ta-runner:0.1.0");
+    private static final String IMAGE = System.getenv().getOrDefault("TA_RUNNER_IMAGE", "ta-runner:latest");
 
     private static DockerClient docker;
 

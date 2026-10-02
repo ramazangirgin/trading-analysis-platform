@@ -7,6 +7,7 @@ import {
   NConfigProvider,
   NLayout,
   NLayoutContent,
+  NLayoutFooter,
   NLayoutHeader,
   NMessageProvider,
   darkTheme,
@@ -22,6 +23,7 @@ const route = useRoute()
 // /reports/:id is still the Reports page.
 const reportsActive = computed(() => route.name === 'report')
 const preferredDark = usePreferredDark()
+const version = __APP_VERSION__
 
 const theme = computed(() => (preferredDark.value ? darkTheme : null))
 const naiveLocale = computed(() => (locale.value === 'tr' ? trTR : enUS))
@@ -55,6 +57,7 @@ watchEffect(() => {
         <NLayoutContent :class="['app__content', { 'app__content--wide': route.meta.wide }]">
           <RouterView />
         </NLayoutContent>
+        <NLayoutFooter class="app__footer">{{ t('app.version', { version }) }}</NLayoutFooter>
       </NLayout>
     </NMessageProvider>
   </NConfigProvider>
@@ -105,6 +108,14 @@ body {
   padding: 24px 16px;
   max-width: 1100px;
   margin: 0 auto;
+}
+
+/* Below the content, not pinned: nothing to do with the page, so it stays out of the way. */
+.app__footer {
+  padding: 8px 16px 16px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.6;
 }
 
 /* Pages with side panes (Reports) use the room a wide screen has. */

@@ -167,7 +167,7 @@ browser ──▶ 127.0.0.1:8080 ──▶ platform ──▶ postgres
 
 ```sh
 cp deploy/.env.example deploy/.env      # set PLATFORM_DATA and POSTGRES_PASSWORD
-mise run docker-build                   # builds trading-analysis-platform:0.0.1 and ta-runner:0.1.0
+mise run docker-build                   # builds trading-analysis-platform and ta-runner, tagged latest and with the version
 docker compose -f deploy/docker-compose.yml up -d
 ```
 
@@ -269,6 +269,8 @@ mise run format-check  # check the formatting of every Java and frontend file, a
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
+mise run version       # the platform version
+mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
 
 `mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
@@ -284,6 +286,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 |---|---|
 | Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
+| Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so
@@ -299,6 +302,32 @@ the rules on `main` never have to change. Those rules (the repository ruleset "m
 Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
 (not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
 `mise run docker-build`.
+
+### Versioning and releases
+
+The whole repository has one [Semantic Versioning](https://semver.org/) version, `MAJOR.MINOR.PATCH`:
+the backend, the frontend and ta-runner always report the same one. It is set in
+[`gradle.properties`](gradle.properties); `artifact/frontend/package.json` and
+`artifact/ta-runner/ta_runner/__init__.py` carry copies, which `mise run version:bump` keeps in step
+and CI checks. The running app shows it at the bottom of every page and at `/actuator/info`; the
+images carry it as a tag and as the `org.opencontainers.image.version` label.
+
+Every pull request into `main` raises the version in its own diff, or the **Version** job fails:
+
+```sh
+mise run version:bump minor   # a new feature or any other change
+mise run version:bump major   # a breaking change: the REST API, the database without a migration,
+                              # configuration, the ta-runner contract or the CLI
+mise run version:bump patch   # hotfixes only
+```
+
+Every commit on `main` is a release. After **CI passed** on `main`,
+[`.github/workflows/release.yml`](.github/workflows/release.yml) tags the commit `vX.Y.Z` and
+publishes a [GitHub Release](https://github.com/ramazangirgin/trading-analysis-platform/releases)
+with notes generated from the merged pull requests and the jar with its SHA-256 checksum. Tags are
+created by that workflow only, never by hand. Two pull requests that raise to the same version cannot
+both merge: the second one must be updated with `main` and bumped again. The rules and why:
+[versioning and releases](doc/coding-convention/repository-versioning-and-releases.md).
 
 ### Coding conventions
 
@@ -340,14 +369,14 @@ In a container the spec comes from an environment variable instead of a file:
 
 ```sh
 docker run --rm -e TA_RUNNER_SPEC="$(cat example-spec.json)" -e OPENAI_API_KEY \
-  ta-runner:0.1.0 run --spec-env TA_RUNNER_SPEC --out /tmp/run
+  ta-runner:latest run --spec-env TA_RUNNER_SPEC --out /tmp/run
 ```
 
 ### Testing the Docker runner
 
 `DockerRunnerAdapterTest` and `DockerEngineInfoAdapterTest` run against a real engine at
 `DOCKER_HOST` (Docker, or Podman's socket) and are skipped when there is none; the latter also
-needs the `ta-runner:0.1.0` image. To run the platform on your machine with the Docker runner
+needs the `ta-runner:latest` image. To run the platform on your machine with the Docker runner
 instead of the local venv: `PLATFORM_RUNNER=docker mise run run` (with a `tradingagents-data`
 volume, or `TA_RUNNER_DATA_MOUNT` set to a folder the engine can mount).
 

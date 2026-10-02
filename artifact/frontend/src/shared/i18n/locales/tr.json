@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "TradingAgents Platformu",
-    "language": "Dil"
+    "language": "Dil",
+    "version": "Sürüm {version}"
   },
   "nav": {
     "dashboard": "Gösterge Paneli",

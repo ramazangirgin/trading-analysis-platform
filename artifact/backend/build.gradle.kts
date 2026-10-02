@@ -44,6 +44,26 @@ dependencies {
     testImplementation(libs.jackson.databind)
 }
 
+springBoot {
+    // META-INF/build-info.properties: the version at /actuator/info and in the logs at startup. No
+    // build time, so an unchanged build stays up to date and cacheable.
+    buildInfo {
+        excludes = setOf("time")
+        properties {
+            name = "TradingAgents Platform"
+        }
+    }
+}
+
+// A fixed name, so the Dockerfile, CI and mise tasks need no version; the release workflow attaches
+// it as trading-analysis-platform-<version>.jar. The version is in its manifest and build info.
+tasks.bootJar {
+    archiveFileName = "platform.jar"
+    manifest {
+        attributes("Implementation-Title" to "TradingAgents Platform", "Implementation-Version" to project.version)
+    }
+}
+
 // Run from the repository root, so relative paths in application.properties (the ta-runner
 // checkout, its .env) resolve the same as with `java -jar` from the root.
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
