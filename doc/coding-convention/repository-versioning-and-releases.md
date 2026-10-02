@@ -39,19 +39,15 @@ version. Every pull request into `main` raises it, and every commit on `main` is
 | ta-runner | `ta-runner version` reports it as `runner_version`. `pyproject.toml` reads it from `__init__.py` (hatchling's dynamic version), so a bump changes neither `pyproject.toml` nor `uv.lock`, and the image keeps its cached dependency layer. |
 | Docker images | Tagged with the version and `latest`, labelled `org.opencontainers.image.version` (`mise run docker-build`, CI). The Compose setup and the Docker runner default to `latest`; pinning a release is one line in `deploy/.env`. |
 
-## Why this scheme
+## Why
 
-- **Bump in the pull request, release on merge**: the bump is part of the reviewed diff, so the
-  author and the reviewer decide "is this breaking?", and the release needs nothing but a script and
-  a workflow. Every commit on `main` traces to a tag, a release and a jar. The price: every pull
-  request carries a one-line version change, and a documentation-only change also releases.
-- **Not derived from Conventional Commits or labels at merge time** (semantic-release,
-  release-please): the workflow would have to commit the new version to `main`, which the ruleset
-  forbids without a bypass token, or the version would live only in tags and the files would lie.
-- **Not released by hand, with `-SNAPSHOT` in between**: most commits on `main` would not be
-  releases, and a manual step is easy to forget.
-- **Not a version per part**: the parts ship together; separate versions would only add a
-  compatibility matrix nobody tests.
+- The bump is part of the reviewed diff, so the author and the reviewer decide "is this breaking?".
+- Releasing needs nothing but a script and a workflow, and only the workflow's `GITHUB_TOKEN`.
+- Every commit on `main` traces to a tag, a release and a jar.
+- The parts are built, tested and shipped together, so one version describes all of them.
+
+The price: every pull request carries a one-line version change, and a documentation-only change
+also releases.
 
 Images are not published to a registry yet; the release workflow can push them to GHCR
 (`packages: write`) when a server deployment needs them.
