@@ -8,8 +8,11 @@ import com.github.dockerjava.api.DockerClient;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.mapper.CatalogJsonToCatalogMapperImpl;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.mapper.VersionJsonToEngineVersionMapperImpl;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.support.DockerClients;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.CatalogUnavailableException;
 
 /**
  * Against a real Docker Engine API and the real ta-runner image ({@code docker build -t

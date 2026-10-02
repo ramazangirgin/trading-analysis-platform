@@ -7,8 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.mapper.CatalogJsonToCatalogMapperImpl;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner.mapper.VersionJsonToEngineVersionMapperImpl;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.CatalogUnavailableException;
 
 class TaRunnerEngineInfoAdapterTest {
 

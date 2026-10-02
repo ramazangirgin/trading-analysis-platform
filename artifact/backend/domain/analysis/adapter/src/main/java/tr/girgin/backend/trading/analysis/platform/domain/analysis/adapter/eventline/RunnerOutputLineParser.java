@@ -9,6 +9,7 @@ import java.util.Set;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.json.RunnerOutputLine;
 
 /**
  * Parses runner output. Runner output is untrusted input (PLAN.md section 3.3): a line that is

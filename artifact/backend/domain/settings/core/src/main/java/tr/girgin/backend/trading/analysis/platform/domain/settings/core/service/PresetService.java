@@ -5,11 +5,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsError;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SettingsError;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SettingsException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound.persistence.PresetRepositoryPort;
 
 @Service

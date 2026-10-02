@@ -4,7 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.ReportsApiDelegate;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ImportResultDto;
-import tr.girgin.backend.trading.analysis.platform.orchestration.report.ImportExistingRunsUseCase;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.ImportResultToImportResultDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.ImportExistingRunsUseCase;
 
 @Service
 class ReportsApiDelegateImpl implements ReportsApiDelegate {

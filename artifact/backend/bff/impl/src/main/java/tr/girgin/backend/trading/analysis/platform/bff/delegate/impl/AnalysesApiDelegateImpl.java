@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
@@ -14,13 +14,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.AnalysesApiDelegate;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.ApiException;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisStatusDtoToAnalysisStatusMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisToAnalysisDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PriceHistoryToPriceHistoryDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.ReportToAnalysisReportDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RunEventToRunEventDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToAnalysisSpecMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StringToAnalysisIdMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.AnalysisExceptionToApiExceptionMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
@@ -31,11 +40,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
-import tr.girgin.backend.trading.analysis.platform.orchestration.report.GetAnalysisPricesUseCase;
-import tr.girgin.backend.trading.analysis.platform.orchestration.report.GetAnalysisReportUseCase;
+import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisPricesUseCase;
+import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisReportUseCase;
 
 @Service
 class AnalysesApiDelegateImpl implements AnalysesApiDelegate {

@@ -3,8 +3,8 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.regex.Pattern;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisError;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisException;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 
 /**
