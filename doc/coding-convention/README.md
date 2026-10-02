@@ -19,7 +19,7 @@ Every rule is checked in three places, by the same tool:
 
 | Part | Tool | Configured in | Build / local run | Git hook |
 |---|---|---|---|---|
-| Backend | [ArchUnit](https://www.archunit.org/) | `artifact/backend/src/test/java/.../ArchitectureTest.java` | `./gradlew :backend:test`, part of `mise run build` and `mise run check` | none (needs compilation) |
+| Backend | [ArchUnit](https://www.archunit.org/) | `artifact/backend/src/test/java/.../ArchitectureTest.java` | `./gradlew :backend:test`, part of `mise run build` and `mise run check` | pre-commit, when Java files are staged |
 | Frontend | [eslint-plugin-boundaries](https://www.jsboundaries.dev/) and `no-restricted-imports` | `artifact/frontend/eslint.config.js` | `pnpm lint`, part of `mise run build` (`:frontend:pnpmLint`) and `mise run check` | pre-commit |
 | ta-runner | [import-linter](https://import-linter.readthedocs.io/) (`lint-imports`) and ruff `TID` | `artifact/ta-runner/pyproject.toml` | `mise run runner-test`, `mise run check` | pre-commit |
 
@@ -28,7 +28,7 @@ Every rule is checked in three places, by the same tool:
   the authority: a hook can be skipped, a failing CI check blocks the merge.
 - **`mise run check`** runs every structure check, lint and the frontend type-check, but no tests:
   the quick check before pushing (seconds when Gradle is warm).
-- **Git hooks** run the static checks on staged files before a commit. They are configured in
+- **Git hooks** run them before a commit, for the staged files' part of the code base. They are configured in
   [`lefthook.yml`](../../lefthook.yml) ([lefthook](https://lefthook.dev/), pinned in `mise.toml`; why:
   [OPS-0006](../adr/OPS-0006-git-hooks-with-lefthook.md)).
 
@@ -42,11 +42,15 @@ mise run hooks    # or `mise run setup`, which installs them as well
 
 | Hook | Runs | On |
 |---|---|---|
-| pre-commit (in parallel, staged files only) | ESLint + Prettier check; ruff + `lint-imports` | staged files under `artifact/frontend/`; staged files under `artifact/ta-runner/` |
+| pre-commit (jobs in parallel) | ESLint + Prettier check on the staged files | staged files under `artifact/frontend/` |
+| | ruff on the staged files; `lint-imports` | staged files under `artifact/ta-runner/` |
+| | `ArchitectureTest` only (no other test) | staged `.java` files under `artifact/backend/` |
 
-Hooks run only checks that need no build and take a few seconds. Nothing compiles or runs tests on
-commit or push: the backend's ArchUnit rules need the compiled classes, so they run in
-`mise run check`, `mise run build` and CI instead.
+A commit waits only for the parts it touches: docs-only commits run nothing, frontend and ta-runner
+commits a few seconds. The ArchUnit job compiles the backend first (seconds with a warm Gradle
+daemon, about half a minute from a cold one), and Gradle compiles the working tree: an unstaged edit
+counts too. There is no pre-push hook; the frontend type-check runs in `mise run check`, the build
+and CI.
 
 The hooks run lefthook through `mise exec`, so `mise` must be on `PATH` (it is after installing mise
 the usual way). The frontend jobs use the Node.js and pnpm the Gradle build downloads, so run
