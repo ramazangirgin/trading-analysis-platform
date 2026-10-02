@@ -303,7 +303,8 @@ Tools come from `mise.toml`, as locally. A newer push to the same branch cancels
 Where each kind of class, component or module belongs, and what may import what, is written down in
 [doc/coding-convention/](doc/coding-convention/README.md) and checked by the build (ArchUnit,
 ESLint, import-linter) and by CI. Git hooks run the static checks on staged files before a commit;
-`mise run check` runs the rest (ArchUnit, type-check) in seconds before you push.
+the backend's ArchUnit rules run in that hook too when Java files are staged. `mise run check` runs
+every structure check, lint and the type-check by hand.
 
 ### Before pushing
 
