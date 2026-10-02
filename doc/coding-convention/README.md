@@ -11,6 +11,7 @@ enforces each rule.
 | [ta-runner-python-package-structure.md](ta-runner-python-package-structure.md) | ta-runner (Python): sub-packages, layer order, the single upstream import point |
 | [backend-java-checkstyle.md](backend-java-checkstyle.md) | Backend (Java): Checkstyle rules (naming, imports, size, bug-prone patterns, design, Javadoc) and how to suppress a finding |
 | [backend-java-formatting.md](backend-java-formatting.md) | Backend (Java): formatting with Spotless and Palantir Java Format, why that formatter, how to fix a finding |
+| [repository-git-hooks.md](repository-git-hooks.md) | Whole repository: the pre-commit hook (lefthook), what it runs on which files, how to install, run or skip it |
 | [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
 
 The structure documents cover package / folder placement and the dependencies between packages.
@@ -37,46 +38,16 @@ Every rule is checked in three places, by the same tool:
   the authority: a hook can be skipped, a failing CI check blocks the merge.
 - **`mise run check`** runs every structure check, lint and the frontend type-check, but no tests:
   the quick check before pushing (seconds when Gradle is warm).
-- **Git hooks** run them before a commit, for the staged files' part of the code base. They are configured in
-  [`lefthook.yml`](../../lefthook.yml) ([lefthook](https://lefthook.dev/), pinned in `mise.toml`; why:
-  [OPS-0006](../adr/OPS-0006-git-hooks-with-lefthook.md)).
-
-## Git hooks
-
-Install them once per clone:
-
-```sh
-mise run hooks    # or `mise run setup`, which installs them as well
-```
-
-| Hook | Runs | On |
-|---|---|---|
-| pre-commit (jobs in parallel) | ESLint + Prettier check on the staged files | staged files under `artifact/frontend/` |
-| | ruff on the staged files; `lint-imports` | staged files under `artifact/ta-runner/` |
-| | Spotless on the Java files changed since `HEAD`, Checkstyle on every backend module, and `ArchitectureTest` only (no other test), in one Gradle run | staged `.java` files under `artifact/backend/` |
-
-A commit waits only for the parts it touches: docs-only commits run nothing, frontend and ta-runner
-commits a few seconds. The backend job compiles the backend first (seconds with a warm Gradle
-daemon, about half a minute from a cold one), and Gradle compiles the working tree: an unstaged edit
-counts too. There is no pre-push hook; the frontend type-check runs in `mise run check`, the build
-and CI.
-
-The hooks run lefthook through `mise exec`, so `mise` must be on `PATH` (it is after installing mise
-the usual way). The frontend jobs use the Node.js and pnpm the Gradle build downloads, so run
-`mise run setup` once before the first commit.
-
-- Run the hook by hand: `mise exec -- lefthook run pre-commit` (staged files) or
-  `mise exec -- lefthook run pre-commit --all-files`.
-- Skip once: `git commit --no-verify` (CI still checks), or
-  `LEFTHOOK=0 git ...`.
-- Remove: `mise exec -- lefthook uninstall`.
+- **Git hooks** run them before a commit, for the staged files' part of the code base: configured in
+  [`lefthook.yml`](../../lefthook.yml), installed with `mise run hooks`; what runs, and why lefthook:
+  [repository-git-hooks.md](repository-git-hooks.md).
 
 ## Changing a convention
 
 1. Open a pull request that changes the document, the check that enforces it, and the code that
    has to move, together. A rule that is only written down, or only enforced, is not a convention.
-2. When the change is a decision with alternatives worth keeping (a new tool, a new layer, giving up
-   a rule), record it as an ADR under [`doc/adr/`](../adr/) as well.
+2. When the change is a decision (a new tool, a new layer, giving up a rule), write the decision
+   and its reasons into the document as well.
 3. Before merging, show that the new or changed rule fails on a deliberately misplaced class,
    component or import. ArchUnit passes a rule that selects no class
    (`archRule.failOnEmptyShould=false`), and an ESLint or import-linter pattern that matches
