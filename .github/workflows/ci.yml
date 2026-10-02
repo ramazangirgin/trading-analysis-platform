@@ -2,8 +2,9 @@
 # demand. Jobs; add new ones (image publishing, security scans, ...) next to them and list them
 # under ci-passed:
 #
-#   build      backend + frontend: Checkstyle, all Gradle tests (ArchUnit, Docker runner against the
-#              runner's Docker), frontend lint and tests, the single jar
+#   build      backend + frontend: formatting of every file (Spotless, Prettier), Checkstyle, all
+#              Gradle tests (ArchUnit, Docker runner against the runner's Docker), frontend lint
+#              and tests, the single jar
 #   runner     ta-runner: ruff, import-linter (package structure) and pytest, upstream contract
 #              tests included
 #   images     both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
@@ -56,6 +57,11 @@ jobs:
             ~/.local/share/pnpm/store
           key: frontend-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'artifact/frontend/pnpm-lock.yaml') }}
           restore-keys: frontend-${{ runner.os }}-
+
+      # Every file, not only the changed ones: the pre-commit hook checks only what a commit
+      # changes, and can be skipped. Before the build, so an unformatted file fails fast.
+      - name: Formatting (Java and frontend, every file)
+        run: mise run format-check
 
       - name: Build and test
         run: mise run build

@@ -8,6 +8,9 @@ springdoc = "3.1.1"
 archunit = "1.5.0"
 # Static checks on backend sources (config/checkstyle/). 11+ parses Java 25 syntax.
 checkstyle = "14.3.0"
+# Java formatting (Spotless with Palantir Java Format: 120 columns, matching Checkstyle's LineLength).
+spotless = "8.10.3"
+palantirJavaFormat = "2.101.0"
 mapstruct = "1.6.3"
 # Docker Engine API client for the Docker runner (also talks to Podman's Docker-compatible API).
 dockerJava = "3.7.1"
@@ -46,6 +49,8 @@ mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
 mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
 docker-java-core = { module = "com.github.docker-java:docker-java-core", version.ref = "dockerJava" }
 docker-java-transport-httpclient5 = { module = "com.github.docker-java:docker-java-transport-httpclient5", version.ref = "dockerJava" }
+# Gradle plugin used by the build-logic convention plugins.
+spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }

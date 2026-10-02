@@ -10,10 +10,13 @@ enforces each rule.
 | [frontend-folder-structure.md](frontend-folder-structure.md) | Frontend (Vue): `app` / `pages` / `features` / `shared`, what may import what |
 | [ta-runner-python-package-structure.md](ta-runner-python-package-structure.md) | ta-runner (Python): sub-packages, layer order, the single upstream import point |
 | [backend-java-checkstyle.md](backend-java-checkstyle.md) | Backend (Java): Checkstyle rules (naming, imports, size, bug-prone patterns, design, Javadoc) and how to suppress a finding |
+| [backend-java-formatting.md](backend-java-formatting.md) | Backend (Java): formatting with Spotless and Palantir Java Format, why that formatter, how to fix a finding |
 
 The structure documents cover package / folder placement and the dependencies between packages.
-The Checkstyle document covers the backend's naming, imports, size and coding rules. Formatting,
-error handling and testing conventions will get documents of their own.
+The Checkstyle document covers the backend's naming, imports, size and coding rules; the formatting
+document its layout. The frontend is formatted by Prettier (`artifact/frontend/.prettierrc.json`);
+ta-runner has no formatter yet. Error handling and testing conventions will get documents of their
+own.
 
 ## How the conventions are enforced
 
@@ -23,11 +26,13 @@ Every rule is checked in three places, by the same tool:
 |---|---|---|---|---|
 | Backend | [ArchUnit](https://www.archunit.org/) | `artifact/backend/src/test/java/.../ArchitectureTest.java` | `./gradlew :backend:test`, part of `mise run build` and `mise run check` | pre-commit, when Java files are staged |
 | Backend | [Checkstyle](https://checkstyle.org/) | `config/checkstyle/checkstyle.xml` | `checkstyleMain` / `checkstyleTest`, part of `mise run build` and `mise run check` | pre-commit, when Java files are staged |
+| Backend | [Spotless](https://github.com/diffplug/spotless) with [Palantir Java Format](https://github.com/palantir/palantir-java-format) (formatting) | `build-logic/.../tradinganalysisplatform.java-library.gradle.kts` | `spotlessCheck`, part of `mise run build`, `mise run check` and `mise run format-check`; `mise run format` fixes | pre-commit, Java files changed since `HEAD` |
+| Frontend | [Prettier](https://prettier.io/) (formatting) | `artifact/frontend/.prettierrc.json` | `pnpm lint`, part of `mise run build`, `mise run check` and `mise run format-check`; `mise run format` fixes | pre-commit, staged files |
 | Frontend | [eslint-plugin-boundaries](https://www.jsboundaries.dev/) and `no-restricted-imports` | `artifact/frontend/eslint.config.js` | `pnpm lint`, part of `mise run build` (`:frontend:pnpmLint`) and `mise run check` | pre-commit |
 | ta-runner | [import-linter](https://import-linter.readthedocs.io/) (`lint-imports`) and ruff `TID` | `artifact/ta-runner/pyproject.toml` | `mise run runner-test`, `mise run check` | pre-commit |
 
-- **CI** runs all of them: the *Backend and frontend* job (`mise run build`) and the *ta-runner* job
-  (`mise run runner-test`), see [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). CI is
+- **CI** runs all of them: the *Backend and frontend* job (`mise run format-check` for the formatting
+  of every file, then `mise run build`) and the *ta-runner* job (`mise run runner-test`), see [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). CI is
   the authority: a hook can be skipped, a failing CI check blocks the merge.
 - **`mise run check`** runs every structure check, lint and the frontend type-check, but no tests:
   the quick check before pushing (seconds when Gradle is warm).
@@ -47,7 +52,7 @@ mise run hooks    # or `mise run setup`, which installs them as well
 |---|---|---|
 | pre-commit (jobs in parallel) | ESLint + Prettier check on the staged files | staged files under `artifact/frontend/` |
 | | ruff on the staged files; `lint-imports` | staged files under `artifact/ta-runner/` |
-| | Checkstyle on every backend module, and `ArchitectureTest` only (no other test), in one Gradle run | staged `.java` files under `artifact/backend/` |
+| | Spotless on the Java files changed since `HEAD`, Checkstyle on every backend module, and `ArchitectureTest` only (no other test), in one Gradle run | staged `.java` files under `artifact/backend/` |
 
 A commit waits only for the parts it touches: docs-only commits run nothing, frontend and ta-runner
 commits a few seconds. The backend job compiles the backend first (seconds with a warm Gradle

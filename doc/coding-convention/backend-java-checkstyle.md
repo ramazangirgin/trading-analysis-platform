@@ -6,7 +6,8 @@ Javadoc rules. They come from [Checkstyle](https://checkstyle.org/)'s built-in c
 [`config/checkstyle/checkstyle.xml`](../../config/checkstyle/checkstyle.xml).
 
 Checkstyle does not check layout (indentation, brace placement, import order, whitespace inside a
-line). The formatter does that (Spotless, #12), so the two tools never report conflicting rules.
+line). The formatter does that ([Spotless with Palantir Java Format](backend-java-formatting.md)),
+so the two tools never report conflicting rules.
 Project-specific rules (#55) are added to the same config.
 
 ## Where it runs
@@ -109,8 +110,9 @@ The set is kept small:
   ([package structure](backend-java-package-structure.md)).
 
 ### Files and annotations
-- Files end with a newline, have no tabs and no trailing whitespace. These rules can go once Spotless
-  (#12) is in place.
+- Files end with a newline, have no tabs and no trailing whitespace. Spotless enforces the same in
+  Java files; these rules stay because they also cover the `.properties` files, which Spotless does
+  not format.
 - `MissingOverride` (with `{@inheritDoc}`), `MissingDeprecated`, `AnnotationLocation`.
 
 ## Suppressing a finding

@@ -263,7 +263,9 @@ mise run build         # all tests (ArchUnit included), lint (Checkstyle include
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
-mise run check         # quick check before pushing: package structure, lint, type-check (no tests)
+mise run check         # quick check before pushing: package structure, lint, formatting, type-check (no tests)
+mise run format        # format every Java (Spotless) and frontend (Prettier) file
+mise run format-check  # check the formatting of every Java and frontend file, as CI does
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
@@ -280,7 +282,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 
 | Job | What |
 |---|---|
-| Backend and frontend | `mise run build`: Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
+| Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
@@ -303,10 +305,13 @@ Tools come from `mise.toml`, as locally. A newer push to the same branch cancels
 Where each kind of class, component or module belongs, and what may import what, is written down in
 [doc/coding-convention/](doc/coding-convention/README.md) and checked by the build (ArchUnit,
 ESLint, import-linter) and by CI. The backend's Java code is also checked by Checkstyle
-([rules and suppressions](doc/coding-convention/backend-java-checkstyle.md)). Git hooks run the
-static checks on staged files before a commit; the backend's Checkstyle and ArchUnit rules run in
-that hook too when Java files are staged. `mise run check` runs
-every structure check, lint and the type-check by hand.
+([rules and suppressions](doc/coding-convention/backend-java-checkstyle.md)) and formatted with
+Spotless and Palantir Java Format ([formatting](doc/coding-convention/backend-java-formatting.md));
+the frontend is formatted with Prettier. Git hooks run the static checks on staged files before a
+commit; the backend's formatting check (changed files only), Checkstyle and ArchUnit rules run in
+that hook too when Java files are staged, and CI checks the formatting of every file.
+`mise run check` runs every structure check, lint, formatting check and the type-check by hand;
+`mise run format` fixes the formatting.
 
 ### Before pushing
 
