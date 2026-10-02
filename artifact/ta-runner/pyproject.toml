@@ -1,6 +1,7 @@
 [project]
 name = "ta-runner"
-version = "0.1.0"
+# The platform's version (scripts/version.sh), read from ta_runner/__init__.py.
+dynamic = ["version"]
 description = "Non-interactive, single-run executor for TradingAgents that emits JSONL events (see docs/event-protocol.md)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -30,6 +31,9 @@ constraint-dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "ta_runner/__init__.py"
 
 [tool.hatch.metadata]
 allow-direct-references = true

@@ -2,7 +2,7 @@
 # ta-runner image: the TradingAgents runtime (pinned by uv.lock) with ta-runner on top. The platform
 # starts one short-lived container per analysis from it (PLAN.md section 4, option B).
 #
-#   docker build -t ta-runner:0.1.0 artifact/ta-runner
+#   docker build --build-arg VERSION="$(scripts/version.sh)" -t ta-runner:latest artifact/ta-runner
 #
 # Upstream publishes no image, only a Dockerfile on python:3.12-slim; this image uses the same base and
 # installs the same pinned upstream release, leaving upstream's code untouched.
@@ -53,3 +53,7 @@ USER runner
 WORKDIR /home/runner
 ENTRYPOINT ["ta-runner"]
 CMD ["version"]
+# The platform version (scripts/version.sh), passed by CI and `mise run docker-build`. Last, because a
+# changed build argument invalidates every RUN layer after its ARG.
+ARG VERSION=unknown
+LABEL org.opencontainers.image.version="${VERSION}"

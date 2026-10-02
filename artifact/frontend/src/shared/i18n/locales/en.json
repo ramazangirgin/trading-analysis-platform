@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "TradingAgents Platform",
-    "language": "Language"
+    "language": "Language",
+    "version": "Version {version}"
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -3,7 +3,8 @@
 # Build the jar first; `mise run docker-build` does both:
 #
 #   ./gradlew :backend:bootJar
-#   docker build -f deploy/Dockerfile -t trading-analysis-platform:0.0.1 .
+#   docker build -f deploy/Dockerfile --build-arg VERSION="$(scripts/version.sh)" \
+#     -t trading-analysis-platform:latest .
 #
 # The build context is the repository root, cut down by /.dockerignore to the jar alone.
 
@@ -12,7 +13,7 @@
 # application layer, while the ~100 MB of libraries stay cached.
 FROM eclipse-temurin:25-jre-noble AS layers
 WORKDIR /build
-COPY artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar platform.jar
+COPY artifact/backend/build/libs/platform.jar platform.jar
 RUN java -Djarmode=tools -jar platform.jar extract --layers --launcher --destination extracted
 
 FROM eclipse-temurin:25-jre-noble
@@ -38,3 +39,7 @@ USER platform
 WORKDIR /home/platform
 EXPOSE 8080
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-cp", "/app", "org.springframework.boot.loader.launch.JarLauncher"]
+# The platform version (scripts/version.sh), passed by CI and `mise run docker-build`. Last, because a
+# changed build argument invalidates every RUN layer after its ARG.
+ARG VERSION=unknown
+LABEL org.opencontainers.image.version="${VERSION}"

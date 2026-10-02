@@ -69,7 +69,7 @@ description = "Build the single jar (UI included) if anything changed and run it
 # bootJar is up to date in seconds when nothing changed, and rebuilds after a git pull.
 run = [
   "./gradlew --console=plain :backend:bootJar",
-  "java -jar artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar",
+  "java -jar artifact/backend/build/libs/platform.jar",
 ]
 
 [tasks.api-types]
@@ -83,11 +83,22 @@ run = [
 description = "Build the Docker images: the platform (backend + UI jar) and ta-runner (see deploy/)"
 # One after the other: both are bound by writing image layers, and building them side by side only
 # makes them compete for the disk (slow inside Podman's VM on macOS).
+# Tagged with the version and latest; the Compose setup uses latest unless deploy/.env says otherwise.
 run = [
   "./gradlew --console=plain :backend:bootJar",
-  "docker build -f deploy/Dockerfile -t trading-analysis-platform:0.0.1 .",
-  "docker build -t ta-runner:0.1.0 artifact/ta-runner",
+  "v=$(scripts/version.sh) && docker build -f deploy/Dockerfile --build-arg VERSION=$v -t trading-analysis-platform:$v -t trading-analysis-platform:latest .",
+  "v=$(scripts/version.sh) && docker build --build-arg VERSION=$v -t ta-runner:$v -t ta-runner:latest artifact/ta-runner",
 ]
+
+# One version for the whole repository (doc/coding-convention/repository-versioning-and-releases.md): every
+# pull request into main raises it, and merging it releases vX.Y.Z.
+[tasks.version]
+description = "Print the platform version (gradle.properties)"
+run = "scripts/version.sh"
+
+[tasks."version:bump"]
+description = "Raise the version in gradle.properties, package.json and ta-runner: mise run version:bump major|minor|patch"
+run = "scripts/version.sh bump"
 
 [tasks.clean]
 description = "Remove build outputs"

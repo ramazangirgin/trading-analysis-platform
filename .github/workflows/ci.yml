@@ -8,7 +8,11 @@
 #   runner     ta-runner: ruff, import-linter (package structure) and pytest, upstream contract
 #              tests included
 #   images     both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
+#   version    the version is the same in every file; in a pull request into main, it is also
+#              higher than main's and than the latest release tag (scripts/version.sh)
 #   ci-passed  "CI passed": the one check main's ruleset requires before a pull request can merge
+#
+# A successful run on main is released by release.yml (tag vX.Y.Z, GitHub Release with the jar).
 #
 # Pull requests run even when their branch already ran on push: a skipped required check would
 # count as passed.
@@ -81,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: platform-jar
-          path: artifact/backend/build/libs/backend-0.0.1-SNAPSHOT.jar
+          path: artifact/backend/build/libs/platform.jar
           if-no-files-found: error
           retention-days: 3
 
@@ -119,13 +123,20 @@ jobs:
           name: platform-jar
           path: artifact/backend/build/libs
 
+      - name: Version
+        id: version
+        run: echo "version=$(scripts/version.sh)" >> "$GITHUB_OUTPUT"
+
       - uses: docker/setup-buildx-action@v4
 
       - name: ta-runner image
         uses: docker/build-push-action@v7
         with:
           context: artifact/ta-runner
-          tags: ta-runner:0.1.0
+          build-args: VERSION=${{ steps.version.outputs.version }}
+          tags: |
+            ta-runner:${{ steps.version.outputs.version }}
+            ta-runner:latest
           load: true
           cache-from: type=gha,scope=ta-runner
           cache-to: type=gha,scope=ta-runner,mode=max
@@ -135,7 +146,10 @@ jobs:
         with:
           context: .
           file: deploy/Dockerfile
-          tags: trading-analysis-platform:0.0.1
+          build-args: VERSION=${{ steps.version.outputs.version }}
+          tags: |
+            trading-analysis-platform:${{ steps.version.outputs.version }}
+            trading-analysis-platform:latest
           load: true
           cache-from: type=gha,scope=platform
           cache-to: type=gha,scope=platform,mode=max
@@ -143,18 +157,39 @@ jobs:
       - name: ta-runner image under the platform's lockdown
         run: |
           flags=(--rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --memory 1g --cpus 1)
-          docker run "${flags[@]}" ta-runner:0.1.0 version
-          docker run "${flags[@]}" ta-runner:0.1.0 catalog | jq -e '.providers | length > 0'
+          image=ta-runner:${{ steps.version.outputs.version }}
+          docker run "${flags[@]}" "$image" version | jq -e --arg v "${{ steps.version.outputs.version }}" '.runner_version == $v'
+          docker run "${flags[@]}" "$image" catalog | jq -e '.providers | length > 0'
+          docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep -Fx "${{ steps.version.outputs.version }}"
 
       - name: Docker Compose smoke test
         run: deploy/smoke-test.sh "$RUNNER_TEMP/platform-data"
+
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Full history and tags: the check compares with main and with the release tags.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Same version in every file
+        run: scripts/version.sh check-sync
+
+      # main must only ever move to a new release: the merged pull request's version is tagged and
+      # released by release.yml.
+      - name: Version bumped (pull requests into main)
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: scripts/version.sh check-bump "origin/${{ github.base_ref }}"
 
   # The single required check: it passes only if every job above passed, so new jobs are covered by
   # adding them to `needs` without touching the repository's rules.
   ci-passed:
     name: CI passed
     if: always()
-    needs: [build, runner, images]
+    needs: [build, runner, images, version]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

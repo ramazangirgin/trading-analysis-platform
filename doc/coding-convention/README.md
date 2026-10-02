@@ -11,6 +11,7 @@ enforces each rule.
 | [ta-runner-python-package-structure.md](ta-runner-python-package-structure.md) | ta-runner (Python): sub-packages, layer order, the single upstream import point |
 | [backend-java-checkstyle.md](backend-java-checkstyle.md) | Backend (Java): Checkstyle rules (naming, imports, size, bug-prone patterns, design, Javadoc) and how to suppress a finding |
 | [backend-java-formatting.md](backend-java-formatting.md) | Backend (Java): formatting with Spotless and Palantir Java Format, why that formatter, how to fix a finding |
+| [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
 
 The structure documents cover package / folder placement and the dependencies between packages.
 The Checkstyle document covers the backend's naming, imports, size and coding rules; the formatting

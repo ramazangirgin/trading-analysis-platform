@@ -1,0 +1,14 @@
+# Categories of the release notes the release workflow generates (gh release create
+# --generate-notes), by the labels of the merged pull requests.
+changelog:
+  categories:
+    - title: Features
+      labels: [enhancement]
+    - title: Fixes
+      labels: [bug, security]
+    - title: Documentation
+      labels: [documentation, adr]
+    - title: Build, CI and dependencies
+      labels: [ci, dependencies]
+    - title: Other changes
+      labels: ["*"]

@@ -1,0 +1,103 @@
+# Release: every commit on main is a release (doc/coding-convention/repository-versioning-and-releases.md).
+# After CI passed on a push to main, this tags the commit vX.Y.Z (the version in gradle.properties)
+# and publishes a GitHub Release with notes generated from the merged pull requests and the
+# platform jar CI built, with its SHA-256 checksum.
+#
+# Idempotent: a version that already has a release is left alone, so a rerun of this workflow or
+# of an older CI run never creates a second one. A tag without a release (an interrupted run) gets
+# its release, if the tag is on the same commit.
+
+name: Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One release at a time, in the order main moved; never cancelled halfway.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Tag and GitHub Release
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      # Push the tag and create the release.
+      contents: write
+      # Download the jar from the CI run.
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Version and what is still to do
+        id: plan
+        run: |
+          version=$(scripts/version.sh)
+          scripts/version.sh check-sync
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag exists already; nothing to do."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
+            tagged=$(git rev-parse "$tag^{commit}")
+            if [ "$tagged" != "$SHA" ]; then
+              echo "::error::$tag is on $tagged, not on $SHA. Was the version not bumped?"
+              exit 1
+            fi
+            echo "Tag $tag exists on this commit; creating its release."
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+      - name: Platform jar from the CI run
+        if: steps.plan.outputs.release == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: platform-jar
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Release files
+        if: steps.plan.outputs.release == 'true'
+        working-directory: dist
+        run: |
+          jar=trading-analysis-platform-${{ steps.plan.outputs.version }}.jar
+          mv platform.jar "$jar"
+          sha256sum "$jar" > "$jar.sha256"
+          cat "$jar.sha256"
+
+      - name: Tag
+        if: steps.plan.outputs.release == 'true' && steps.plan.outputs.tag_exists != 'true'
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG" "$SHA"
+          git push origin "refs/tags/$TAG"
+
+      - name: GitHub Release
+        if: steps.plan.outputs.release == 'true'
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: gh release create "$TAG" dist/* --verify-tag --title "$TAG" --generate-notes
