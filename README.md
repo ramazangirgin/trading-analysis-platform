@@ -259,7 +259,7 @@ to just use the app, `mise run run` is enough.
 ```sh
 mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks
 mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173
-mise run build         # all tests (ArchUnit included), lint, and the single jar
+mise run build         # all tests (ArchUnit included), lint (Checkstyle included), and the single jar
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
@@ -280,7 +280,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 
 | Job | What |
 |---|---|
-| Backend and frontend | `mise run build`: every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
+| Backend and frontend | `mise run build`: Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
@@ -302,8 +302,10 @@ Tools come from `mise.toml`, as locally. A newer push to the same branch cancels
 
 Where each kind of class, component or module belongs, and what may import what, is written down in
 [doc/coding-convention/](doc/coding-convention/README.md) and checked by the build (ArchUnit,
-ESLint, import-linter) and by CI. Git hooks run the static checks on staged files before a commit;
-the backend's ArchUnit rules run in that hook too when Java files are staged. `mise run check` runs
+ESLint, import-linter) and by CI. The backend's Java code is also checked by Checkstyle
+([rules and suppressions](doc/coding-convention/backend-java-checkstyle.md)). Git hooks run the
+static checks on staged files before a commit; the backend's Checkstyle and ArchUnit rules run in
+that hook too when Java files are staged. `mise run check` runs
 every structure check, lint and the type-check by hand.
 
 ### Before pushing

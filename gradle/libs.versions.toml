@@ -6,6 +6,8 @@ springBoot = "4.1.1"
 # springdoc 3.x is the line built for Spring Boot 4.
 springdoc = "3.1.1"
 archunit = "1.5.0"
+# Static checks on backend sources (config/checkstyle/). 11+ parses Java 25 syntax.
+checkstyle = "14.3.0"
 mapstruct = "1.6.3"
 # Docker Engine API client for the Docker runner (also talks to Podman's Docker-compatible API).
 dockerJava = "3.7.1"

@@ -1,0 +1,290 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+    Checkstyle for every backend module: Checkstyle's built-in checks for naming, imports, size,
+    bug-prone patterns, design, modifiers and a small Javadoc set.
+
+    Layout (indentation, braces, import order, whitespace inside a line) is left to the formatter
+    (Spotless, #12), so the two tools never disagree. Project-specific rules (#55) build on this file.
+
+    Rules, the reasoning behind each threshold and how to suppress a finding:
+    doc/coding-convention/backend-java-checkstyle.md
+-->
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="error"/>
+    <property name="fileExtensions" value="java, properties"/>
+
+    <!-- A finding is suppressed where it occurs, never in a central file:
+         @SuppressWarnings("checkstyle:<check>") plus a comment saying why (SuppressWarningsHolder
+         below). Generated sources (build/generated/) are not passed to Checkstyle at all. -->
+    <module name="SuppressWarningsFilter"/>
+
+    <!-- Scope of MissingJavadocType (not a suppression): public types in core/inbound and
+         core/outbound, the domain's contracts (use cases and ports), need Javadoc; other types do not. -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="MissingJavadocPortType"/>
+        <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/].*[\\/]core[\\/](inbound|outbound)[\\/]).*$"/>
+    </module>
+
+    <!-- Files ===================================================================================== -->
+    <module name="NewlineAtEndOfFile"/>
+    <module name="FileTabCharacter">
+        <property name="eachLine" value="true"/>
+    </module>
+    <module name="RegexpSingleline">
+        <property name="id" value="TrailingWhitespace"/>
+        <property name="format" value="\s+$"/>
+        <property name="message" value="Line has trailing whitespace."/>
+    </module>
+    <module name="UniqueProperties">
+        <property name="fileExtensions" value="properties"/>
+    </module>
+
+    <!-- Size ====================================================================================== -->
+    <module name="FileLength">
+        <property name="max" value="600"/>
+        <property name="fileExtensions" value="java"/>
+    </module>
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="fileExtensions" value="java"/>
+        <property name="ignorePattern" value="^(package|import) .*$|^.*https?://\S+.*$"/>
+    </module>
+
+    <module name="TreeWalker">
+        <module name="SuppressWarningsHolder"/>
+
+        <!-- Imports (order is the formatter's job) ============================================== -->
+        <module name="AvoidStarImport"/>
+        <module name="AvoidStaticImport">
+            <!-- Fluent test DSLs only. -->
+            <property name="excludes" value="
+                org.assertj.core.api.Assertions.*,
+                org.assertj.core.api.Assumptions.*,
+                org.junit.jupiter.api.Assertions.*,
+                org.junit.jupiter.api.Assumptions.*,
+                org.mockito.Mockito.*,
+                org.mockito.ArgumentMatchers.*,
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*,
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.*,
+                com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*,
+                com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.*,
+                com.tngtech.archunit.base.DescribedPredicate.*,
+                com.tngtech.archunit.core.domain.JavaClass.Predicates.*,
+                com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.*"/>
+        </module>
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+        <module name="IllegalImport">
+            <!-- JDK internals, JUnit 4, commons-lang 2. Nullness annotations come from JSpecify (#11). -->
+            <property name="illegalPkgs" value="sun, com.sun, jdk.internal, junit.framework, org.apache.commons.lang"/>
+            <property name="illegalClasses" value="
+                org.junit.Assert, org.junit.Assume, org.junit.Test, org.junit.Before, org.junit.After,
+                org.junit.BeforeClass, org.junit.AfterClass, org.junit.Ignore, org.junit.Rule,
+                org.junit.ClassRule, org.junit.runner.RunWith,
+                javax.annotation.Nullable, javax.annotation.Nonnull, javax.annotation.CheckForNull"/>
+        </module>
+
+        <!-- Naming ================================================================================ -->
+        <module name="TypeName"/>
+        <module name="MethodName"/>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+        <module name="LocalVariableName"/>
+        <module name="LambdaParameterName"/>
+        <module name="CatchParameterName"/>
+        <module name="PatternVariableName"/>
+        <module name="RecordComponentName"/>
+        <module name="StaticVariableName"/>
+        <module name="ConstantName">
+            <property name="format" value="^(log|LOG|[A-Z][A-Z0-9]*(_[A-Z0-9]+)*)$"/>
+        </module>
+        <module name="PackageName">
+            <property name="format" value="^tr\.girgin\.backend(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <module name="AbbreviationAsWordInName">
+            <property name="allowedAbbreviationLength" value="1"/>
+        </module>
+        <module name="ClassTypeParameterName">
+            <property name="format" value="^[A-Z][0-9]?$"/>
+        </module>
+        <module name="MethodTypeParameterName">
+            <property name="format" value="^[A-Z][0-9]?$"/>
+        </module>
+        <module name="InterfaceTypeParameterName">
+            <property name="format" value="^[A-Z][0-9]?$"/>
+        </module>
+        <module name="RecordTypeParameterName">
+            <property name="format" value="^[A-Z][0-9]?$"/>
+        </module>
+
+        <!-- Size and complexity ================================================================== -->
+        <module name="MethodLength">
+            <property name="max" value="80"/>
+            <property name="countEmpty" value="false"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="7"/>
+            <property name="ignoreOverriddenMethods" value="true"/>
+        </module>
+        <module name="CyclomaticComplexity">
+            <property name="max" value="12"/>
+            <property name="switchBlockAsSingleDecisionPoint" value="true"/>
+        </module>
+        <module name="NPathComplexity">
+            <property name="max" value="200"/>
+        </module>
+        <module name="ClassFanOutComplexity">
+            <property name="max" value="25"/>
+            <property name="excludedPackages" value="
+                java.io, java.net, java.nio, java.nio.charset, java.nio.file, java.nio.file.attribute,
+                java.time, java.time.format, java.time.temporal, java.util, java.util.concurrent,
+                java.util.concurrent.atomic, java.util.concurrent.locks, java.util.function,
+                java.util.regex, java.util.stream, java.lang.reflect, java.math,
+                org.springframework.beans.factory.annotation, org.springframework.context.annotation,
+                org.springframework.stereotype, org.springframework.transaction.annotation,
+                org.springframework.http, org.springframework.web.bind.annotation, org.mapstruct"/>
+        </module>
+        <module name="NestedIfDepth">
+            <property name="max" value="3"/>
+        </module>
+        <module name="NestedTryDepth">
+            <property name="max" value="1"/>
+        </module>
+        <module name="NestedForDepth">
+            <property name="max" value="2"/>
+        </module>
+        <module name="ReturnCount">
+            <property name="max" value="4"/>
+            <property name="maxForVoid" value="4"/>
+            <!-- Lambdas are not counted; equals() is skipped by the default format. -->
+            <property name="tokens" value="CTOR_DEF, METHOD_DEF"/>
+        </module>
+        <module name="ExecutableStatementCount">
+            <property name="max" value="40"/>
+        </module>
+
+        <!-- Coding: bug-prone patterns =========================================================== -->
+        <module name="EmptyCatchBlock">
+            <property name="exceptionVariableName" value="^(ignored|expected|_)$"/>
+        </module>
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+        <module name="EmptyStatement"/>
+        <module name="EqualsHashCode"/>
+        <module name="CovariantEquals"/>
+        <module name="StringLiteralEquality"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="MissingSwitchDefault"/>
+        <module name="FallThrough"/>
+        <module name="DefaultComesLast"/>
+        <module name="ModifiedControlVariable"/>
+        <module name="InnerAssignment"/>
+        <module name="OneStatementPerLine"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="DeclarationOrder"/>
+        <module name="OverloadMethodsDeclarationOrder"/>
+        <module name="HiddenField">
+            <property name="ignoreConstructorParameter" value="true"/>
+            <property name="ignoreSetter" value="true"/>
+            <property name="setterCanReturnItsClass" value="true"/>
+            <property name="ignoreAbstractMethods" value="true"/>
+        </module>
+        <module name="IllegalCatch"/>
+        <module name="IllegalThrows"/>
+        <module name="IllegalInstantiation">
+            <property name="classes" value="
+                java.lang.Boolean, java.lang.Byte, java.lang.Character, java.lang.Double, java.lang.Float,
+                java.lang.Integer, java.lang.Long, java.lang.Short"/>
+        </module>
+        <module name="IllegalType">
+            <!-- Signatures only (return types, parameters, record components); local variables may
+                 name the implementation they create. -->
+            <property name="tokens" value="METHOD_DEF, PARAMETER_DEF, RECORD_COMPONENT_DEF"/>
+            <property name="illegalClassNames" value="
+                HashMap, HashSet, LinkedHashMap, LinkedHashSet, TreeMap, TreeSet, ArrayList, LinkedList,
+                java.util.HashMap, java.util.HashSet, java.util.LinkedHashMap, java.util.LinkedHashSet,
+                java.util.TreeMap, java.util.TreeSet, java.util.ArrayList, java.util.LinkedList"/>
+        </module>
+        <module name="MagicNumber">
+            <!-- Main sources only: the build sets magicNumberSeverity to "ignore" for test sources,
+                 where tests spell out expected values. -->
+            <property name="severity" value="${magicNumberSeverity}" default="error"/>
+            <property name="ignoreNumbers" value="-1, 0, 1, 2, 100, 1000"/>
+            <property name="ignoreHashCodeMethod" value="true"/>
+            <property name="ignoreAnnotation" value="true"/>
+        </module>
+        <module name="NoFinalizer"/>
+        <module name="NoClone"/>
+        <module name="SuperClone"/>
+        <module name="UnnecessaryParentheses"/>
+        <module name="UnnecessarySemicolonInEnumeration"/>
+        <module name="UnnecessarySemicolonAfterTypeMemberDeclaration"/>
+        <module name="UnnecessarySemicolonAfterOuterTypeDeclaration"/>
+        <module name="UnnecessarySemicolonInTryWithResources"/>
+        <module name="UnusedLocalVariable"/>
+        <module name="UnusedCatchParameterShouldBeUnnamed"/>
+        <module name="UnusedLambdaParameterShouldBeUnnamed"/>
+        <module name="UnusedTryResourceShouldBeUnnamed"/>
+        <module name="UnusedPrivateField"/>
+        <module name="PatternVariableAssignment"/>
+        <module name="ArrayTypeStyle"/>
+        <module name="UpperEll"/>
+        <module name="AvoidDoubleBraceInitialization"/>
+        <module name="AvoidNoArgumentSuperConstructorCall"/>
+
+        <!-- Design ================================================================================ -->
+        <module name="FinalClass"/>
+        <module name="HideUtilityClassConstructor"/>
+        <module name="InterfaceIsType"/>
+        <module name="OneTopLevelClass"/>
+        <module name="OuterTypeFilename"/>
+        <module name="InnerTypeLast"/>
+        <module name="MutableException"/>
+        <module name="ThrowsCount">
+            <property name="max" value="2"/>
+        </module>
+        <module name="VisibilityModifier">
+            <property name="protectedAllowed" value="false"/>
+        </module>
+
+        <!-- Modifiers and blocks (brace placement is the formatter's job) ========================= -->
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier"/>
+        <module name="NeedBraces"/>
+        <module name="AvoidNestedBlocks">
+            <property name="allowInSwitchCase" value="true"/>
+        </module>
+
+        <!-- Javadoc: a small set ================================================================= -->
+        <!-- Port interfaces and use cases are the domain's contracts: public types in core/inbound and
+             core/outbound need Javadoc (suppressions.xml limits the check to those packages). -->
+        <module name="MissingJavadocType">
+            <property name="id" value="MissingJavadocPortType"/>
+            <property name="scope" value="public"/>
+        </module>
+        <!-- Checkstyle 14 split JavadocStyle up: SummaryJavadoc checks the first sentence. -->
+        <module name="SummaryJavadoc"/>
+        <module name="JavadocMissingLeadingAsterisk"/>
+        <module name="InvalidJavadocPosition"/>
+        <module name="JavadocMethod">
+            <property name="validateThrows" value="true"/>
+            <property name="allowMissingParamTags" value="true"/>
+            <property name="allowMissingReturnTag" value="true"/>
+        </module>
+        <module name="NonEmptyAtclauseDescription"/>
+        <module name="AtclauseOrder"/>
+        <module name="SingleLineJavadoc"/>
+
+        <!-- Annotations =========================================================================== -->
+        <module name="MissingOverride"/>
+        <module name="MissingDeprecated"/>
+        <module name="AnnotationLocation"/>
+    </module>
+</module>

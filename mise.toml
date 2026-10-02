@@ -37,9 +37,9 @@ dir = "artifact/ta-runner"
 run = ["uv run ruff check .", "uv run lint-imports", "uv run pytest -q"]
 
 [tasks.check]
-description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint, type-check; no tests"
+description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint (Checkstyle, ESLint, ruff), type-check; no tests"
 run = [
-  "./gradlew --console=plain :backend:test --tests '*ArchitectureTest' :frontend:pnpmLint",
+  "./gradlew --console=plain checkstyleMain checkstyleTest :backend:test --tests '*ArchitectureTest' :frontend:pnpmLint",
   "artifact/frontend/with-node.sh pnpm run type-check",
   "cd artifact/ta-runner && uv run ruff check . && uv run lint-imports",
 ]
