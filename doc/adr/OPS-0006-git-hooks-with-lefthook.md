@@ -36,16 +36,22 @@ Chosen option: **lefthook, pinned in `mise.toml`**, because it is a single binar
 knows how to install, it runs jobs in parallel on staged files with globs per sub-project, and it
 needs neither Node.js nor Python to start.
 
-- `lefthook.yml` at the repository root defines the hooks: pre-commit runs ESLint, Prettier, ruff
-  and import-linter on staged files; pre-push runs the backend's `ArchitectureTest` and the frontend
-  type-check.
+- `lefthook.yml` at the repository root defines one hook, pre-commit: ESLint, Prettier, ruff and
+  import-linter on staged files, a few seconds at most.
+- No hook compiles or runs tests. The backend's ArchUnit rules need compiled classes and the
+  frontend type-check the whole project, so they run in `mise run check` (a manual quick check
+  before pushing, no tests), in the build and in CI. A pre-push hook running them was tried and
+  dropped: tens of seconds on every push, from a cold Gradle daemon, for checks CI repeats anyway.
 - `mise run hooks` installs them; `mise run setup` calls it. The installed hook runs lefthook
   through `mise exec`, so the tools from `mise.toml` (uv, Java) are on `PATH` in the hooks too.
 - CI stays the authority and runs every check itself; hooks can be skipped with `--no-verify`.
 
 ### Consequences
 
-- Good, because a misplaced class or import fails within seconds, before it is committed.
+- Good, because a misplaced frontend or ta-runner import fails within seconds, before it is
+  committed, while commits and pushes stay fast.
+- Bad, because a misplaced backend class is caught only by `mise run check`, the build or CI, not
+  by a hook.
 - Good, because the hook tool's version is pinned and updated like every other tool in `mise.toml`.
 - Bad, because the hooks need `mise` on `PATH`; a Git client started without it (some GUI clients)
   cannot run them. Such commits are still checked by CI.

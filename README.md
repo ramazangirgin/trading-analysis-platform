@@ -263,6 +263,7 @@ mise run build         # all tests (ArchUnit included), lint, and the single jar
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
+mise run check         # quick check before pushing: package structure, lint, type-check (no tests)
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
@@ -301,7 +302,8 @@ Tools come from `mise.toml`, as locally. A newer push to the same branch cancels
 
 Where each kind of class, component or module belongs, and what may import what, is written down in
 [doc/coding-convention/](doc/coding-convention/README.md) and checked by the build (ArchUnit,
-ESLint, import-linter), by CI, and by Git hooks before a commit or push.
+ESLint, import-linter) and by CI. Git hooks run the static checks on staged files before a commit;
+`mise run check` runs the rest (ArchUnit, type-check) in seconds before you push.
 
 ### Before pushing
 

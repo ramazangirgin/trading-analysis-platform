@@ -20,7 +20,7 @@ run = [
 ]
 
 [tasks.hooks]
-description = "Install the Git hooks (lefthook.yml): lint and package-structure checks before commit and push"
+description = "Install the Git hooks (lefthook.yml): lint and import checks on staged files before a commit"
 run = "lefthook install"
 
 [tasks.dev]
@@ -35,6 +35,14 @@ run = "./gradlew build"
 description = "ta-runner lint, import contracts and tests"
 dir = "artifact/ta-runner"
 run = ["uv run ruff check .", "uv run lint-imports", "uv run pytest -q"]
+
+[tasks.check]
+description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint, type-check; no tests"
+run = [
+  "./gradlew --console=plain :backend:test --tests '*ArchitectureTest' :frontend:pnpmLint",
+  "artifact/frontend/with-node.sh pnpm run type-check",
+  "cd artifact/ta-runner && uv run ruff check . && uv run lint-imports",
+]
 
 [tasks.test]
 description = "All tests: backend, frontend, ta-runner"

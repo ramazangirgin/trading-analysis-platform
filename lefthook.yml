@@ -1,6 +1,7 @@
 # Git hooks (lefthook, pinned in mise.toml). Install them with `mise run hooks` (`mise run setup`
-# does it too). They catch the package-structure and lint failures before CI does; CI still runs
-# every check, since hooks can be skipped (`git commit --no-verify`).
+# does it too). Only fast, static checks on staged files: no compilation, no tests. The backend's
+# ArchUnit rules and the frontend type-check need a build; run them with `mise run check` before
+# pushing. CI runs every check either way, since hooks can be skipped (`git commit --no-verify`).
 # See doc/coding-convention/README.md.
 
 # Run lefthook, and the commands below, with the tools from mise.toml on PATH (uv, Java).
@@ -31,16 +32,3 @@ pre-commit:
       root: artifact/ta-runner/
       glob: ["artifact/ta-runner/**/*.py", "artifact/ta-runner/pyproject.toml"]
       run: uv run lint-imports
-
-pre-push:
-  parallel: true
-  jobs:
-    # Compiles the backend first: too slow for every commit.
-    - name: backend package structure (ArchUnit)
-      glob: "artifact/backend/**/*.java"
-      run: ./gradlew --console=plain :backend:test --tests '*ArchitectureTest'
-
-    - name: frontend type-check
-      root: artifact/frontend/
-      glob: "artifact/frontend/**/*.{ts,vue}"
-      run: ./with-node.sh pnpm run type-check
