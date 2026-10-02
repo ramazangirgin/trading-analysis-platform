@@ -1,7 +1,7 @@
 import json
 
 from ta_runner.__main__ import main
-from ta_runner.catalog import build_catalog
+from ta_runner.catalog.catalog import build_catalog
 
 
 def test_catalog_lists_upstream_providers_models_and_analysts():

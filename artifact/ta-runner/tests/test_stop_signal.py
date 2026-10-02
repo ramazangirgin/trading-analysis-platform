@@ -10,9 +10,9 @@ SCRIPT = textwrap.dedent(
     """
     import sys, time
     from ta_runner.__main__ import _install_stop_handler
-    from ta_runner.events import EventWriter
-    from ta_runner.runner import execute
-    from ta_runner.spec import RunSpec
+    from ta_runner.protocol.events import EventWriter
+    from ta_runner.engine.runner import execute
+    from ta_runner.protocol.spec import RunSpec
 
     class SlowUpstream:
         resumed = False

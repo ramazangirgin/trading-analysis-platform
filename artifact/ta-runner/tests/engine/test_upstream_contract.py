@@ -8,8 +8,8 @@ import inspect
 
 import pytest
 
-from ta_runner import compat
-from ta_runner.spec import RunSpec
+from ta_runner.engine import compat
+from ta_runner.protocol.spec import RunSpec
 
 
 @pytest.fixture

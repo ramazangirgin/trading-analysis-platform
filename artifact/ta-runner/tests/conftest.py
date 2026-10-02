@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from ta_runner.events import EventWriter
+from ta_runner.protocol.events import EventWriter
 
 
 class CapturedEvents:

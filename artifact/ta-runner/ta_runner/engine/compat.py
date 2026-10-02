@@ -24,7 +24,7 @@ from tradingagents.llm_clients.api_key_env import get_api_key_env
 from tradingagents.llm_clients.model_catalog import MODEL_OPTIONS
 from tradingagents.reporting import write_report_tree
 
-from .spec import RunSpec
+from ta_runner.protocol.spec import RunSpec
 
 
 def upstream_version() -> str:

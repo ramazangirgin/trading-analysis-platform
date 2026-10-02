@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TextIO
 
-from . import PROTOCOL_VERSION
+from ta_runner import PROTOCOL_VERSION
 
 # Keeps one event line bounded; full texts live in the report files.
 MAX_TEXT = 8_000

@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from . import compat
-from .agent_map import ANALYST_AGENTS
-from .spec import ANALYST_ORDER, ASSET_TYPES
+from ta_runner.engine import compat
+from ta_runner.engine.agent_map import ANALYST_AGENTS
+from ta_runner.protocol.spec import ANALYST_ORDER, ASSET_TYPES
 
 # Upstream's picker entry that means "type your own model id".
 _CUSTOM = "custom"

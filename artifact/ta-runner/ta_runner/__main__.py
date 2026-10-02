@@ -20,10 +20,10 @@ import sys
 from pathlib import Path
 from typing import TextIO
 
-from . import PROTOCOL_VERSION, __version__
-from .events import EventWriter, truncate
-from .runner import EXIT_ERROR, StopRequested, execute
-from .spec import RunSpec, SpecError
+from ta_runner import PROTOCOL_VERSION, __version__
+from ta_runner.engine.runner import EXIT_ERROR, StopRequested, execute
+from ta_runner.protocol.events import EventWriter, truncate
+from ta_runner.protocol.spec import RunSpec, SpecError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -48,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _version() -> int:
-    from .compat import upstream_version
+    from ta_runner.engine.compat import upstream_version
 
     print(
         json.dumps(
@@ -63,7 +63,7 @@ def _version() -> int:
 
 
 def _catalog() -> int:
-    from .catalog import build_catalog
+    from ta_runner.catalog.catalog import build_catalog
 
     print(json.dumps(build_catalog(), ensure_ascii=False))
     return 0
@@ -86,7 +86,7 @@ def _run(spec_path: Path | None, spec_env: str | None, out_dir: Path) -> int:
     logging.getLogger().addHandler(_EventLogHandler(writer))
     try:
         # Imported late: loading upstream takes seconds and must not delay a spec error.
-        from .compat import UpstreamRun, upstream_version
+        from ta_runner.engine.compat import UpstreamRun, upstream_version
 
         # Installed only now, so a stop always lands inside execute() and ends in run_finished.
         _install_stop_handler()
