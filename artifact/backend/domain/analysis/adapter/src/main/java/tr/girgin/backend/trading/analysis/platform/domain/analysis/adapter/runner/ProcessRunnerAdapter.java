@@ -119,12 +119,12 @@ class ProcessRunnerAdapter implements RunnerPort {
         Thread.ofVirtual().name("runner-stop-" + handle.ref()).start(() -> {
             try {
                 process.onExit().get(stopGrace.toMillis(), TimeUnit.MILLISECONDS);
-            } catch (TimeoutException e) {
+            } catch (TimeoutException _) {
                 log.warn("Runner {} ignored SIGTERM for {}; killing it", handle.ref(), stopGrace);
                 process.destroyForcibly();
             } catch (ExecutionException e) {
                 log.warn("Waiting for runner {} to stop failed: {}", handle.ref(), e.getMessage());
-            } catch (InterruptedException e) {
+            } catch (InterruptedException _) {
                 Thread.currentThread().interrupt();
             }
         });
@@ -149,7 +149,7 @@ class ProcessRunnerAdapter implements RunnerPort {
         long pid;
         try {
             pid = Long.parseLong(parts[0]);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return Optional.empty();
         }
         return ProcessHandle.of(pid)
@@ -163,6 +163,7 @@ class ProcessRunnerAdapter implements RunnerPort {
                 .orElse(String.valueOf(process.pid()));
     }
 
+    @SuppressWarnings("checkstyle:IllegalCatch") // one bad event must not stop the run
     private void follow(AnalysisId id, String ref, ProcessHandle process, Path events, long afterSeq,
                         RunEventSink sink) {
         EventsFileTail tail = new EventsFileTail(events);
@@ -189,7 +190,7 @@ class ProcessRunnerAdapter implements RunnerPort {
             } while (alive);
         } catch (IOException e) {
             log.warn("{}: cannot follow {}: {}", id, events, e.getMessage());
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         }
         processes.remove(ref);
@@ -198,6 +199,7 @@ class ProcessRunnerAdapter implements RunnerPort {
     }
 
 
+    @SuppressWarnings("checkstyle:IllegalCatch") // one bad event must not stop the run
     private void pump(AnalysisId id, String ref, Process process, RunEventSink sink) {
         try (BufferedReader reader = process.inputReader(StandardCharsets.UTF_8)) {
             String line;
@@ -215,7 +217,7 @@ class ProcessRunnerAdapter implements RunnerPort {
         int exitCode;
         try {
             exitCode = process.waitFor();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
             process.destroyForcibly();
             exitCode = -1;
@@ -224,7 +226,11 @@ class ProcessRunnerAdapter implements RunnerPort {
         sink.onExit(exitCode);
     }
 
-    /** A relative executable path ("artifact/ta-runner/.venv/bin/python") is resolved here, not by the OS. */
+    /**
+     * A relative executable path ("artifact/ta-runner/.venv/bin/python") is resolved here, not by the OS.
+     *
+     * @throws IllegalArgumentException when the configured command is empty
+     */
     private static List<String> absoluteExecutable(List<String> command) {
         if (command.isEmpty()) {
             throw new IllegalArgumentException("platform.runner.process.command must not be empty");

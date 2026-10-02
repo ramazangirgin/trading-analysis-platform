@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound
 import java.util.List;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretStatus;
 
+/** Provider API keys and endpoints: which are set, and setting or removing them. */
 public interface ManageSecretsUseCase {
 
     /** Every secret set anywhere, by name; a name set in several places is reported once, as the runner sees it. */

@@ -56,6 +56,7 @@ class RunnerOutputLineToRunEventMapperTest extends AdapterTestSupport {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void mapsDecisionAndRunEnd() {
         RunEvent decision = map("""
                 {"v":1,"ts":"2026-09-28T10:00:01Z","run_id":"r_1","seq":6,"type":"decision","rating":"Overweight","raw":"x"}""");

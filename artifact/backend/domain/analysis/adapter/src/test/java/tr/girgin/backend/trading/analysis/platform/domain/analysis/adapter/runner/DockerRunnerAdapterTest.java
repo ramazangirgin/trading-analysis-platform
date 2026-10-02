@@ -46,6 +46,7 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
     private static final String IMAGE = "ta-runner-fake:test";
     private static final String HOST = System.getenv().getOrDefault("DOCKER_HOST", "unix:///var/run/docker.sock");
     private static final String VOLUME = "ta-runner-test-" + UUID.randomUUID().toString().substring(0, 8);
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     private static final String SCRIPT = """
             #!/bin/sh
             # Called as: run --spec-env TA_RUNNER_SPEC --out /tmp/run
@@ -72,9 +73,10 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
     private RunnerOutputLineToRunEventMapper eventMapper;
 
     @TempDir
-    Path home;
+    private Path home;
 
     @BeforeAll
+    @SuppressWarnings("checkstyle:IllegalCatch") // any failure means no usable engine: skip
     static void buildFakeRunnerImage(@TempDir Path context) throws IOException {
         docker = DockerClients.create(HOST, Duration.ofMinutes(2));
         try {
@@ -96,11 +98,12 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
     }
 
     @AfterAll
+    @SuppressWarnings("checkstyle:IllegalCatch") // best-effort cleanup
     static void removeVolume() {
         if (docker != null) {
             try {
                 docker.removeVolumeCmd(VOLUME).exec();
-            } catch (RuntimeException e) {
+            } catch (RuntimeException _) {
                 // Not created, or still in use by a container being removed.
             }
         }
@@ -164,9 +167,10 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
         // Started by "the old platform", which never read its end.
         String containerId = docker.createContainerCmd(IMAGE)
                 .withCmd("run", "--spec-env", DockerRunnerAdapter.SPEC_ENV, "--out", "/tmp/run")
-                .withLabels(Map.of(DockerRunnerAdapter.LABEL_MANAGED, "true", DockerRunnerAdapter.LABEL_RUN_ID, id.value()))
-                .withHostConfig(HostConfig.newHostConfig().withMounts(List.of(
-                        new Mount().withType(MountType.VOLUME).withSource(VOLUME).withTarget("/home/runner/.tradingagents"))))
+                .withLabels(Map.of(
+                        DockerRunnerAdapter.LABEL_MANAGED, "true", DockerRunnerAdapter.LABEL_RUN_ID, id.value()))
+                .withHostConfig(HostConfig.newHostConfig().withMounts(List.of(new Mount()
+                        .withType(MountType.VOLUME).withSource(VOLUME).withTarget("/home/runner/.tradingagents"))))
                 .exec().getId();
         docker.startContainerCmd(containerId).exec();
         docker.waitContainerCmd(containerId).start().awaitStatusCode(60, TimeUnit.SECONDS);
@@ -209,6 +213,7 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
         throw new AssertionError("container " + containerId + " was not removed");
     }
 
+    @SuppressWarnings("checkstyle:VisibilityModifier") // test double: tests read its state directly
     private static final class RecordingSink implements RunEventSink {
 
         final List<RunEvent> events = new CopyOnWriteArrayList<>();

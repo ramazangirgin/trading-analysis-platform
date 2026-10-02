@@ -21,13 +21,13 @@ class TradingPlatformApplicationTests {
 
     private static final Path HOME = TestPlatformHome.create();
 
+    @Autowired
+    private MockMvc mockMvc;
+
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
         TestPlatformHome.register(registry, HOME, HOME.resolve("runner.sh"));
     }
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Test
     void contextLoads() {

@@ -24,7 +24,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound
 @Component
 class DotenvSecretStoreAdapter implements SecretStorePort {
 
-    private static final Pattern LINE = Pattern.compile("^\\s*(?:export\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.*?)\\s*$");
+    private static final Pattern LINE =
+            Pattern.compile("^\\s*(?:export\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.*?)\\s*$");
     private static final String HEADER = "# Managed by TradingAgents Platform (Settings). Edits here are kept.\n";
 
     private final Path managedFile;
@@ -64,7 +65,7 @@ class DotenvSecretStoreAdapter implements SecretStorePort {
             Files.writeString(temp, content, StandardCharsets.UTF_8);
             try {
                 Files.move(temp, managedFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
+            } catch (AtomicMoveNotSupportedException _) {
                 Files.move(temp, managedFile, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {

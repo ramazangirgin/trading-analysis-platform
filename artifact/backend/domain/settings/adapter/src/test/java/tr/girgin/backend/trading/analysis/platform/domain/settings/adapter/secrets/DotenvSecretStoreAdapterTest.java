@@ -13,7 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 class DotenvSecretStoreAdapterTest {
 
     @TempDir
-    Path dir;
+    private Path dir;
 
     @Test
     void writesOwnerOnlyAndReadsBackTheSameValues() throws Exception {
@@ -39,7 +39,8 @@ class DotenvSecretStoreAdapterTest {
         DotenvSecretStoreAdapter store = new DotenvSecretStoreAdapter(dir.resolve("secrets.env"),
                 new String[] {first.toString(), second.toString(), dir.resolve("missing.env").toString()});
 
-        assertThat(store.readExternal()).containsExactly(org.assertj.core.api.Assertions.entry("DEEPSEEK_API_KEY", "sk-second"));
+        assertThat(store.readExternal())
+                .containsExactly(org.assertj.core.api.Assertions.entry("DEEPSEEK_API_KEY", "sk-second"));
         store.writeManaged(Map.of("X_API_KEY", "v"));
         assertThat(Files.readString(first)).isEqualTo("DEEPSEEK_API_KEY=sk-first\nOPENAI_API_KEY=\n");
     }

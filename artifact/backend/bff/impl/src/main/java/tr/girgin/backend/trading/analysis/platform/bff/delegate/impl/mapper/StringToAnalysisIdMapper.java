@@ -13,7 +13,7 @@ public interface StringToAnalysisIdMapper {
     default AnalysisId map(String source) {
         try {
             return new AnalysisId(source);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             throw new ApiException(HttpStatus.NOT_FOUND, "not_found", "Analysis not found: " + source,
                     Map.of("id", source));
         }

@@ -2,6 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.core.outboun
 
 import java.util.Map;
 
+/** Reads and writes the secrets files (dotenv): the platform's own, and read-only ones. */
 public interface SecretStorePort {
 
     /** The platform's own secrets file. */

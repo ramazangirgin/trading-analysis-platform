@@ -31,6 +31,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     private ProcessRunnerAdapter runner;
 
     @Test
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void writesTheSpecStreamsEventsAndReportsTheExit() throws Exception {
         script("""
                 echo "upstream noise on stderr" >&2
@@ -83,6 +84,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void pointsTheRunnerAtThePlatformsPriceFile() throws Exception {
         script("""
                 printf '{"v":1,"ts":"2026-09-29T10:00:00Z","run_id":"x","seq":1,"type":"log","message":"%s"}\\n' "$TA_RUNNER_PRICES"
@@ -97,6 +99,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void stopSendsSigtermAndTheRunnerEndsCleanly() throws Exception {
         script("""
                 STOPPED='{"v":1,"ts":"2026-09-29T10:00:09Z","run_id":"x","seq":2,"type":"run_finished","status":"stopped"}'
@@ -132,6 +135,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void followsARunnerAnEarlierPlatformStartedThroughItsEventsFile() throws Exception {
         AnalysisId id = AnalysisId.newId();
         Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value())).resolve("events.jsonl");
@@ -154,6 +158,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void stopsARunnerItFollowsAgain() throws Exception {
         AnalysisId id = AnalysisId.newId();
         Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value())).resolve("events.jsonl");
@@ -196,7 +201,11 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         assertThat(runner.reattach(AnalysisId.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink())).isFalse();
     }
 
-    /** A runner process this platform instance did not start: its stdout is not read by anyone. */
+    /**
+     * A runner process this platform instance did not start: its stdout is not read by anyone.
+     *
+     * @throws IOException when the script cannot be written or the process cannot start
+     */
     private static Process orphan(Path events, String body) throws IOException {
         Path script = Files.writeString(events.resolveSibling("orphan.sh"), "#!/bin/sh\n" + body);
         ProcessBuilder builder = new ProcessBuilder("/bin/sh", script.toString())
@@ -214,6 +223,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         Files.writeString(RUNNER_SCRIPT, "#!/bin/sh\n" + body);
     }
 
+    @SuppressWarnings("checkstyle:VisibilityModifier") // test double: tests read its state directly
     private static final class RecordingSink implements RunEventSink {
 
         final List<RunEvent> events = new CopyOnWriteArrayList<>();

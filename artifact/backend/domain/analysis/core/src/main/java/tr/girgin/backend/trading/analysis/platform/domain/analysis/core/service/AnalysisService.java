@@ -46,13 +46,13 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, RerunAnalysisUseCase,
         GetAnalysisUseCase, ListAnalysesUseCase, SmartInitializingSingleton {
 
-    private static final Logger log = LoggerFactory.getLogger(AnalysisService.class);
-
     // Error codes stored on failed runs; the frontend translates them.
     static final String RUNNER_ERROR = "runner_error";
     static final String RUNNER_DIED = "runner_died";
     static final String RUNNER_START_FAILED = "runner_start_failed";
     static final String PLATFORM_RESTARTED = "platform_restarted";
+
+    private static final Logger log = LoggerFactory.getLogger(AnalysisService.class);
 
     private final AnalysisRepositoryPort repository;
     private final RunnerPort runner;
@@ -196,6 +196,7 @@ class AnalysisService implements StartAnalysisUseCase, StopAnalysisUseCase, Reru
     }
 
     /** Starts queued runs while slots are free. Caller holds the lock. */
+    @SuppressWarnings("checkstyle:IllegalCatch") // any start failure fails the run, not the queue
     private void dispatch() {
         while (running.size() < maxConcurrentRuns && !queue.isEmpty()) {
             AnalysisId id = queue.pollFirst();

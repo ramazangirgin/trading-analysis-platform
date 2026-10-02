@@ -1,5 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound;
 
+/** Watches the data dir for runs made outside the platform (the CLI, another UI). */
 public interface WatchDataDirUseCase {
 
     /**

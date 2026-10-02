@@ -1,15 +1,11 @@
 package tr.girgin.backend.trading.analysis.platform.domain.report.adapter.datadir;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
@@ -77,6 +73,7 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
             this.onChange = onChange;
         }
 
+        @SuppressWarnings("checkstyle:IllegalCatch") // watch thread: log the failure, do not lose it
         void run() {
             try {
                 while (true) {
@@ -93,7 +90,7 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
                         onChange.run();
                     }
                 }
-            } catch (ClosedWatchServiceException | InterruptedException e) {
+            } catch (ClosedWatchServiceException | InterruptedException _) {
                 log.debug("Stopped watching {}", dataDir);
             } catch (RuntimeException e) {
                 log.error("Watching {} failed; use rescan to pick up new runs", dataDir, e);
@@ -101,24 +98,31 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
         }
 
         private boolean handle(Path dir, WatchEvent<?> event) {
-            if (event.kind() == OVERFLOW || dir == null) {
+            if (event.kind() == StandardWatchEventKinds.OVERFLOW || dir == null) {
                 return true;
             }
             Path path = dir.resolve((Path) event.context());
+            boolean created = event.kind() == StandardWatchEventKinds.ENTRY_CREATE;
             if (dir.equals(dataDir)) {
-                // The data dir itself: only the run history, and the two directories appearing.
-                if (event.kind() == ENTRY_CREATE && path.equals(deepReportsDir)) {
-                    register(path);
-                } else if (event.kind() == ENTRY_CREATE && path.equals(resultsDir)) {
-                    registerTree(path);
-                }
-                return path.getFileName().toString().equals(RUN_HISTORY)
-                        || path.equals(deepReportsDir) || path.equals(resultsDir);
+                return handleDataDirEntry(path, created);
             }
-            if (event.kind() == ENTRY_CREATE && path.startsWith(resultsDir) && Files.isDirectory(path)) {
+            if (created && path.startsWith(resultsDir) && Files.isDirectory(path)) {
                 registerTree(path);
             }
-            return event.kind() == ENTRY_CREATE || event.kind() == ENTRY_MODIFY || event.kind() == ENTRY_DELETE;
+            return created
+                    || event.kind() == StandardWatchEventKinds.ENTRY_MODIFY
+                    || event.kind() == StandardWatchEventKinds.ENTRY_DELETE;
+        }
+
+        /** The data dir itself: only the run history, and the two directories appearing. */
+        private boolean handleDataDirEntry(Path path, boolean created) {
+            if (created && path.equals(deepReportsDir)) {
+                register(path);
+            } else if (created && path.equals(resultsDir)) {
+                registerTree(path);
+            }
+            return path.getFileName().toString().equals(RUN_HISTORY)
+                    || path.equals(deepReportsDir) || path.equals(resultsDir);
         }
 
         void registerTree(Path root) {
@@ -141,8 +145,9 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
                 return;
             }
             try {
-                dirs.put(dir.register(service, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE), dir);
-            } catch (ClosedWatchServiceException e) {
+                dirs.put(dir.register(service, StandardWatchEventKinds.ENTRY_CREATE,
+                        StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE), dir);
+            } catch (ClosedWatchServiceException _) {
                 // Closed meanwhile.
             } catch (IOException e) {
                 log.warn("Cannot watch {}: {}", dir, e.getMessage());

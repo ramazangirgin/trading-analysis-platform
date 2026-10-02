@@ -2,11 +2,6 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.decision;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.event;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.finished;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.spec;
-import static tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service.Fakes.stats;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,7 +41,7 @@ class AnalysisServiceTest {
 
     @Test
     void startsARunImmediatelyWhenASlotIsFree() {
-        Analysis analysis = service.start(spec("nvda"));
+        Analysis analysis = service.start(Fakes.spec("nvda"));
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.RUNNING);
         assertThat(analysis.spec().ticker()).isEqualTo("NVDA");
@@ -57,14 +52,14 @@ class AnalysisServiceTest {
 
     @Test
     void queuesBeyondTheConcurrencyLimitAndStartsWhenASlotFrees() {
-        Analysis first = service.start(spec("NVDA"));
-        service.start(spec("MU"));
-        Analysis third = service.start(spec("GOOG"));
+        Analysis first = service.start(Fakes.spec("NVDA"));
+        service.start(Fakes.spec("MU"));
+        Analysis third = service.start(Fakes.spec("GOOG"));
 
         assertThat(third.status()).isEqualTo(AnalysisStatus.QUEUED);
         assertThat(runner.sinks).hasSize(2);
 
-        runner.sink(first.id()).onEvent(finished(1, RunOutcome.COMPLETED, null));
+        runner.sink(first.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(first.id()).onExit(0);
 
         assertThat(service.get(third.id()).status()).isEqualTo(AnalysisStatus.RUNNING);
@@ -73,9 +68,9 @@ class AnalysisServiceTest {
 
     @Test
     void rejectsASecondActiveRunForTheSameTickerAndDate() {
-        Analysis first = service.start(spec("NVDA"));
+        Analysis first = service.start(Fakes.spec("NVDA"));
 
-        assertThatThrownBy(() -> service.start(spec("nvda")))
+        assertThatThrownBy(() -> service.start(Fakes.spec("nvda")))
                 .isInstanceOfSatisfying(AnalysisException.class, e -> {
                     assertThat(e.error()).isEqualTo(AnalysisError.ALREADY_RUNNING);
                     assertThat(e.params()).containsEntry("id", first.id().value());
@@ -84,11 +79,11 @@ class AnalysisServiceTest {
 
     @Test
     void allowsTheSameTickerAgainOnceTheFirstRunEnded() {
-        Analysis first = service.start(spec("NVDA"));
-        runner.sink(first.id()).onEvent(finished(1, RunOutcome.COMPLETED, null));
+        Analysis first = service.start(Fakes.spec("NVDA"));
+        runner.sink(first.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(first.id()).onExit(0);
 
-        assertThat(service.start(spec("NVDA")).status()).isEqualTo(AnalysisStatus.RUNNING);
+        assertThat(service.start(Fakes.spec("NVDA")).status()).isEqualTo(AnalysisStatus.RUNNING);
     }
 
     @Test
@@ -111,13 +106,13 @@ class AnalysisServiceTest {
 
     @Test
     void recordsStatsDecisionAndCompletion() {
-        AnalysisId id = service.start(spec("NVDA")).id();
+        AnalysisId id = service.start(Fakes.spec("NVDA")).id();
         var sink = runner.sink(id);
 
-        sink.onEvent(event(1, RunEventType.RUN_STARTED));
-        sink.onEvent(stats(2, 7));
-        sink.onEvent(decision(3, Rating.OVERWEIGHT));
-        sink.onEvent(finished(4, RunOutcome.COMPLETED, null));
+        sink.onEvent(Fakes.event(1, RunEventType.RUN_STARTED));
+        sink.onEvent(Fakes.stats(2, 7));
+        sink.onEvent(Fakes.decision(3, Rating.OVERWEIGHT));
+        sink.onEvent(Fakes.finished(4, RunOutcome.COMPLETED, null));
         sink.onExit(0);
 
         Analysis done = service.get(id);
@@ -131,9 +126,9 @@ class AnalysisServiceTest {
 
     @Test
     void recordsARunnerErrorWithItsMessage() {
-        AnalysisId id = service.start(spec("NVDA")).id();
+        AnalysisId id = service.start(Fakes.spec("NVDA")).id();
 
-        runner.sink(id).onEvent(finished(1, RunOutcome.FAILED, "provider exploded"));
+        runner.sink(id).onEvent(Fakes.finished(1, RunOutcome.FAILED, "provider exploded"));
         runner.sink(id).onExit(1);
 
         Analysis failed = service.get(id);
@@ -144,8 +139,8 @@ class AnalysisServiceTest {
 
     @Test
     void marksARunThatDiedWithoutReportingAsFailedAndAppendsTheEnd() {
-        AnalysisId id = service.start(spec("NVDA")).id();
-        runner.sink(id).onEvent(event(1, RunEventType.RUN_STARTED));
+        AnalysisId id = service.start(Fakes.spec("NVDA")).id();
+        runner.sink(id).onEvent(Fakes.event(1, RunEventType.RUN_STARTED));
 
         runner.sink(id).onExit(137);
 
@@ -163,7 +158,7 @@ class AnalysisServiceTest {
     void failsARunWhoseRunnerCannotStart() {
         runner.failOnStart = new IllegalStateException("python not found");
 
-        Analysis analysis = service.start(spec("NVDA"));
+        Analysis analysis = service.start(Fakes.spec("NVDA"));
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.FAILED);
         assertThat(analysis.errorCode()).isEqualTo(AnalysisService.RUNNER_START_FAILED);
@@ -172,9 +167,9 @@ class AnalysisServiceTest {
 
     @Test
     void stopsAQueuedRunAtOnce() {
-        service.start(spec("NVDA"));
-        service.start(spec("MU"));
-        AnalysisId queued = service.start(spec("GOOG")).id();
+        service.start(Fakes.spec("NVDA"));
+        service.start(Fakes.spec("MU"));
+        AnalysisId queued = service.start(Fakes.spec("GOOG")).id();
 
         Analysis stopped = service.stop(queued);
 
@@ -184,7 +179,7 @@ class AnalysisServiceTest {
 
     @Test
     void asksTheRunnerToStopARunningRun() {
-        AnalysisId id = service.start(spec("NVDA")).id();
+        AnalysisId id = service.start(Fakes.spec("NVDA")).id();
 
         service.stop(id);
 
@@ -193,8 +188,8 @@ class AnalysisServiceTest {
 
     @Test
     void refusesToStopAFinishedRun() {
-        AnalysisId id = service.start(spec("NVDA")).id();
-        runner.sink(id).onEvent(finished(1, RunOutcome.COMPLETED, null));
+        AnalysisId id = service.start(Fakes.spec("NVDA")).id();
+        runner.sink(id).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(id).onExit(0);
 
         assertThatThrownBy(() -> service.stop(id))
@@ -204,8 +199,8 @@ class AnalysisServiceTest {
 
     @Test
     void rerunStartsANewRunWithTheSameSpec() {
-        Analysis first = service.start(spec("NVDA"));
-        runner.sink(first.id()).onEvent(finished(1, RunOutcome.COMPLETED, null));
+        Analysis first = service.start(Fakes.spec("NVDA"));
+        runner.sink(first.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(first.id()).onExit(0);
 
         Analysis again = service.rerun(first.id());
@@ -230,9 +225,9 @@ class AnalysisServiceTest {
     @Test
     void takesTheOutcomeOfRunsThatEndedWhileThePlatformWasDown() {
         Analysis orphan = orphan("NVDA", "4242");
-        eventStore.append(orphan.id(), stats(1, 12));
-        eventStore.append(orphan.id(), decision(2, Rating.OVERWEIGHT));
-        eventStore.append(orphan.id(), finished(3, RunOutcome.COMPLETED, null));
+        eventStore.append(orphan.id(), Fakes.stats(1, 12));
+        eventStore.append(orphan.id(), Fakes.decision(2, Rating.OVERWEIGHT));
+        eventStore.append(orphan.id(), Fakes.finished(3, RunOutcome.COMPLETED, null));
 
         service.afterSingletonsInstantiated();
 
@@ -246,7 +241,7 @@ class AnalysisServiceTest {
     @Test
     void followsRunsWhoseRunnerIsStillGoing() {
         Analysis orphan = orphan("NVDA", "4242");
-        eventStore.append(orphan.id(), stats(1, 3));
+        eventStore.append(orphan.id(), Fakes.stats(1, 3));
         runner.alive.add("4242");
 
         service.afterSingletonsInstantiated();
@@ -254,14 +249,14 @@ class AnalysisServiceTest {
         assertThat(runner.reattachedAfter).containsEntry(orphan.id(), 1L);
         assertThat(service.get(orphan.id()).status()).isEqualTo(AnalysisStatus.RUNNING);
         assertThat(service.get(orphan.id()).stats().llmCalls()).isEqualTo(3);
-        assertThatThrownBy(() -> service.start(spec("NVDA")))
+        assertThatThrownBy(() -> service.start(Fakes.spec("NVDA")))
                 .isInstanceOfSatisfying(AnalysisException.class,
                         e -> assertThat(e.error()).isEqualTo(AnalysisError.ALREADY_RUNNING));
 
         service.stop(orphan.id());
         assertThat(runner.stopped).extracting(RunHandle::ref).containsExactly("4242");
 
-        runner.sink(orphan.id()).onEvent(finished(2, RunOutcome.STOPPED, null));
+        runner.sink(orphan.id()).onEvent(Fakes.finished(2, RunOutcome.STOPPED, null));
         runner.sink(orphan.id()).onExit(-1);
         assertThat(service.get(orphan.id()).status()).isEqualTo(AnalysisStatus.STOPPED);
     }
@@ -269,9 +264,9 @@ class AnalysisServiceTest {
     @Test
     void queuesRunsLeftQueuedAgainInTheirOrder() {
         Instant now = Instant.now();
-        Analysis first = Analysis.queued(AnalysisId.newId(), spec("NVDA"), now.minusSeconds(3));
-        Analysis second = Analysis.queued(AnalysisId.newId(), spec("MU"), now.minusSeconds(2));
-        Analysis third = Analysis.queued(AnalysisId.newId(), spec("GOOG"), now.minusSeconds(1));
+        Analysis first = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), now.minusSeconds(3));
+        Analysis second = Analysis.queued(AnalysisId.newId(), Fakes.spec("MU"), now.minusSeconds(2));
+        Analysis third = Analysis.queued(AnalysisId.newId(), Fakes.spec("GOOG"), now.minusSeconds(1));
         repository.insert(third);
         repository.insert(first);
         repository.insert(second);
@@ -283,7 +278,7 @@ class AnalysisServiceTest {
     }
 
     private Analysis orphan(String ticker, String runnerRef) {
-        Analysis orphan = Analysis.queued(AnalysisId.newId(), spec(ticker), Instant.now())
+        Analysis orphan = Analysis.queued(AnalysisId.newId(), Fakes.spec(ticker), Instant.now())
                 .running(Instant.now(), runnerRef);
         repository.insert(orphan);
         return orphan;
@@ -291,8 +286,8 @@ class AnalysisServiceTest {
 
     @Test
     void listsNewestFirstWithFilters() {
-        service.start(spec("NVDA"));
-        service.start(spec("MU"));
+        service.start(Fakes.spec("NVDA"));
+        service.start(Fakes.spec("MU"));
 
         assertThat(service.list(AnalysisFilter.ALL)).hasSize(2);
         assertThat(service.list(new AnalysisFilter(null, "MU"))).singleElement()

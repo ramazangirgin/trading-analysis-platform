@@ -11,6 +11,10 @@ import java.time.Duration;
 /** A Docker Engine API client for {@code unix:///...} or {@code tcp://...} (Docker, Podman, a socket proxy). */
 public final class DockerClients {
 
+    private static final int MAX_CONNECTIONS = 32;
+    private static final int HTTP_INTERNAL_SERVER_ERROR = 500;
+    private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
+
     private DockerClients() {
     }
 
@@ -25,8 +29,8 @@ public final class DockerClients {
         ApacheDockerHttpClient http = new ApacheDockerHttpClient.Builder()
                 .dockerHost(config.getDockerHost())
                 .sslConfig(config.getSSLConfig())
-                .maxConnections(32)
-                .connectionTimeout(Duration.ofSeconds(10))
+                .maxConnections(MAX_CONNECTIONS)
+                .connectionTimeout(CONNECTION_TIMEOUT)
                 .responseTimeout(responseTimeout)
                 .build();
         return DockerClientImpl.getInstance(config, http);
@@ -35,6 +39,7 @@ public final class DockerClients {
     /** Docker answers a missing container with 404; Podman's compatible API with 500 "no such container". */
     public static boolean isNoSuchContainer(DockerException e) {
         return e instanceof NotFoundException
-                || e.getHttpStatus() == 500 && e.getMessage() != null && e.getMessage().contains("no such container");
+                || e.getHttpStatus() == HTTP_INTERNAL_SERVER_ERROR
+                        && e.getMessage() != null && e.getMessage().contains("no such container");
     }
 }

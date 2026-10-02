@@ -74,14 +74,16 @@ class SystemHealthService implements SystemHealthUseCase {
                     .map(Provider::id)
                     .sorted()
                     .toList();
-        } catch (CatalogUnavailableException e) {
+        } catch (CatalogUnavailableException _) {
             usable = set.stream().filter(name -> name.endsWith("_API_KEY")).sorted().toList();
         }
         return usable.isEmpty()
                 ? new HealthCheck("keys", HealthStatus.WARN, "no_provider_keys", Map.of())
-                : new HealthCheck("keys", HealthStatus.UP, "provider_keys_ok", Map.of("providers", String.join(", ", usable)));
+                : new HealthCheck("keys", HealthStatus.UP, "provider_keys_ok",
+                        Map.of("providers", String.join(", ", usable)));
     }
 
+    @SuppressWarnings("checkstyle:IllegalCatch") // a health check reports any failure as DOWN
     private HealthCheck dataDir() {
         try {
             int reports = scanReports.scan().size();

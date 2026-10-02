@@ -23,7 +23,12 @@ import org.mapstruct.Mapper;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@AnalyzeClasses(packages = "tr.girgin.backend.trading.analysis.platform", importOptions = ImportOption.DoNotIncludeTests.class)
+// ConstantName: ArchUnit reports a rule by its field name, so rule names are snake_case sentences.
+// DeclarationOrder: the package names come first, then the rules that use them, grouped by topic.
+// HideUtilityClassConstructor: JUnit instantiates the test class.
+@SuppressWarnings({"checkstyle:ConstantName", "checkstyle:DeclarationOrder", "checkstyle:HideUtilityClassConstructor"})
+@AnalyzeClasses(packages = "tr.girgin.backend.trading.analysis.platform",
+        importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
     private static final String BASE = "tr.girgin.backend.trading.analysis.platform";
@@ -35,9 +40,11 @@ class ArchitectureTest {
     private static final String DOMAIN_CORE = "tr.girgin.backend.trading.analysis.platform.domain.*.core..";
     private static final String DOMAIN_MODEL = "tr.girgin.backend.trading.analysis.platform.domain.*.core.model..";
     private static final String DOMAIN_SERVICE = "tr.girgin.backend.trading.analysis.platform.domain.*.core.service..";
-    private static final String DOMAIN_OUTBOUND = "tr.girgin.backend.trading.analysis.platform.domain.*.core.outbound..";
+    private static final String DOMAIN_OUTBOUND =
+            "tr.girgin.backend.trading.analysis.platform.domain.*.core.outbound..";
     private static final String DOMAIN_ADAPTER = "tr.girgin.backend.trading.analysis.platform.domain.*.adapter..";
-    private static final String DOMAIN_RUNNER_ADAPTER = "tr.girgin.backend.trading.analysis.platform.domain.*.adapter.runner..";
+    private static final String DOMAIN_RUNNER_ADAPTER =
+            "tr.girgin.backend.trading.analysis.platform.domain.*.adapter.runner..";
     private static final String ORCHESTRATION = "tr.girgin.backend.trading.analysis.platform.orchestration..";
 
     // Package placement (doc/coding-convention/backend-java-package-structure.md).
@@ -215,7 +222,8 @@ class ArchitectureTest {
             .and().resideInAPackage(DOMAIN_ADAPTER)
             .and().areAssignableTo(Record.class)
             .should().resideInAnyPackage("..row..", "..json..", "..spec..")
-            .because("rows, JSON shapes and runner specs each have a sub-package; an adapter package root holds adapters");
+            .because("rows, JSON shapes and runner specs each have a sub-package;"
+                    + " an adapter package root holds adapters");
 
     @ArchTest
     static final ArchRule adapter_sub_packages_are_known_kinds = topLevelClasses()
@@ -240,12 +248,14 @@ class ArchitectureTest {
     static final ArchRule domain_core_sub_packages_are_known_kinds = topLevelClasses()
             .and().resideInAPackage(DOMAIN_CORE_SUB)
             .should().resideInAnyPackage(
-                    "..core.inbound..", "..core.outbound..", "..core.service..", "..core.model..", "..core.exception..");
+                    "..core.inbound..", "..core.outbound..", "..core.service..", "..core.model..",
+                    "..core.exception..");
 
     @ArchTest
     static final ArchRule orchestration_features_follow_the_domain_core_shape = topLevelClasses()
             .and().resideInAPackage(ORCHESTRATION_FEATURE_SUB)
-            .should().resideInAnyPackage(ORCHESTRATION + "inbound..", ORCHESTRATION + "service..", ORCHESTRATION + "model..")
+            .should().resideInAnyPackage(
+                    ORCHESTRATION + "inbound..", ORCHESTRATION + "service..", ORCHESTRATION + "model..")
             .because("an orchestration feature is shaped like a domain core: inbound, service, model");
 
     @ArchTest

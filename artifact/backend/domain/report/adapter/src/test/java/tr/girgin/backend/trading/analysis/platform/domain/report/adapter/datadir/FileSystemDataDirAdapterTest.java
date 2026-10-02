@@ -20,7 +20,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 class FileSystemDataDirAdapterTest {
 
     @TempDir
-    Path dataDir;
+    private Path dataDir;
 
     private Path logs;
 

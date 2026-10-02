@@ -21,7 +21,7 @@ class DataDirWatchServiceTest {
 
     @Test
     void aBurstOfChangesSettlesOnce() throws Exception {
-        try (AutoCloseable ignored = service.watch(settled::incrementAndGet)) {
+        try (AutoCloseable _ = service.watch(settled::incrementAndGet)) {
             for (int i = 0; i < 5; i++) {
                 change.run();
             }
@@ -44,7 +44,7 @@ class DataDirWatchServiceTest {
             return () -> { };
         }, QUIET, Duration.ofMillis(500), System::nanoTime);
 
-        try (AutoCloseable ignored = impatient.watch(settled::incrementAndGet)) {
+        try (AutoCloseable _ = impatient.watch(settled::incrementAndGet)) {
             // A change every 50 ms never leaves the quiet period, like runs.json during a run.
             long end = System.nanoTime() + Duration.ofMillis(1_500).toNanos();
             while (System.nanoTime() < end) {

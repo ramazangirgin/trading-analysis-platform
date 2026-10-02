@@ -16,7 +16,7 @@ class CsvPriceCacheAdapterTest {
     private static final String HEADER = "Date,Close,High,Low,Open,Volume\n";
 
     @TempDir
-    Path cache;
+    private Path cache;
 
     private void write(String name, String body) throws IOException {
         Files.writeString(cache.resolve(name), HEADER + body);
@@ -26,7 +26,8 @@ class CsvPriceCacheAdapterTest {
     void readsTheFileReachingFurthest() throws IOException {
         write("MU-YFin-data-2021-09-27-2026-09-27.csv", "2026-09-25,1.0,1,1,1,10\n");
         write("MU-YFin-data-2021-09-28-2026-09-29.csv",
-                "2026-09-25,1082.28,1108.72,1073.0,1095.83,20870400\n2026-09-28,1053.98,1084.81,1032.0,1075.98,2.21376E7\n");
+                "2026-09-25,1082.28,1108.72,1073.0,1095.83,20870400\n"
+                        + "2026-09-28,1053.98,1084.81,1032.0,1075.98,2.21376E7\n");
         write("MUX-YFin-data-2021-09-28-2026-09-30.csv", "2026-09-29,5.0,5,5,5,5\n");
 
         assertThat(new CsvPriceCacheAdapter(cache).read("MU", DAY)).containsExactly(

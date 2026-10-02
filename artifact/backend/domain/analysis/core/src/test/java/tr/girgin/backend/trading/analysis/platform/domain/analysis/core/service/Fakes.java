@@ -70,6 +70,7 @@ final class Fakes {
         return new RunEvent(seq, Instant.now(), RunEventType.RUN_FINISHED, null, outcome, null, error, payload);
     }
 
+    @SuppressWarnings("checkstyle:VisibilityModifier") // test double: tests read its state directly
     static final class Repository implements AnalysisRepositoryPort {
 
         final Map<AnalysisId, Analysis> rows = new ConcurrentHashMap<>();
@@ -114,6 +115,7 @@ final class Fakes {
         }
     }
 
+    @SuppressWarnings("checkstyle:VisibilityModifier") // test double: tests read and set its state directly
     static final class Runner implements RunnerPort {
 
         final Map<AnalysisId, RunEventSink> sinks = new LinkedHashMap<>();
@@ -154,6 +156,7 @@ final class Fakes {
         }
     }
 
+    @SuppressWarnings("checkstyle:VisibilityModifier") // test double: tests read its state directly
     static final class EventStore implements EventStorePort {
 
         final Map<AnalysisId, List<RunEvent>> events = new ConcurrentHashMap<>();
@@ -165,7 +168,7 @@ final class Fakes {
 
         @Override
         public void append(AnalysisId id, RunEvent event) {
-            events.computeIfAbsent(id, key -> new ArrayList<>()).add(event);
+            events.computeIfAbsent(id, _ -> new ArrayList<>()).add(event);
         }
     }
 
@@ -177,6 +180,7 @@ final class Fakes {
         }
     }
 
+    @SuppressWarnings("checkstyle:VisibilityModifier") // test double: tests read its state directly
     static class RecordingListener implements RunEventListener {
 
         final List<Long> seqs = new ArrayList<>();

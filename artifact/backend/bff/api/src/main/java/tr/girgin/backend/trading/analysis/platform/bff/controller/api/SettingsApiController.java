@@ -57,7 +57,8 @@ public class SettingsApiController {
 
     @PutMapping(path = "/presets/{id}", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<PresetDto> updatePreset(@PathVariable String id, @Valid @RequestBody SavePresetRequest request) {
+    public ResponseEntity<PresetDto> updatePreset(@PathVariable String id,
+                                                  @Valid @RequestBody SavePresetRequest request) {
         return delegate.updatePreset(id, request);
     }
 

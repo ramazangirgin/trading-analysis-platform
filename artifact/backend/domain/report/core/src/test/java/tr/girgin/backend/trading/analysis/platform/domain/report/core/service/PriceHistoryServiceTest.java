@@ -39,7 +39,7 @@ class PriceHistoryServiceTest {
     void returnsTheLastYearUpToTheTradeDateWithAveragesOverTheWholeHistory() {
         List<PriceBar> bars = IntStream.range(0, 400).mapToObj(day -> bar(day, day)).toList();
         LocalDate tradeDate = START.plusDays(299);
-        PriceHistoryService service = new PriceHistoryService((ticker, upTo) -> bars);
+        PriceHistoryService service = new PriceHistoryService((_, _) -> bars);
 
         PriceHistory history = service.get(new ReportKey("MU", tradeDate)).orElseThrow();
 
@@ -57,7 +57,7 @@ class PriceHistoryServiceTest {
 
     @Test
     void isEmptyWithoutCachedPrices() {
-        PriceHistoryService service = new PriceHistoryService((ticker, upTo) -> List.of());
+        PriceHistoryService service = new PriceHistoryService((_, _) -> List.of());
         assertThat(service.get(new ReportKey("MU", START))).isEmpty();
     }
 }

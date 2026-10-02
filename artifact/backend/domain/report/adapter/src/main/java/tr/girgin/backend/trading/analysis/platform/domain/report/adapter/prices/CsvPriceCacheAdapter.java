@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -37,9 +38,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.p
 class CsvPriceCacheAdapter implements PriceCachePort {
 
     private static final Logger log = LoggerFactory.getLogger(CsvPriceCacheAdapter.class);
-    private static final Pattern RANGED = Pattern.compile("(.+)-YFin-data-(\\d{4}-\\d{2}-\\d{2})-(\\d{4}-\\d{2}-\\d{2})\\.csv");
+    private static final Pattern RANGED = Pattern.compile(
+            "(?<ticker>.+)-YFin-data-(?<from>\\d{4}-\\d{2}-\\d{2})-(?<to>\\d{4}-\\d{2}-\\d{2})\\.csv");
     private static final String UNRANGED_SUFFIX = "-YFin-data.csv";
     private static final long MAX_FILE_BYTES = 20L * 1024 * 1024;
+    // Dates may carry a time ("2024-01-02 00:00:00-05:00"); the day is the first ten characters.
+    private static final int ISO_DATE_LENGTH = "yyyy-MM-dd".length();
     private static final List<String> COLUMNS = List.of("Date", "Open", "High", "Low", "Close", "Volume");
 
     private final Path cacheDir;
@@ -61,8 +65,8 @@ class CsvPriceCacheAdapter implements PriceCachePort {
             List<Path> candidates = files.filter(Files::isRegularFile).toList();
             Optional<Path> ranged = candidates.stream()
                     .map(file -> RANGED.matcher(file.getFileName().toString()))
-                    .filter(m -> m.matches() && m.group(1).equals(ticker))
-                    .max(Comparator.comparing((Matcher m) -> m.group(3)))
+                    .filter(m -> m.matches() && m.group("ticker").equals(ticker))
+                    .max(Comparator.comparing((Matcher m) -> m.group("to")))
                     .map(m -> cacheDir.resolve(m.group(0)));
             return ranged.or(() -> candidates.stream()
                     .filter(file -> file.getFileName().toString().equals(ticker + UNRANGED_SUFFIX))
@@ -79,26 +83,29 @@ class CsvPriceCacheAdapter implements PriceCachePort {
                 log.warn("Skipping oversized price cache file {}", file);
                 return List.of();
             }
-            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
-            if (lines.isEmpty()) {
-                return List.of();
-            }
-            List<String> header = List.of(lines.getFirst().trim().split(","));
-            Map<String, Integer> index = IntStream.range(0, header.size()).boxed()
-                    .collect(Collectors.toMap(header::get, Function.identity(), (a, b) -> a));
-            if (!index.keySet().containsAll(COLUMNS)) {
-                log.warn("Price cache file {} lacks columns {}", file, COLUMNS);
-                return List.of();
-            }
-            List<PriceBar> bars = new ArrayList<>();
-            for (String line : lines.subList(1, lines.size())) {
-                row(line.split(",", -1), index).ifPresent(bars::add);
-            }
-            return bars;
+            return parse(file, Files.readAllLines(file, StandardCharsets.UTF_8));
         } catch (IOException e) {
             log.warn("Cannot read price cache file {}: {}", file, e.getMessage());
             return List.of();
         }
+    }
+
+    private static List<PriceBar> parse(Path file, List<String> lines) {
+        if (lines.isEmpty()) {
+            return List.of();
+        }
+        List<String> header = List.of(lines.getFirst().trim().split(","));
+        Map<String, Integer> index = IntStream.range(0, header.size()).boxed()
+                .collect(Collectors.toMap(header::get, Function.identity(), (a, _) -> a));
+        if (!index.keySet().containsAll(COLUMNS)) {
+            log.warn("Price cache file {} lacks columns {}", file, COLUMNS);
+            return List.of();
+        }
+        List<PriceBar> bars = new ArrayList<>();
+        for (String line : lines.subList(1, lines.size())) {
+            row(line.split(",", -1), index).ifPresent(bars::add);
+        }
+        return bars;
     }
 
     private static Optional<PriceBar> row(String[] cells, Map<String, Integer> index) {
@@ -108,14 +115,14 @@ class CsvPriceCacheAdapter implements PriceCachePort {
                 return Optional.empty();
             }
             return Optional.of(new PriceBar(
-                    LocalDate.parse(cells[index.get("Date")].trim().substring(0, 10)),
+                    LocalDate.parse(cells[index.get("Date")].trim().substring(0, ISO_DATE_LENGTH)),
                     Double.parseDouble(cells[index.get("Open")]),
                     Double.parseDouble(cells[index.get("High")]),
                     Double.parseDouble(cells[index.get("Low")]),
                     close,
                     (long) Double.parseDouble(cells[index.get("Volume")])));
-        } catch (RuntimeException e) {
-            // NumberFormatException, DateTimeParseException, a short row: not a trading day we can use.
+        } catch (IllegalArgumentException | DateTimeParseException | IndexOutOfBoundsException _) {
+            // A malformed number or date, or a short row: not a trading day we can use.
             return Optional.empty();
         }
     }

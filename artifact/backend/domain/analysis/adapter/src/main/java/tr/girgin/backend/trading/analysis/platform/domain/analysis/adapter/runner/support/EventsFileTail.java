@@ -17,6 +17,8 @@ import java.util.List;
  */
 public final class EventsFileTail {
 
+    private static final int CHUNK_BYTES = 64 * 1024;
+
     private final Path file;
     private final ByteArrayOutputStream partial = new ByteArrayOutputStream();
     private long position;
@@ -31,7 +33,7 @@ public final class EventsFileTail {
             return lines;
         }
         try (FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
-            ByteBuffer buffer = ByteBuffer.allocate(64 * 1024);
+            ByteBuffer buffer = ByteBuffer.allocate(CHUNK_BYTES);
             int read;
             while ((read = channel.read(buffer, position)) > 0) {
                 position += read;
