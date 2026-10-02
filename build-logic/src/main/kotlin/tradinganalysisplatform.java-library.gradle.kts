@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     checkstyle
+    id("com.diffplug.spotless")
 }
 
 val libs = the<VersionCatalogsExtension>().named("libs")
@@ -58,5 +59,21 @@ sourceSets.configureEach {
         if (sourceSet.name != SourceSet.MAIN_SOURCE_SET_NAME) {
             configProperties = mapOf("magicNumberSeverity" to "ignore")
         }
+    }
+}
+
+// Formatting: Spotless with Palantir Java Format. spotlessCheck is part of `check` and so of
+// `build`; spotlessApply (or `mise run format`) fixes what it reports.
+// -PspotlessRatchetFrom=<ref> limits both to files changed since that Git ref (the pre-commit hook
+// passes HEAD). See doc/coding-convention/backend-java-formatting.md.
+spotless {
+    providers.gradleProperty("spotlessRatchetFrom").orNull?.let { ratchetFrom(it) }
+    java {
+        // Hand-written sources only: generated ones (MapStruct *Impl) live under build/.
+        target("src/*/java/**/*.java")
+        palantirJavaFormat(libs.findVersion("palantirJavaFormat").get().requiredVersion)
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }
