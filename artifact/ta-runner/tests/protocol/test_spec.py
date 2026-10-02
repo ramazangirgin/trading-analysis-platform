@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from ta_runner.spec import RunSpec, SpecError
+from ta_runner.protocol.spec import RunSpec, SpecError
 
 
 def test_normalizes_ticker_provider_and_analyst_order(spec_dict):

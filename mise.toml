@@ -25,9 +25,9 @@ description = "Test everything and build the single jar (backend + UI)"
 run = "./gradlew build"
 
 [tasks.runner-test]
-description = "ta-runner tests and lint"
+description = "ta-runner lint, import contracts and tests"
 dir = "artifact/ta-runner"
-run = ["uv run ruff check .", "uv run pytest -q"]
+run = ["uv run ruff check .", "uv run lint-imports", "uv run pytest -q"]
 
 [tasks.test]
 description = "All tests: backend, frontend, ta-runner"

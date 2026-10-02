@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from ta_runner.pricing import CostMeter, PriceTable, Usage
+from ta_runner.pricing.pricing import CostMeter, PriceTable, Usage
 
 # A Saturday (off-peak everywhere) and a Tuesday 07:30 UTC (DeepSeek peak hours).
 WEEKEND = datetime(2026, 9, 26, 12, 0, tzinfo=UTC)

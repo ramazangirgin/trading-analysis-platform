@@ -6,7 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     # The ONLY place the platform touches TradingAgents code. Pinned to a release tag, fetched as
     # GitHub's archive of that tag (no git needed, in the image or locally; uv.lock pins its hash).
-    # Bump it together with compat.py and the contract tests (PLAN.md section 10).
+    # Bump it together with engine/compat.py and the contract tests (PLAN.md section 10).
     "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz",
 ]
 
@@ -15,6 +15,7 @@ ta-runner = "ta_runner.__main__:main"
 
 [dependency-groups]
 dev = [
+    "import-linter>=2.3",
     "pytest>=8.4",
     "ruff>=0.15",
 ]
@@ -42,4 +43,48 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+select = ["E", "F", "I", "B", "UP", "TID"]
+
+# Package structure: doc/coding-convention/ta-runner-python-package-structure.md.
+[tool.ruff.lint.flake8-tidy-imports]
+# Relative imports only within one sub-package; across sub-packages they name the target in full.
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"tradingagents".msg = "Only ta_runner/engine/compat.py imports TradingAgents (BE-0002)."
+
+[tool.ruff.lint.per-file-ignores]
+"ta_runner/engine/compat.py" = ["TID251"]
+"tests/engine/test_upstream_contract.py" = ["TID251"]
+
+# import-linter (`lint-imports`): which part of ta_runner may import which.
+[tool.importlinter]
+root_packages = ["ta_runner"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers: __main__ -> catalog -> engine -> pricing -> protocol"
+type = "layers"
+containers = ["ta_runner"]
+layers = ["__main__", "catalog", "engine", "pricing", "protocol"]
+
+[[tool.importlinter.contracts]]
+name = "Only engine.compat imports TradingAgents"
+type = "forbidden"
+source_modules = ["ta_runner"]
+forbidden_modules = ["tradingagents"]
+ignore_imports = ["ta_runner.engine.compat -> tradingagents"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Only engine imports LangChain"
+type = "forbidden"
+source_modules = ["ta_runner.__main__", "ta_runner.catalog", "ta_runner.pricing", "ta_runner.protocol"]
+forbidden_modules = ["langchain_core", "langchain", "langgraph"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "protocol and pricing stay free of the engine's dependencies"
+type = "forbidden"
+source_modules = ["ta_runner.protocol", "ta_runner.pricing"]
+forbidden_modules = ["tradingagents", "langchain_core", "langchain", "langgraph"]

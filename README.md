@@ -222,7 +222,7 @@ Compose everything is under `PLATFORM_DATA` instead ([Run with Docker Compose](#
 ### LLM prices
 
 A run's cost is worked out per LLM call from
-[`artifact/ta-runner/ta_runner/prices.json`](artifact/ta-runner/ta_runner/prices.json): DeepSeek,
+[`artifact/ta-runner/ta_runner/pricing/prices.json`](artifact/ta-runner/ta_runner/pricing/prices.json): DeepSeek,
 OpenAI, Anthropic and Google, read from their official pricing pages on 2026-09-30 (peak hours,
 long-context tiers and cached input included). A model without a price shows no cost rather than
 a guess. To add or correct prices, create `~/.tradingagents-platform/prices.json` in the same shape;

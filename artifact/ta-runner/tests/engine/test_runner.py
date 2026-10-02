@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from ta_runner.runner import EXIT_COMPLETED, EXIT_ERROR, EXIT_STOPPED, StopRequested, execute
-from ta_runner.spec import RunSpec
+from ta_runner.engine.runner import EXIT_COMPLETED, EXIT_ERROR, EXIT_STOPPED, StopRequested, execute
+from ta_runner.protocol.spec import RunSpec
 
 
 class Message:

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from ta_runner.events import EventWriter, truncate
+from ta_runner.protocol.events import EventWriter, truncate
 
 
 def test_writes_envelope_with_increasing_seq_to_stream_and_file(tmp_path, captured):

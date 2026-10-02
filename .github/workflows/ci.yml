@@ -4,7 +4,8 @@
 #
 #   build      backend + frontend: all Gradle tests (ArchUnit, Docker runner against the runner's
 #              Docker), frontend lint and tests, the single jar
-#   runner     ta-runner: ruff and pytest, upstream contract tests included
+#   runner     ta-runner: ruff, import-linter (package structure) and pytest, upstream contract
+#              tests included
 #   images     both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
 #   ci-passed  "CI passed": the one check main's ruleset requires before a pull request can merge
 #
