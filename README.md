@@ -257,12 +257,13 @@ to just use the app, `mise run run` is enough.
 ### Tasks
 
 ```sh
-mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages
+mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks
 mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173
 mise run build         # all tests (ArchUnit included), lint, and the single jar
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
 mise run test          # backend + frontend + ta-runner tests
-mise run runner-test   # ta-runner tests and lint only
+mise run runner-test   # ta-runner lint, import contracts and tests only
+mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
 ```
@@ -279,7 +280,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Job | What |
 |---|---|
 | Backend and frontend | `mise run build`: every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
-| ta-runner | `mise run runner-test`: ruff and pytest, upstream contract tests included |
+| ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so
@@ -295,6 +296,12 @@ the rules on `main` never have to change. Those rules (the repository ruleset "m
 Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
 (not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
 `mise run docker-build`.
+
+### Coding conventions
+
+Where each kind of class, component or module belongs, and what may import what, is written down in
+[doc/coding-convention/](doc/coding-convention/README.md) and checked by the build (ArchUnit,
+ESLint, import-linter), by CI, and by Git hooks before a commit or push.
 
 ### Before pushing
 
