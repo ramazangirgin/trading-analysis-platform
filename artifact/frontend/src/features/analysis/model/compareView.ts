@@ -6,7 +6,6 @@ export interface CompareRun {
   report: AnalysisReport | null
 }
 
-/** How the page shows a row's values. */
 /** A column of the compare page: a loaded run, or the reason it could not be loaded. */
 export interface CompareColumn {
   id: string
@@ -14,6 +13,7 @@ export interface CompareColumn {
   error: string | null
 }
 
+/** How the page shows a row's values. */
 export type CompareFormat = 'text' | 'rating' | 'integer' | 'usd' | 'duration' | 'markdown'
 
 export interface CompareRow {
