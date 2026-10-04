@@ -44,6 +44,9 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   Comments by other accounts are ignored.
 - **The plan file is merged with the code.** It stays in `.plans/` as the record of why the change
   looks the way it does.
+- **Sonnet develops, Opus reviews.** The developer agent does most of the work (implementing,
+  running the checks, fixing), where Sonnet is fast and good enough; the review is a single,
+  judgement-heavy pass per round, where the stronger model finds more. Both are settings.
 - **A fixed number of rounds**: two review → fix rounds, then the pull request goes to the
   developer, even when `MINOR` findings remain.
 
@@ -124,8 +127,8 @@ Environment variables of the scripts ([`lib.sh`](../../scripts/agent/lib.sh)):
 
 | Variable | Default | What |
 |---|---|---|
-| `AGENT_MODEL` | Claude Code's default model | The developer agent's model (`--model`), e.g. `claude-opus-5-5` |
-| `AGENT_REVIEW_MODEL` | `AGENT_MODEL` | The review agent's model |
+| `AGENT_MODEL` | `claude-sonnet-5-5` | The developer agent's model (implement, fix-ci, fix) |
+| `AGENT_REVIEW_MODEL` | `claude-opus-5-5` | The review agent's model |
 | `AGENT_MAX_ROUNDS` | 2 | Review → fix rounds |
 | `AGENT_MAX_CI_FIXES` | 3 | Attempts at a red CI, per pull request |
 | `AGENT_MAX_TOKENS` | 50 000 000 | Tokens per pull request, cached input included |

@@ -4,8 +4,8 @@
 # own Claude Code login; GitHub is reached through the developer's gh login and Git credentials.
 # Configured by environment variables:
 #
-#   AGENT_MODEL          developer agent (implement, fix); default Claude Code's default model
-#   AGENT_REVIEW_MODEL   review agent; default AGENT_MODEL
+#   AGENT_MODEL          developer agent (implement, fix-ci, fix); default Sonnet
+#   AGENT_REVIEW_MODEL   review agent; default Opus
 #   AGENT_MAX_ROUNDS     review → fix rounds; default 2
 #   AGENT_MAX_CI_FIXES   attempts to fix a red CI over the whole pull request; default 3
 #   AGENT_MAX_TOKENS     tokens (input, cached and output) over the whole pull request; default 50000000
@@ -34,8 +34,8 @@ AGENT_DIR=$AGENT_SCRIPTS
 REPO_ROOT=$AGENT_REPO_ROOT
 cd "$REPO_ROOT"
 
-AGENT_MODEL=${AGENT_MODEL:-}
-AGENT_REVIEW_MODEL=${AGENT_REVIEW_MODEL:-$AGENT_MODEL}
+AGENT_MODEL=${AGENT_MODEL:-claude-sonnet-5-5}
+AGENT_REVIEW_MODEL=${AGENT_REVIEW_MODEL:-claude-opus-5-5}
 AGENT_MAX_ROUNDS=${AGENT_MAX_ROUNDS:-2}
 AGENT_MAX_CI_FIXES=${AGENT_MAX_CI_FIXES:-3}
 AGENT_MAX_TOKENS=${AGENT_MAX_TOKENS:-50000000}
