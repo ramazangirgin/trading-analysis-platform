@@ -14,6 +14,7 @@ roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner cont
 | Platform (backend + UI, one jar) | `artifact/backend`, `artifact/frontend` | Java 25, Spring Boot 4.1 · Vue 3.5, Vite, Naive UI |
 | Runner (installed into the TradingAgents runtime) | `artifact/ta-runner` | Python 3.12, uv, TradingAgents `v0.5.1` |
 | Docker images and Compose setup | `deploy/`, `artifact/ta-runner/Dockerfile` | Temurin 25 JRE · PostgreSQL 18 · docker-socket-proxy |
+| End-to-end tests (not shipped) | `e2e/` | Playwright, against the built jar |
 
 Two ways to run it: on your machine with `mise run run` ([Quick start](#quick-start)), or with
 Docker Compose, where each analysis runs in its own container and the data is kept in PostgreSQL
@@ -263,9 +264,10 @@ mise run build         # all tests (ArchUnit included), lint (Checkstyle include
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
+mise run e2e           # end-to-end tests: the jar in a real browser, ta-runner replaying a recording
 mise run check         # quick check before pushing: package structure, lint, formatting, type-check (no tests)
-mise run format        # format every Java (Spotless) and frontend (Prettier) file
-mise run format-check  # check the formatting of every Java and frontend file, as CI does
+mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
+mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
@@ -287,6 +289,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged |
+| End-to-end tests | The build job's jar in Chromium ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so
@@ -364,6 +367,10 @@ uv run python -m ta_runner run --spec example-spec.json --out /tmp/ta-run
 
 Events stream to stdout as JSONL and are copied to `<out>/events.jsonl`; reports land under
 `~/.tradingagents/logs/<TICKER>/<DATE>/reports/` (override with `TRADINGAGENTS_RESULTS_DIR`).
+
+`TA_RUNNER_RECORD=<dir>` also records a run; `TA_RUNNER_REPLAY=<dir>` plays a recording back
+through the same code path without calling an LLM (`TA_RUNNER_REPLAY_SPEED` speeds it up). The
+end-to-end tests replay [`tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run).
 
 In a container the spec comes from an environment variable instead of a file:
 

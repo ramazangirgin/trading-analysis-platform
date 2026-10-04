@@ -18,6 +18,9 @@ replay_pid*
 node_modules/
 dist/
 .pnpm-store/
+# Playwright (mise run e2e)
+test-results/
+playwright-report/
 
 ### Python (ta-runner) ###
 .venv/

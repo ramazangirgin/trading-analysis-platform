@@ -36,21 +36,34 @@ description = "ta-runner lint, import contracts and tests"
 dir = "artifact/ta-runner"
 run = ["uv run ruff check .", "uv run lint-imports", "uv run pytest -q"]
 
+[tasks.e2e]
+description = "End-to-end tests (e2e/, Playwright): the built jar with ta-runner replaying a recording, in a real browser"
+# Set E2E_BROWSER_CHANNEL=chrome where Playwright's own Chromium does not run (e.g. macOS 12).
+run = [
+  "./gradlew --console=plain :backend:bootJar",
+  "cd artifact/ta-runner && uv sync",
+  "e2e/with-node.sh pnpm install --frozen-lockfile",
+  "e2e/with-node.sh sh -c '[ -n \"$E2E_BROWSER_CHANNEL\" ] || pnpm exec playwright install chromium'",
+  "e2e/with-node.sh pnpm test",
+]
+
 [tasks.check]
 description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint (Checkstyle, ESLint, ruff), formatting (Spotless, Prettier), type-check; no tests"
 run = [
   "./gradlew --console=plain spotlessCheck checkstyleMain checkstyleTest :backend:test --tests '*ArchitectureTest' :frontend:pnpmLint",
   "artifact/frontend/with-node.sh pnpm run type-check",
+  "e2e/with-node.sh pnpm run type-check",
   "cd artifact/ta-runner && uv run ruff check . && uv run lint-imports",
 ]
 
-# Formatting of every file: Java (Spotless, Palantir Java Format) and the frontend (Prettier).
+# Formatting of every file: Java (Spotless, Palantir Java Format), the frontend and e2e/ (Prettier).
 # ta-runner has no formatter yet.
 [tasks.format]
 description = "Format every Java (Spotless) and frontend (Prettier) file"
 run = [
   "./gradlew --console=plain spotlessApply :frontend:pnpmInstall",
   "artifact/frontend/with-node.sh pnpm exec prettier --write .",
+  "e2e/with-node.sh sh -c 'pnpm install --frozen-lockfile && pnpm run format'",
 ]
 
 [tasks.format-check]
@@ -58,6 +71,7 @@ description = "Check the formatting of every Java (Spotless) and frontend (Prett
 run = [
   "./gradlew --console=plain spotlessCheck :frontend:pnpmInstall",
   "artifact/frontend/with-node.sh pnpm exec prettier --check .",
+  "e2e/with-node.sh sh -c 'pnpm install --frozen-lockfile && pnpm run format-check'",
 ]
 
 [tasks.test]
