@@ -6,7 +6,7 @@
 #
 # Checks out the plan branch, runs the developer agent with the plan, checks its work
 # (mise run check, the version bump), pushes and opens a draft pull request labelled "agent".
-# CI on that push starts the review → fix loop (next.sh). The plan file stays in the pull request.
+# The review → fix loop (next.sh) follows; run.sh runs both. The plan file stays in the pull request.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
@@ -17,7 +17,7 @@ plan=$(plan_file_of_branch "$branch")
 
 checkout_branch "$branch"
 [ -f "$plan" ] || die "$branch has no $plan"
-[ -z "$(pr_of_branch "$branch")" ] || die "$branch has an open pull request already; the loop continues it (next.sh)"
+[ -z "$(pr_of_branch "$branch")" ] || die "$branch has an open pull request already; continue it with next.sh"
 start=$(git rev-parse HEAD)
 
 {
@@ -61,7 +61,7 @@ blob="https://github.com/$(repo_slug)/blob"
 cat >"$AGENT_TMP/pr.md" <<EOF
 Closes #$issue
 
-Implemented by the developer agent from the plan [\`$plan\`]($blob/$branch/$plan) (model \`$AGENT_MODEL\`).
+Implemented by the developer agent from the plan [\`$plan\`]($blob/$branch/$plan) (model: $(model_name "$AGENT_MODEL")).
 Draft until the agents' review → fix rounds are done; see
 [the agentic development flow]($blob/$AGENT_BASE_BRANCH/doc/coding-convention/repository-agentic-development.md).
 

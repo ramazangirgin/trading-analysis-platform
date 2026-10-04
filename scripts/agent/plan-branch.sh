@@ -43,6 +43,6 @@ url="https://github.com/$(repo_slug)/blob/$branch/.plans/$name.md"
 gh issue comment "$issue" --body "Plan for review: [\`.plans/$name.md\`]($url) on branch \`$branch\`.
 
 Edit it on the branch, or start the implementation:
-\`gh workflow run agent-implement.yml -f plan_branch=$branch\`" >/dev/null
+\`mise run agent:run $branch\`" >/dev/null
 git branch --quiet -D "$branch"
 echo "$url"

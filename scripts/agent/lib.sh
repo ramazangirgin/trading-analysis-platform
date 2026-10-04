@@ -1,20 +1,18 @@
 # shellcheck shell=bash disable=SC2034
 # Shared by the agent scripts (doc/coding-convention/repository-agentic-development.md). Sourced,
-# not run. Everything is configured by environment variables, so a script runs the same on a
-# developer's machine and in GitHub Actions:
+# not run. The agents are Claude Code, run headless on the developer's machine with the developer's
+# own Claude Code login; GitHub is reached through the developer's gh login and Git credentials.
+# Configured by environment variables:
 #
-#   DEEPSEEK_API_KEY / AGENT_API_KEY   the model endpoint's key (AGENT_API_KEY wins)
-#   AGENT_BASE_URL       Anthropic-compatible endpoint; default DeepSeek's. Set it to "" to use
-#                        Claude Code's own login and Claude models instead.
-#   AGENT_MODEL          developer agent (implement, fix); default deepseek-v4-pro
+#   AGENT_MODEL          developer agent (implement, fix); default Claude Code's default model
 #   AGENT_REVIEW_MODEL   review agent; default AGENT_MODEL
-#   AGENT_SMALL_MODEL    Claude Code's background model (summaries, WebFetch); default deepseek-flash
 #   AGENT_MAX_ROUNDS     review → fix rounds; default 2
 #   AGENT_MAX_CI_FIXES   attempts to fix a red CI over the whole pull request; default 3
 #   AGENT_MAX_TOKENS     tokens (input, cached and output) over the whole pull request; default 50000000
-#   AGENT_MAX_BUDGET_USD per agent call, passed to claude --max-budget-usd when set (Claude prices)
+#   AGENT_MAX_BUDGET_USD per agent call, passed to claude --max-budget-usd when set
 #   AGENT_GITHUB_LOGIN   the account the agents comment as; default the gh login
 #   AGENT_CI_CHECK       the required check; default "CI passed"
+#   AGENT_CI_TIMEOUT     minutes to wait for CI on a push; default 60
 #   AGENT_BASE_BRANCH    the branch plans start from and pull requests go into; default main.
 #                        Steps on an existing pull request use its base instead.
 
@@ -27,7 +25,7 @@ set -euo pipefail
 # scripts/agent taken before anything else happens: the version the run was started with.
 if [ -z "${AGENT_SCRIPTS:-}" ]; then
   AGENT_REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-  AGENT_SCRIPTS=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/agent-scripts.XXXXXX")
+  AGENT_SCRIPTS=$(mktemp -d "${TMPDIR:-/tmp}/agent-scripts.XXXXXX")
   cp -R "$AGENT_REPO_ROOT/scripts/agent/." "$AGENT_SCRIPTS"
   export AGENT_SCRIPTS AGENT_REPO_ROOT
   exec bash "$AGENT_SCRIPTS/$(basename "$0")" "$@"
@@ -36,20 +34,19 @@ AGENT_DIR=$AGENT_SCRIPTS
 REPO_ROOT=$AGENT_REPO_ROOT
 cd "$REPO_ROOT"
 
-AGENT_BASE_URL=${AGENT_BASE_URL-https://api.deepseek.com/anthropic}
-AGENT_MODEL=${AGENT_MODEL:-deepseek-v4-pro}
+AGENT_MODEL=${AGENT_MODEL:-}
 AGENT_REVIEW_MODEL=${AGENT_REVIEW_MODEL:-$AGENT_MODEL}
-AGENT_SMALL_MODEL=${AGENT_SMALL_MODEL:-deepseek-flash}
 AGENT_MAX_ROUNDS=${AGENT_MAX_ROUNDS:-2}
 AGENT_MAX_CI_FIXES=${AGENT_MAX_CI_FIXES:-3}
 AGENT_MAX_TOKENS=${AGENT_MAX_TOKENS:-50000000}
 AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
+AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 # Label on an agent's pull request; removing it stops the loop.
 AGENT_LABEL=agent
 
-# Per-run scratch files (prompts, agent output); kept for the Actions log on failure.
-AGENT_TMP=${AGENT_TMP:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/agent-$$}
+# Per-run scratch files (prompts, agent output), kept for a look after a failure.
+AGENT_TMP=${AGENT_TMP:-${TMPDIR:-/tmp}/agent-$$}
 mkdir -p "$AGENT_TMP"
 
 log() { echo "agent: $*" >&2; }
@@ -103,28 +100,17 @@ pr_of_branch() {
   gh pr list --head "$1" --state open --json number --jq '.[0].number // empty'
 }
 
-# --- Model endpoint ------------------------------------------------------------------------------
+# --- Claude Code ---------------------------------------------------------------------------------
 
-# Exports the variables Claude Code reads, for the given model.
-use_model() {
-  local model=$1
-  if [ -n "$AGENT_BASE_URL" ]; then
-    local key=${AGENT_API_KEY:-${DEEPSEEK_API_KEY:-}}
-    [ -n "$key" ] || die "no API key: set DEEPSEEK_API_KEY (or AGENT_API_KEY) for $AGENT_BASE_URL"
-    export ANTHROPIC_BASE_URL=$AGENT_BASE_URL
-    export ANTHROPIC_API_KEY=$key
-    unset ANTHROPIC_AUTH_TOKEN
-    # The endpoint maps unknown Claude names to its own models; name them explicitly instead.
-    export ANTHROPIC_DEFAULT_OPUS_MODEL=$model
-    export ANTHROPIC_DEFAULT_SONNET_MODEL=$model
-    export ANTHROPIC_DEFAULT_HAIKU_MODEL=$AGENT_SMALL_MODEL
-    export ANTHROPIC_SMALL_FAST_MODEL=$AGENT_SMALL_MODEL
-    export CLAUDE_CODE_SUBAGENT_MODEL=$model
-  fi
-  export ANTHROPIC_MODEL=$model
+# Claude Code with the developer's own login: an API key or another endpoint in the environment
+# would take precedence over it, so they are removed for the agents.
+use_claude_login() {
+  unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL ANTHROPIC_MODEL
   export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-  export DISABLE_AUTOUPDATER=1
 }
+
+DEFAULT_MODEL_NAME="Claude Code's default model"
+model_name() { echo "${1:-$DEFAULT_MODEL_NAME}"; }
 
 # Tools no agent may use, whatever else it is allowed: agents never merge, never push (the scripts
 # push, to the agent's own branch only) and never skip the Git hooks.
@@ -167,9 +153,10 @@ run_agent() {
   [ "${1:-}" = -- ] && shift
   extra=("$@")
   [ -n "${AGENT_MAX_BUDGET_USD:-}" ] && extra+=(--max-budget-usd "$AGENT_MAX_BUDGET_USD")
+  [ -z "$model" ] || extra+=(--model "$model")
 
-  use_model "$model"
-  log "running $model ($(basename "$prompt"))"
+  use_claude_login
+  log "running $(model_name "$model") ($(basename "$prompt"))"
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
   env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format json --permission-mode dontAsk \

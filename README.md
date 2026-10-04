@@ -335,12 +335,12 @@ both merge: the second one must be updated with `main` and bumped again. The rul
 ### Agentic development
 
 Issues can be taken to a reviewed pull request by agents, with a developer approving the plan and
-merging the result. In Claude Code, `/plan-from-issue <issue>` writes a plan (`.plans/`) and pushes
-it on a `plan/<issue>-<slug>` branch; after the plan review,
-`gh workflow run agent-implement.yml -f plan_branch=plan/<issue>-<slug>` starts the developer agent
-in GitHub Actions. It opens a draft pull request, and after each green CI a review agent and the
-developer agent go through two review → fix rounds before the pull request is marked ready for
-review. Agents never merge. The flow, its settings, limits and how to run each step locally:
+merging the result. Everything runs on your machine with Claude Code and your own Claude Code login.
+In Claude Code, `/plan-from-issue <issue>` writes a plan (`.plans/`) and pushes it on a
+`plan/<issue>-<slug>` branch; after the plan review, `mise run agent:run plan/<issue>-<slug>` lets a
+developer agent implement it and open a draft pull request, then a review agent and the developer
+agent go through two review → fix rounds, each after a green CI, before the pull request is marked
+ready for review. Agents never merge. The flow, its settings, limits and each step on its own:
 [agentic development](doc/coding-convention/repository-agentic-development.md).
 
 ### Coding conventions
