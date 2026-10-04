@@ -105,10 +105,14 @@ def build(round_no, agent_output, files_path, out_dir):
         if line and line in lines.get(finding["path"], ()):
             finding["inline"] = True
             comments.append({"path": finding["path"], "line": line, "side": "RIGHT", "body": comment_body(finding)})
-        elif finding["path"] in lines:
-            # In the diff, but not on one of its lines: a comment on the file.
+        elif lines.get(finding["path"]):
+            # The file is in the diff, the line is not: on the nearest line of the diff, saying so. (A
+            # review cannot hold file-level comments; GitHub rejects subject_type there.)
+            anchor = min(lines[finding["path"]], key=lambda n: abs(n - (line or 0)))
             finding["inline"] = True
-            comments.append({"path": finding["path"], "subject_type": "file", "body": comment_body(finding)})
+            note = f"_On line {line} of this file, outside the diff._\n\n" if line else "_On this file._\n\n"
+            body = comment_body(finding).replace("\n", "\n" + note, 1)
+            comments.append({"path": finding["path"], "line": anchor, "side": "RIGHT", "body": body})
         else:
             finding["inline"] = False
             general.append(finding)
