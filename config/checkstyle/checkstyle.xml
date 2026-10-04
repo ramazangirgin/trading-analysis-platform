@@ -8,11 +8,11 @@
     bug-prone patterns, design, modifiers and a small Javadoc set.
 
     Layout (indentation, braces, import order, whitespace inside a line) is left to the formatter
-    (Spotless with Palantir Java Format, doc/coding-convention/backend-java-formatting.md), so the
+    (Spotless with Palantir Java Format, docs/coding-convention/backend-java-formatting.md), so the
     two tools never disagree. Project-specific rules (#55) build on this file.
 
     Rules, the reasoning behind each threshold and how to suppress a finding:
-    doc/coding-convention/backend-java-checkstyle.md
+    docs/coding-convention/backend-java-checkstyle.md
 -->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>

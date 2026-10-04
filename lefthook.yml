@@ -3,7 +3,7 @@
 # backend's Spotless, Checkstyle and ArchUnit rules only when Java files are staged. `mise run check`
 # runs every structure check, lint, formatting check and the type-check by hand. CI runs every
 # check either way, since hooks can be skipped (`git commit --no-verify`).
-# See doc/coding-convention/repository-git-hooks.md.
+# See docs/coding-convention/repository-git-hooks.md.
 
 # Run lefthook, and the commands below, with the tools from mise.toml on PATH (uv, Java).
 lefthook: mise exec -- lefthook

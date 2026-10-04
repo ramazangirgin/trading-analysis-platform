@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step 6 of the agentic development flow (doc/agentic-development.md):
+# Step 6 of the agentic development flow (docs/agentic-development.md):
 # the review agent reviews a pull request against its plan.
 #
 #   scripts/agent/review.sh <pr>

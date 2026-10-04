@@ -1,5 +1,5 @@
 # shellcheck shell=bash disable=SC2034
-# Shared by the agent scripts (doc/agentic-development.md). Sourced,
+# Shared by the agent scripts (docs/agentic-development.md). Sourced,
 # not run. The agents are Claude Code, run headless on the developer's machine with the developer's
 # own Claude Code login; GitHub is reached through the developer's gh login and Git credentials.
 # Configured by environment variables:

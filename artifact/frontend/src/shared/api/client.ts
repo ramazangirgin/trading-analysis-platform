@@ -2,7 +2,7 @@ import { ApiError } from './error'
 
 /**
  * The HTTP client. Only the features' `api.ts` modules call it
- * (doc/coding-convention/frontend-folder-structure.md).
+ * (docs/coding-convention/frontend-folder-structure.md).
  */
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response

@@ -49,7 +49,7 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "TID"]
 
-# Package structure: doc/coding-convention/ta-runner-python-package-structure.md.
+# Package structure: docs/coding-convention/ta-runner-python-package-structure.md.
 [tool.ruff.lint.flake8-tidy-imports]
 # Relative imports only within one sub-package; across sub-packages they name the target in full.
 ban-relative-imports = "parents"

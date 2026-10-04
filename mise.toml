@@ -113,7 +113,7 @@ run = [
   "v=$(scripts/version.sh) && docker build --build-arg VERSION=$v -t ta-runner:$v -t ta-runner:latest artifact/ta-runner",
 ]
 
-# One version for the whole repository (doc/coding-convention/repository-versioning-and-releases.md): every
+# One version for the whole repository (docs/coding-convention/repository-versioning-and-releases.md): every
 # pull request into main raises it, and merging it releases vX.Y.Z.
 [tasks.version]
 description = "Print the platform version (gradle.properties)"
@@ -123,7 +123,7 @@ run = "scripts/version.sh"
 description = "Raise the version in gradle.properties, package.json and ta-runner: mise run version:bump major|minor|patch"
 run = "scripts/version.sh bump"
 
-# Agentic development (doc/agentic-development.md): issue → plan →
+# Agentic development (docs/agentic-development.md): issue → plan →
 # agent implementation → agent review → pull request, on this machine with Claude Code and your own
 # Claude Code login. Planning is the plan-from-issue Claude Code skill.
 [tasks."agent:plan-branch"]

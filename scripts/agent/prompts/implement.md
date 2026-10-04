@@ -4,7 +4,7 @@ your final message.
 
 ## Rules
 
-- Read first: the root `README.md`, `doc/coding-convention/README.md`, and every document the plan
+- Read first: the root `README.md`, `docs/coding-convention/README.md`, and every document the plan
   lists under "Affected parts and their conventions". Follow the documented architecture and
   conventions; do not invent new layers, tools or patterns. Read the existing code you build on and
   match its style, naming and comment density.
@@ -14,7 +14,7 @@ your final message.
   tests to make them pass.
 - Raise the version as the plan says: `scripts/version.sh bump <major|minor|patch>`, once.
 - Update everything listed under "Docs to update", in this pull request, and anything else the
-  change makes wrong (README, `doc/`, API types). English only.
+  change makes wrong (README, `docs/`, API types). English only.
 - Screenshots: for each one the plan lists, write `e2e/screenshots/<name>.shot.ts` (a Playwright
   test: set up the data over the API as `e2e/tests/support.ts` does, open the page, bring it into
   the state the plan describes, then `shot(page, '<name>')` from `e2e/screenshots/support.ts`), run

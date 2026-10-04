@@ -3,7 +3,7 @@ request checked out on the current branch. Address this one finding, and nothing
 answer questions.
 
 - Read the code the finding points at, the plan (path below) and the convention documents of the
-  part it touches (`doc/coding-convention/`).
+  part it touches (`docs/coding-convention/`).
 - If the finding is right: change the code, and the tests where the finding concerns behaviour.
   Run the checks of the part you changed (`mise run check`, and its tests:
   `./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build` or

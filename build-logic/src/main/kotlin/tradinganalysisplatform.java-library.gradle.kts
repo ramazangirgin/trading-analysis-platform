@@ -40,7 +40,7 @@ tasks.withType<Test>().configureEach {
 
 // Checkstyle on main and test sources (checkstyleMain, checkstyleTest), part of `check` and so of
 // `build`. One config for every module: config/checkstyle/checkstyle.xml.
-// See doc/coding-convention/backend-java-checkstyle.md.
+// See docs/coding-convention/backend-java-checkstyle.md.
 checkstyle {
     toolVersion = libs.findVersion("checkstyle").get().requiredVersion
     configDirectory.set(rootProject.layout.projectDirectory.dir("config/checkstyle"))
@@ -65,7 +65,7 @@ sourceSets.configureEach {
 // Formatting: Spotless with Palantir Java Format. spotlessCheck is part of `check` and so of
 // `build`; spotlessApply (or `mise run format`) fixes what it reports.
 // -PspotlessRatchetFrom=<ref> limits both to files changed since that Git ref (the pre-commit hook
-// passes HEAD). See doc/coding-convention/backend-java-formatting.md.
+// passes HEAD). See docs/coding-convention/backend-java-formatting.md.
 spotless {
     providers.gradleProperty("spotlessRatchetFrom").orNull?.let { ratchetFrom(it) }
     java {

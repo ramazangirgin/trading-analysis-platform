@@ -339,7 +339,7 @@ publishes a [GitHub Release](https://github.com/ramazangirgin/trading-analysis-p
 with notes generated from the merged pull requests and the jar with its SHA-256 checksum. Tags are
 created by that workflow only, never by hand. Two pull requests that raise to the same version cannot
 both merge: the second one must be updated with `main` and bumped again. The rules and why:
-[versioning and releases](doc/coding-convention/repository-versioning-and-releases.md).
+[versioning and releases](docs/coding-convention/repository-versioning-and-releases.md).
 
 ### Agentic development
 
@@ -375,15 +375,15 @@ gh pr merge <pr> --rebase --delete-branch
 ```
 
 Each step, what to check at each decision, how to stop, continue or redo a run, and the settings:
-[doc/agentic-development.md](doc/agentic-development.md).
+[docs/agentic-development.md](docs/agentic-development.md).
 
 ### Coding conventions
 
 Where each kind of class, component or module belongs, and what may import what, is written down in
-[doc/coding-convention/](doc/coding-convention/README.md) and checked by the build (ArchUnit,
+[docs/coding-convention/](docs/coding-convention/README.md) and checked by the build (ArchUnit,
 ESLint, import-linter) and by CI. The backend's Java code is also checked by Checkstyle
-([rules and suppressions](doc/coding-convention/backend-java-checkstyle.md)) and formatted with
-Spotless and Palantir Java Format ([formatting](doc/coding-convention/backend-java-formatting.md));
+([rules and suppressions](docs/coding-convention/backend-java-checkstyle.md)) and formatted with
+Spotless and Palantir Java Format ([formatting](docs/coding-convention/backend-java-formatting.md));
 the frontend is formatted with Prettier. Git hooks run the static checks on staged files before a
 commit; the backend's formatting check (changed files only), Checkstyle and ArchUnit rules run in
 that hook too when Java files are staged, and CI checks the formatting of every file.

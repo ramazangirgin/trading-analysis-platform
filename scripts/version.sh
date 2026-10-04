@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The platform's one version (doc/coding-convention/repository-versioning-and-releases.md).
+# The platform's one version (docs/coding-convention/repository-versioning-and-releases.md).
 #
 # gradle.properties holds it; the frontend's package.json and ta-runner's ta_runner/__init__.py
 # carry copies, kept in sync by this script. ta-runner's pyproject.toml reads its version from

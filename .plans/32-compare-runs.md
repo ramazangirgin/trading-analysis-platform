@@ -2,7 +2,7 @@
 
 - **Issue**: #32 (Compare runs)
 - **Plan**: 1 of 1 for this issue; depends on: none
-- **Version bump**: minor (doc/coding-convention/repository-versioning-and-releases.md)
+- **Version bump**: minor (docs/coding-convention/repository-versioning-and-releases.md)
 
 ## Goal
 
@@ -16,7 +16,7 @@ glance.
 
 | Part | Conventions that apply |
 |---|---|
-| Frontend (`artifact/frontend`) | `doc/coding-convention/frontend-folder-structure.md`: a route component in `pages/` with its route in `app/router/index.ts`; feature code in `features/analysis/` (components, `model/` for pure logic with `*.spec.ts` tests); other features (reports) reached through their `index.ts` only; only `api.ts` calls the HTTP client; translations in `shared/i18n/locales/en.json` and `tr.json` (both, `locales.spec.ts` checks they match); Prettier formatting, ESLint boundaries |
+| Frontend (`artifact/frontend`) | `docs/coding-convention/frontend-folder-structure.md`: a route component in `pages/` with its route in `app/router/index.ts`; feature code in `features/analysis/` (components, `model/` for pure logic with `*.spec.ts` tests); other features (reports) reached through their `index.ts` only; only `api.ts` calls the HTTP client; translations in `shared/i18n/locales/en.json` and `tr.json` (both, `locales.spec.ts` checks they match); Prettier formatting, ESLint boundaries |
 | End-to-end tests (`e2e/`) | The existing Playwright tests in `e2e/tests/` against the built jar with ta-runner replaying a recording; Prettier formatting |
 | Backend | No change: `GET /api/analyses/{id}` and `GET /api/analyses/{id}/report` already return everything the view needs |
 
@@ -110,7 +110,7 @@ glance.
   change it was found on)
 - **Files**: `e2e/playwright.screenshots.config.ts`, `e2e/screenshots/support.ts`,
   `e2e/package.json`, `e2e/tsconfig.json`, `mise.toml`, `.claude/skills/plan-from-issue/*`,
-  `scripts/agent/prompts/*`, `doc/agentic-development.md`, `README.md`
+  `scripts/agent/prompts/*`, `docs/agentic-development.md`, `README.md`
 - **Steps**:
   - [x] `mise run screenshots [filter]`: Playwright screenshots like the e2e tests run (built jar,
         replayed run, Chrome, 1440×900, dark theme), one `e2e/screenshots/<name>.shot.ts` each.

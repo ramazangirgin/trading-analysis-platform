@@ -3,7 +3,7 @@ import boundaries from 'eslint-plugin-boundaries'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
 
-// Folder structure: doc/coding-convention/frontend-folder-structure.md.
+// Folder structure: docs/coding-convention/frontend-folder-structure.md.
 // app -> pages -> features -> shared; nothing imports upwards. Imports inside one element (one
 // feature, one shared segment) are not checked; a feature is entered through its index.ts only.
 const anyFileOf = (...types) => ({ to: { element: { types: { anyOf: types } } } })

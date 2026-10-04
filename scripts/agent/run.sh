@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The agentic development flow from an approved plan to a pull request ready for review
-# (doc/agentic-development.md), steps 5 to 9, on this machine:
+# (docs/agentic-development.md), steps 5 to 9, on this machine:
 #
 #   scripts/agent/run.sh plan/<issue>-<slug>      (mise run agent:run plan/<issue>-<slug>)
 #

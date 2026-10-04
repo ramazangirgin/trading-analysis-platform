@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step 5 of the agentic development flow (doc/agentic-development.md):
+# Step 5 of the agentic development flow (docs/agentic-development.md):
 # the developer agent implements a plan and opens a draft pull request.
 #
 #   scripts/agent/implement.sh plan/<issue>-<slug>
@@ -63,7 +63,7 @@ Closes #$issue
 
 Implemented by the developer agent from the plan [\`$plan\`]($blob/$branch/$plan) (model: $(model_name "$AGENT_MODEL")).
 Draft until the agents' review → fix rounds are done; see
-[the agentic development flow]($blob/$AGENT_BASE_BRANCH/doc/agentic-development.md).
+[the agentic development flow]($blob/$AGENT_BASE_BRANCH/docs/agentic-development.md).
 
 ## Summary
 

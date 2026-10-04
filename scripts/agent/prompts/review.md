@@ -5,7 +5,7 @@ nothing. Nobody will answer questions.
 ## What to check
 
 Look at the whole change: `git diff {{BASE}}...HEAD`, `git log {{BASE}}..HEAD`, and the
-files around it. Read the root `README.md`, `doc/coding-convention/README.md` and the convention
+files around it. Read the root `README.md`, `docs/coding-convention/README.md` and the convention
 documents of every part the change touches before judging it.
 
 - **The plan**: every work package and step done; nothing done that the plan does not ask for
@@ -23,7 +23,7 @@ documents of every part the change touches before judging it.
   described in the README where users look for it; a new page or view has a screenshot in
   `docs/screenshots/` shown in the README, and a page whose look changed has its screenshot
   retaken (open the PNGs with the Read tool and check they show the change); documents the change
-  makes wrong are corrected (README, `doc/`, `docs/event-protocol.md`, API types). A missing or
+  makes wrong are corrected (README, `docs/`, API types). A missing or
   outdated screenshot or description of a user-visible change is `MAJOR`. English only.
 
 Do not report style preferences, or anything you are not reasonably sure about.
