@@ -7,6 +7,41 @@ the developer reviewed, so their work can be checked against it.
 
 ## The flow
 
+```mermaid
+flowchart TD
+    issue(["GitHub issue"]) --> skill["Planning skill (Claude Code)<br/>/plan-from-issue #lt;issue#gt;"]
+    skill --> plan["Development plan<br/>.plans/#lt;issue#gt;-#lt;slug#gt;.md<br/>alone on branch plan/#lt;issue#gt;-#lt;slug#gt;"]
+    plan --> approvePlan{"Developer:<br/>plan right?"}
+    approvePlan -- "no: edit the plan on its branch" --> plan
+    approvePlan -- "yes: mise run agent:run" --> implement["Developer agent (Sonnet)<br/>implement with tests, mise run check,<br/>version bump, commit"]
+    implement --> draft["Draft pull request<br/>Closes #issue, label agent"]
+    draft --> ci{"CI passed?"}
+    ci -- "red" --> fixCi["Developer agent (Sonnet)<br/>fix CI from the failed job's log<br/>(up to 3 attempts)"]
+    fixCi --> ci
+    ci -- "green" --> rounds{"Review rounds<br/>left? (2)"}
+    rounds -- "yes" --> review["Review agent (Opus)<br/>diff against the plan and the conventions"]
+    review --> findings{"Findings?"}
+    findings -- "R1-1, R1-2, ...<br/>CRITICAL / MAJOR / MINOR" --> fix["Developer agent (Sonnet)<br/>per finding: one commit Address R1-n,<br/>or a reply declining it"]
+    fix --> ci
+    findings -- "none: approved" --> finalise
+    rounds -- "no" --> finalise["Finalise<br/>summary, findings and outcomes, usage;<br/>ready for review"]
+    finalise --> reviewPr{"Developer:<br/>review the pull request"}
+    reviewPr -- "more changes: commit by hand,<br/>or another agent round" --> ci
+    reviewPr -- "approve, update with main, merge" --> main[("main")]
+    main --> release(["Release vX.Y.Z, issue closed"])
+
+    classDef developer fill:#fff3cd,stroke:#b8860b,color:#000
+    classDef agent fill:#dbeafe,stroke:#1d4ed8,color:#000
+    classDef github fill:#e5e7eb,stroke:#4b5563,color:#000
+    class approvePlan,reviewPr developer
+    class skill,implement,fixCi,review,fix agent
+    class issue,plan,draft,ci,rounds,findings,finalise,main,release github
+```
+
+Yellow: the developer's two decisions. Blue: Claude Code (the planning skill in an interactive
+session; the agents headless, with the developer's login). Grey: GitHub, CI and the scripts in
+[`scripts/agent/`](../scripts/agent) that drive the loop and keep its state on the pull request.
+
 | # | Step | Who | Output |
 |---|---|---|---|
 | 1 | Plan: read the issue and the documents of every part it touches; one plan per reviewable pull request | Claude Code skill `plan-from-issue` | `.plans/<issue>-<slug>.md` |
