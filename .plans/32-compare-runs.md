@@ -104,6 +104,21 @@ glance.
         view shows two columns, the decision row and a report section.
 - **Tests**: the new e2e test passes in `mise run e2e`.
 
+### WP5: Agents document changes, screenshots included
+
+- **Depends on**: none (moved here from #69 at the developer's request, so it ships with the first
+  change it was found on)
+- **Files**: `e2e/playwright.screenshots.config.ts`, `e2e/screenshots/support.ts`,
+  `e2e/package.json`, `e2e/tsconfig.json`, `mise.toml`, `.claude/skills/plan-from-issue/*`,
+  `scripts/agent/prompts/*`, `doc/agentic-development.md`, `README.md`
+- **Steps**:
+  - [x] `mise run screenshots [filter]`: Playwright screenshots like the e2e tests run (built jar,
+        replayed run, Chrome, 1440×900, dark theme), one `e2e/screenshots/<name>.shot.ts` each.
+  - [x] Planning skill and template: "Docs to update" lists every text and screenshot.
+  - [x] Developer agent takes the screenshots; review agent checks docs and screenshots (`MAJOR`).
+  - [ ] Take `compare.png` and retake `analyses.png` with it (the two screenshots above).
+- **Tests**: `pnpm run type-check` in `e2e/`; the screenshots themselves, looked at.
+
 ## Tests
 
 - Unit: `compareView.spec.ts` (Vitest, part of `./gradlew :frontend:build` and CI).
@@ -112,8 +127,15 @@ glance.
 
 ## Docs to update
 
-- `README.md`, section "6. Past analyses": a short paragraph on selecting runs and comparing them,
-  without a new screenshot (screenshots are refreshed separately).
+| What | Where | Change |
+|---|---|---|
+| Text | `README.md`, section "6. Past analyses" | A short paragraph on selecting runs and comparing them |
+| Text | `README.md`, CI table, end-to-end tests row | Mention comparing two runs |
+| Screenshot | `docs/screenshots/compare.png`, new | The compare view with two completed runs (two replayed analyses, e.g. NVDA and MU), the decision row and an opened report section visible; shown in "6. Past analyses" under the new paragraph |
+| Screenshot | `docs/screenshots/analyses.png`, retaken | The Analyses list with a few completed runs, two of them ticked and the **Compare (2)** button enabled; replaces the current one in "6. Past analyses" |
+
+Added after the first two review rounds (the first version of this plan deferred the screenshots,
+which left the pull request undocumented; see WP5).
 
 ## Out of scope
 

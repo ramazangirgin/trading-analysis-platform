@@ -8,6 +8,10 @@ answer questions.
   Run the checks of the part you changed (`mise run check`, and its tests:
   `./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build` or
   `mise run runner-test`). Fix formatting with `mise run format`.
+- A finding about a missing or outdated screenshot: write or change
+  `e2e/screenshots/<name>.shot.ts` (see `e2e/screenshots/support.ts` and `e2e/tests/support.ts`),
+  run `mise run screenshots <name>`, look at `docs/screenshots/<name>.png` with the Read tool until
+  it shows what the finding asks for, and show it in the README where the finding says.
 - If the finding is wrong, or fixing it would go against the plan or the conventions: change
   nothing and decline it, with the reason.
 - Do not commit, push or touch other branches: the script commits your changes as one commit for
