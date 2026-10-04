@@ -5,6 +5,11 @@
     python -m ta_runner version
     python -m ta_runner catalog
 
+Environment for tests and fixtures (docs/event-protocol.md stays the same either way):
+    TA_RUNNER_REPLAY=<dir>        replay a recording instead of running the graph (no LLM calls)
+    TA_RUNNER_REPLAY_SPEED=<n>    replay n times faster (default 1)
+    TA_RUNNER_RECORD=<dir>        also record the run, to replay it later
+
 stdout carries protocol lines only. Anything else that writes to stdout (upstream prints,
 third-party libraries) is redirected to stderr, which the platform keeps as the raw run log.
 """
@@ -21,7 +26,7 @@ from pathlib import Path
 from typing import TextIO
 
 from ta_runner import PROTOCOL_VERSION, __version__
-from ta_runner.engine.runner import EXIT_ERROR, StopRequested, execute
+from ta_runner.engine.runner import EXIT_ERROR, StopRequested, UpstreamFactory, execute
 from ta_runner.protocol.events import EventWriter, truncate
 from ta_runner.protocol.spec import RunSpec, SpecError
 
@@ -86,13 +91,30 @@ def _run(spec_path: Path | None, spec_env: str | None, out_dir: Path) -> int:
     logging.getLogger().addHandler(_EventLogHandler(writer))
     try:
         # Imported late: loading upstream takes seconds and must not delay a spec error.
-        from ta_runner.engine.compat import UpstreamRun, upstream_version
+        from ta_runner.engine.compat import upstream_version
 
+        factory = _upstream_factory()
         # Installed only now, so a stop always lands inside execute() and ends in run_finished.
         _install_stop_handler()
-        return execute(spec, writer, UpstreamRun, upstream_version())
+        return execute(spec, writer, factory, upstream_version())
     finally:
         writer.close()
+
+
+def _upstream_factory() -> UpstreamFactory:
+    """The real graph, or a recording (TA_RUNNER_REPLAY); either one recorded on request."""
+    from ta_runner.engine.compat import UpstreamRun
+    from ta_runner.engine.replay import recording, replaying
+
+    replay = os.environ.get("TA_RUNNER_REPLAY")
+    record = os.environ.get("TA_RUNNER_RECORD")
+    factory: UpstreamFactory = UpstreamRun
+    if replay:
+        speed = float(os.environ.get("TA_RUNNER_REPLAY_SPEED") or 1)
+        factory = replaying(Path(replay), speed)
+    if record:
+        factory = recording(factory, Path(record))
+    return factory
 
 
 def _claim_stdout() -> TextIO:

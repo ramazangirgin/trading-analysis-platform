@@ -24,6 +24,11 @@ pre-commit:
       glob: "artifact/frontend/**/*"
       run: ./with-node.sh pnpm exec prettier --check --ignore-unknown {staged_files}
 
+    - name: e2e format
+      root: e2e/
+      glob: "e2e/**/*"
+      run: ./with-node.sh pnpm exec prettier --check --ignore-unknown {staged_files}
+
     - name: ta-runner lint
       root: artifact/ta-runner/
       glob: "artifact/ta-runner/**/*.py"

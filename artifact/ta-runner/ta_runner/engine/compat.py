@@ -116,13 +116,25 @@ class UpstreamRun:
         return bool(getattr(self._graph, "_resuming", False))
 
     def save_reports(self, final_state: dict[str, Any]) -> Path:
-        """Report tree in the same place the upstream CLI uses:
-        ``<results_dir>/<TICKER>/<DATE>/reports`` (PLAN.md section 3.6)."""
-        s = self._spec
-        target = self.results_dir / safe_ticker_component(s.ticker) / s.trade_date / "reports"
-        return write_report_tree(final_state, s.ticker, target)
+        return write_reports(self._spec, self.results_dir, final_state)
 
     @staticmethod
     def rating(final_trade_decision: str) -> str:
-        """Buy / Overweight / Hold / Underweight / Sell, or REVIEW when unparseable."""
-        return parse_rating(final_trade_decision or "")
+        return rating(final_trade_decision)
+
+
+def results_dir(spec: RunSpec) -> Path:
+    """Where upstream writes this run's results (``TRADINGAGENTS_RESULTS_DIR`` and friends)."""
+    return Path(build_config(spec)["results_dir"])
+
+
+def write_reports(spec: RunSpec, results_dir: Path, final_state: dict[str, Any]) -> Path:
+    """Report tree in the same place the upstream CLI uses:
+    ``<results_dir>/<TICKER>/<DATE>/reports`` (PLAN.md section 3.6)."""
+    target = results_dir / safe_ticker_component(spec.ticker) / spec.trade_date / "reports"
+    return write_report_tree(final_state, spec.ticker, target)
+
+
+def rating(final_trade_decision: str) -> str:
+    """Buy / Overweight / Hold / Underweight / Sell, or REVIEW when unparseable."""
+    return parse_rating(final_trade_decision or "")
