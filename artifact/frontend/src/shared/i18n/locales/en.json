@@ -123,7 +123,6 @@
     "empty": "Pick at least two runs on the Analyses page to compare them.",
     "loadError": "This run could not be loaded.",
     "noReport": "No report for this run.",
-    "settings": "Settings",
     "ticker": "Ticker",
     "tradeDate": "Date",
     "provider": "Provider",
