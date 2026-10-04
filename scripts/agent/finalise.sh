@@ -29,6 +29,13 @@ rounds=$(count_steps "$pr" review)
   echo
   git log --reverse --format='- %h %s' "origin/$AGENT_BASE_BRANCH..origin/$branch"
   echo
+  approved=$(approved_head "$pr")
+  if [ -n "$approved" ] && [ "$approved" = "$(git rev-parse "origin/$branch")" ]; then
+    echo "✅ **The review agent approved the latest commit** (${approved:0:7}): no findings in its last round."
+  else
+    echo "⚠️ **The review agent did not approve the latest commit**: findings remain or were declined (see below)."
+  fi
+  echo
   echo "**Review findings** ($rounds round(s)):"
   echo
   py "$AGENT_DIR/review.py" findings-table <<<"$comments"

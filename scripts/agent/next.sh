@@ -14,6 +14,8 @@
 #   CI green, reviews = fixes < AGENT_MAX_ROUNDS   review.sh
 #   CI green, reviews > fixes                      fix.sh
 #   CI green, reviews = fixes = AGENT_MAX_ROUNDS   finalise.sh
+#   CI green, the latest review approved the head  finalise.sh (no findings: no fix round, and no
+#                                                  further review of the same commit)
 #
 # Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
 # the next step). Over AGENT_MAX_CI_FIXES or AGENT_MAX_TOKENS, it comments, removes the label and
@@ -64,6 +66,11 @@ next_step() {
   fi
   reviews=$(count_steps "$pr" review)
   fixes=$(count_steps "$pr" fix)
+  # The review agent approved this very commit: nothing to fix, nothing new to review.
+  if [ "$(approved_head "$pr")" = "$head" ]; then
+    if [ "$(ci_status "$head")" = success ]; then echo finalise; else echo wait; fi
+    return
+  fi
   # A review was posted for this head and its fix round is due: CI needs no new run for that.
   if [ "$reviews" -gt "$fixes" ]; then
     echo fix

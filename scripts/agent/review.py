@@ -1,10 +1,11 @@
 """Review findings: from the review agent's output to a GitHub review, and back (scripts/agent/).
 
-    review.py build <round> <agent output.json> <pr files.json> <out dir>
-        Numbers the findings R<round>-<n>, writes <out dir>/review.json (the GitHub review: one
-        inline comment per finding that sits on a line of the diff), <out dir>/summary.md (the step
-        comment: counts, the findings table and the findings themselves, encoded, for fix.sh) and
-        <out dir>/findings.json.
+    review.py build <round> <head sha> <agent output.json> <pr files.json> <out dir>
+        Numbers the findings R<round>-<n>, writes <out dir>/review.json (the GitHub review of <head
+        sha>: one inline comment per finding, or the approval when there is none),
+        <out dir>/summary.md (the step comment: counts, the findings table and the findings
+        themselves, encoded, for fix.sh), <out dir>/findings.json and <out dir>/marker.txt (the
+        step marker's "approved=0|1 head=<sha>").
     review.py findings <round>  < step comment bodies
         The findings of review round <round>, as JSON.
     review.py comment-ids  < review comments JSON
@@ -91,7 +92,7 @@ def comment_body(finding):
     return "\n".join(parts)
 
 
-def build(round_no, agent_output, files_path, out_dir):
+def build(round_no, head, agent_output, files_path, out_dir):
     with open(agent_output, encoding="utf-8") as f:
         output = json.load(f)["structured_output"]
     with open(files_path, encoding="utf-8") as f:
@@ -121,11 +122,24 @@ def build(round_no, agent_output, files_path, out_dir):
     count_line = ", ".join(f"{counts[p]} {p}" for p in PRIORITIES)
     another = "yes" if output.get("another_round_needed") else "no"
 
-    review_body = [f"Review round {round_no} by the review agent: {count_line}."]
+    # No findings: the review agent approves this commit. As a comment: the agents work as the pull
+    # request's author, and GitHub does not let an author approve their own pull request; the code
+    # owner's approval is still what the merge needs.
+    approved = not findings
+    if approved:
+        review_body = [
+            f"✅ **Approved by the review agent** (round {round_no}): no findings on {head[:7]}.",
+            "",
+            "A code owner's approval is still required to merge.",
+        ]
+    else:
+        review_body = [f"Review round {round_no} by the review agent: {count_line}."]
     for finding in general:
         review_body += ["", "---", "", f"On {location(finding)}, not part of the diff:", "", comment_body(finding)]
     with open(f"{out_dir}/review.json", "w", encoding="utf-8") as f:
-        json.dump({"event": "COMMENT", "body": "\n".join(review_body), "comments": comments}, f)
+        json.dump({"commit_id": head, "event": "COMMENT", "body": "\n".join(review_body), "comments": comments}, f)
+    with open(f"{out_dir}/marker.txt", "w", encoding="utf-8") as f:
+        f.write(f"approved={int(approved)} head={head}\n")
 
     summary = [
         f"### Review round {round_no}",
@@ -134,6 +148,8 @@ def build(round_no, agent_output, files_path, out_dir):
         "",
         f"**Findings**: {count_line}. **Another round needed**: {another}.",
     ]
+    if approved:
+        summary += ["", f"✅ **Approved** {head[:7]}: no findings, no further round needed."]
     if findings:
         summary += ["", "| ID | Priority | Where | Finding |", "|---|---|---|---|"]
         summary += [f"| {f['id']} | {f['priority']} | {location(f)} | {cell(f['title'])} |" for f in findings]

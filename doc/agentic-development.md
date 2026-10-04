@@ -65,6 +65,13 @@ The review checks the diff against the plan (missing items, out-of-plan changes)
 the conventions of the parts it touches, tests and docs. The summary comment counts the findings
 per priority and says whether another round is needed.
 
+**A round with no findings approves the reviewed commit**: the review says "✅ Approved by the review
+agent" with the commit, and the loop goes straight to finalising: no empty fix round, and no second
+review of the same commit. The approval is a review comment, not a GitHub approval: the agents work
+as the pull request's author, and GitHub does not let an author approve their own pull request. The
+code owner's approval is still what the merge needs. The final comment says whether the review agent
+approved the latest commit.
+
 The developer agent handles one finding per run, most severe first. A fix becomes one commit
 through the pre-commit hook; a finding it disagrees with gets a reply with the reason instead of a
 change. A thread a developer resolves before the fix round is skipped.
@@ -158,8 +165,9 @@ use the pull request's base.
 
 ### 6. Review the pull request
 
-The second decision that is yours. Start with the final comment ("Done: ready for review"): the
-plan's work packages, the commits, every review finding with its outcome, and the usage. Then:
+The second decision that is yours. Start with the final comment ("Done: ready for review"): whether
+the review agent approved the latest commit, the plan's work packages, the commits, every review
+finding with its outcome, and the usage. Then:
 
 - **Open and declined findings** first: an open one was not addressed (a fix that failed the
   pre-commit hook, or a round that did not run); a declined one has the developer agent's reason in
