@@ -24,7 +24,7 @@ flowchart TD
     findings -- "R1-1, R1-2, ...<br/>CRITICAL / MAJOR / MINOR" --> fix["Developer agent (Sonnet)<br/>per finding: one commit Address R1-n,<br/>or a reply declining it"]
     fix --> ci
     findings -- "none: approved" --> finalise
-    rounds -- "no" --> finalise["Finalise<br/>summary, findings and outcomes, usage;<br/>ready for review"]
+    rounds -- "no" --> finalise["Finalise<br/>summary, findings and outcomes, usage;<br/>PR out of draft: ready for review"]
     finalise --> reviewPr{"Developer:<br/>review the pull request"}
     reviewPr -- "more changes: commit by hand,<br/>or another agent round" --> ci
     reviewPr -- "approve, update with main, merge" --> main[("main")]
@@ -52,7 +52,7 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | 6 | Review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | Review agent: `review.sh` | PR review + summary comment |
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
-| 9 | Finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; mark ready for review | `finalise.sh` | PR ready for review |
+| 9 | Finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `finalise.sh` | PR ready for review |
 | 10 | Review, bring up to date with `main`, merge; the release follows | Developer | Change on `main`, released |
 
 Agents never merge and never push to `main`: the scripts push only to the plan branch, the agents
