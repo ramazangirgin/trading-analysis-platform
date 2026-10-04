@@ -46,7 +46,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ## Docs to update
 
-- <README.md section, doc/coding-convention/<doc>.md, docs/event-protocol.md, ...>
+Every document and screenshot the change makes wrong or incomplete, so the change is documented in
+the same pull request. "None" only with the reason.
+
+| What | Where | Change |
+|---|---|---|
+| Text | <README.md section "…", doc/<doc>.md, doc/coding-convention/<doc>.md, docs/event-protocol.md, …> | <what to add or correct> |
+| Screenshot | <docs/screenshots/<name>.png, new or retaken> | <the page and state it shows, the data it needs, the README section that shows it> |
 
 ## Out of scope
 

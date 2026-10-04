@@ -55,7 +55,19 @@ from the issue title, hyphenated) and fill in every section.
   without saying so explicitly in "Open questions".
 - **Version bump**: always one (`minor` unless the change is breaking, `major`, or a hotfix,
   `patch`).
-- **Docs to update**: the README sections and documents whose content the change makes wrong.
+- **Docs to update**: every document and screenshot the change makes wrong or incomplete; the change
+  is documented in the same pull request, never "later" or "separately". Go through:
+  - the root `README.md`: the section describing the feature (a new feature gets a paragraph where
+    users look for it), the CI table when tests or jobs change, the task list when `mise.toml`
+    changes;
+  - `doc/` and `doc/coding-convention/` when a convention, tool or flow changes;
+    `docs/event-protocol.md` when the runner ↔ backend contract changes; `openapi.json` and the
+    frontend's API types when the REST API changes (`mise run api-types`);
+  - **screenshots**: the README shows every page (`docs/screenshots/*.png`). A new page or view gets
+    a new screenshot, and a page whose look changes (a new button, column, tab, panel) gets its
+    screenshot retaken. Name the file, the page and state it shows, and the data it needs. The
+    developer agent takes them with `mise run screenshots` (a `e2e/screenshots/<name>.shot.ts` per
+    screenshot, against the built jar with a replayed run, 1440×900, dark theme).
 - Write in English, in the plain style of the existing documents.
 
 Show the plan(s) to the user and adjust them until the user is content, before step 4.

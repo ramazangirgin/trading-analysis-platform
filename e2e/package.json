@@ -10,7 +10,8 @@
     "test": "playwright test",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
-    "format-check": "prettier --check ."
+    "format-check": "prettier --check .",
+    "screenshots": "playwright test -c playwright.screenshots.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
