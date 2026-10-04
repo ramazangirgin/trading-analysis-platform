@@ -270,6 +270,7 @@ mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when s
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
 mise run e2e           # end-to-end tests: the jar in Google Chrome, ta-runner replaying a recording
+mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
 mise run check         # quick check before pushing: package structure, lint, formatting, type-check (no tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
 mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does

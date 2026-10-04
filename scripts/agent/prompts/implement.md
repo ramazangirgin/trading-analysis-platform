@@ -13,7 +13,14 @@ your final message.
 - Every change comes with tests (the plan's "Tests" sections). Do not delete or weaken existing
   tests to make them pass.
 - Raise the version as the plan says: `scripts/version.sh bump <major|minor|patch>`, once.
-- Update the documents listed under "Docs to update". English only.
+- Update everything listed under "Docs to update", in this pull request, and anything else the
+  change makes wrong (README, `doc/`, API types). English only.
+- Screenshots: for each one the plan lists, write `e2e/screenshots/<name>.shot.ts` (a Playwright
+  test: set up the data over the API as `e2e/tests/support.ts` does, open the page, bring it into
+  the state the plan describes, then `shot(page, '<name>')` from `e2e/screenshots/support.ts`), run
+  `mise run screenshots <name>`, look at the saved `docs/screenshots/<name>.png` with the Read tool
+  and retake it until it shows what the plan describes. Show new screenshots in the README section
+  the plan names. Commit the `.shot.ts` and the PNG.
 - Before you finish, `mise run check` and the tests of every part you changed must pass:
   `./gradlew --console=plain :backend:test` (backend), `./gradlew --console=plain :frontend:build`
   (frontend), `mise run runner-test` (ta-runner). Fix formatting with `mise run format`.

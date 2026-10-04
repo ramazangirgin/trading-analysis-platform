@@ -18,7 +18,13 @@ documents of every part the change touches before judging it.
   ArchUnit, import-linter) is checked by CI; mention it only if CI cannot catch it.
 - **Tests**: missing tests for new behaviour, tests that do not prove what they claim, weakened or
   deleted tests.
-- **Docs**: README or convention documents the change makes wrong; English only.
+- **Docs and screenshots**: the change is documented in this pull request. Every item under the
+  plan's "Docs to update" is done; and independently of the plan: a new user-visible feature is
+  described in the README where users look for it; a new page or view has a screenshot in
+  `docs/screenshots/` shown in the README, and a page whose look changed has its screenshot
+  retaken (open the PNGs with the Read tool and check they show the change); documents the change
+  makes wrong are corrected (README, `doc/`, `docs/event-protocol.md`, API types). A missing or
+  outdated screenshot or description of a user-visible change is `MAJOR`. English only.
 
 Do not report style preferences, or anything you are not reasonably sure about.
 

@@ -46,6 +46,16 @@ run = [
   "e2e/with-node.sh pnpm test",
 ]
 
+[tasks.screenshots]
+description = "Take the README's screenshots (e2e/screenshots/*.shot.ts) into docs/screenshots/: mise run screenshots [name filter]"
+# Like the end-to-end tests: the built jar with ta-runner replaying a recording, in Google Chrome.
+run = [
+  "./gradlew --console=plain :backend:bootJar",
+  "cd artifact/ta-runner && uv sync",
+  "e2e/with-node.sh pnpm install --frozen-lockfile",
+  "e2e/with-node.sh pnpm run screenshots",
+]
+
 [tasks.check]
 description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint (Checkstyle, ESLint, ruff), formatting (Spotless, Prettier), type-check; no tests"
 run = [
