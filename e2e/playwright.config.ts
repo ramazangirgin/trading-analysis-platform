@@ -26,12 +26,12 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'chrome',
       use: {
         ...devices['Desktop Chrome'],
-        // Playwright's own Chromium does not run everywhere (e.g. macOS 12); E2E_BROWSER_CHANNEL=chrome
-        // uses the installed Google Chrome instead.
-        channel: process.env.E2E_BROWSER_CHANNEL || undefined,
+        // The installed Google Chrome (GitHub's runners have it): Playwright's own Chromium does not
+        // run everywhere (e.g. macOS 12). E2E_BROWSER_CHANNEL picks another channel, such as msedge.
+        channel: process.env.E2E_BROWSER_CHANNEL || 'chrome',
       },
     },
   ],

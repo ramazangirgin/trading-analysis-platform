@@ -8,7 +8,7 @@
 #   runner     ta-runner: ruff, import-linter (package structure) and pytest, upstream contract
 #              tests included
 #   images     both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
-#   e2e        end-to-end tests (e2e/, Playwright): the build job's jar in a real browser, with
+#   e2e        end-to-end tests (e2e/, Playwright): the build job's jar in Google Chrome, with
 #              ta-runner replaying a recording instead of calling an LLM
 #   version    the version is the same in every file; in a pull request into main, it is also
 #              higher than main's and than the latest release tag (scripts/version.sh)
@@ -200,12 +200,6 @@ jobs:
           key: uv-${{ runner.os }}-${{ hashFiles('artifact/ta-runner/uv.lock') }}
           restore-keys: uv-${{ runner.os }}-
 
-      - name: Playwright browsers cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/pnpm-lock.yaml') }}
-
       - name: Platform jar
         uses: actions/download-artifact@v8
         with:
@@ -217,7 +211,10 @@ jobs:
           ./gradlew --console=plain :frontend:nodeSetup :frontend:pnpmSetup
           (cd artifact/ta-runner && uv sync --frozen)
           e2e/with-node.sh pnpm install --frozen-lockfile
-          e2e/with-node.sh pnpm exec playwright install --with-deps chromium
+
+      # The tests run in Google Chrome, which GitHub's Ubuntu runners have installed.
+      - name: Google Chrome
+        run: google-chrome --version
 
       - name: Type-check
         run: e2e/with-node.sh pnpm run type-check

@@ -264,7 +264,7 @@ mise run build         # all tests (ArchUnit included), lint (Checkstyle include
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
-mise run e2e           # end-to-end tests: the jar in a real browser, ta-runner replaying a recording
+mise run e2e           # end-to-end tests: the jar in Google Chrome, ta-runner replaying a recording
 mise run check         # quick check before pushing: package structure, lint, formatting, type-check (no tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
 mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does
@@ -289,7 +289,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged |
-| End-to-end tests | The build job's jar in Chromium ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
+| End-to-end tests | The build job's jar in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so

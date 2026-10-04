@@ -38,12 +38,11 @@ run = ["uv run ruff check .", "uv run lint-imports", "uv run pytest -q"]
 
 [tasks.e2e]
 description = "End-to-end tests (e2e/, Playwright): the built jar with ta-runner replaying a recording, in a real browser"
-# Set E2E_BROWSER_CHANNEL=chrome where Playwright's own Chromium does not run (e.g. macOS 12).
+# Runs in the installed Google Chrome; E2E_BROWSER_CHANNEL picks another browser channel.
 run = [
   "./gradlew --console=plain :backend:bootJar",
   "cd artifact/ta-runner && uv sync",
   "e2e/with-node.sh pnpm install --frozen-lockfile",
-  "e2e/with-node.sh sh -c '[ -n \"$E2E_BROWSER_CHANNEL\" ] || pnpm exec playwright install chromium'",
   "e2e/with-node.sh pnpm test",
 ]
 
