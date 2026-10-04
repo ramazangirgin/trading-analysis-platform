@@ -5,6 +5,7 @@
     agent_json.py usage-marker <result.json>...     "tokens=... tokens_in=... ..." for a step marker
     agent_json.py steps < comment bodies            "<step> <round> <tokens>" per marker found
     agent_json.py usage-table < comment bodies      Markdown table of the tokens per step
+    agent_json.py approved-head < comment bodies    the commit the latest review approved, if any
 
 Standard library only: run with `uv run --no-project python`.
 """
@@ -61,6 +62,10 @@ def main(argv):
     elif command == "steps":
         for m in markers(sys.stdin):
             print(m.get("step", "?"), m.get("round", "0"), m.get("tokens", "0"))
+    elif command == "approved-head":
+        reviews = [m for m in markers(sys.stdin) if m.get("step") == "review"]
+        if reviews and reviews[-1].get("approved") == "1":
+            print(reviews[-1].get("head", ""))
     elif command == "usage-table":
         rows = list(markers(sys.stdin))
         print("| Step | Round | Input | Cached input | Output | Cost (API prices) |")

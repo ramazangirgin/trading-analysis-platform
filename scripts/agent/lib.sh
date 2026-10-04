@@ -197,15 +197,19 @@ pr_step_comments() {
 # Step markers of pull request $1, one per line: "<step> <round> <tokens>".
 pr_steps() { pr_step_comments "$1" | py "$AGENT_DIR/agent_json.py" steps; }
 
+# The commit the latest review approved (no findings), or nothing.
+approved_head() { pr_step_comments "$1" | py "$AGENT_DIR/agent_json.py" approved-head; }
+
 count_steps() { pr_steps "$1" | awk -v s="$2" '$1 == s' | wc -l | tr -d ' '; }
 tokens_used() { pr_steps "$1" | awk '{ t += $3 } END { print t + 0 }'; }
 
 # post_step <pr> <step> <round> <body file> [agent result json...]
+# AGENT_STEP_MARKER adds "key=value" pairs to the marker (review: approved=0|1 head=<sha>).
 post_step() {
   local pr=$1 step=$2 round=$3 body=$4
   shift 4
   {
-    echo "<!-- agent-step step=$step round=$round $(usage_marker "$@") -->"
+    echo "<!-- agent-step step=$step round=$round ${AGENT_STEP_MARKER:+$AGENT_STEP_MARKER }$(usage_marker "$@") -->"
     cat "$body"
   } >"$AGENT_TMP/comment.md"
   gh pr comment "$pr" --body-file "$AGENT_TMP/comment.md" >/dev/null
