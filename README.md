@@ -332,6 +332,17 @@ created by that workflow only, never by hand. Two pull requests that raise to th
 both merge: the second one must be updated with `main` and bumped again. The rules and why:
 [versioning and releases](doc/coding-convention/repository-versioning-and-releases.md).
 
+### Agentic development
+
+Issues can be taken to a reviewed pull request by agents, with a developer approving the plan and
+merging the result. In Claude Code, `/plan-from-issue <issue>` writes a plan (`.plans/`) and pushes
+it on a `plan/<issue>-<slug>` branch; after the plan review,
+`gh workflow run agent-implement.yml -f plan_branch=plan/<issue>-<slug>` starts the developer agent
+in GitHub Actions. It opens a draft pull request, and after each green CI a review agent and the
+developer agent go through two review → fix rounds before the pull request is marked ready for
+review. Agents never merge. The flow, its settings, limits and how to run each step locally:
+[agentic development](doc/coding-convention/repository-agentic-development.md).
+
 ### Coding conventions
 
 Where each kind of class, component or module belongs, and what may import what, is written down in

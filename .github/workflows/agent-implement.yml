@@ -1,0 +1,55 @@
+# Agentic development, step 4-5 (doc/coding-convention/repository-agentic-development.md): the
+# developer agent implements an approved plan and opens a draft pull request. Started by hand:
+#
+#   gh workflow run agent-implement.yml -f plan_branch=plan/<issue>-<slug>
+#
+# Thin on purpose: the logic is in scripts/agent/implement.sh, which runs the same locally. CI on
+# the agent's push starts the review → fix loop (agent-loop.yml).
+
+name: Agent implement
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan_branch:
+        description: Plan branch (plan/<issue>-<slug>)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# One agent per plan branch.
+concurrency:
+  group: agent-${{ inputs.plan_branch }}
+  cancel-in-progress: false
+
+env:
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+
+jobs:
+  implement:
+    name: Implement ${{ inputs.plan_branch }}
+    if: startsWith(inputs.plan_branch, 'plan/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/agent-setup
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          app-private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          token: ${{ secrets.AGENT_GITHUB_TOKEN }}
+
+      - name: Implement the plan
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          AGENT_MODEL: ${{ vars.AGENT_MODEL }}
+          AGENT_REVIEW_MODEL: ${{ vars.AGENT_REVIEW_MODEL }}
+          AGENT_SMALL_MODEL: ${{ vars.AGENT_SMALL_MODEL }}
+          AGENT_MAX_TOKENS: ${{ vars.AGENT_MAX_TOKENS }}
+          PLAN_BRANCH: ${{ inputs.plan_branch }}
+        run: scripts/agent/implement.sh "$PLAN_BRANCH"
