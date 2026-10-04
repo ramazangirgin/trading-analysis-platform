@@ -113,7 +113,29 @@
     "empty": "No analyses yet.",
     "rescan": "Scan data dir",
     "rescanned": "Scanned {scanned} reports: {created} new, {updated} updated.",
-    "imported": "Imported"
+    "imported": "Imported",
+    "compare": "Compare ({count})",
+    "compareHint": "Tick two to four runs to compare them side by side."
+  },
+  "compare": {
+    "title": "Compare runs",
+    "back": "Back to analyses",
+    "empty": "Pick at least two runs on the Analyses page to compare them.",
+    "loadError": "This run could not be loaded.",
+    "noReport": "No report for this run.",
+    "settings": "Settings",
+    "ticker": "Ticker",
+    "tradeDate": "Date",
+    "provider": "Provider",
+    "deepModel": "Deep-thinking model",
+    "quickModel": "Quick-thinking model",
+    "analysts": "Analysts",
+    "debateRounds": "Research debate rounds",
+    "riskRounds": "Risk debate rounds",
+    "rating": "Rating",
+    "decision": "Decision text",
+    "differs": "Differs between the runs",
+    "reportSections": "Report sections"
   },
   "form": {
     "title": "New analysis",

@@ -3,6 +3,8 @@
 export { analysisApi } from './api'
 export { default as AgentPipeline } from './components/AgentPipeline.vue'
 export { default as AnalysisTable } from './components/AnalysisTable.vue'
+export { default as CompareTable } from './components/CompareTable.vue'
 export { default as RunLog } from './components/RunLog.vue'
 export { useRunStream } from './composables/useRunStream'
+export type { CompareColumn } from './model/compareView'
 export { ACTIVE_STATUSES } from './model/analysisStatus'
