@@ -13,6 +13,7 @@ source "$(dirname "$0")/lib.sh"
 
 pr=${1:?usage: $0 <pr>}
 branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
+use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 round=$(($(count_steps "$pr" fix) + 1))
 [ "$(count_steps "$pr" review)" -ge "$round" ] || die "review round $round has not run yet"
@@ -65,7 +66,7 @@ for ((i = 0; i < count; i++)); do
     outcome=skipped reason="The thread was resolved by a developer."
   else
     {
-      cat "$AGENT_DIR/prompts/fix.md"
+      prompt fix.md
       echo
       echo "## The finding ($id; the plan is $plan)"
       echo

@@ -4,7 +4,7 @@ nothing. Nobody will answer questions.
 
 ## What to check
 
-Look at the whole change: `git diff origin/main...HEAD`, `git log origin/main..HEAD`, and the
+Look at the whole change: `git diff {{BASE}}...HEAD`, `git log {{BASE}}..HEAD`, and the
 files around it. Read the root `README.md`, `doc/coding-convention/README.md` and the convention
 documents of every part the change touches before judging it.
 

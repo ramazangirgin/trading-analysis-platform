@@ -15,7 +15,8 @@
 #   AGENT_MAX_BUDGET_USD per agent call, passed to claude --max-budget-usd when set (Claude prices)
 #   AGENT_GITHUB_LOGIN   the account the agents comment as; default the gh login
 #   AGENT_CI_CHECK       the required check; default "CI passed"
-#   AGENT_BASE_BRANCH    default main
+#   AGENT_BASE_BRANCH    the branch plans start from and pull requests go into; default main.
+#                        Steps on an existing pull request use its base instead.
 
 set -euo pipefail
 
@@ -90,6 +91,12 @@ issue_of_branch() {
   [[ $name =~ ^([0-9]+)- ]] || die "not a plan branch (plan/<issue>-<slug>): $1"
   echo "${BASH_REMATCH[1]}"
 }
+
+# Steps on an existing pull request work against its base branch.
+use_pr_base() { AGENT_BASE_BRANCH=$(gh pr view "$1" --json baseRefName --jq .baseRefName); }
+
+# A prompt file with {{BASE}} replaced by the base branch.
+prompt() { sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" "$AGENT_DIR/prompts/$1"; }
 
 # The open pull request whose head is $1, or nothing.
 pr_of_branch() {
@@ -238,6 +245,6 @@ checkout_branch() {
 push_branch() {
   local branch
   branch=$(git branch --show-current)
-  [ "$branch" != "$AGENT_BASE_BRANCH" ] || die "refusing to push $AGENT_BASE_BRANCH"
+  case $branch in main | "$AGENT_BASE_BRANCH") die "refusing to push $branch" ;; esac
   git push --quiet origin "HEAD:refs/heads/$branch"
 }

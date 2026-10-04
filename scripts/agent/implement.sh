@@ -21,7 +21,7 @@ checkout_branch "$branch"
 start=$(git rev-parse HEAD)
 
 {
-  cat "$AGENT_DIR/prompts/implement.md"
+  prompt implement.md
   echo
   echo "## The plan ($plan, approved)"
   echo

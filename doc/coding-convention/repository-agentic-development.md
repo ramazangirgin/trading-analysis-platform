@@ -114,6 +114,9 @@ mise run agent:next plan/32-compare-runs             # run it, and the next ones
 scripts/agent/review.sh <pr>                         # or one step: review, fix, fix-ci, finalise
 ```
 
+`AGENT_BASE_BRANCH=<branch>` starts the plan branch from, and opens the pull request into, another
+branch than `main` (a stacked change, or trying out a change to the agents themselves); later steps
+use the pull request's base.
 `AGENT_BASE_URL= AGENT_MODEL=claude-sonnet-5-5 AGENT_SMALL_MODEL=claude-haiku-4-5-20251001` runs
 them on Claude Code's own login and Claude models instead of DeepSeek. The scripts need a clean
 working tree: they switch to the plan branch. They run from a copy of `scripts/agent/` taken at

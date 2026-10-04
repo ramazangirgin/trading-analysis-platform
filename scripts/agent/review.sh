@@ -12,6 +12,7 @@ source "$(dirname "$0")/lib.sh"
 
 pr=${1:?usage: $0 <pr>}
 branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
+use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 round=$(($(count_steps "$pr" review) + 1))
 
@@ -19,7 +20,7 @@ checkout_branch "$branch"
 head=$(git rev-parse HEAD)
 
 {
-  cat "$AGENT_DIR/prompts/review.md"
+  prompt review.md
   echo
   echo "## The plan ($plan, approved)"
   echo
