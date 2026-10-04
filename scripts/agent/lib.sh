@@ -34,6 +34,12 @@ AGENT_DIR=$AGENT_SCRIPTS
 REPO_ROOT=$AGENT_REPO_ROOT
 cd "$REPO_ROOT"
 
+# The agents call mise by name; mise's installer puts it into ~/.local/bin, which is not always on
+# PATH (a shell without mise activated).
+if ! command -v mise >/dev/null && [ -x "$HOME/.local/bin/mise" ]; then
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
 AGENT_MODEL=${AGENT_MODEL:-claude-sonnet-5-5}
 AGENT_REVIEW_MODEL=${AGENT_REVIEW_MODEL:-claude-opus-5-5}
 AGENT_MAX_ROUNDS=${AGENT_MAX_ROUNDS:-2}
@@ -92,8 +98,12 @@ issue_of_branch() {
 # Steps on an existing pull request work against its base branch.
 use_pr_base() { AGENT_BASE_BRANCH=$(gh pr view "$1" --json baseRefName --jq .baseRefName); }
 
-# A prompt file with {{BASE}} replaced by the base branch.
-prompt() { sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" "$AGENT_DIR/prompts/$1"; }
+# A prompt file with {{BASE}} replaced by the base branch, followed by how to work within the
+# agents' tool allow-list (prompts/tools.md).
+prompt() {
+  cat "$AGENT_DIR/prompts/$1" "$AGENT_DIR/prompts/tools.md" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g"
+  echo
+}
 
 # The open pull request whose head is $1, or nothing.
 pr_of_branch() {
@@ -123,7 +133,7 @@ AGENT_DENIED_TOOLS=(
 
 # Tools the developer agents (implement, fix) may use.
 AGENT_DEV_TOOLS=(
-  Read Edit Write Glob Grep TodoWrite Task
+  Read Edit Write Glob Grep TodoWrite Task "Bash(cd:*)" "Bash(pwd)"
   "Bash(mise run:*)" "Bash(mise exec:*)" "Bash(./gradlew:*)" "Bash(uv run:*)" "Bash(uv sync:*)"
   "Bash(artifact/frontend/with-node.sh:*)" "Bash(e2e/with-node.sh:*)" "Bash(scripts/version.sh:*)"
   "Bash(git status:*)" "Bash(git diff:*)" "Bash(git log:*)" "Bash(git show:*)" "Bash(git add:*)"
@@ -134,7 +144,7 @@ AGENT_DEV_TOOLS=(
 
 # Tools the review agent may use: read only.
 AGENT_REVIEW_TOOLS=(
-  Read Glob Grep TodoWrite Task
+  Read Glob Grep TodoWrite Task "Bash(cd:*)" "Bash(pwd)"
   "Bash(git diff:*)" "Bash(git log:*)" "Bash(git show:*)" "Bash(git status:*)"
   "Bash(ls:*)" "Bash(cat:*)" "Bash(head:*)" "Bash(wc:*)" "Bash(find:*)" "Bash(grep:*)" "Bash(rg:*)"
 )
