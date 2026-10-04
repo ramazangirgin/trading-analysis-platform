@@ -153,6 +153,9 @@ This is the first of the two decisions that are yours. Read the plan on its bran
 - each part names the right conventions, and the design puts the code where they say;
 - every work package has its tests, and the tests prove the issue's "done when";
 - the version bump (`minor`, `major` for a breaking change);
+- "Docs to update" covers the README text for the feature and every screenshot: a new page gets
+  one, a page whose look changes gets it retaken. "Later" is not an option: the review agent checks
+  the docs and screenshots, and a missing one is a `MAJOR` finding;
 - the open questions: answer them in the plan.
 
 Change the plan on its branch (edit, commit, push) until you would accept a pull request that does
@@ -209,6 +212,8 @@ finding with its outcome, and the usage. Then:
   its thread. Decide each.
 - Read the diff as you would any pull request: against the plan, with the conventions in mind. The
   agents' review covered it twice, but it is not a substitute for yours.
+- The docs: the README describes the feature, and the screenshots in `docs/screenshots/` show it
+  (the pull request's *Files changed* shows the PNGs side by side with the old ones).
 - Try it: `git switch plan/<issue>-<slug>` and `mise run dev` (or `mise run run`).
 
 ### 7. More changes
@@ -266,6 +271,27 @@ the branch it stacks on has merged: `gh pr edit <pr> --base main`, then step 8.
 - The plan stays in `.plans/` on `main`, next to the code it explains.
 - Locally: `git switch main && git pull`, and delete the local plan branch
   (`git branch -D plan/<issue>-<slug>`).
+
+## Documentation and screenshots
+
+A change is documented in its own pull request: the plan lists the documents and screenshots it
+affects ("Docs to update"), the developer agent updates them, and the review agent checks them
+against the plan and on its own (a user-visible change without its description or screenshot is a
+`MAJOR` finding).
+
+The README's screenshots (`docs/screenshots/*.png`) are taken by Playwright, the way the end-to-end
+tests run: the built jar with a throwaway home and ta-runner replaying a recording, in Google
+Chrome, at 1440×900 in the dark theme. One `e2e/screenshots/<name>.shot.ts` per screenshot sets up
+the data it needs over the API, opens the page and saves it with `shot(page, '<name>')`:
+
+```sh
+mise run screenshots             # every screenshot
+mise run screenshots compare     # those whose file or title matches "compare"
+```
+
+`SCREENSHOT_DIR=<dir>` writes them elsewhere, to try one out. The agents look at the saved PNGs
+with Claude Code's Read tool. Screenshots taken by hand from real runs stay until a change retakes
+them.
 
 ## Settings
 
