@@ -116,7 +116,7 @@ glance.
         replayed run, Chrome, 1440×900, dark theme), one `e2e/screenshots/<name>.shot.ts` each.
   - [x] Planning skill and template: "Docs to update" lists every text and screenshot.
   - [x] Developer agent takes the screenshots; review agent checks docs and screenshots (`MAJOR`).
-  - [ ] Take `compare.png` and retake `analyses.png` with it (the two screenshots above).
+  - [x] Take `compare.png` and retake `analyses.png` with it (the two screenshots above).
 - **Tests**: `pnpm run type-check` in `e2e/`; the screenshots themselves, looked at.
 
 ## Tests

@@ -113,11 +113,6 @@ and report tables that are series over periods (quarterly or yearly figures) get
 
 **Analyses** lists every run with its analysis date and start time, decision, model and duration,
 filterable by ticker and status.
-To compare runs, tick two to four of them and press **Compare**: the compare view shows them side
-by side, one column per run, with the settings (ticker, date, provider and models, analysts,
-debate rounds), the decision, the stats and the report sections. Rows whose values differ between
-the runs are highlighted, so the same ticker run with another model or date can be compared at a
-glance. The run ids are in the page's URL, so a comparison can be bookmarked or shared.
 Runs made outside the platform are imported (read-only) and show up by themselves within about
 10 seconds, as the data dir is watched; **Scan data dir** forces a rescan:
 
@@ -130,7 +125,15 @@ Runs made outside the platform are imported (read-only) and show up by themselve
 A run whose report files are still being written is not shown as failed; it appears once it
 finishes.
 
-![Analyses list](docs/screenshots/analyses.png)
+![Analyses list, two runs ticked for comparing](docs/screenshots/analyses.png)
+
+To compare runs, tick two to four of them and press **Compare**: the compare view shows them side
+by side, one column per run, with the settings (ticker, date, provider and models, analysts,
+debate rounds), the decision, the stats and the report sections. Rows whose values differ between
+the runs are highlighted, so the same ticker run with another model or date can be compared at a
+glance. The run ids are in the page's URL, so a comparison can be bookmarked or shared.
+
+![Compare view: two runs of the same ticker with different models](docs/screenshots/compare.png)
 
 The **Dashboard** shows the running analyses and the latest decisions at a glance.
 
