@@ -7,8 +7,10 @@ test('two runs are compared side by side', async ({ page, request }) => {
 
   await page.goto('/analyses')
   for (const ticker of ['INTC', 'QCOM']) {
+    // A CI retry runs against the same jar, so earlier attempts may have left rows of the same ticker.
     await page
       .getByRole('row', { name: new RegExp(`${ticker}.*${TRADE_DATE}`) })
+      .first()
       .getByRole('checkbox')
       .click()
   }
