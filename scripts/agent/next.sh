@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The review → fix loop of the agentic development flow
-# (doc/coding-convention/repository-agentic-development.md), steps 5 to 9.
+# (doc/agentic-development.md), steps 5 to 9.
 #
 #   scripts/agent/next.sh plan/<issue>-<slug>     (or a pull request number)
 #   scripts/agent/next.sh --dry-run <branch|pr>   print the next step only

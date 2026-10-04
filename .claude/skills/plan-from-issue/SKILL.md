@@ -6,7 +6,7 @@ description: Turn a GitHub issue of this repository into one or more reviewed im
 # Plan from issue
 
 Step 1 and 2 of the agentic development flow
-([doc/coding-convention/repository-agentic-development.md](../../../doc/coding-convention/repository-agentic-development.md)).
+([doc/agentic-development.md](../../../doc/agentic-development.md)).
 The plan is what the developer approves and what the developer and review agents are checked
 against, so it must be specific enough to implement without guessing, and must follow the
 documented architecture and conventions instead of inventing new ones.
