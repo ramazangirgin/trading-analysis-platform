@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step 9 of the agentic development flow (doc/coding-convention/repository-agentic-development.md):
+# Step 9 of the agentic development flow (doc/agentic-development.md):
 # sums up an agent's pull request and hands it to the developer.
 #
 #   scripts/agent/finalise.sh <pr>

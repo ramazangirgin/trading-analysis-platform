@@ -1,4 +1,4 @@
-# Repository: agentic development
+# Agentic development
 
 Agents take a GitHub issue to a reviewed pull request with a green CI. A developer decides at two
 points only: approving the plan and merging the pull request (#65). The agents follow the
@@ -18,7 +18,7 @@ the developer reviewed, so their work can be checked against it.
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
 | 9 | Finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; mark ready for review | `finalise.sh` | PR ready for review |
-| 10 | Review and merge | Developer | — |
+| 10 | Review, bring up to date with `main`, merge; the release follows | Developer | Change on `main`, released |
 
 Agents never merge and never push to `main`: the scripts push only to the plan branch, the agents
 cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's approval and
@@ -33,7 +33,7 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_BASE_URL` from their environment, so the
   login is always what they use. GitHub is reached through the developer's `gh` login and Git
   credentials, so the developer's pushes start CI as usual.
-- **Scripts, one per step.** [`scripts/agent/`](../../scripts/agent) holds one script per step and
+- **Scripts, one per step.** [`scripts/agent/`](../scripts/agent) holds one script per step and
   `run.sh`, which runs them all; mise tasks start them. Each step can also be run, and debugged, on
   its own.
 - **The loop follows CI.** After every push the loop waits for **CI passed** on the new head, so a
@@ -69,12 +69,26 @@ The developer agent handles one finding per run, most severe first. A fix become
 through the pre-commit hook; a finding it disagrees with gets a reply with the reason instead of a
 change. A thread a developer resolves before the fix round is skipped.
 
-## Running it
+## From issue to `main`: a walkthrough
 
-Once: `mise run setup` (the Git hooks the agents commit through), Claude Code logged in
-(`claude`, then `/login`), `gh auth login`.
+What a developer does, from an issue to its change released on `main`. The agents do everything
+between "start the agents" and "review the pull request".
 
-### Planning (steps 1–3)
+### 0. Once per machine
+
+```sh
+mise run setup      # ta-runner, the frontend's packages and the Git hooks the agents commit through
+claude              # then /login: the agents use this Claude Code login
+gh auth login       # the scripts push, comment and open pull requests as you
+```
+
+### 1. The issue
+
+The agents work from the plan, and the plan from the issue, so the issue needs a clear goal, steps
+and "done when" (the shape of the existing issues). A vague issue gives a vague plan: sharpen the
+issue first, it is cheaper than reviewing a wrong plan.
+
+### 2. Plan it
 
 In Claude Code, in this repository:
 
@@ -82,25 +96,42 @@ In Claude Code, in this repository:
 /plan-from-issue 32
 ```
 
-The skill ([`.claude/skills/plan-from-issue/SKILL.md`](../../.claude/skills/plan-from-issue/SKILL.md))
-reads the issue and the documents of the parts it touches, writes the plan(s) from
-[`plan-template.md`](../../.claude/skills/plan-from-issue/plan-template.md), and, once you agree,
-pushes one branch per plan (`mise run agent:plan-branch .plans/<issue>-<slug>.md`). Review the plan
-on its branch; edit and push there.
+The skill ([`.claude/skills/plan-from-issue/SKILL.md`](../.claude/skills/plan-from-issue/SKILL.md))
+reads the issue, the issues it links to and the documents of every part it touches, and writes
+`.plans/<issue>-<slug>.md` from [`plan-template.md`](../.claude/skills/plan-from-issue/plan-template.md),
+or several plans when the issue does not fit one pull request. Discuss it with Claude in the same
+session until it is right; then the skill pushes one branch per plan
+(`mise run agent:plan-branch .plans/<issue>-<slug>.md`) and links it on the issue.
 
-### The agents (steps 4–9)
+### 3. Review the plan
+
+This is the first of the two decisions that are yours. Read the plan on its branch and check:
+
+- the goal matches the issue, and "Out of scope" leaves out what it should;
+- each part names the right conventions, and the design puts the code where they say;
+- every work package has its tests, and the tests prove the issue's "done when";
+- the version bump (`minor`, `major` for a breaking change);
+- the open questions: answer them in the plan.
+
+Change the plan on its branch (edit, commit, push) until you would accept a pull request that does
+exactly that. The agents follow it literally, and the review agent checks the code against it.
+
+### 4. Start the agents
 
 ```sh
 mise run agent:run plan/32-compare-runs
 ```
 
-It implements the plan, opens the draft pull request and runs the review → fix loop until the pull
-request is ready for review, waiting for CI after each push; it takes a while, so leave the
-terminal open. The scripts need a clean working tree, since they switch to the plan branch. They run
-from a copy of `scripts/agent/` taken at start, so switching branches does not change the running
-scripts or prompts.
+From a clean working tree (the scripts switch to the plan branch). It runs steps 5–9 of the flow:
+the developer agent (Sonnet) implements the plan with tests, checks it, bumps the version, pushes
+and opens a **draft** pull request labelled `agent` (`Closes #<issue>`); after **CI passed**, the
+review agent (Opus) reviews it, the developer agent fixes the findings, CI runs again, and once
+more; then the pull request gets a final comment and is marked ready for review. It waits for CI
+after every push, so it takes a while: leave the terminal open. Follow it on the pull request,
+where every step leaves a comment.
 
-Each step on its own:
+The scripts run from a copy of `scripts/agent/` taken at start, so switching branches does not
+change the running scripts or prompts. Each step can also be run on its own:
 
 ```sh
 mise run agent:implement plan/32-compare-runs        # implement, push, draft pull request
@@ -113,17 +144,89 @@ scripts/agent/review.sh <pr>                         # one step: review, fix, fi
 branch than `main` (a stacked change, or trying out a change to the agents themselves); later steps
 use the pull request's base.
 
-### Stopping a run
+### 5. When a run stops early
 
-- Ctrl+C. Started again, `mise run agent:run` (or `agent:next`) continues where it was.
-- Remove the `agent` label from the pull request: the loop does nothing on it any more.
-- The loop stops by itself (comment, label removed, pull request left as a draft) after
-  `AGENT_MAX_CI_FIXES` attempts at a red CI, when the developer agent finds no fix for it, when CI
-  takes longer than `AGENT_CI_TIMEOUT`, or over `AGENT_MAX_TOKENS`.
+- **Ctrl+C**, a closed laptop, a crash: start `mise run agent:run` again; it continues where it was
+  (the state is on the pull request).
+- **The loop gave up** (a comment "Agent loop stopped", the `agent` label removed, the pull request
+  still a draft): CI stayed red after `AGENT_MAX_CI_FIXES` attempts, the developer agent found no
+  fix, CI took longer than `AGENT_CI_TIMEOUT`, or the run went over `AGENT_MAX_TOKENS`. Fix the
+  cause by hand on the plan branch (or not at all), then either continue by hand, or add the
+  `agent` label again and run `mise run agent:next plan/<issue>-<slug>`.
+- **To stop it yourself**: Ctrl+C, or remove the `agent` label (the loop does nothing on the pull
+  request any more).
+
+### 6. Review the pull request
+
+The second decision that is yours. Start with the final comment ("Done: ready for review"): the
+plan's work packages, the commits, every review finding with its outcome, and the usage. Then:
+
+- **Open and declined findings** first: an open one was not addressed (a fix that failed the
+  pre-commit hook, or a round that did not run); a declined one has the developer agent's reason in
+  its thread. Decide each.
+- Read the diff as you would any pull request: against the plan, with the conventions in mind. The
+  agents' review covered it twice, but it is not a substitute for yours.
+- Try it: `git switch plan/<issue>-<slug>` and `mise run dev` (or `mise run run`).
+
+### 7. More changes
+
+- **Small ones**: commit them yourself on the plan branch and push. CI runs as for any pull request.
+- **Another agent round**: turn the pull request back into a draft, add the `agent` label and raise
+  the round limit:
+
+  ```sh
+  gh pr ready <pr> --undo && gh pr edit <pr> --add-label agent
+  AGENT_MAX_ROUNDS=3 mise run agent:next plan/<issue>-<slug>
+  ```
+
+  The review agent runs a third round and the developer agent fixes its findings. The agents do not
+  read your own review comments; to steer them, change the plan on the branch first (the review
+  agent reads it every round).
+- **Wrong direction**: close the pull request, fix the plan (or the issue), and start again from
+  step 2 with a new plan branch.
+
+### 8. Bring it up to date with `main`
+
+The `main` ruleset merges only a pull request whose branch is up to date with `main`, whose
+**CI passed** is green, and that a code owner approved (see the root README). If `main` moved while
+the agents worked:
+
+```sh
+git fetch origin && git switch plan/<issue>-<slug> && git pull
+git rebase origin/main            # resolve conflicts, if any; mise run check
+mise run version:bump minor       # only if main's version caught up with this branch's
+git push --force-with-lease
+```
+
+The **Version** job fails when another pull request merged the same version first
+([versioning and releases](coding-convention/repository-versioning-and-releases.md)): bump again. Wait for
+**CI passed** on the new head.
+
+### 9. Merge
+
+Approve and merge it yourself; nothing merges on its own (auto-merge is off) and the agents never
+merge:
+
+```sh
+gh pr merge <pr> --rebase --delete-branch
+```
+
+A pull request into another branch than `main` (`AGENT_BASE_BRANCH`) is retargeted to `main` once
+the branch it stacks on has merged: `gh pr edit <pr> --base main`, then step 8.
+
+### 10. After the merge
+
+- CI runs on `main`; after **CI passed**, [`release.yml`](../.github/workflows/release.yml) tags
+  the commit `vX.Y.Z` and publishes the GitHub Release with the jar.
+- `Closes #<issue>` in the pull request closes the issue. A split issue stays open until the
+  pull request of its last plan has merged.
+- The plan stays in `.plans/` on `main`, next to the code it explains.
+- Locally: `git switch main && git pull`, and delete the local plan branch
+  (`git branch -D plan/<issue>-<slug>`).
 
 ## Settings
 
-Environment variables of the scripts ([`lib.sh`](../../scripts/agent/lib.sh)):
+Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 
 | Variable | Default | What |
 |---|---|---|

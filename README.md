@@ -334,14 +334,39 @@ both merge: the second one must be updated with `main` and bumped again. The rul
 
 ### Agentic development
 
-Issues can be taken to a reviewed pull request by agents, with a developer approving the plan and
-merging the result. Everything runs on your machine with Claude Code and your own Claude Code login.
-In Claude Code, `/plan-from-issue <issue>` writes a plan (`.plans/`) and pushes it on a
-`plan/<issue>-<slug>` branch; after the plan review, `mise run agent:run plan/<issue>-<slug>` lets a
-developer agent implement it and open a draft pull request, then a review agent and the developer
-agent go through two review → fix rounds, each after a green CI, before the pull request is marked
-ready for review. Agents never merge. The flow, its settings, limits and each step on its own:
-[agentic development](doc/coding-convention/repository-agentic-development.md).
+An issue can be taken to a reviewed pull request by agents, with you deciding at two points:
+approving the plan and merging the pull request. Everything runs on your machine with Claude Code
+and your own Claude Code login: Sonnet as the developer agent, Opus as the review agent. Agents
+never merge.
+
+A sample flow, for issue #32 (compare runs):
+
+```text
+# 1. Plan it: in Claude Code, in this repository
+/plan-from-issue 32
+#    Claude reads the issue and the docs of every part it touches, writes .plans/32-compare-runs.md,
+#    and, once you agree, pushes it alone on branch plan/32-compare-runs and links it on #32.
+```
+
+```sh
+# 2. Review the plan on plan/32-compare-runs; edit, commit and push there until it is right.
+
+# 3. Let the agents implement it and take it to a pull request ready for review
+mise run agent:run plan/32-compare-runs
+#    developer agent: implements with tests, mise run check, version bump, opens a draft PR
+#    after CI passed: review agent comments R1-1, R1-2, ... (CRITICAL / MAJOR / MINOR)
+#    developer agent: one "Address R1-n: ..." commit or a reasoned reply per finding; CI again
+#    a second review → fix round, then a final comment and the PR is marked ready for review
+
+# 4. Review the PR (start with the final comment: open and declined findings), then
+git fetch origin && git switch plan/32-compare-runs && git rebase origin/main   # if main moved
+git push --force-with-lease                                                        # CI again
+gh pr merge <pr> --rebase --delete-branch
+#    CI on main releases vX.Y.Z; "Closes #32" closes the issue.
+```
+
+Each step, what to check at each decision, how to stop, continue or redo a run, and the settings:
+[doc/agentic-development.md](doc/agentic-development.md).
 
 ### Coding conventions
 

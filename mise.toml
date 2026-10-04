@@ -113,7 +113,7 @@ run = "scripts/version.sh"
 description = "Raise the version in gradle.properties, package.json and ta-runner: mise run version:bump major|minor|patch"
 run = "scripts/version.sh bump"
 
-# Agentic development (doc/coding-convention/repository-agentic-development.md): issue → plan →
+# Agentic development (doc/agentic-development.md): issue → plan →
 # agent implementation → agent review → pull request, on this machine with Claude Code and your own
 # Claude Code login. Planning is the plan-from-issue Claude Code skill.
 [tasks."agent:plan-branch"]
