@@ -113,7 +113,29 @@
     "empty": "Henüz analiz yok.",
     "rescan": "Veri klasörünü tara",
     "rescanned": "{scanned} rapor tarandı: {created} yeni, {updated} güncellendi.",
-    "imported": "İçe aktarıldı"
+    "imported": "İçe aktarıldı",
+    "compare": "Karşılaştır ({count})",
+    "compareHint": "Yan yana karşılaştırmak için iki ila dört analiz işaretleyin."
+  },
+  "compare": {
+    "title": "Analizleri karşılaştır",
+    "back": "Analizlere dön",
+    "empty": "Karşılaştırmak için Analizler sayfasında en az iki analiz seçin.",
+    "loadError": "Bu analiz yüklenemedi.",
+    "noReport": "Bu analiz için rapor yok.",
+    "settings": "Ayarlar",
+    "ticker": "Sembol",
+    "tradeDate": "Tarih",
+    "provider": "Sağlayıcı",
+    "deepModel": "Derin düşünen model",
+    "quickModel": "Hızlı düşünen model",
+    "analysts": "Analistler",
+    "debateRounds": "Araştırma tartışma turu",
+    "riskRounds": "Risk tartışma turu",
+    "rating": "Derecelendirme",
+    "decision": "Karar metni",
+    "differs": "Analizler arasında farklı",
+    "reportSections": "Rapor bölümleri"
   },
   "form": {
     "title": "Yeni analiz",

@@ -7,12 +7,20 @@ import { useLabels } from '@/shared/composables/useLabels'
 import StatusTag from '@/shared/ui/StatusTag.vue'
 import RatingTag from '@/shared/ui/RatingTag.vue'
 
-const props = defineProps<{ analyses: Analysis[]; loading?: boolean; compact?: boolean }>()
+const props = defineProps<{
+  analyses: Analysis[]
+  loading?: boolean
+  compact?: boolean
+  /** Adds a checkbox column; the ticked run ids are the `v-model:checked`. */
+  selectable?: boolean
+}>()
+const checked = defineModel<string[]>('checked', { default: () => [] })
 const router = useRouter()
 const { t, startTime, duration } = useLabels()
 
 const columns = computed<DataTableColumns<Analysis>>(() => {
   const all: DataTableColumns<Analysis> = [
+    ...(props.selectable ? [{ type: 'selection' as const }] : []),
     { title: t('runs.ticker'), key: 'ticker', render: (row) => h('strong', row.spec.ticker) },
     {
       title: t('runs.tradeDate'),
@@ -56,7 +64,11 @@ const columns = computed<DataTableColumns<Analysis>>(() => {
 
 const rowProps = (row: Analysis) => ({
   style: 'cursor: pointer',
-  onClick: () => router.push({ name: 'analysis', params: { id: row.id } }),
+  onClick: (event: MouseEvent) => {
+    // Ticking a checkbox must not open the run.
+    if ((event.target as HTMLElement).closest('.n-data-table-td--selection')) return
+    void router.push({ name: 'analysis', params: { id: row.id } })
+  },
 })
 </script>
 
@@ -67,6 +79,8 @@ const rowProps = (row: Analysis) => ({
     :loading="loading"
     :row-key="(row: Analysis) => row.id"
     :row-props="rowProps"
+    :checked-row-keys="checked"
+    @update:checked-row-keys="(keys) => (checked = keys as string[])"
     :bordered="false"
     size="small"
     :scroll-x="compact ? undefined : 760"

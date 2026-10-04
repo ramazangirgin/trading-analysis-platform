@@ -12,6 +12,12 @@ export const router = createRouter({
       component: () => import('@/pages/NewAnalysisPage.vue'),
     },
     {
+      path: '/analyses/compare',
+      name: 'compare',
+      component: () => import('@/pages/ComparePage.vue'),
+      meta: { wide: true },
+    },
+    {
       path: '/analyses/:id',
       name: 'analysis',
       component: () => import('@/pages/RunDetailPage.vue'),
