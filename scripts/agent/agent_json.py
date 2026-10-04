@@ -51,7 +51,7 @@ def main(argv):
         print(json.dumps(value) if isinstance(value, (dict, list)) else value)
     elif command == "usage-line":
         u = usage(args)
-        print(f"{u['in']} in, {u['cached']} cached, {u['out']} out, ${u['cost']:.2f} (Claude prices)")
+        print(f"{u['in']} in, {u['cached']} cached, {u['out']} out, ${u['cost']:.2f} at API prices")
     elif command == "usage-marker":
         u = usage(args)
         print(
@@ -63,14 +63,17 @@ def main(argv):
             print(m.get("step", "?"), m.get("round", "0"), m.get("tokens", "0"))
     elif command == "usage-table":
         rows = list(markers(sys.stdin))
-        print("| Step | Round | Input | Cached input | Output |")
-        print("|---|---|---|---|---|")
-        totals = [0, 0, 0]
+        print("| Step | Round | Input | Cached input | Output | Cost (API prices) |")
+        print("|---|---|---|---|---|---|")
+        totals, cost = [0, 0, 0], 0.0
         for m in rows:
             values = [int(m.get(k, 0)) for k in ("tokens_in", "tokens_cached", "tokens_out")]
             totals = [a + b for a, b in zip(totals, values)]
-            print(f"| {m.get('step')} | {m.get('round')} | " + " | ".join(f"{v:,}" for v in values) + " |")
-        print("| **Total** | | " + " | ".join(f"**{v:,}**" for v in totals) + " |")
+            cost += float(m.get("cost_usd", 0))
+            cells = " | ".join(f"{v:,}" for v in values)
+            print(f"| {m.get('step')} | {m.get('round')} | {cells} | ${float(m.get('cost_usd', 0)):.2f} |")
+        cells = " | ".join(f"**{v:,}**" for v in totals)
+        print(f"| **Total** | | {cells} | **${cost:.2f}** |")
     else:
         sys.exit(f"unknown command: {command}")
 

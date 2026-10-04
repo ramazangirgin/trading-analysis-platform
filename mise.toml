@@ -114,19 +114,22 @@ description = "Raise the version in gradle.properties, package.json and ta-runne
 run = "scripts/version.sh bump"
 
 # Agentic development (doc/coding-convention/repository-agentic-development.md): issue → plan →
-# agent implementation → agent review → pull request. Planning is the plan-from-issue Claude Code
-# skill; these run the agents' steps locally, as the agent workflows do in GitHub Actions. They
-# need DEEPSEEK_API_KEY in the environment (or AGENT_BASE_URL="" for Claude Code's own login).
+# agent implementation → agent review → pull request, on this machine with Claude Code and your own
+# Claude Code login. Planning is the plan-from-issue Claude Code skill.
 [tasks."agent:plan-branch"]
 description = "Push a plan on its own branch: mise run agent:plan-branch .plans/<issue>-<slug>.md"
 run = "scripts/agent/plan-branch.sh"
 
+[tasks."agent:run"]
+description = "Agents take an approved plan to a pull request ready for review: mise run agent:run plan/<issue>-<slug>"
+run = "scripts/agent/run.sh"
+
 [tasks."agent:implement"]
-description = "Developer agent implements a plan, opens a draft PR: mise run agent:implement plan/<issue>-<slug>"
+description = "Only the implementation and the draft PR: mise run agent:implement plan/<issue>-<slug>"
 run = "scripts/agent/implement.sh"
 
 [tasks."agent:next"]
-description = "Next step of the review → fix loop on an agent's PR: mise run agent:next plan/<issue>-<slug>"
+description = "Continue the review → fix loop of an agent PR to its end: mise run agent:next plan/<issue>-<slug>"
 run = "scripts/agent/next.sh"
 
 [tasks.clean]

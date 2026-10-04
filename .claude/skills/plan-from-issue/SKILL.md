@@ -75,9 +75,8 @@ from a clean working tree; the plan file may be untracked.
 ## 5. Tell the user what is next
 
 Print the branch link(s) and the next steps: review the plan on the branch (edit it there and push,
-or ask for changes), then start the implementation with
+or ask for changes), then let the agents take it to a pull request ready for review:
 
 ```sh
-gh workflow run agent-implement.yml -f plan_branch=plan/<issue>-<slug>   # in GitHub Actions
-mise run agent:implement plan/<issue>-<slug>                             # or locally
+mise run agent:run plan/<issue>-<slug>
 ```
