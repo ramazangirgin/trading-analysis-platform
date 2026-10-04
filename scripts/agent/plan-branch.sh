@@ -4,7 +4,7 @@
 #
 #   scripts/agent/plan-branch.sh .plans/<issue>-<slug>.md
 #
-# Creates plan/<issue>-<slug> from origin/main with one commit that adds only the plan file, pushes
+# Creates plan/<issue>-<slug> from origin/$AGENT_BASE_BRANCH (main) with one commit that adds only the plan file, pushes
 # it and comments the branch link on the issue. Works in a temporary worktree, so the current
 # checkout is left alone and the plan file may be untracked. Fails if the branch exists already.
 file=${1:?usage: $0 .plans/<issue>-<slug>.md}

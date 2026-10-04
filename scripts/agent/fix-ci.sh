@@ -11,6 +11,7 @@ source "$(dirname "$0")/lib.sh"
 
 pr=${1:?usage: $0 <pr>}
 branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
+use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 attempt=$(($(count_steps "$pr" ci-fix) + 1))
 
@@ -20,7 +21,7 @@ run=$(gh run list --workflow ci.yml --commit "$head" --status failure --limit 1 
 [ -n "$run" ] || die "no failed CI run on $head"
 
 {
-  cat "$AGENT_DIR/prompts/fix-ci.md"
+  prompt fix-ci.md
   echo
   echo "## The plan: $plan"
   echo

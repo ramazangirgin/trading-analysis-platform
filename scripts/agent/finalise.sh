@@ -12,6 +12,7 @@ source "$(dirname "$0")/lib.sh"
 
 pr=${1:?usage: $0 <pr>}
 branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
+use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 git fetch --quiet origin "$AGENT_BASE_BRANCH" "$branch"
 comments=$(pr_step_comments "$pr")
