@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Part of step 5 of the agentic development flow
-# (doc/agentic-development.md): the developer agent fixes a red CI.
+# (docs/agentic-development.md): the developer agent fixes a red CI.
 #
 #   scripts/agent/fix-ci.sh <pr>
 #

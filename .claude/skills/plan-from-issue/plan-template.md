@@ -2,7 +2,7 @@
 
 - **Issue**: #<issue> (<issue title>)
 - **Plan**: <n> of <total> for this issue; depends on: <plan names, or "none">
-- **Version bump**: <major | minor | patch> (doc/coding-convention/repository-versioning-and-releases.md)
+- **Version bump**: <major | minor | patch> (docs/coding-convention/repository-versioning-and-releases.md)
 
 ## Goal
 
@@ -12,7 +12,7 @@
 
 | Part | Conventions that apply |
 |---|---|
-| <backend / frontend / ta-runner / e2e / deploy / CI / docs> | <the documents under doc/coding-convention/ and the rules from them this change must follow> |
+| <backend / frontend / ta-runner / e2e / deploy / CI / docs> | <the documents under docs/coding-convention/ and the rules from them this change must follow> |
 
 ## Design
 
@@ -51,7 +51,7 @@ the same pull request. "None" only with the reason.
 
 | What | Where | Change |
 |---|---|---|
-| Text | <README.md section "…", doc/<doc>.md, doc/coding-convention/<doc>.md, docs/event-protocol.md, …> | <what to add or correct> |
+| Text | <README.md section "…", docs/<doc>.md, docs/coding-convention/<doc>.md, docs/event-protocol.md, …> | <what to add or correct> |
 | Screenshot | <docs/screenshots/<name>.png, new or retaken> | <the page and state it shows, the data it needs, the README section that shows it> |
 
 ## Out of scope

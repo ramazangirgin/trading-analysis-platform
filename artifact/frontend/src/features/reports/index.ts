@@ -1,5 +1,5 @@
 // Public API of the reports feature: report text, prices, export and import of existing runs.
-// Pages and other features import from here only (doc/coding-convention/frontend-folder-structure.md).
+// Pages and other features import from here only (docs/coding-convention/frontend-folder-structure.md).
 import { defineAsyncComponent } from 'vue'
 
 export { reportsApi } from './api'

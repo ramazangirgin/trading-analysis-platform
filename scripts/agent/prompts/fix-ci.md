@@ -4,7 +4,7 @@ current branch. The failing jobs' log follows. Make CI pass. Nobody will answer 
 - Find the cause in the log, then in the code. Fix the cause, not the symptom: do not delete,
   skip or weaken tests or checks, and do not lower thresholds.
 - Follow the plan (path below) and the convention documents of the part you change
-  (`doc/coding-convention/`).
+  (`docs/coding-convention/`).
 - Reproduce and check locally what you can: `mise run check`, and the failing part's tests
   (`./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build`,
   `mise run runner-test`, `mise run e2e`). Fix formatting with `mise run format`. A version check

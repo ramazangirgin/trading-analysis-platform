@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step 7 of the agentic development flow (doc/agentic-development.md):
+# Step 7 of the agentic development flow (docs/agentic-development.md):
 # the developer agent addresses the findings of the latest review round.
 #
 #   scripts/agent/fix.sh <pr>

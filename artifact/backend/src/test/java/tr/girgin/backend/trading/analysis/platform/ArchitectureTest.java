@@ -48,7 +48,7 @@ class ArchitectureTest {
             "tr.girgin.backend.trading.analysis.platform.domain.*.adapter.runner..";
     private static final String ORCHESTRATION = "tr.girgin.backend.trading.analysis.platform.orchestration..";
 
-    // Package placement (doc/coding-convention/backend-java-package-structure.md).
+    // Package placement (docs/coding-convention/backend-java-package-structure.md).
     private static final String BFF_API_ROOT = BASE + ".bff.controller.api";
     private static final String BFF_IMPL_ROOT = BASE + ".bff.delegate.impl";
     private static final String BFF_IMPL_MAPPER = BASE + ".bff.delegate.impl.mapper..";
@@ -211,7 +211,7 @@ class ArchitectureTest {
             .resideInAPackage(ORCHESTRATION);
 
     // --- Package placement -----------------------------------------------------------------
-    // Every kind of class has one place; see doc/coding-convention/backend-java-package-structure.md.
+    // Every kind of class has one place; see docs/coding-convention/backend-java-package-structure.md.
 
     @ArchTest
     static final ArchRule module_root_packages_hold_no_classes = topLevelClasses()

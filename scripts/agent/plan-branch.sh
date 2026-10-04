@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step 2 of the agentic development flow (doc/agentic-development.md):
+# Step 2 of the agentic development flow (docs/agentic-development.md):
 # pushes a plan on its own branch.
 #
 #   scripts/agent/plan-branch.sh .plans/<issue>-<slug>.md

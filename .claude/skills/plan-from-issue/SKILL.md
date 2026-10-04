@@ -6,7 +6,7 @@ description: Turn a GitHub issue of this repository into one or more reviewed im
 # Plan from issue
 
 Step 1 and 2 of the agentic development flow
-([doc/agentic-development.md](../../../doc/agentic-development.md)).
+([docs/agentic-development.md](../../../docs/agentic-development.md)).
 The plan is what the developer approves and what the developer and review agents are checked
 against, so it must be specific enough to implement without guessing, and must follow the
 documented architecture and conventions instead of inventing new ones.
@@ -27,14 +27,14 @@ already done or planned elsewhere. Stop and tell the user if the issue is closed
 Find the affected parts from the issue and from the code (search for the classes, components and
 endpoints it names). Before designing anything, read:
 
-| Always | Root `README.md`, `doc/coding-convention/README.md`, `doc/coding-convention/repository-versioning-and-releases.md` |
+| Always | Root `README.md`, `docs/coding-convention/README.md`, `docs/coding-convention/repository-versioning-and-releases.md` |
 |---|---|
-| Backend (`artifact/backend`) | `doc/coding-convention/backend-*.md` |
-| Frontend (`artifact/frontend`) | `doc/coding-convention/frontend-*.md` |
-| ta-runner (`artifact/ta-runner`) | `doc/coding-convention/ta-runner-*.md`, `artifact/ta-runner/README.md` if present |
+| Backend (`artifact/backend`) | `docs/coding-convention/backend-*.md` |
+| Frontend (`artifact/frontend`) | `docs/coding-convention/frontend-*.md` |
+| ta-runner (`artifact/ta-runner`) | `docs/coding-convention/ta-runner-*.md`, `artifact/ta-runner/README.md` if present |
 | Runner ↔ backend contract | `docs/event-protocol.md` |
 | End-to-end tests (`e2e/`) | `e2e/` README or config, the existing tests |
-| Deploy, CI | `deploy/`, `.github/workflows/`, `doc/coding-convention/repository-*.md` |
+| Deploy, CI | `deploy/`, `.github/workflows/`, `docs/coding-convention/repository-*.md` |
 
 Then read the existing code the change builds on, so the plan names real classes, files and
 patterns. Note which existing tests cover the area.
@@ -60,7 +60,7 @@ from the issue title, hyphenated) and fill in every section.
   - the root `README.md`: the section describing the feature (a new feature gets a paragraph where
     users look for it), the CI table when tests or jobs change, the task list when `mise.toml`
     changes;
-  - `doc/` and `doc/coding-convention/` when a convention, tool or flow changes;
+  - `docs/` and `docs/coding-convention/` when a convention, tool or flow changes;
     `docs/event-protocol.md` when the runner ↔ backend contract changes; `openapi.json` and the
     frontend's API types when the REST API changes (`mise run api-types`);
   - **screenshots**: the README shows every page (`docs/screenshots/*.png`). A new page or view gets

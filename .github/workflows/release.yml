@@ -1,4 +1,4 @@
-# Release: every commit on main is a release (doc/coding-convention/repository-versioning-and-releases.md).
+# Release: every commit on main is a release (docs/coding-convention/repository-versioning-and-releases.md).
 # After CI passed on a push to main, this tags the commit vX.Y.Z (the version in gradle.properties)
 # and publishes a GitHub Release with notes generated from the merged pull requests and the
 # platform jar CI built, with its SHA-256 checksum.
