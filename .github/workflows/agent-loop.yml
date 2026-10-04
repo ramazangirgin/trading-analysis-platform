@@ -1,0 +1,87 @@
+# Agentic development, steps 5-9 (doc/coding-convention/repository-agentic-development.md): after
+# CI on an agent's pull request, the next step of the review → fix loop: fix a red CI, review, fix
+# the review findings, or finalise (mark the pull request ready for review). Each step that pushes
+# starts CI again, and CI starts this workflow again, so the review always runs on a green head.
+#
+# Thin on purpose: scripts/agent/next.sh reads the pull request's state and runs the step; it acts
+# only on open draft pull requests labelled "agent" (remove the label to stop the loop). By hand,
+# e.g. after fixing a stopped loop:
+#
+#   gh workflow run agent-loop.yml -f branch=plan/<issue>-<slug>
+#
+# Security: workflow_run runs with secrets, so it acts only on branches of this repository (never
+# a fork's), and runs the scripts and prompts of the default branch, not the pull request's.
+
+name: Agent loop
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: ["plan/**"]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Plan branch (plan/<issue>-<slug>) of the agent's pull request
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  # The check before the setup: the pull request, its labels and CI's result.
+  pull-requests: read
+  checks: read
+
+# One step at a time per branch, in order; a running agent is never cancelled halfway.
+concurrency:
+  group: agent-${{ github.event.workflow_run.head_branch || inputs.branch }}
+  cancel-in-progress: false
+
+env:
+  MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
+
+jobs:
+  next:
+    name: Next step on ${{ github.event.workflow_run.head_branch || inputs.branch }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.conclusion != 'cancelled')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Nothing to do (not an agent pull request, CI still running): stop before the setup. A run
+      # started by hand always goes on.
+      - name: Anything to do
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || inputs.branch }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo "run=run" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=$(scripts/agent/next.sh --check "$BRANCH")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: ./.github/actions/agent-setup
+        if: steps.check.outputs.run == 'run'
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          app-private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          token: ${{ secrets.AGENT_GITHUB_TOKEN }}
+
+      - name: Run the loop
+        if: steps.check.outputs.run == 'run'
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          AGENT_MODEL: ${{ vars.AGENT_MODEL }}
+          AGENT_REVIEW_MODEL: ${{ vars.AGENT_REVIEW_MODEL }}
+          AGENT_SMALL_MODEL: ${{ vars.AGENT_SMALL_MODEL }}
+          AGENT_MAX_TOKENS: ${{ vars.AGENT_MAX_TOKENS }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || inputs.branch }}
+        run: scripts/agent/next.sh "$BRANCH"

@@ -13,6 +13,7 @@ enforces each rule.
 | [backend-java-formatting.md](backend-java-formatting.md) | Backend (Java): formatting with Spotless and Palantir Java Format, why that formatter, how to fix a finding |
 | [repository-git-hooks.md](repository-git-hooks.md) | Whole repository: the pre-commit hook (lefthook), what it runs on which files, how to install, run or skip it |
 | [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
+| [repository-agentic-development.md](repository-agentic-development.md) | Whole repository: issue → plan → agent implementation → agent review → pull request; the skill, scripts and workflows, settings and limits |
 
 The structure documents cover package / folder placement and the dependencies between packages.
 The Checkstyle document covers the backend's naming, imports, size and coding rules; the formatting
