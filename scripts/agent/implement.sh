@@ -35,6 +35,7 @@ session=$(py "$AGENT_DIR/agent_json.py" get "$AGENT_TMP/implement.json" session_
 
 # Gate: what CI would reject fast. Two more tries, each resuming the agent with the failure.
 for attempt in 1 2 3; do
+  log "checking the implementation (attempt $attempt): commits, version bump, mise run check"
   problems=""
   [ -z "$(git status --porcelain)" ] || problems+="Uncommitted changes are left:"$'\n'"$(git status --short)"$'\n\n'
   [ "$(git rev-list --count "$start..HEAD")" -gt 0 ] || problems+="Nothing was committed."$'\n\n'
@@ -44,7 +45,10 @@ for attempt in 1 2 3; do
   if ! out=$(mise run check 2>&1); then
     problems+="mise run check failed:"$'\n'"$(tail -n 80 <<<"$out")"$'\n\n'
   fi
-  [ -n "$problems" ] || break
+  if [ -z "$problems" ]; then
+    log "checks passed"
+    break
+  fi
   [ "$attempt" -lt 3 ] || die "the implementation still fails its checks:"$'\n'"$problems"
   log "checks failed (attempt $attempt), resuming the agent"
   printf 'The checks failed. Fix the problems, run the checks again and commit:\n\n%s\n' "$problems" >"$AGENT_TMP/retry.md"
@@ -75,6 +79,7 @@ ${not_done:-Nothing.}
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
+log "opening the draft pull request"
 gh label create "$AGENT_LABEL" --color 5319E7 --description "Driven by the agent loop; remove to stop it" 2>/dev/null || true
 url=$(gh pr create --draft --base "$AGENT_BASE_BRANCH" --head "$branch" --title "${title:-$branch}" \
   --body-file "$AGENT_TMP/pr.md" --label "$AGENT_LABEL")
