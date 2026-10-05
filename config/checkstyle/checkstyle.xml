@@ -9,10 +9,14 @@
 
     Layout (indentation, braces, import order, whitespace inside a line) is left to the formatter
     (Spotless with Palantir Java Format, docs/coding-convention/backend-java-formatting.md), so the
-    two tools never disagree. Project-specific rules (#55) build on this file.
+    two tools never disagree.
+
+    The project's own rules (TAP-*, #55) are instances of generic custom checks
+    (build-logic/checkstyle-rules), configured at the end of the TreeWalker.
 
     Rules, the reasoning behind each threshold and how to suppress a finding:
-    docs/coding-convention/backend-java-checkstyle.md
+    docs/coding-convention/backend-java-checkstyle.md; the custom checks:
+    docs/coding-convention/backend-java-checkstyle-custom-checks.md
 -->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
@@ -287,5 +291,12 @@
         <module name="MissingOverride"/>
         <module name="MissingDeprecated"/>
         <module name="AnnotationLocation"/>
+
+        <!-- Project rules (#55): configured custom checks; see backend-java-checkstyle.md -->
+        <module name="tr.girgin.checkstyle.ForbiddenMemberAccessCheck">
+            <property name="id" value="TAP-L1"/>
+            <property name="members" value="System#out, System#err, *#printStackTrace(0)"/>
+            <property name="suggestion" value="Use an SLF4J logger: log.info(...)."/>
+        </module>
     </module>
 </module>

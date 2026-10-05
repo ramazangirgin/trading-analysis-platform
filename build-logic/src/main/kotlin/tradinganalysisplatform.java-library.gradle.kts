@@ -26,6 +26,12 @@ dependencies {
 
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
     testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())
+
+    // The project's own Checkstyle checks (build-logic/checkstyle-rules, an included build), on the
+    // classpath of checkstyleMain / checkstyleTest. Declaring any dependency replaces the plugin's
+    // default one, so Checkstyle itself is declared too (same version as toolVersion below).
+    add("checkstyle", libs.findLibrary("checkstyle").get())
+    add("checkstyle", "tradinganalysisplatform:checkstyle-rules")
 }
 
 // Spring resolves @PathVariable/@RequestParam names from parameter names. The Spring Boot
