@@ -8,7 +8,8 @@ Javadoc rules. They come from [Checkstyle](https://checkstyle.org/)'s built-in c
 Checkstyle does not check layout (indentation, brace placement, import order, whitespace inside a
 line). The formatter does that ([Spotless with Palantir Java Format](backend-java-formatting.md)),
 so the two tools never report conflicting rules.
-Project-specific rules (#55) are added to the same config.
+The project's own rules (#55) are generic [custom checks](backend-java-checkstyle-custom-checks.md),
+configured in the same config as [project rules](#project-rules).
 
 ## Where it runs
 
@@ -115,6 +116,32 @@ The set is kept small:
   not format.
 - `MissingOverride` (with `{@inheritDoc}`), `MissingDeprecated`, `AnnotationLocation`.
 
+## Project rules
+
+Rules that Checkstyle's built-in checks do not cover are the project's own. Each is a configured
+instance of a generic [custom check](backend-java-checkstyle-custom-checks.md) (or, when one fits, of a
+built-in check such as `IllegalImport`, `TodoComment` or `RegexpSingleline`, linked to its
+[checkstyle.org](https://checkstyle.org/checks.html) page instead of a reference document), at the end of
+`TreeWalker` in `checkstyle.xml`. A finding starts with the rule's id and ends with its advice:
+`TAP-L1: Field 'System#out' is not allowed. Use an SLF4J logger: log.info(...).`
+
+**Ids** are `TAP-<group><n>`, with a group per topic (`L`, `D`, `T`, `C`, `J`, `S`, `X`; `L` is
+logging). Ids are not reused.
+
+**Suppressing** one is as for any check, with the id: `@SuppressWarnings("checkstyle:TAP-L1")` and a
+reason on the same line or the line above (see [Suppressing a finding](#suppressing-a-finding)).
+
+**A project rule goes in at `error`**, with its existing findings fixed in the same pull request: the
+build fails on a warning too (`maxWarnings = 0`). Every rule is proved by fixtures in the custom checks
+module (`rules/<id>/Violation.java`, `Compliant.java`) that run on every build, so the proof stays in
+the repository.
+
+### Rules catalogue
+
+| Id | Rule | Sources | Check | Parameters | Reason | Bad / good |
+|---|---|---|---|---|---|---|
+| `TAP-L1` | No `System.out`, `System.err` and no `printStackTrace()` without arguments; use SLF4J | main and test | [`ForbiddenMemberAccessCheck`](backend-java-checkstyle-checks/ForbiddenMemberAccessCheck.md) | `members = System#out, System#err, *#printStackTrace(0)` | Console output has no level, no logger name and no timestamp, and bypasses the log configuration; a stack trace belongs in the log with the message | `System.out.println("started");` / `log.info("started");` and `e.printStackTrace();` / `log.error("failed", e);` |
+
 ## Suppressing a finding
 
 Fix the finding where you can. When the code is right as it is, suppress the finding where it
@@ -156,6 +183,7 @@ Suppressions in the code today:
 ## Adding or changing a rule
 
 Follow [Changing a convention](README.md#changing-a-convention): change this document, the config
-and the code together, and show that the rule fails on a deliberate violation before merging. When a
-new check has many existing findings, it may start at `severity="warning"` until they are fixed, then
-move to `error`. A check is not left at warning level for good.
+and the code together, and show that the rule fails on a deliberate violation before merging. For a
+[project rule](#project-rules) the fixtures in the custom checks module are that proof. A new check
+goes in at `error` with its existing findings fixed in the same pull request: `maxWarnings = 0` makes a
+warning fail the build as well, so a check cannot wait at warning level.
