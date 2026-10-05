@@ -7,6 +7,8 @@
 # Creates plan/<issue>-<slug> from origin/$AGENT_BASE_BRANCH (main) with one commit that adds only the plan file, pushes
 # it and comments the branch link on the issue. Works in a temporary worktree, so the current
 # checkout is left alone and the plan file may be untracked. Fails if the branch exists already.
+# An untracked plan file is removed once pushed: the branch holds it, and a leftover copy would
+# stop agent:run (it needs a clean working tree).
 file=${1:?usage: $0 .plans/<issue>-<slug>.md}
 [ -f "$file" ] || {
   echo "agent: no such file: $file" >&2
@@ -45,4 +47,8 @@ gh issue comment "$issue" --body "Plan for review: [\`.plans/$name.md\`]($url) o
 Edit it on the branch, or start the implementation:
 \`mise run agent:run $branch\`" >/dev/null
 git branch --quiet -D "$branch"
+# The plan now lives on its branch; drop the untracked local copy. A tracked file is left alone.
+if ! git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+  rm "$file"
+fi
 echo "$url"
