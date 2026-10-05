@@ -10,13 +10,14 @@ enforces each rule.
 | [frontend-folder-structure.md](frontend-folder-structure.md) | Frontend (Vue): `app` / `pages` / `features` / `shared`, what may import what |
 | [ta-runner-python-package-structure.md](ta-runner-python-package-structure.md) | ta-runner (Python): sub-packages, layer order, the single upstream import point |
 | [backend-java-checkstyle.md](backend-java-checkstyle.md) | Backend (Java): Checkstyle rules (naming, imports, size, bug-prone patterns, design, Javadoc) and how to suppress a finding |
+| [backend-java-checkstyle-custom-checks.md](backend-java-checkstyle-custom-checks.md) | Backend (Java): the project's own Checkstyle rules (`TAP-*`) as generic, configurable custom checks: module, contract, tests, reference per check |
 | [backend-java-formatting.md](backend-java-formatting.md) | Backend (Java): formatting with Spotless and Palantir Java Format, why that formatter, how to fix a finding |
 | [repository-git-hooks.md](repository-git-hooks.md) | Whole repository: the pre-commit hook (lefthook), what it runs on which files, how to install, run or skip it |
 | [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
 
 The structure documents cover package / folder placement and the dependencies between packages.
-The Checkstyle document covers the backend's naming, imports, size and coding rules; the formatting
-document its layout. The frontend is formatted by Prettier (`artifact/frontend/.prettierrc.json`);
+The Checkstyle document covers the backend's naming, imports, size and coding rules, and the project
+rules; the custom checks document how those are built; the formatting document its layout. The frontend is formatted by Prettier (`artifact/frontend/.prettierrc.json`);
 ta-runner has no formatter yet. Error handling and testing conventions will get documents of their
 own.
 
@@ -28,6 +29,7 @@ Every rule is checked in three places, by the same tool:
 |---|---|---|---|---|
 | Backend | [ArchUnit](https://www.archunit.org/) | `artifact/backend/src/test/java/.../ArchitectureTest.java` | `./gradlew :backend:test`, part of `mise run build` and `mise run check` | pre-commit, when Java files are staged |
 | Backend | [Checkstyle](https://checkstyle.org/) | `config/checkstyle/checkstyle.xml` | `checkstyleMain` / `checkstyleTest`, part of `mise run build` and `mise run check` | pre-commit, when Java files are staged |
+| Backend | Custom Checkstyle checks (the project rules `TAP-*`), a [module of their own](backend-java-checkstyle-custom-checks.md) | `build-logic/checkstyle-rules`, instances in `config/checkstyle/checkstyle.xml` | the module's tests, 100% coverage gate and `ProjectRulesTest` run with `./gradlew build` and `mise run check`; the rules themselves in `checkstyleMain` / `checkstyleTest` | pre-commit runs the rules (Checkstyle) when Java files are staged; the module's tests run in the build and CI |
 | Backend | [Spotless](https://github.com/diffplug/spotless) with [Palantir Java Format](https://github.com/palantir/palantir-java-format) (formatting) | `build-logic/.../tradinganalysisplatform.java-library.gradle.kts` | `spotlessCheck`, part of `mise run build`, `mise run check` and `mise run format-check`; `mise run format` fixes | pre-commit, Java files changed since `HEAD` |
 | Frontend | [Prettier](https://prettier.io/) (formatting) | `artifact/frontend/.prettierrc.json` | `pnpm lint`, part of `mise run build`, `mise run check` and `mise run format-check`; `mise run format` fixes | pre-commit, staged files |
 | Frontend | [eslint-plugin-boundaries](https://www.jsboundaries.dev/) and `no-restricted-imports` | `artifact/frontend/eslint.config.js` | `pnpm lint`, part of `mise run build` (`:frontend:pnpmLint`) and `mise run check` | pre-commit |
@@ -36,7 +38,7 @@ Every rule is checked in three places, by the same tool:
 - **CI** runs all of them: the *Backend and frontend* job (`mise run format-check` for the formatting
   of every file, then `mise run build`) and the *ta-runner* job (`mise run runner-test`), see [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). CI is
   the authority: a hook can be skipped, a failing CI check blocks the merge.
-- **`mise run check`** runs every structure check, lint and the frontend type-check, but no tests:
+- **`mise run check`** runs every structure check, lint and the frontend type-check, and the custom Checkstyle checks' own tests, but no other tests:
   the quick check before pushing (seconds when Gradle is warm).
 - **Git hooks** run them before a commit, for the staged files' part of the code base: configured in
   [`lefthook.yml`](../../lefthook.yml), installed with `mise run hooks`; what runs, and why lefthook:
