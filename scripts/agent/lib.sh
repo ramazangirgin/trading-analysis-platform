@@ -151,7 +151,8 @@ AGENT_REVIEW_TOOLS=(
 
 # run_agent <model> <prompt file> <output json> [tool...] [-- extra claude args...]
 # Runs Claude Code headless and writes its JSON result (result, structured_output, usage,
-# session_id) to <output json>. Fails if the agent reports an error.
+# session_id) to <output json>. Fails if the agent reports an error. While it runs, each step of
+# the agent (tool calls, messages, to-dos) is logged; the full stream goes to <output json>l.
 run_agent() {
   local model=$1 prompt=$2 out=$3
   shift 3
@@ -166,12 +167,13 @@ run_agent() {
   [ -z "$model" ] || extra+=(--model "$model")
 
   use_claude_login
-  log "running $(model_name "$model") ($(basename "$prompt"))"
+  log "running $(model_name "$model") ($(basename "$prompt")); full log: ${out}l"
+  rm -f "$out"
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
-  env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format json --permission-mode dontAsk \
+  env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format stream-json --verbose --permission-mode dontAsk \
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
-    ${extra[@]+"${extra[@]}"} <"$prompt" >"$out" || true
+    ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" || true
   [ -s "$out" ] || die "the agent wrote no result ($out)"
   if [ "$(py "$AGENT_DIR/agent_json.py" get "$out" is_error)" = True ]; then
     die "the agent failed: $(py "$AGENT_DIR/agent_json.py" get "$out" result)"
@@ -238,6 +240,7 @@ else:
 # Checks out branch $1 at its remote head, with a clean working tree.
 checkout_branch() {
   [ -z "$(git status --porcelain)" ] || die "the working tree is not clean"
+  log "checking out $1"
   git fetch --quiet origin "$AGENT_BASE_BRANCH" "$1"
   git switch --quiet "$1" 2>/dev/null || git switch --quiet -c "$1" --track "origin/$1"
   git merge --quiet --ff-only "origin/$1"
@@ -247,5 +250,6 @@ push_branch() {
   local branch
   branch=$(git branch --show-current)
   case $branch in main | "$AGENT_BASE_BRANCH") die "refusing to push $branch" ;; esac
+  log "pushing $branch"
   git push --quiet origin "HEAD:refs/heads/$branch"
 }

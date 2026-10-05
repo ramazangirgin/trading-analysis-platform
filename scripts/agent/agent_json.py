@@ -1,5 +1,8 @@
 """Reads Claude Code's JSON results and the agent-step markers (scripts/agent/lib.sh).
 
+    agent_json.py stream <result.json> <log.jsonl>  Claude Code's stream-json on stdin: progress to
+                                                    stderr, the stream to <log.jsonl>, the final
+                                                    result to <result.json>
     agent_json.py get <result.json> <key>           a top-level value (structured_output as JSON)
     agent_json.py usage-line <result.json>...       tokens and cost, for the log
     agent_json.py usage-marker <result.json>...     "tokens=... tokens_in=... ..." for a step marker
@@ -13,8 +16,112 @@ Standard library only: run with `uv run --no-project python`.
 import json
 import re
 import sys
+import threading
+import time
 
 MARKER = re.compile(r"<!-- agent-step ([^>]*?) -->")
+
+# Silence (seconds) after which the progress says the agent is still at its last action.
+HEARTBEAT = 120
+
+# The input field that best describes a tool call, per tool.
+TOOL_DETAIL = {
+    "Bash": "command",
+    "Read": "file_path",
+    "Edit": "file_path",
+    "Write": "file_path",
+    "Glob": "pattern",
+    "Grep": "pattern",
+    "Task": "description",
+    "TaskCreate": "subject",
+    "ToolSearch": "query",
+}
+
+
+def one_line(text, width=140):
+    text = " ".join(str(text).split())
+    return text if len(text) <= width else text[: width - 1] + "…"
+
+
+def describe(block):
+    """A short line for one content block of an assistant message, or None."""
+    if block.get("type") == "text" and block.get("text", "").strip():
+        return "says: " + one_line(block["text"])
+    if block.get("type") != "tool_use":
+        return None
+    name, args = block.get("name", "?"), block.get("input") or {}
+    if name == "TodoWrite":
+        todos = args.get("todos", [])
+        doing = [t.get("activeForm") or t.get("content") for t in todos if t.get("status") == "in_progress"]
+        done = sum(1 for t in todos if t.get("status") == "completed")
+        return f"todo {done}/{len(todos)} done" + (": " + one_line("; ".join(doing)) if doing else "")
+    if name == "TaskUpdate":
+        return f"task {args.get('taskId', '?')} {args.get('status') or 'updated'}"
+    if name == "StructuredOutput":
+        return "writing its result"
+    detail = args.get(TOOL_DETAIL.get(name, ""), "")
+    return f"{name} {one_line(detail)}" if detail else name
+
+
+def stream(out_path, log_path):
+    """Follows a stream-json run: one stderr line per step, so a long run shows it is alive."""
+    start = time.monotonic()
+    state = {"last": time.monotonic(), "what": "starting", "done": False}
+    lock = threading.Lock()
+
+    def say(text):
+        elapsed = int(time.monotonic() - start)
+        print(f"agent:   [{elapsed // 60:02d}:{elapsed % 60:02d}] {text}", file=sys.stderr, flush=True)
+
+    def heartbeat():
+        while True:
+            time.sleep(15)
+            with lock:
+                if state["done"]:
+                    return
+                idle = time.monotonic() - state["last"]
+                if idle >= HEARTBEAT:
+                    say(f"still working ({int(idle) // 60} min since: {state['what']})")
+                    state["last"] = time.monotonic()
+
+    threading.Thread(target=heartbeat, daemon=True).start()
+    result = None
+    with open(log_path, "a", encoding="utf-8") as log:
+        for line in sys.stdin:
+            log.write(line)
+            log.flush()
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            kind = event.get("type")
+            lines = []
+            if kind == "system" and event.get("subtype") == "init":
+                lines.append(f"session {event.get('session_id')}")
+            elif kind == "assistant":
+                prefix = "  (subagent) " if event.get("parent_tool_use_id") else ""
+                lines += [prefix + d for d in map(describe, event.get("message", {}).get("content", [])) if d]
+            elif kind == "user":
+                for block in event.get("message", {}).get("content", []) or []:
+                    if isinstance(block, dict) and block.get("type") == "tool_result" and block.get("is_error"):
+                        content = block.get("content")
+                        if isinstance(content, list):
+                            content = " ".join(c.get("text", "") for c in content if isinstance(c, dict))
+                        lines.append("  tool error: " + one_line(content or "", 120))
+            elif kind == "result":
+                result = event
+            with lock:
+                for text in lines:
+                    say(text)
+                    if not text.startswith("  tool error"):
+                        state["what"] = text
+                if lines:
+                    state["last"] = time.monotonic()
+    with lock:
+        state["done"] = True
+    if result is not None:
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(result, f)
 
 
 def load(path):
@@ -47,7 +154,9 @@ def markers(stream):
 
 def main(argv):
     command, args = argv[1], argv[2:]
-    if command == "get":
+    if command == "stream":
+        stream(args[0], args[1])
+    elif command == "get":
         value = load(args[0]).get(args[1])
         print(json.dumps(value) if isinstance(value, (dict, list)) else value)
     elif command == "usage-line":
