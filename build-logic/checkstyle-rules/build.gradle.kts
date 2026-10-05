@@ -30,7 +30,18 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
     // The tests read the project's real Checkstyle config and the documentation.
-    systemProperty("repository.root", rootDir.resolve("../..").canonicalPath)
+    val repositoryRoot = rootDir.resolve("../..").canonicalFile
+    systemProperty("repository.root", repositoryRoot.path)
+    // The property is only a path: declare the files themselves, so changing them reruns the tests
+    // instead of restoring an UP-TO-DATE or FROM-CACHE result.
+    inputs
+        .file(repositoryRoot.resolve("config/checkstyle/checkstyle.xml"))
+        .withPropertyName("checkstyleConfig")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .dir(repositoryRoot.resolve("docs/coding-convention"))
+        .withPropertyName("codingConventionDocs")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     finalizedBy(tasks.jacocoTestReport)
 }
 
