@@ -174,7 +174,10 @@ and opens a **draft** pull request labelled `agent` (`Closes #<issue>`); after *
 review agent (Opus) reviews it, the developer agent fixes the findings, CI runs again, and once
 more; then the pull request gets a final comment and is marked ready for review. It waits for CI
 after every push, so it takes a while: leave the terminal open. Follow it on the pull request,
-where every step leaves a comment.
+where every step leaves a comment, or in the terminal: while an agent runs, each of its steps (tool
+call, message, to-do) is printed as one line with the time since it started, and after two quiet
+minutes (a long build) a "still working" line. The full stream of each agent call is saved next to
+its result, as `$TMPDIR/agent-<pid>/<step>.jsonl`; its path is printed when the agent starts.
 
 The scripts run from a copy of `scripts/agent/` taken at start, so switching branches does not
 change the running scripts or prompts. Each step can also be run on its own:

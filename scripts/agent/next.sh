@@ -97,7 +97,7 @@ while true; do
   step=$(next_step)
   if [ "$step" = wait ]; then
     [ "$waited" -lt $((AGENT_CI_TIMEOUT * 60)) ] || stop "CI did not finish within $AGENT_CI_TIMEOUT minutes."
-    [ $((waited % 300)) -ne 0 ] || log "#$pr: waiting for $AGENT_CI_CHECK"
+    [ $((waited % 120)) -ne 0 ] || log "#$pr: waiting for $AGENT_CI_CHECK ($((waited / 60)) of $AGENT_CI_TIMEOUT min)"
     $dry_run && exit 0
     sleep 30
     waited=$((waited + 30))
