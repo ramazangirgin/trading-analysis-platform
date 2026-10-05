@@ -33,6 +33,10 @@ dependencyResolutionManagement {
 
 rootProject.name = "trading-analysis-platform"
 
+// The project's own Checkstyle checks, an own build (build-logic itself is for plugins only). Gradle
+// builds the jar from source when the backend's Checkstyle tasks need it; nothing is published.
+includeBuild("build-logic/checkstyle-rules")
+
 include(
     ":backend",
     ":backend:bff:api",

@@ -11,6 +11,8 @@ checkstyle = "14.3.0"
 # Java formatting (Spotless with Palantir Java Format: 120 columns, matching Checkstyle's LineLength).
 spotless = "8.10.3"
 palantirJavaFormat = "2.101.0"
+# Coverage gate of the custom Checkstyle checks (build-logic/checkstyle-rules). 0.8.14+ reads Java 25 classes.
+jacoco = "0.8.14"
 mapstruct = "1.6.3"
 # Docker Engine API client for the Docker runner (also talks to Podman's Docker-compatible API).
 dockerJava = "3.7.1"
@@ -42,6 +44,10 @@ postgresql = { module = "org.postgresql:postgresql" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+assertj-core = { module = "org.assertj:assertj-core" }
+# The Checkstyle API the custom checks are written against; the same version runs the checks.
+checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle" }
 
 springdoc-openapi-webmvc-api = { module = "org.springdoc:springdoc-openapi-starter-webmvc-api", version.ref = "springdoc" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
@@ -55,3 +61,4 @@ spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradl
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
 node = { id = "com.github.node-gradle.node", version.ref = "nodeGradle" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
