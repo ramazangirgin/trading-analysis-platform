@@ -14,7 +14,8 @@ Checkstyle sees source text only, so the check matches names as they are written
   where it is read, also as part of a call (`System.out.println(x)` reports `System.out`) and in a
   method reference (`System.out::println`).
 - **A method** is a call with a receiver: `Thread.sleep(1)`, `e.printStackTrace()`. A call without a
-  receiver (`sleep(1)`, `printStackTrace()`, or a statically imported method) is not reported.
+  receiver (`sleep(1)`, `printStackTrace()`, or a statically imported method) is not reported. A method
+  reference (`Thread::sleep`, `Exception::printStackTrace`) is not a call and is not reported either.
 - **A constructor** is `new Type(...)`, also with a body (`new Random() { }`). Array creation
   (`new Random[3]`, `new int[3]`) is not a constructor call.
 - **The type** in a pattern is a simple or a fully qualified name:
@@ -28,8 +29,9 @@ Checkstyle sees source text only, so the check matches names as they are written
   with a type. A call, `this` or a literal as receiver (`failure().printStackTrace()`) matches only
   the type `*`.
 - **Not reported:** a local variable or parameter with the field's name (`out.println()`), a statically
-  imported field (`import static java.lang.System.out;` and then `out.println()`), the import itself,
-  names in comments and string literals, `Foo.class` and `Foo.this`.
+  imported field (`import static java.lang.System.out;` and then `out.println()`), a method
+  reference to a forbidden method (`list.forEach(Throwable::printStackTrace)`: the argument count is
+  unknown), the import itself, names in comments and string literals, `Foo.class` and `Foo.this`.
 - Each place is reported once, for the first pattern in `members` that matches.
 
 ## Parameters
