@@ -82,7 +82,14 @@ scripts/agent/plan-branch.sh .plans/<issue>-<slug>.md
 
 It creates `plan/<issue>-<slug>` from `origin/main` with exactly one commit that adds only that
 plan file, pushes it, and comments the branch link on the issue. It never touches `main`. Run it
-from a clean working tree; the plan file may be untracked.
+from a clean working tree; the plan file may be untracked. Once pushed, the script removes the
+untracked local copy: the branch holds the plan, and a leftover file would make `mise run agent:run`
+stop with "the working tree is not clean".
+
+After the last branch is pushed, check `git status --short`: it must be empty. If a plan file is
+still there (for example one that was not pushed), compare it with its branch
+(`git show origin/plan/<issue>-<slug>:.plans/<issue>-<slug>.md | cmp - .plans/<issue>-<slug>.md`)
+and remove it only when it is identical; otherwise tell the user.
 
 ## 5. Tell the user what is next
 

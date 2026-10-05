@@ -143,7 +143,8 @@ reads the issue, the issues it links to and the documents of every part it touch
 `.plans/<issue>-<slug>.md` from [`plan-template.md`](../.claude/skills/plan-from-issue/plan-template.md),
 or several plans when the issue does not fit one pull request. Discuss it with Claude in the same
 session until it is right; then the skill pushes one branch per plan
-(`mise run agent:plan-branch .plans/<issue>-<slug>.md`) and links it on the issue.
+(`mise run agent:plan-branch .plans/<issue>-<slug>.md`) and links it on the issue. The local plan
+file is removed once its branch is pushed, so the working tree is clean for step 5.
 
 ### 3. Review the plan
 
