@@ -2,8 +2,9 @@
 
 The whole repository has one [Semantic Versioning](https://semver.org/) version, `MAJOR.MINOR.PATCH`.
 Backend, frontend and ta-runner are built, tested and shipped together, so they always carry the same
-version. Every pull request into `main` raises it, and every commit on `main` is a release: CI tags it
-`vX.Y.Z` and publishes a GitHub Release, with no manual step (#58).
+version. Every pull request into `main` raises it (Renovate's dependency updates excepted), and every
+version raised on `main` is a release: CI tags it `vX.Y.Z` and publishes a GitHub Release, with no
+manual step (#58).
 
 ## Rules
 
@@ -24,6 +25,11 @@ version. Every pull request into `main` raises it, and every commit on `main` is
   mise run version              # prints the version
   ```
 
+- **Exception: Renovate's update pull requests** (head branch `renovate/…`, author `renovate[bot]`)
+  skip the bump check (`check-sync` still runs). The hosted Renovate app cannot run
+  `scripts/version.sh` on its branches. Merged, an update does not release on its own: the release
+  workflow skips a version that already has a release, so the updates ship with the next pull
+  request that raises the version (#9).
 - **Tags are created by CI only**, as annotated `vX.Y.Z` tags, never by hand.
 - Two open pull requests that raise to the same version cannot both merge: the second one must be
   updated with `main` (the ruleset already requires an up-to-date branch) and bumped again.
@@ -32,7 +38,7 @@ version. Every pull request into `main` raises it, and every commit on `main` is
 
 | Where | What |
 |---|---|
-| CI, **Version** job ([`ci.yml`](../../.github/workflows/ci.yml)) | Every run: the three files agree (`scripts/version.sh check-sync`). Pull requests into `main`: the version is higher than `main`'s and than the latest `v*` tag, and `v<version>` does not exist (`check-bump`). The job is in **CI passed**'s `needs`, so a pull request without a bump cannot merge. |
+| CI, **Version** job ([`ci.yml`](../../.github/workflows/ci.yml)) | Every run: the three files agree (`scripts/version.sh check-sync`). Pull requests into `main`: the version is higher than `main`'s and than the latest `v*` tag, and `v<version>` does not exist (`check-bump`), except in Renovate's update pull requests (branch `renovate/…` and author `renovate[bot]`). The job is in **CI passed**'s `needs`, so any other pull request without a bump cannot merge. |
 | Release ([`release.yml`](../../.github/workflows/release.yml)) | After **CI passed** on a push to `main`: tags the commit `vX.Y.Z` and creates a GitHub Release with notes generated from the merged pull requests (grouped by label, [`.github/release.yml`](../../.github/release.yml)) and that run's jar as `trading-analysis-platform-X.Y.Z.jar` with its SHA-256. A version that already has a release is skipped, so a rerun never releases twice. Only the workflow's `GITHUB_TOKEN` is used. |
 | Backend | Spring Boot build info: `/actuator/info` (`build.version`) and the jar manifest (`Implementation-Version`). The jar itself has a fixed name, `platform.jar`, so nothing else depends on the version. |
 | Frontend | Shown at the bottom of every page (`__APP_VERSION__`, from `package.json` at build time). |
@@ -43,11 +49,14 @@ version. Every pull request into `main` raises it, and every commit on `main` is
 
 - The bump is part of the reviewed diff, so the author and the reviewer decide "is this breaking?".
 - Releasing needs nothing but a script and a workflow, and only the workflow's `GITHUB_TOKEN`.
-- Every commit on `main` traces to a tag, a release and a jar.
+- Every version raised on `main` traces to a tag, a release and a jar.
+- Dependency updates are many and small, and the hosted Renovate app cannot bump the version, so
+  they are exempt instead of waiting for a hand-made bump each; they reach a release with the next
+  pull request that raises the version.
 - The parts are built, tested and shipped together, so one version describes all of them.
 
 The price: every pull request carries a one-line version change, and a documentation-only change
-also releases.
+also releases. Dependency updates alone do not release until the next bump.
 
 Images are not published to a registry yet; the release workflow can push them to GHCR
 (`packages: write`) when a server deployment needs them.
