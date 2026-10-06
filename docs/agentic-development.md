@@ -194,6 +194,26 @@ scripts/agent/review.sh <pr>                         # one step: review, fix, fi
 branch than `main` (a stacked change, or trying out a change to the agents themselves); later steps
 use the pull request's base.
 
+#### Step by step, with an approval for each step
+
+The `develop-issue` skill
+([`.claude/skills/develop-issue/SKILL.md`](../.claude/skills/develop-issue/SKILL.md)) goes through
+steps 2 to 9 of this walkthrough in one Claude Code session, and asks before every step that changes
+something: the plan, pushing its branch, the implementation, each CI fix, review, fix round and the
+finalising, the update with `main`, and the merge. It asks for the merge only as an option, and
+merging stays the developer's decision.
+
+```text
+/develop-issue 32
+/develop-issue https://github.com/<owner>/<repo>/issues/32
+```
+
+It plans like `plan-from-issue` and runs the same scripts one step at a time
+(`implement.sh`, then `next.sh --dry-run` for the next step and that step's script), so the pull
+request and its state comments are the same as with `mise run agent:run`. At any gate it can hand
+the rest of the loop to `mise run agent:next`. Started again, it reads where the issue stands from
+its plan branches and pull requests and continues there.
+
 ### 5. When a run stops early
 
 - **Ctrl+C**, a closed laptop, a crash: start `mise run agent:run` again; it continues where it was
