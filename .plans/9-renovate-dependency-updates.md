@@ -81,12 +81,29 @@ so the updates ship with the next pull request that raises the version.
 `repository-versioning-and-releases.md` gets this exception and its reason, and its "every commit
 on `main` is a release" becomes "every version raised on `main` is released".
 
+### Triggering a run from GitHub Actions
+
+The hosted app runs on its own schedule. To start a run on demand without a secret, a manual
+workflow, `.github/workflows/renovate-run.yml` (`workflow_dispatch` only), ticks the checkbox at the
+end of the dependency dashboard issue ("Check this box to trigger a request for Renovate to run
+again on this repository", marked `<!-- manual job -->`), which the app answers with a run:
+
+- `permissions: issues: write` only, with the workflow's own `GITHUB_TOKEN`; no other secret.
+- Finds the open issue titled "Dependency Dashboard" authored by `renovate[bot]`
+  (`gh issue list --author app/renovate`) and replaces `- [ ] <!-- manual job -->` with
+  `- [x] <!-- manual job -->` in its body (`gh issue edit --body-file`).
+- Fails with a clear message when there is no dashboard issue (the app is not installed yet) or no
+  unticked checkbox (a requested run is still pending); prints the issue's link otherwise.
+- That the app reacts to an edit made with `GITHUB_TOKEN` is checked after the merge (below): the
+  rule that `GITHUB_TOKEN` events start no workflows applies to Actions, not to app webhooks.
+
 ### Done when (after the merge, by the admin)
 
 Installing the Renovate GitHub app for this repository is a setting, not code: the admin does it
 after the merge (Renovate then reads `.github/renovate.json5` from `main`, with no onboarding pull
 request), and checks the dashboard issue against the managers above and that the first update pull
-requests run the full CI.
+requests run the full CI. Then `gh workflow run renovate-run.yml`: the checkbox gets ticked and the
+dashboard shows a new run within minutes.
 
 ## Work packages
 
@@ -132,6 +149,19 @@ requests run the full CI.
   - [ ] `mise run version:bump minor`.
 - **Tests**: `mise run check`; `scripts/version.sh check-bump origin/main`.
 
+### WP4: Manual Renovate run from GitHub Actions
+
+- **Depends on**: WP1
+- **Files**: `.github/workflows/renovate-run.yml` (new), `README.md` ("Dependency updates")
+- **Steps**:
+  - [ ] The workflow as designed, with a header comment in the style of `ci.yml` and `release.yml`
+        (what it does, when to use it, why no secret is needed).
+  - [ ] README, "Dependency updates": one sentence on starting a run (Actions tab or
+        `gh workflow run renovate-run.yml`), or ticking the checkbox on the dashboard by hand.
+- **Tests**: the workflow's YAML is valid (CI parses every workflow on push); the edit itself is
+  tried against a scratch issue whose body holds the checkbox line (the same `gh` commands, run
+  locally), and after the merge as in "Done when".
+
 ## Tests
 
 No application code changes, so no unit tests. The proof is the configuration validator, the local
@@ -147,6 +177,7 @@ is checked after the merge, once the admin has installed the app.
 | Text | `README.md`, "Versioning and releases" | Update pull requests are exempt from the bump |
 | Text | `docs/coding-convention/repository-versioning-and-releases.md` | The exception, its reason, the changed release wording (WP2) |
 | Text | `.github/workflows/ci.yml` header comment | The *Version* job's line mentions the exception |
+| Text | `README.md`, "Dependency updates" | How to start a Renovate run from the Actions tab (WP4) |
 | Text | `artifact/ta-runner/pyproject.toml` comment | Renovate opens the TradingAgents pull request |
 | Screenshot | none | No page changes |
 
