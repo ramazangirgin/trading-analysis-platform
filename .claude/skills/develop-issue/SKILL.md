@@ -111,7 +111,10 @@ Repeat until the pull request is ready for review:
 1. Ask the loop for its next step (no gate): `scripts/agent/next.sh --dry-run <pr>`. It prints
    `next step: <step>`, a `waiting for` line, or `stopping: <reason>`.
 2. **wait** (CI is still running on the head): no gate. In the background, run
-   `gh pr checks <pr> --watch --required` and wait for its notification. Then go back to 1. After
+   `sleep 30; gh pr checks <pr> --watch --interval 30` and wait for its notification, then go back
+   to 1. Watch every check, not `--required` only: **CI passed** is reported only once the other
+   jobs are done, so `--required` exits at once with "no required checks reported". The first
+   seconds after a push have no checks at all, hence the `sleep`. After
    `AGENT_CI_TIMEOUT` minutes (60 by default) without a result, say so and ask: wait longer, or
    stop.
 3. **fix-ci**, **review**, **fix**, **finalise**: gate it, then run the step script in the
@@ -119,7 +122,12 @@ Repeat until the pull request is ready for review:
    `finalise.sh <pr>`. Before the gate, give what the step is based on:
    - fix-ci: the failing job and the last lines of its log (`gh pr checks <pr>`,
      `gh run view <run> --log-failed | tail -n 60`), and how many of the `AGENT_MAX_CI_FIXES`
-     attempts (3) are used;
+     attempts (3) are used. First check whether `main` moved under the pull request
+     (`git fetch origin`, `gh pr view <pr> --json mergeStateStatus`: `BEHIND`), or the only
+     failure is the *Version* job's "is not higher than" (another pull request merged the same
+     version). Then the developer agent is the wrong fix: it only commits on top, and the branch
+     stays behind `main`. Offer **Rebase and bump** (step 6's update, run now) as the first,
+     recommended option, and **Run fix-ci** as the second;
    - review: the round (`R<round>`) out of `AGENT_MAX_ROUNDS` (2), and the review model;
    - fix: the findings of the latest review, by priority, from its summary comment;
    - finalise: that it marks the pull request ready for review and removes the `agent` label.
@@ -161,16 +169,23 @@ update. Say that it rewrites the branch (`--force-with-lease`) and starts CI aga
 
 ```sh
 git switch plan/<n>-<slug> && git pull --ff-only
-git rebase origin/main            # on conflicts: stop and show them, never resolve them unasked
-mise run check
+git rebase origin/main            # conflicts: see below
 mise run version:bump <minor|major|patch>   # only if main's version has caught up with the branch's
+git commit -am "Bump version to <version>"  # its own commit
+mise run check
 git push --force-with-lease
 ```
 
+Conflicts only in the three version files (`gradle.properties`, `artifact/frontend/package.json`,
+`artifact/ta-runner/ta_runner/__init__.py`): take `main`'s side, continue the rebase, then bump in
+a commit of its own. Say so in the gate. A conflict in any other file: stop and show it, never
+resolve it unasked.
+
 Pick the bump from the plan's "Version bump", and check it with
 `scripts/version.sh check-bump origin/main`. Then wait for **CI passed** on the new head, as in
-step 4.2. A red CI goes back to step 4 (fix-ci), after adding the `agent` label again and turning
-the pull request back into a draft.
+step 4.2. Run from step 4 (a fix-ci gate), go back to step 4.1. Run after step 5, a red CI goes
+back to step 4 (fix-ci), after adding the `agent` label again and turning the pull request back
+into a draft.
 
 ## 7. Merge (Gate, never by default)
 
