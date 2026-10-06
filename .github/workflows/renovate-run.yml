@@ -1,0 +1,43 @@
+# Renovate run on demand: asks the hosted Renovate app (.github/renovate.json5) to run on this
+# repository now, instead of waiting for its schedule. Start it from the Actions tab ("Run workflow")
+# or with `gh workflow run renovate-run.yml`.
+#
+# It ticks the checkbox at the end of Renovate's dependency dashboard issue ("Check this box to
+# trigger a request for Renovate to run again on this repository", marked <!-- manual job -->),
+# which is what ticking it by hand does. Only the workflow's own GITHUB_TOKEN is used: the app
+# reacts to the issue edit through its webhook, so no Renovate or app secret is needed.
+
+name: Renovate run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  request:
+    name: Request a Renovate run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Tick the dashboard's manual-run checkbox
+        run: |
+          issue=$(gh issue list --author app/renovate --state open --search 'in:title "Dependency Dashboard"' \
+            --json number --jq '.[0].number // empty')
+          if [ -z "$issue" ]; then
+            echo "::error::No open Dependency Dashboard issue by renovate[bot]: is the Renovate app installed?"
+            exit 1
+          fi
+          url=$(gh issue view "$issue" --json url --jq .url)
+          gh issue view "$issue" --json body --jq .body >"$RUNNER_TEMP/body.md"
+          if ! grep -q -- '- \[ \] <!-- manual job -->' "$RUNNER_TEMP/body.md"; then
+            echo "::error::No unticked manual-run checkbox on $url: a requested run may still be pending."
+            exit 1
+          fi
+          sed -i 's/- \[ \] <!-- manual job -->/- [x] <!-- manual job -->/' "$RUNNER_TEMP/body.md"
+          gh issue edit "$issue" --body-file "$RUNNER_TEMP/body.md"
+          echo "Requested a Renovate run: $url"
