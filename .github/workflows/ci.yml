@@ -11,7 +11,8 @@
 #   e2e        end-to-end tests (e2e/, Playwright): the build job's jar in Google Chrome, with
 #              ta-runner replaying a recording instead of calling an LLM
 #   version    the version is the same in every file; in a pull request into main, it is also
-#              higher than main's and than the latest release tag (scripts/version.sh)
+#              higher than main's and than the latest release tag (scripts/version.sh); Renovate's
+#              update pull requests are exempt from the bump
 #   ci-passed  "CI passed": the one check main's ruleset requires before a pull request can merge
 #
 # A successful run on main is released by release.yml (tag vX.Y.Z, GitHub Release with the jar).
@@ -246,9 +247,13 @@ jobs:
         run: scripts/version.sh check-sync
 
       # main must only ever move to a new release: the merged pull request's version is tagged and
-      # released by release.yml.
-      - name: Version bumped (pull requests into main)
-        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+      # released by release.yml. Renovate's update pull requests are exempt: the hosted app cannot
+      # run scripts/version.sh, so they ship with the next release
+      # (docs/coding-convention/repository-versioning-and-releases.md).
+      - name: Version bumped (pull requests into main, except Renovate's)
+        if: >-
+          github.event_name == 'pull_request' && github.base_ref == 'main'
+          && !(startsWith(github.head_ref, 'renovate/') && github.event.pull_request.user.login == 'renovate[bot]')
         run: scripts/version.sh check-bump "origin/${{ github.base_ref }}"
 
   # The single required check: it passes only if every job above passed, so new jobs are covered by
