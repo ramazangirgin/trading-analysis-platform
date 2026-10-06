@@ -297,7 +297,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 |---|---|
 | Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
-| Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged |
+| Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | End-to-end tests | The build job's jar in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
@@ -310,6 +310,24 @@ the rules on `main` never have to change. Those rules (the repository ruleset "m
   code owner has approved it ([`.github/CODEOWNERS`](.github/CODEOWNERS): the admins).
 - Admins can merge their own pull requests without an approval, and can merge one whose checks
   failed (GitHub's "bypass" option on the pull request). Nothing merges on its own: auto-merge is off.
+
+#### Dependency updates
+
+The hosted [Renovate](https://docs.renovatebot.com/) app ([`.github/renovate.json5`](.github/renovate.json5))
+keeps every pinned dependency current: the Gradle version catalog and wrapper, the pnpm packages of
+`artifact/frontend/` and `e2e/`, Node.js and pnpm of the build, ta-runner's uv dependencies, the
+TradingAgents release, `mise.toml`'s tools, the Dockerfiles, the Compose file and the workflows'
+actions. It opens grouped pull requests on Monday mornings (Europe/Berlin), plus weekly lock file
+maintenance: Spring Boot, Gradle build, Frontend tooling, Python dependencies, Docker base images,
+PostgreSQL, GitHub Actions and Tools; a major update gets a pull request of its own. Java stays on 25,
+Python on 3.12, and PostgreSQL gets no major updates. Renovate's dependency dashboard issue lists
+everything it tracks. Nothing merges automatically: an update pull request runs the full CI and is
+merged by an admin like any other. Update pull requests skip the version bump and ship with the next
+release (see below).
+
+A TradingAgents update is a pull request of its own and CI fails until you finish it: run `uv lock`
+in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py` and the
+contract tests to the new release.
 
 Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
 (not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
@@ -333,7 +351,10 @@ mise run version:bump major   # a breaking change: the REST API, the database wi
 mise run version:bump patch   # hotfixes only
 ```
 
-Every commit on `main` is a release. After **CI passed** on `main`,
+Renovate's dependency update pull requests are the one exception: they skip the bump (the hosted
+app cannot run the script) and ship with the next pull request that raises the version.
+
+Every version raised on `main` is a release. After **CI passed** on `main`,
 [`.github/workflows/release.yml`](.github/workflows/release.yml) tags the commit `vX.Y.Z` and
 publishes a [GitHub Release](https://github.com/ramazangirgin/trading-analysis-platform/releases)
 with notes generated from the merged pull requests and the jar with its SHA-256 checksum. Tags are
