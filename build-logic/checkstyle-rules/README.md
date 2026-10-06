@@ -53,8 +53,8 @@ build-logic/checkstyle-rules/            an own Gradle build, included by the ro
 - The module compiles against the Checkstyle API of the version in `gradle/libs.versions.toml` (the same
   that runs the checks), so a Checkstyle upgrade rebuilds and retests the checks.
 - `./gradlew build` (so `mise run build` and CI) and `mise run check` run the module's tests, its
-  coverage gate and its formatting (`checkstyleRulesCheck`). The pre-commit hook does not run the
-  module's tests (it runs no test suite apart from ArchUnit).
+  coverage gate and its formatting (`checkstyleRulesCheck`). The pre-commit hook runs
+  `checkstyleRulesCheck`, and Checkstyle on the backend, when files of the module are staged.
 - The module is formatted by Spotless with Palantir Java Format like the backend
   ([formatting](../../docs/coding-convention/backend-java-formatting.md); `mise run format` covers it). Checkstyle itself does not
   check it: its configuration refers to these checks, which would be a cycle. Its quality gate is its

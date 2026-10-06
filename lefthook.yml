@@ -1,6 +1,7 @@
 # Git hooks (lefthook, pinned in mise.toml). Install them with `mise run hooks` (`mise run setup`
 # does it too). Fast checks on staged files, no test suites: linters and formatters, and the
-# backend's Spotless, Checkstyle and ArchUnit rules only when Java files are staged. `mise run check`
+# backend's Spotless, Checkstyle and ArchUnit rules only when Java files or the Checkstyle setup are
+# staged, and the custom Checkstyle checks' tests when that module is staged. `mise run check`
 # runs every structure check, lint, formatting check and the type-check by hand. CI runs every
 # check either way, since hooks can be skipped (`git commit --no-verify`).
 # See docs/coding-convention/repository-git-hooks.md.
@@ -42,9 +43,17 @@ pre-commit:
     # Formatting (Spotless) of the Java files changed since HEAD, Checkstyle on every backend module,
     # and only ArchitectureTest, no other test: one Gradle run. CI checks the formatting of every
     # file. ArchUnit needs the backend compiled: seconds with a warm Gradle daemon, longer from a
-    # cold one. Gradle checks and compiles the working tree, unstaged edits included.
+    # cold one. Gradle checks and compiles the working tree, unstaged edits included. A change to the
+    # Checkstyle configuration or to the custom checks can change what Checkstyle reports, so it runs
+    # this job too.
     - name: backend format (Spotless), Checkstyle and package structure (ArchUnit)
-      glob: "artifact/backend/**/*.java"
+      glob: ["artifact/backend/**/*.java", "config/checkstyle/**", "build-logic/checkstyle-rules/**"]
       run: >-
         ./gradlew --console=plain spotlessCheck -PspotlessRatchetFrom=HEAD
         checkstyleMain checkstyleTest :backend:test --tests '*ArchitectureTest'
+
+    # The custom Checkstyle checks' tests, their 100% coverage gate and their formatting
+    # (build-logic/checkstyle-rules/README.md).
+    - name: custom Checkstyle checks (tests, coverage, formatting)
+      glob: "build-logic/checkstyle-rules/**"
+      run: ./gradlew --console=plain checkstyleRulesCheck
