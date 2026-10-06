@@ -50,6 +50,22 @@
       datasourceTemplate: "npm",
     },
     {
+      // jacoco and palantirJavaFormat are only read from Kotlin DSL (libs.versions.<name>.get()),
+      // never through a [libraries] or [plugins] version.ref, so the gradle manager does not see them.
+      customType: "regex",
+      managerFilePatterns: ["gradle/libs.versions.toml"],
+      matchStrings: ['(?:^|\\n)jacoco = "(?<currentValue>[^"]+)"'],
+      depNameTemplate: "org.jacoco:org.jacoco.agent",
+      datasourceTemplate: "maven",
+    },
+    {
+      customType: "regex",
+      managerFilePatterns: ["gradle/libs.versions.toml"],
+      matchStrings: ['(?:^|\\n)palantirJavaFormat = "(?<currentValue>[^"]+)"'],
+      depNameTemplate: "com.palantir.javaformat:palantir-java-format",
+      datasourceTemplate: "maven",
+    },
+    {
       // TradingAgents is a release archive URL in pyproject.toml (no manager reads that) and its
       // version is pinned again in the contract test: both change in one pull request.
       customType: "regex",
@@ -73,6 +89,12 @@
     {
       description: "Gradle build: the other catalog entries and the Gradle wrapper",
       matchManagers: ["gradle", "gradle-wrapper"],
+      groupName: "Gradle build",
+    },
+    {
+      description: "Gradle build: JaCoCo and palantir-java-format (version catalog, read by build-logic)",
+      matchManagers: ["custom.regex"],
+      matchDepNames: ["org.jacoco:org.jacoco.agent", "com.palantir.javaformat:palantir-java-format"],
       groupName: "Gradle build",
     },
     {
