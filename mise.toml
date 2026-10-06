@@ -114,7 +114,8 @@ run = [
 ]
 
 # One version for the whole repository (docs/coding-convention/repository-versioning-and-releases.md): every
-# pull request into main raises it, and merging it releases vX.Y.Z.
+# pull request into main raises it (Renovate's update pull requests excepted), and merging it
+# releases vX.Y.Z.
 [tasks.version]
 description = "Print the platform version (gradle.properties)"
 run = "scripts/version.sh"
