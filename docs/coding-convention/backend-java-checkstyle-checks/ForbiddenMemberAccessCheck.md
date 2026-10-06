@@ -134,7 +134,7 @@ when the module has no `id`. The pattern is shown as it is written in `members`:
 | Finding | Message |
 |---|---|
 | field | `TAP-X1: Field 'System#out' is not allowed. Use an SLF4J logger: log.info(...).` |
-| method | `TAP-X2: Call of 'Instant#now(0)' is not allowed. Take the time from an injected java.time.Clock.` |
+| method | `TAP-X2: Call of 'java.time.Instant#now(0)' is not allowed. Take the time from an injected java.time.Clock.` |
 | constructor | `TAP-X3: Call of constructor 'Random#new()' is not allowed.` |
 
 ## Project rules that use it
