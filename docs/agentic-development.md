@@ -208,7 +208,7 @@ merging stays the developer's decision.
 /develop-issue https://github.com/<owner>/<repo>/issues/32
 ```
 
-It plans like `plan-from-issue` and runs the same scripts one step at a time
+It plans with the `plan-from-issue` skill, invoked from it, and runs the same scripts one step at a time
 (`implement.sh`, then `next.sh --dry-run` for the next step and that step's script), so the pull
 request and its state comments are the same as with `mise run agent:run`. At any gate it can hand
 the rest of the loop to `mise run agent:next`. Started again, it reads where the issue stands from
