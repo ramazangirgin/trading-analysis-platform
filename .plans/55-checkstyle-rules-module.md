@@ -140,10 +140,10 @@ It will also carry T1, T3, C1, C2 and X4 in later plans, which is the point of m
 
 | Document | Content |
 |---|---|
-| `docs/coding-convention/backend-java-checkstyle-custom-checks.md` (new, the **index**) | What the custom checks are and why generic; the module layout and wiring (above); a table of **every check**: name, one-line purpose, link to its reference, the `TAP-*` rules using it; how to add a check (contract, tests, 100% coverage, reference doc, index row); how to use them in IntelliJ (CheckStyle-IDEA: add `build-logic/checkstyle-rules/build/libs/checkstyle-rules.jar` as a third-party check, built with `./gradlew :checkstyle-rules:jar`) |
-| `docs/coding-convention/backend-java-checkstyle-checks/<CheckName>.md` (new, one per check) | Purpose; what it matches and what it does not (no type resolution, near misses); **parameter table** (name, type, default, required, meaning, accepted forms); **configuration examples for at least two different conditions** (e.g. `ForbiddenMemberAccessCheck` for `System.out` and for `Instant.now()` without arguments) with violating and compliant code for each; message format; the `TAP-*` rules that use it |
+| `build-logic/checkstyle-rules/README.md` (new, the **index**; the checks' docs live with the module, not with the coding conventions) | What the custom checks are and why generic; the module layout and wiring (above); a table of **every check**: name, one-line purpose, link to its reference, the `TAP-*` rules using it; how to add a check (contract, tests, 100% coverage, reference doc, index row); how to use them in IntelliJ (CheckStyle-IDEA: add `build-logic/checkstyle-rules/build/libs/checkstyle-rules.jar` as a third-party check, built with `./gradlew :checkstyle-rules:jar`) |
+| `build-logic/checkstyle-rules/docs/<CheckName>.md` (new, one per check) | Purpose; what it matches and what it does not (no type resolution, near misses); **parameter table** (name, type, default, required, meaning, accepted forms); **configuration examples for at least two different conditions** (e.g. `ForbiddenMemberAccessCheck` for `System.out` and for `Instant.now()` without arguments) with violating and compliant code for each; message format; the `TAP-*` rules that use it |
 | `docs/coding-convention/backend-java-checkstyle.md` | New section **Project rules**: the id scheme (`TAP-<group><n>`, groups L, D, T, C, J, S, X), the **rules catalogue** (id, rule, sources, the check with a link to its reference, the parameters used, reason, bad / good example); how to suppress one (`@SuppressWarnings("checkstyle:TAP-L1")` + reason); a project rule goes in at `error` with its hits fixed in the same pull request (`maxWarnings = 0` makes a warning fail the build too, so "start at warning" in "Adding or changing a rule" is corrected); built-in checks (`IllegalImport`, `TodoComment`, `RegexpSingleline`) are used for a rule when one fits, with a link to their checkstyle.org page instead of a reference document |
-| `docs/coding-convention/README.md` | Table rows for the index document; the enforcement table names the custom checks module |
+| `docs/coding-convention/README.md` | The enforcement table names the custom checks module and links its README |
 
 The reference documents follow one template (WP4), so every check reads the same.
 
@@ -203,9 +203,9 @@ accept the hyphen, every id switches to `TapL1` form and the docs follow.
 ### WP4: Documentation
 
 - **Depends on**: WP2, WP3
-- **Files**: `docs/coding-convention/backend-java-checkstyle-custom-checks.md` (new),
-  `docs/coding-convention/backend-java-checkstyle-checks/ForbiddenMemberAccessCheck.md` (new),
-  `docs/coding-convention/backend-java-checkstyle-checks/_template.md` (new, the reference template),
+- **Files**: `build-logic/checkstyle-rules/README.md` (new),
+  `build-logic/checkstyle-rules/docs/ForbiddenMemberAccessCheck.md` (new),
+  `build-logic/checkstyle-rules/docs/_template.md` (new, the reference template),
   `docs/coding-convention/backend-java-checkstyle.md`, `docs/coding-convention/README.md`
 - **Steps**:
   - [ ] Write the documents as in Design; the intro of `backend-java-checkstyle.md` links the index
@@ -222,10 +222,10 @@ Checkstyle with the new rule.
 
 | What | Where | Change |
 |---|---|---|
-| Text | `docs/coding-convention/backend-java-checkstyle-custom-checks.md` | New index |
-| Text | `docs/coding-convention/backend-java-checkstyle-checks/` | New: template, `ForbiddenMemberAccessCheck.md` |
+| Text | `build-logic/checkstyle-rules/README.md` | New index |
+| Text | `build-logic/checkstyle-rules/docs/` | New: template, `ForbiddenMemberAccessCheck.md` |
 | Text | `docs/coding-convention/backend-java-checkstyle.md` | Project rules section, catalogue with TAP-L1, severity correction, intro link |
-| Text | `docs/coding-convention/README.md` | Index row; enforcement table |
+| Text | `docs/coding-convention/README.md` | Enforcement table |
 | Text | `docs/coding-convention/repository-git-hooks.md` | New globs of the backend job and the module's tests |
 | Text | Root `README.md` | The CI table row of *Backend and frontend* names the custom Checkstyle checks' tests |
 | Screenshot | none | No UI change |

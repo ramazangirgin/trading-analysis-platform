@@ -1,6 +1,6 @@
 // The backend's own Checkstyle checks: generic, configurable checks that config/checkstyle/checkstyle.xml
 // instantiates as project rules. An own build, included by the root settings.gradle.kts, so the
-// backend's Checkstyle tasks can use the jar. See docs/coding-convention/backend-java-checkstyle-custom-checks.md.
+// backend's Checkstyle tasks can use the jar. See README.md.
 plugins {
     `java-library`
     jacoco
@@ -39,8 +39,16 @@ tasks.test {
         .withPropertyName("checkstyleConfig")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs
-        .dir(repositoryRoot.resolve("docs/coding-convention"))
-        .withPropertyName("codingConventionDocs")
+        .file(repositoryRoot.resolve("docs/coding-convention/backend-java-checkstyle.md"))
+        .withPropertyName("rulesCatalogue")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .file(layout.projectDirectory.file("README.md"))
+        .withPropertyName("checksIndex")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .dir(layout.projectDirectory.dir("docs"))
+        .withPropertyName("checkDocs")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     finalizedBy(tasks.jacocoTestReport)
 }

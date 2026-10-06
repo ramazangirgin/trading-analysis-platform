@@ -8,7 +8,7 @@ Javadoc rules. They come from [Checkstyle](https://checkstyle.org/)'s built-in c
 Checkstyle does not check layout (indentation, brace placement, import order, whitespace inside a
 line). The formatter does that ([Spotless with Palantir Java Format](backend-java-formatting.md)),
 so the two tools never report conflicting rules.
-The project's own rules (#55) are generic [custom checks](backend-java-checkstyle-custom-checks.md),
+The project's own rules (#55) are generic [custom checks](../../build-logic/checkstyle-rules/README.md),
 configured in the same config as [project rules](#project-rules).
 
 ## Where it runs
@@ -119,7 +119,7 @@ The set is kept small:
 ## Project rules
 
 Rules that Checkstyle's built-in checks do not cover are the project's own. Each is a configured
-instance of a generic [custom check](backend-java-checkstyle-custom-checks.md) (or, when one fits, of a
+instance of a generic [custom check](../../build-logic/checkstyle-rules/README.md) (or, when one fits, of a
 built-in check such as `IllegalImport`, `TodoComment` or `RegexpSingleline`, linked to its
 [checkstyle.org](https://checkstyle.org/checks.html) page instead of a reference document), at the end of
 `TreeWalker` in `checkstyle.xml`. A finding starts with the rule's id and ends with its advice:
@@ -140,7 +140,7 @@ the repository.
 
 | Id | Rule | Sources | Check | Parameters | Reason | Bad / good |
 |---|---|---|---|---|---|---|
-| `TAP-L1` | No `System.out`, `System.err` and no `printStackTrace()` without arguments; use SLF4J | main and test | [`ForbiddenMemberAccessCheck`](backend-java-checkstyle-checks/ForbiddenMemberAccessCheck.md) | `members = System#out, System#err, *#printStackTrace(0)` | Console output has no level, no logger name and no timestamp, and bypasses the log configuration; a stack trace belongs in the log with the message | `System.out.println("started");` / `log.info("started");` and `e.printStackTrace();` / `log.error("failed", e);` |
+| `TAP-L1` | No `System.out`, `System.err` and no `printStackTrace()` without arguments; use SLF4J | main and test | [`ForbiddenMemberAccessCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenMemberAccessCheck.md) | `members = System#out, System#err, *#printStackTrace(0)` | Console output has no level, no logger name and no timestamp, and bypasses the log configuration; a stack trace belongs in the log with the message | `System.out.println("started");` / `log.info("started");` and `e.printStackTrace();` / `log.error("failed", e);` |
 
 ## Suppressing a finding
 

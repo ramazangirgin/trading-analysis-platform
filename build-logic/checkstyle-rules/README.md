@@ -1,24 +1,24 @@
-# Backend: custom Checkstyle checks
+# Custom Checkstyle checks
 
-Checkstyle's built-in checks cover most of the [backend's rules](backend-java-checkstyle.md). The rest,
+Checkstyle's built-in checks cover most of the [backend's rules](../../docs/coding-convention/backend-java-checkstyle.md). The rest,
 the project's own rules (`TAP-L1`, `TAP-D2`, ...), are written as **generic, configurable checks** in a
-small Java module, [`build-logic/checkstyle-rules`](../../build-logic/checkstyle-rules), and configured
+small Java module, `build-logic/checkstyle-rules` (this folder), and configured
 as **project rules** in [`config/checkstyle/checkstyle.xml`](../../config/checkstyle/checkstyle.xml).
 
 A check knows nothing about this code base. Which annotation, which method call, which declaration kind
 and which advice to give are parameters, so one check serves several rules, and a rule is a configured
 instance of a check: a few lines of XML, no Java. The rules, with their reasons and examples, are in the
-[rules catalogue](backend-java-checkstyle.md#project-rules).
+[rules catalogue](../../docs/coding-convention/backend-java-checkstyle.md#project-rules).
 
 ## The checks
 
 | Check | Reports | Project rules |
 |---|---|---|
-| [`ForbiddenMemberAccessCheck`](backend-java-checkstyle-checks/ForbiddenMemberAccessCheck.md) | a reference to a forbidden field, a call of a forbidden method or constructor | `TAP-L1` |
+| [`ForbiddenMemberAccessCheck`](docs/ForbiddenMemberAccessCheck.md) | a reference to a forbidden field, a call of a forbidden method or constructor | `TAP-L1` |
 
 Every check has a reference document in
-[`backend-java-checkstyle-checks/`](backend-java-checkstyle-checks/), written from the
-[template](backend-java-checkstyle-checks/_template.md): what it matches, a table of all its parameters,
+[`docs/`](docs/), written from the
+[template](docs/_template.md): what it matches, a table of all its parameters,
 configuration examples for at least two different conditions, and its message.
 
 ## Module layout and wiring
@@ -56,7 +56,7 @@ build-logic/checkstyle-rules/            an own Gradle build, included by the ro
   coverage gate and its formatting (`checkstyleRulesCheck`). The pre-commit hook does not run the
   module's tests (it runs no test suite apart from ArchUnit).
 - The module is formatted by Spotless with Palantir Java Format like the backend
-  ([formatting](backend-java-formatting.md); `mise run format` covers it). Checkstyle itself does not
+  ([formatting](../../docs/coding-convention/backend-java-formatting.md); `mise run format` covers it). Checkstyle itself does not
   check it: its configuration refers to these checks, which would be a cycle. Its quality gate is its
   tests and the coverage rule.
 
@@ -105,14 +105,14 @@ build-logic/checkstyle-rules/            an own Gradle build, included by the ro
 1. Write `<What>Check extends AbstractCheck` in `tr.girgin.checkstyle`, following the contract above.
    Put helpers that more than one check needs into `support/`.
 2. Write its test class and fixtures; reach 100% coverage.
-3. Write its reference document from the [template](backend-java-checkstyle-checks/_template.md) and add
+3. Write its reference document from the [template](docs/_template.md) and add
    a row to the table above.
 4. Configure it as a project rule (below).
 
 ## Adding a project rule
 
 1. Pick the next id of its group (`TAP-<group><n>`, see the
-   [id scheme](backend-java-checkstyle.md#project-rules)). Use a built-in Checkstyle check
+   [id scheme](../../docs/coding-convention/backend-java-checkstyle.md#project-rules)). Use a built-in Checkstyle check
    (`IllegalImport`, `TodoComment`, `RegexpSingleline`, ...) when one fits; otherwise configure a custom
    check, or add one.
 2. Add the module to the end of `TreeWalker` in `checkstyle.xml`, with the `id`, its parameters and a

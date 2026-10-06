@@ -43,9 +43,9 @@ class DocumentationTest {
     @ParameterizedTest
     @MethodSource("checkNames")
     void theIndexLinksEveryCheck(String check) throws IOException {
-        String index = Files.readString(docs().resolve("backend-java-checkstyle-custom-checks.md"));
+        String index = Files.readString(module().resolve("README.md"));
 
-        assertThat(index).contains("(backend-java-checkstyle-checks/" + check + ".md)");
+        assertThat(index).contains("(docs/" + check + ".md)");
     }
 
     @ParameterizedTest
@@ -106,7 +106,11 @@ class DocumentationTest {
     }
 
     private static Path referenceDocument(String check) {
-        return docs().resolve("backend-java-checkstyle-checks/" + check + ".md");
+        return module().resolve("docs/" + check + ".md");
+    }
+
+    private static Path module() {
+        return ProjectConfig.repositoryRoot().resolve("build-logic/checkstyle-rules");
     }
 
     private static Path docs() {
