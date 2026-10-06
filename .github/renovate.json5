@@ -1,0 +1,187 @@
+// Renovate (the hosted GitHub app) keeps every pinned dependency current: grouped update pull
+// requests once a week, plus lock file maintenance. See README, "Continuous integration".
+// Renovate reads this file from main; it lists everything it tracks in its dependency dashboard issue.
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  // Enables the dependency dashboard issue and the managers in use: gradle (the version catalog),
+  // gradle-wrapper, npm (pnpm: artifact/frontend/ and e2e/), pep621 with uv (artifact/ta-runner/),
+  // dockerfile, docker-compose, github-actions and mise (mise.toml).
+  extends: ["config:recommended"],
+
+  // One batch a week, not a stream of pull requests; the Monday morning's review picks them up.
+  schedule: ["before 6am on monday"],
+  timezone: "Europe/Berlin",
+
+  // The ruleset needs an admin to merge, and a dependency update is reviewed like any change.
+  // (The default, set so nobody turns it on by accident.)
+  automerge: false,
+
+  // The release notes list these under "Build, CI and dependencies" (.github/release.yml).
+  labels: ["dependencies"],
+
+  // pnpm-lock.yaml and uv.lock, refreshed within their ranges, on the same schedule.
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["before 6am on monday"],
+  },
+
+  // config:recommended skips test directories (:ignoreModulesAndTests), but the TradingAgents
+  // version is also pinned in ta-runner's contract test (below). ignorePaths lists the preset's
+  // other paths.
+  ignorePresets: [":ignoreModulesAndTests"],
+  ignorePaths: ["**/node_modules/**", "**/bower_components/**", "**/vendor/**", "**/examples/**", "**/__fixtures__/**"],
+
+  customManagers: [
+    {
+      // node and pnpm in the version catalog are read by node-gradle, not by Gradle's dependency
+      // resolution, so the gradle manager does not see them.
+      customType: "regex",
+      managerFilePatterns: ["gradle/libs.versions.toml"],
+      matchStrings: ['(?:^|\\n)node = "(?<currentValue>[^"]+)"'],
+      depNameTemplate: "node",
+      datasourceTemplate: "node-version",
+    },
+    {
+      customType: "regex",
+      managerFilePatterns: ["gradle/libs.versions.toml"],
+      matchStrings: ['(?:^|\\n)pnpm = "(?<currentValue>[^"]+)"'],
+      depNameTemplate: "pnpm",
+      datasourceTemplate: "npm",
+    },
+    {
+      // TradingAgents is a release archive URL in pyproject.toml (no manager reads that) and its
+      // version is pinned again in the contract test: both change in one pull request.
+      customType: "regex",
+      managerFilePatterns: [
+        "artifact/ta-runner/pyproject.toml",
+        "artifact/ta-runner/tests/engine/test_upstream_contract.py",
+      ],
+      matchStrings: [
+        "TauricResearch/TradingAgents/archive/refs/tags/v(?<currentValue>[^\"/]+)\\.tar\\.gz",
+        'compat\\.upstream_version\\(\\) == "(?<currentValue>[^"]+)"',
+      ],
+      depNameTemplate: "TauricResearch/TradingAgents",
+      datasourceTemplate: "github-tags",
+      // The tags are v0.5.1; the files hold 0.5.1 (or the tag in the URL, whose "v" is in the regex).
+      extractVersionTemplate: "^v(?<version>.+)$",
+    },
+  ],
+
+  // Later rules override earlier ones, so the broad groups come first.
+  packageRules: [
+    {
+      description: "Gradle build: the other catalog entries and the Gradle wrapper",
+      matchManagers: ["gradle", "gradle-wrapper"],
+      groupName: "Gradle build",
+    },
+    {
+      description: "Spring Boot (BOM and plugin) and springdoc, which is built for it",
+      matchManagers: ["gradle"],
+      matchPackageNames: ["org.springframework.boot", "org.springframework.boot:**", "org.springdoc:**"],
+      groupName: "Spring Boot",
+    },
+    {
+      description: "Frontend tooling: the packages of artifact/frontend/ and e2e/",
+      matchManagers: ["npm"],
+      groupName: "Frontend tooling",
+    },
+    {
+      // The package.json engines field is a lower bound ("node >=24"), not a pin.
+      description: "Do not rewrite the engines field",
+      matchManagers: ["npm"],
+      matchDepTypes: ["engines"],
+      enabled: false,
+    },
+    {
+      description: "Frontend tooling: Node.js and pnpm of the build (version catalog)",
+      matchManagers: ["custom.regex"],
+      matchDepNames: ["node", "pnpm"],
+      groupName: "Frontend tooling",
+    },
+    {
+      // Odd majors are short-lived releases without long-term support.
+      description: "Node.js: even (LTS) majors only",
+      matchManagers: ["custom.regex"],
+      matchDepNames: ["node"],
+      allowedVersions: "/^\\d*[02468]\\./",
+    },
+    {
+      description: "Python dependencies of ta-runner (TradingAgents has its own rule)",
+      matchManagers: ["pep621"],
+      matchPackageNames: ["!tradingagents"],
+      groupName: "Python dependencies",
+    },
+    {
+      // Alone and never grouped: a new TradingAgents needs code changes, so it must not hold up
+      // (or be held up by) other updates.
+      description: "TradingAgents",
+      matchDepNames: ["TauricResearch/TradingAgents"],
+      groupName: null,
+      prBodyNotes: [
+        "**Before merging:** run `uv lock` in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py` and the contract tests to the new release. CI fails until then.",
+      ],
+    },
+    {
+      description: "Docker base images (PostgreSQL and uv have their own rules)",
+      matchManagers: ["dockerfile", "docker-compose"],
+      matchPackageNames: ["!postgres", "!ghcr.io/astral-sh/uv"],
+      groupName: "Docker base images",
+    },
+    {
+      // Java 25 is the LTS the build targets; Python 3.12 is ta-runner's requires-python.
+      description: "Base images stay on Java 25 and Python 3.12",
+      matchManagers: ["dockerfile"],
+      matchPackageNames: ["eclipse-temurin"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
+      description: "Python stays on 3.12 (image, .python-version, requires-python)",
+      matchManagers: ["dockerfile", "pyenv", "pep621"],
+      matchPackageNames: ["python"],
+      matchUpdateTypes: ["major", "minor"],
+      enabled: false,
+    },
+    {
+      // A major PostgreSQL version needs a data migration. When #10 adds Testcontainers, its
+      // postgres:18.x reference joins this group.
+      description: "PostgreSQL: its own group, no major updates",
+      matchManagers: ["docker-compose"],
+      matchPackageNames: ["postgres"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+    {
+      description: "PostgreSQL",
+      matchManagers: ["docker-compose"],
+      matchPackageNames: ["postgres"],
+      groupName: "PostgreSQL",
+    },
+    {
+      description: "GitHub Actions",
+      matchManagers: ["github-actions"],
+      groupName: "GitHub Actions",
+    },
+    {
+      // uv is in mise.toml (local and CI) and in the runner image: one pull request for both.
+      description: "Tools: mise.toml and the uv image",
+      matchManagers: ["mise"],
+      groupName: "Tools",
+    },
+    {
+      description: "Tools: the uv image",
+      matchManagers: ["dockerfile"],
+      matchPackageNames: ["ghcr.io/astral-sh/uv"],
+      groupName: "Tools",
+    },
+    {
+      // Same reason as the eclipse-temurin image: the build targets Java 25.
+      description: "Java stays on 25",
+      matchManagers: ["mise"],
+      matchPackageNames: ["java"],
+      matchUpdateTypes: ["major"],
+      enabled: false,
+    },
+  ],
+}
