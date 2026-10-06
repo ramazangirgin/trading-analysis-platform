@@ -8,8 +8,8 @@ column holds the parameter name in backticks).
 # `<CheckName>`
 
 One or two sentences: what the check reports. Source:
-[`<CheckName>.java`](../../../build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/<CheckName>.java).
-Overview of all checks: [custom checks](../backend-java-checkstyle-custom-checks.md).
+[`<CheckName>.java`](../src/main/java/tr/girgin/checkstyle/<CheckName>.java).
+Overview of all checks: [custom checks](../README.md).
 
 ## What it matches
 
@@ -53,4 +53,4 @@ The message format, with an example for a finding with the module's `id` and `su
 
 | Rule | Configuration |
 |---|---|
-| [`TAP-X1`](../backend-java-checkstyle.md#project-rules) | which parameters |
+| [`TAP-X1`](../../../docs/coding-convention/backend-java-checkstyle.md#project-rules) | which parameters |

@@ -3,8 +3,8 @@
 Reports a reference to a forbidden field, a call of a forbidden method or a call of a forbidden
 constructor. What is forbidden is a list of patterns, `Type#member`; the check knows nothing about this
 code base. Source:
-[`ForbiddenMemberAccessCheck.java`](../../../build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/ForbiddenMemberAccessCheck.java).
-Overview of all checks: [custom checks](../backend-java-checkstyle-custom-checks.md).
+[`ForbiddenMemberAccessCheck.java`](../src/main/java/tr/girgin/checkstyle/ForbiddenMemberAccessCheck.java).
+Overview of all checks: [custom checks](../README.md).
 
 ## What it matches
 
@@ -141,4 +141,4 @@ when the module has no `id`. The pattern is shown as it is written in `members`:
 
 | Rule | Configuration |
 |---|---|
-| [`TAP-L1`](../backend-java-checkstyle.md#project-rules) | `members = System#out, System#err, *#printStackTrace(0)`: no console output, use SLF4J |
+| [`TAP-L1`](../../../docs/coding-convention/backend-java-checkstyle.md#project-rules) | `members = System#out, System#err, *#printStackTrace(0)`: no console output, use SLF4J |

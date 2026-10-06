@@ -16,7 +16,7 @@
 
     Rules, the reasoning behind each threshold and how to suppress a finding:
     docs/coding-convention/backend-java-checkstyle.md; the custom checks:
-    docs/coding-convention/backend-java-checkstyle-custom-checks.md
+    build-logic/checkstyle-rules/README.md
 -->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>

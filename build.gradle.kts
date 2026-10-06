@@ -7,7 +7,7 @@ plugins {
 // The custom Checkstyle checks (build-logic/checkstyle-rules) are an included build: Gradle cannot run
 // their tasks by path from here, so the root build has tasks that run them. Their tests, coverage gate
 // and formatting are part of `./gradlew build` / `check`.
-// See docs/coding-convention/backend-java-checkstyle-custom-checks.md.
+// See build-logic/checkstyle-rules/README.md.
 val checkstyleRules = gradle.includedBuild("checkstyle-rules")
 
 tasks.register("checkstyleRulesCheck") {

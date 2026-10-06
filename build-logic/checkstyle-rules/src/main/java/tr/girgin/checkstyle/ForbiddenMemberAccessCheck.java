@@ -13,7 +13,7 @@ import tr.girgin.checkstyle.support.SourceNames;
 /**
  * Reports a reference to a forbidden field, a call of a forbidden method or a call of a forbidden constructor.
  * What is forbidden is configured with {@code members}; see
- * docs/coding-convention/backend-java-checkstyle-checks/ForbiddenMemberAccessCheck.md.
+ * build-logic/checkstyle-rules/docs/ForbiddenMemberAccessCheck.md.
  */
 public class ForbiddenMemberAccessCheck extends AbstractCheck {
 
