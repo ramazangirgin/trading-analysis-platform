@@ -34,7 +34,8 @@ The installed hook runs lefthook through `mise exec`, so the tools from `mise.to
 |---|---|---|
 | pre-commit (jobs in parallel) | ESLint + Prettier check on the staged files | staged files under `artifact/frontend/` |
 | | ruff on the staged files; `lint-imports` | staged files under `artifact/ta-runner/` |
-| | Spotless on the Java files changed since `HEAD`, Checkstyle on every backend module, and `ArchitectureTest` only (no other test), in one Gradle run | staged `.java` files under `artifact/backend/` |
+| | Spotless on the Java files changed since `HEAD`, Checkstyle on every backend module, and `ArchitectureTest` only (no other test), in one Gradle run | staged `.java` files under `artifact/backend/`, or staged files under `config/checkstyle/` or `build-logic/checkstyle-rules/` |
+| | The custom Checkstyle checks' tests, coverage gate and formatting (`checkstyleRulesCheck`) | staged files under `build-logic/checkstyle-rules/` |
 
 A commit waits only for the parts it touches: docs-only commits run nothing, frontend and ta-runner
 commits a few seconds. The backend job compiles the backend first (seconds with a warm Gradle
