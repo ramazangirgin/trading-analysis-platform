@@ -42,7 +42,8 @@ patterns. Note which existing tests cover the area.
 ## 3. Write the plan(s)
 
 Copy [plan-template.md](plan-template.md) to `.plans/<issue>-<slug>.md` (slug: 2-5 lowercase words
-from the issue title, hyphenated) and fill in every section.
+from the issue title, hyphenated) and fill in every section. The template is the plan's structure:
+do not read other plans in `.plans/` as models.
 
 - **One reviewable pull request per plan.** When the issue would not fit one (roughly: more than
   one part with substantial changes each, or more than ~1000 changed lines), split it into several
