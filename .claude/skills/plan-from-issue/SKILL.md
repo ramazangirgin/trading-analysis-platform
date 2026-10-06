@@ -48,6 +48,11 @@ from the issue title, hyphenated) and fill in every section.
   one part with substantial changes each, or more than ~1000 changed lines), split it into several
   plans `.plans/<issue>-<slug-a>.md`, `.plans/<issue>-<slug-b>.md`, each naming the plans it
   depends on. A plan that depends on another one is implemented after that one is merged.
+- **The issue closes with its last plan.** Fill in "Plan: <n> of <total>" in every plan. The issue
+  must stay open until every plan of it is merged: the agent scripts write `Part of #<issue>` into a
+  plan's pull request while another `plan/<issue>-*` branch has no merged pull request, and
+  `Closes #<issue>` only into the last one. So push every plan of the issue in step 4, never only
+  some of them, and never write `Closes #<issue>` into a plan.
 - **Work packages**: list the files each one creates or changes, so packages without a dependency
   can be implemented in parallel. Every package names its tests.
 - **Conventions**: for each affected part, name the conventions that apply and where the new code
@@ -99,3 +104,6 @@ or ask for changes), then let the agents take it to a pull request ready for rev
 ```sh
 mise run agent:run plan/<issue>-<slug>
 ```
+
+For a split issue, say that it stays open until the pull request of its last plan is merged, which
+closes it (`Closes #<issue>`); the earlier ones only reference it (`Part of #<issue>`).

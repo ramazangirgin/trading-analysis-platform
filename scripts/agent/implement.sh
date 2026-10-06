@@ -7,6 +7,7 @@
 # Checks out the plan branch, runs the developer agent with the plan, checks its work
 # (mise run check, the version bump), pushes and opens a draft pull request labelled "agent".
 # The review → fix loop (next.sh) follows; run.sh runs both. The plan file stays in the pull request.
+# Its body closes the issue only when this is the issue's last plan (issue_reference in lib.sh).
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
@@ -63,7 +64,7 @@ not_done=$(py "$AGENT_DIR/agent_json.py" get "${results[${#results[@]}-1]}" stru
 title=$(sed -n 's/^# Plan: //p' "$plan" | head -n 1)
 blob="https://github.com/$(repo_slug)/blob"
 cat >"$AGENT_TMP/pr.md" <<EOF
-Closes #$issue
+$(issue_reference "$branch")
 
 Implemented by the developer agent from the plan [\`$plan\`]($blob/$branch/$plan) (model: $(model_name "$AGENT_MODEL")).
 Draft until the agents' review → fix rounds are done; see

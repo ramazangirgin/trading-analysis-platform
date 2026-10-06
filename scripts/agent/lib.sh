@@ -95,6 +95,22 @@ issue_of_branch() {
   echo "${BASH_REMATCH[1]}"
 }
 
+# How the pull request of plan branch $1 references its issue: "Closes #<issue>" only when every
+# other plan branch of the issue (plan/<issue>-*) has a merged pull request, so a split issue stays
+# open until its last plan is merged; "Part of #<issue>" otherwise.
+issue_reference() {
+  local issue other
+  issue=$(issue_of_branch "$1")
+  for other in $(git ls-remote --heads origin "plan/$issue-*" | sed 's|.*refs/heads/||'); do
+    [ "$other" != "$1" ] || continue
+    if [ -z "$(gh pr list --head "$other" --state merged --json number --jq '.[0].number // empty')" ]; then
+      echo "Part of #$issue"
+      return
+    fi
+  done
+  echo "Closes #$issue"
+}
+
 # Steps on an existing pull request work against its base branch.
 use_pr_base() { AGENT_BASE_BRANCH=$(gh pr view "$1" --json baseRefName --jq .baseRefName); }
 
