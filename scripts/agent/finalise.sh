@@ -6,7 +6,8 @@
 #
 # Posts the final comment (what the plan asked for, the commits, the review findings fixed /
 # declined / still open, the tokens used), marks the pull request ready for review and removes the
-# "agent" label. Never merges.
+# "agent" label. Never merges. Updates the issue reference in the body ("Closes" / "Part of"): the
+# issue's other plans may have merged since the pull request was opened.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
@@ -48,6 +49,9 @@ rounds=$(count_steps "$pr" review)
 } >"$AGENT_TMP/final.md"
 
 post_step "$pr" finalise "$rounds" "$AGENT_TMP/final.md"
+gh pr view "$pr" --json body --jq .body |
+  sed -E "1s/^(Closes|Part of) #[0-9]+\$/$(issue_reference "$branch")/" >"$AGENT_TMP/pr.md"
+gh pr edit "$pr" --body-file "$AGENT_TMP/pr.md" >/dev/null
 gh pr ready "$pr"
 gh pr edit "$pr" --remove-label "$AGENT_LABEL" >/dev/null
 log "#$pr is ready for review"

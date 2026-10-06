@@ -14,7 +14,7 @@ flowchart TD
     plan --> approvePlan{"Developer:<br/>plan right?"}
     approvePlan -- "no: edit the plan on its branch" --> plan
     approvePlan -- "yes: mise run agent:run" --> implement["Developer agent (Sonnet)<br/>implement with tests, mise run check,<br/>version bump, commit"]
-    implement --> draft["Draft pull request<br/>Closes #issue, label agent"]
+    implement --> draft["Draft pull request<br/>Closes #issue (last plan) or Part of #issue, label agent"]
     draft --> ci{"CI passed?"}
     ci -- "red" --> fixCi["Developer agent (Sonnet)<br/>fix CI from the failed job's log<br/>(up to 3 attempts)"]
     fixCi --> ci
@@ -170,7 +170,8 @@ mise run agent:run plan/32-compare-runs
 
 From a clean working tree (the scripts switch to the plan branch). It runs steps 5–9 of the flow:
 the developer agent (Sonnet) implements the plan with tests, checks it, bumps the version, pushes
-and opens a **draft** pull request labelled `agent` (`Closes #<issue>`); after **CI passed**, the
+and opens a **draft** pull request labelled `agent` (`Closes #<issue>`, or `Part of #<issue>`
+while other plans of the issue are not merged yet); after **CI passed**, the
 review agent (Opus) reviews it, the developer agent fixes the findings, CI runs again, and once
 more; then the pull request gets a final comment and is marked ready for review. It waits for CI
 after every push, so it takes a while: leave the terminal open. Follow it on the pull request,
@@ -271,7 +272,11 @@ the branch it stacks on has merged: `gh pr edit <pr> --base main`, then step 8.
 - CI runs on `main`; after **CI passed**, [`release.yml`](../.github/workflows/release.yml) tags
   the commit `vX.Y.Z` and publishes the GitHub Release with the jar.
 - `Closes #<issue>` in the pull request closes the issue. A split issue stays open until the
-  pull request of its last plan has merged.
+  pull request of its last plan has merged: the scripts write `Closes #<issue>` only when every
+  other `plan/<issue>-*` branch has a merged pull request, and `Part of #<issue>` otherwise. They
+  decide when the pull request is opened and again when it is marked ready for review. When two
+  plans of an issue are ready at the same time, neither closes it: close the issue by hand after
+  the second one merges, or change its `Part of` to `Closes` before merging it.
 - The plan stays in `.plans/` on `main`, next to the code it explains.
 - Locally: `git switch main && git pull`, and delete the local plan branch
   (`git branch -D plan/<issue>-<slug>`).
