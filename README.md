@@ -311,6 +311,10 @@ the rules on `main` never have to change. Those rules (the repository ruleset "m
 - Admins can merge their own pull requests without an approval, and can merge one whose checks
   failed (GitHub's "bypass" option on the pull request). Nothing merges on its own: auto-merge is off.
 
+Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
+(not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
+`mise run docker-build`.
+
 #### Dependency updates
 
 The hosted [Renovate](https://docs.renovatebot.com/) app ([`.github/renovate.json5`](.github/renovate.json5))
@@ -331,10 +335,6 @@ you can also tick by hand.
 A TradingAgents update is a pull request of its own and CI fails until you finish it: run `uv lock`
 in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py` and the
 contract tests to the new release.
-
-Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
-(not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
-`mise run docker-build`.
 
 ### Versioning and releases
 
