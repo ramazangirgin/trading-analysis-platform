@@ -7,8 +7,8 @@ description: Take a GitHub issue of this repository through the whole agentic de
 
 The whole [agentic development flow](../../../docs/agentic-development.md) for one issue, driven
 from this Claude Code session. Every step runs only after the developer approves it here. It adds
-no new behaviour of its own: planning follows the
-[`plan-from-issue`](../plan-from-issue/SKILL.md) skill, and every other step runs one of the
+no new behaviour of its own: planning is the [`plan-from-issue`](../plan-from-issue/SKILL.md)
+skill, invoked from here, and every other step runs one of the
 scripts in [`scripts/agent/`](../../../scripts/agent) that `mise run agent:run` would run in one go.
 So the result is the same pull request, with the same state comments, and `mise run agent:next`
 can take over at any point.
@@ -60,24 +60,31 @@ first step that is not done: step 1 when there is no plan branch, step 3 for the
 without a pull request, step 4 for an open draft labelled `agent`, step 5 for a pull request ready
 for review. Say where you are starting and why.
 
-## 1. Plan (Gate: the plan)
+## 1. Plan and push the plan branches (the `plan-from-issue` skill)
 
-Read [`.claude/skills/plan-from-issue/SKILL.md`](../plan-from-issue/SKILL.md) and follow its
-sections 1 to 3: read the issue and the documents of every part it touches, then write
-`.plans/<n>-<slug>.md` (several plans when the issue does not fit one pull request).
+Invoke the [`plan-from-issue`](../plan-from-issue/SKILL.md) skill with the Skill tool
+(`plan-from-issue`, argument: the issue number), and follow it through its section 4. It reads the
+issue and the documents of every part it touches, writes `.plans/<n>-<slug>.md` (several plans when
+the issue does not fit one pull request), shows them and changes them until the developer agrees,
+and then pushes one `plan/<n>-<slug>` branch per plan.
 
-Then show the plan(s) in full and gate them. Use the options **Approve the plan**, **Change it**
-and **Stop here**. On **Change it**, or an answer in "Other", change the plan and ask again, until
-it is approved. Its open questions must be answered in the plan before it can be approved.
+Its approvals are this skill's gates for the plan, asked the same way:
 
-## 2. Push the plan branches (Gate)
+- **The plan**: show the plan(s) in full and ask with the options **Approve the plan**,
+  **Change it** and **Stop here**. On **Change it**, or an answer in "Other", change the plan and
+  ask again, until it is approved. Its open questions must be answered in the plan before it can be
+  approved.
+- **The push**: then gate `scripts/agent/plan-branch.sh .plans/<n>-<slug>.md` (every plan of the
+  issue). It pushes the branch from `origin/main` with only the plan file, comments the branch link
+  on the issue and removes the local file.
 
-Command, per plan: `scripts/agent/plan-branch.sh .plans/<n>-<slug>.md`. It pushes
-`plan/<n>-<slug>` from `origin/main` with only the plan file, comments the branch link on the issue,
-and removes the local file. Push every plan of a split issue, as `plan-from-issue` section 4
-requires, then check that `git status --short` is empty.
+Leave out its section 5 ("Tell the user what is next"): instead of handing over to
+`mise run agent:run`, this skill continues with step 3. Step 2 is the developer's look at the
+pushed plan.
 
-After this step the plan is on GitHub, where the developer can still review and edit it. Offer
+## 2. The plan on GitHub (no gate)
+
+After the push, the plan is on GitHub, where the developer can still review and edit it. Offer
 **Review it on GitHub first** as an extra option at the next gate: on that answer, print the
 branch links and stop. The developer continues later with `/develop-issue <n>`, which picks up at
 step 3.
