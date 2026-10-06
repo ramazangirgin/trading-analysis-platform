@@ -323,7 +323,10 @@ PostgreSQL, GitHub Actions and Tools; a major update gets a pull request of its 
 Python on 3.12, and PostgreSQL gets no major updates. Renovate's dependency dashboard issue lists
 everything it tracks. Nothing merges automatically: an update pull request runs the full CI and is
 merged by an admin like any other. Update pull requests skip the version bump and ship with the next
-release (see below).
+release (see below). To run Renovate now instead of waiting for Monday, start the *Renovate run*
+workflow ([`renovate-run.yml`](.github/workflows/renovate-run.yml)) from the Actions tab or with
+`gh workflow run renovate-run.yml`; it ticks the "run again" checkbox on the dashboard issue, which
+you can also tick by hand.
 
 A TradingAgents update is a pull request of its own and CI fails until you finish it: run `uv lock`
 in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py` and the
