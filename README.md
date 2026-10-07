@@ -339,6 +339,14 @@ When the update includes TradingAgents, CI fails until you finish it on the pull
 run `uv lock` in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py`
 and the contract tests to the new release.
 
+The Claude Code skill `renovate-update`
+([`.claude/skills/renovate-update/SKILL.md`](.claude/skills/renovate-update/SKILL.md)) does all of
+this from your machine: `/renovate-update` ticks every mature update on the dashboard (never the
+pending ones) and requests a run, waits for the pull requests and their CI, and fixes a red CI on the
+update branch: it adapts the code to the new release, aligns conflicting versions, or holds one
+dependency back with an `allowedVersions` rule and an issue for it. It stops at a green pull request
+and merges only when you say so. `/renovate-update <pr>` fixes one open update pull request.
+
 ### Versioning and releases
 
 The whole repository has one [Semantic Versioning](https://semver.org/) version, `MAJOR.MINOR.PATCH`:
