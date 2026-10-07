@@ -33,7 +33,9 @@ Docker Compose, where each analysis runs in its own container and the data is ke
   (`mise run db`; its data is in the volume `trading-analysis-platform-db`; `mise run db:stop` stops
   it, `mise run db:reset` deletes its data). To use your own PostgreSQL 18 server instead, set
   `PLATFORM_DB_HOST`, `PLATFORM_DB_PORT`, `PLATFORM_DB_NAME`, `PLATFORM_DB_USER` and
-  `PLATFORM_DB_PASSWORD`; then no container is started (Docker is still needed for the backend tests).
+  `PLATFORM_DB_PASSWORD`; then no container is started if `PLATFORM_DB_HOST` is another host. For a
+  server on `localhost` also set `PLATFORM_DB_CONTAINER=false`, else the container is started and
+  needs the port free (Docker is still needed for the backend tests).
 - Nothing else: Node.js and pnpm are downloaded by the build, Python 3.12 by uv.
 
 ### 2. Start the platform
