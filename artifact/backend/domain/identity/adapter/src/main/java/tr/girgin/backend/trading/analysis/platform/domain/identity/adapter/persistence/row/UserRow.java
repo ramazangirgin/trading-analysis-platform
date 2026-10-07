@@ -1,5 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.row;
 
+import java.time.OffsetDateTime;
+
 public record UserRow(
         String id,
         String username,
@@ -7,6 +9,6 @@ public record UserRow(
         boolean enabled,
         boolean mustChangePassword,
         int failedLoginCount,
-        String lockedUntil,
-        String createdAt,
-        String updatedAt) {}
+        OffsetDateTime lockedUntil,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt) {}

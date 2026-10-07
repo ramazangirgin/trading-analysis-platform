@@ -24,8 +24,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The whole stack over HTTP: REST and SSE through the BFF, the analysis domain, SQLite, and a
- * shell script standing in for ta-runner.
+ * The whole stack over HTTP: REST and SSE through the BFF, the analysis domain, a migrated
+ * PostgreSQL database, and a shell script standing in for ta-runner.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AnalysesApiIntegrationTest {

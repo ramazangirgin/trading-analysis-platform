@@ -68,7 +68,6 @@ services:
     ports:
       - "127.0.0.1:${PLATFORM_PORT:-8080}:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: postgres
       PLATFORM_DB_HOST: postgres
       PLATFORM_DB_PASSWORD: ${POSTGRES_PASSWORD}
       DOCKER_HOST: tcp://docker-socket-proxy:2375

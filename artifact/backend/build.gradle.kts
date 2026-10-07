@@ -17,8 +17,6 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.flyway)
-    runtimeOnly(libs.sqlite.jdbc)
-    // The "postgres" profile (Docker Compose setup).
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.flyway.database.postgresql)
 
@@ -44,6 +42,7 @@ dependencies {
     testImplementation(libs.mapstruct)
     testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.jackson.databind)
+    testImplementation(libs.testcontainers.postgresql)
 }
 
 springBoot {

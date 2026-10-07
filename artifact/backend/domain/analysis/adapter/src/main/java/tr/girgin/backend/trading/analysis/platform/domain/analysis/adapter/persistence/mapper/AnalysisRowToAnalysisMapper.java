@@ -8,7 +8,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 @Mapper(
         uses = {
             StringToAnalysisIdMapper.class,
-            StringToTimestampMapper.class,
+            OffsetDateTimeToInstantMapper.class,
             AnalysisRowToAnalysisSpecMapper.class,
             AnalysisRowToRunStatsMapper.class
         })

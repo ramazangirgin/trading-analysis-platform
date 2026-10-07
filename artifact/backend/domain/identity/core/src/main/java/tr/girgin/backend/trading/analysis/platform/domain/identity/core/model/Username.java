@@ -8,8 +8,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exceptio
 
 /**
  * A login name: 3 to 64 ASCII characters of {@code A-Z a-z 0-9 . _ @ -}. It keeps the case it was
- * entered in; lookups ignore case. ASCII only, because SQLite's {@code lower()} folds ASCII only and
- * both databases must agree on which names are equal.
+ * entered in; lookups ignore case with PostgreSQL's {@code lower()}. ASCII only, because its result
+ * for non-ASCII letters depends on the database's locale, and which names are equal must not.
  */
 public record Username(String value) {
 

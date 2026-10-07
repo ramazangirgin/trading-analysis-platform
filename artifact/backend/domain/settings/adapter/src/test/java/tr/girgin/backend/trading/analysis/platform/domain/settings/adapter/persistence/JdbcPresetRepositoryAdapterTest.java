@@ -2,7 +2,6 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.pers
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
@@ -12,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.datasource.SingleConnectionDataSource;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
@@ -48,9 +47,10 @@ class JdbcPresetRepositoryAdapterTest {
     static class Config {
 
         @Bean
-        DataSource dataSource() throws Exception {
-            Path db = java.nio.file.Files.createTempFile("presets", ".db");
-            SingleConnectionDataSource dataSource = new SingleConnectionDataSource("jdbc:sqlite:" + db, true);
+        DataSource dataSource() {
+            PostgresTestDatabase.Database database = PostgresTestDatabase.create();
+            DriverManagerDataSource dataSource =
+                    new DriverManagerDataSource(database.url(), database.username(), database.password());
             // Only this domain's migration: V1 belongs to another module.
             Flyway.configure()
                     .dataSource(dataSource)

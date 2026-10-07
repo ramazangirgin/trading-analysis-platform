@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.datasource.SingleConnectionDataSource;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -22,7 +22,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 
 /**
  * All analysis adapters wired as in the application, against a temporary platform home and a
- * migrated SQLite database. The runner command is a shell script each test writes itself.
+ * migrated PostgreSQL database. The runner command is a shell script each test writes itself.
  */
 @SpringJUnitConfig(AdapterTestSupport.Config.class)
 public abstract class AdapterTestSupport {
@@ -70,8 +70,9 @@ public abstract class AdapterTestSupport {
 
         @Bean
         DataSource dataSource() {
-            SingleConnectionDataSource dataSource =
-                    new SingleConnectionDataSource("jdbc:sqlite:" + HOME.resolve("test.db"), true);
+            PostgresTestDatabase.Database database = PostgresTestDatabase.create();
+            DriverManagerDataSource dataSource =
+                    new DriverManagerDataSource(database.url(), database.username(), database.password());
             Flyway.configure().dataSource(dataSource).load().migrate();
             return dataSource;
         }

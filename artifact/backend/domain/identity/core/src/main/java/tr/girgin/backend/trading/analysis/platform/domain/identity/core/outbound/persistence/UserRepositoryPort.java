@@ -21,8 +21,7 @@ public interface UserRepositoryPort {
     /**
      * Inserts or updates the user and replaces its role assignments with {@link User#roleIds()}, in
      * one transaction. A username taken by another user, in any case, fails with Spring's
-     * {@code DataAccessException} as it comes: a {@code DuplicateKeyException} on PostgreSQL, an
-     * {@code UncategorizedSQLException} on SQLite, whose driver Spring does not translate.
+     * {@code DuplicateKeyException}.
      */
     void save(User user);
 }

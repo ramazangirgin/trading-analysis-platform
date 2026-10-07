@@ -14,5 +14,7 @@ dependencies {
     implementation(libs.docker.java.transport.httpclient5)
 
     testImplementation(libs.flyway.core)
-    testRuntimeOnly(libs.sqlite.jdbc)
+    testRuntimeOnly(libs.postgresql)
+    testRuntimeOnly(libs.flyway.database.postgresql)
+    testImplementation(libs.testcontainers.postgresql)
 }
