@@ -14,9 +14,10 @@
 # a closed or ignored update ("recreate"), nor "rebase" a branch someone else has pushed to: a
 # rebase would recreate it from scratch and drop those commits.
 #
-# Mend takes a requested run up from its own queue: within a minute at times, after an hour at
-# others (2026-10-07), and nothing on GitHub's side shows which. Hence `wait`'s long default, its
-# progress lines, and the steps it prints when it gives up.
+# Mend may take a request up within a minute, leave its job pending for a long time, or create no
+# job for it at all (all seen on 2026-10-07). Only the job list on developer.mend.io shows which, and
+# a job there does not say which request created it. Hence `wait`'s long default, its progress lines,
+# and the steps it prints when it gives up.
 set -euo pipefail
 
 die() {
@@ -137,11 +138,12 @@ cmd_wait() {
     if [ "$(date +%s)" -ge "$deadline" ]; then
       cat >&2 <<EOT
 dashboard.sh: Renovate has not processed the dashboard after $minutes minutes ($left checkbox(es) still ticked).
-The request reached GitHub; Mend runs it from its own queue, which took over an hour at times.
-Check the jobs on https://developer.mend.io/github/$repo:
-  - a job queued or running: wait again (dashboard.sh wait);
-  - no job since the request: tick the updates there (never one under "Edited/Blocked") and press
-    "Create/Rebase", which starts a job on Mend's side; then wait again;
+The request is on the dashboard; whether Mend made a job of it shows only in its job list:
+https://developer.mend.io/github/$repo
+  - no new job: Mend dropped the request. Tick the updates there (never one under "Edited/Blocked")
+    and press "Create/Rebase", then wait again (dashboard.sh wait);
+  - a job pending or running: wait again. If it stays pending, look for an older job still in
+    progress ahead of it, and open its log;
   - the latest job's log shows "mode":"silent": turn silent mode off on that page, then request again.
 EOT
       exit 1
