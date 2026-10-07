@@ -107,6 +107,27 @@ abstract class IdentityRepositoryContractTest {
     }
 
     @Test
+    void updatingAUserKeepsTheCreationTimeOfTheFirstSave() {
+        User user = user("keep-created", Set.of());
+        users.save(user);
+        User resaved = new User(
+                user.id(),
+                user.username(),
+                user.passwordHash(),
+                user.enabled(),
+                user.mustChangePassword(),
+                user.failedLoginCount(),
+                user.lockedUntil(),
+                CREATED.plusSeconds(3600),
+                UPDATED,
+                user.roleIds());
+
+        users.save(resaved);
+
+        assertThat(users.findById(user.id()).orElseThrow().createdAt()).isEqualTo(user.createdAt());
+    }
+
+    @Test
     void findByUsernameMatchesInAnyCase() {
         User user = user("MixedCase.User", Set.of());
         users.save(user);
