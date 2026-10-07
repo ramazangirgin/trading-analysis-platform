@@ -94,6 +94,15 @@
       // The tags are v0.5.1; the files hold 0.5.1 (or the tag in the URL, whose "v" is in the regex).
       extractVersionTemplate: "^v(?<version>.+)$",
     },
+    {
+      // The Testcontainers image in the Java tests is the Compose file's PostgreSQL: it is
+      // updated in the same pull request.
+      customType: "regex",
+      managerFilePatterns: ["/PostgresqlIdentityRepositoryTest\\.java$/"],
+      matchStrings: ['PostgreSQLContainer\\("postgres:(?<currentValue>[^"]+)"\\)'],
+      depNameTemplate: "postgres",
+      datasourceTemplate: "docker",
+    },
   ],
 
   // Later rules override earlier ones: the one group first, then the limits.
@@ -142,10 +151,10 @@
       enabled: false,
     },
     {
-      // A major PostgreSQL version needs a data migration. When #10 adds Testcontainers, its
-      // postgres:18.x reference follows this rule too.
+      // A major PostgreSQL version needs a data migration. The Testcontainers postgres:18.x
+      // reference (a custom regex manager above) follows this rule too.
       description: "PostgreSQL: no major updates",
-      matchManagers: ["docker-compose"],
+      matchManagers: ["docker-compose", "custom.regex"],
       matchPackageNames: ["postgres"],
       matchUpdateTypes: ["major"],
       enabled: false,
