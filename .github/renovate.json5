@@ -97,6 +97,13 @@
       groupSlug: "all",
     },
     {
+      // pnpm (12) refuses to install a package version younger than a day (its default
+      // minimumReleaseAge), in CI too: Renovate waits as long, or the update fails CI.
+      description: "npm packages: at least a day old, as pnpm requires",
+      matchDatasources: ["npm"],
+      minimumReleaseAge: "1 day",
+    },
+    {
       // A new TradingAgents needs code changes, so the pull request fails CI until they are made.
       description: "TradingAgents",
       matchDepNames: ["TauricResearch/TradingAgents"],
