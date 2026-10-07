@@ -5,7 +5,7 @@
 #   dashboard.sh show                 the dashboard's checkboxes, by section
 #   dashboard.sh request [--dry-run]  tick every checkbox that brings mature updates in, then start
 #                                     the Renovate run workflow (renovate-run.yml): it ticks "run again"
-#   dashboard.sh wait [minutes]       wait until Renovate has processed every ticked checkbox (default 60)
+#   dashboard.sh wait [minutes]       wait until Renovate has processed every ticked checkbox (default 19)
 #   dashboard.sh prs                  Renovate's open pull requests
 #   dashboard.sh wait-ci <pr>         wait for the CI run on the pull request's head; exit 1 when it failed
 #
@@ -14,10 +14,10 @@
 # a closed or ignored update ("recreate"), nor "rebase" a branch someone else has pushed to: a
 # rebase would recreate it from scratch and drop those commits.
 #
-# Mend may take a request up within a minute, leave its job pending for a long time, or create no
-# job for it at all (all seen on 2026-10-07). Only the job list on developer.mend.io shows which, and
-# a job there does not say which request created it. Hence `wait`'s long default, its progress lines,
-# and the steps it prints when it gives up.
+# Mend may take a request up within a minute, leave its job pending, or create no job for it at all
+# (all seen on 2026-10-07); only the job list on developer.mend.io shows which. Measured that day:
+# request 10:30:20 UTC, job pending 11m42s, job 1m54s, dashboard edited 10:43:53, 13m36s in all.
+# `wait`'s default is that plus a 5-minute buffer, rounded up: 19 minutes.
 set -euo pipefail
 
 die() {
@@ -118,7 +118,7 @@ cmd_request() {
 }
 
 cmd_wait() {
-  local minutes=${1:-60} n start deadline left elapsed next=5
+  local minutes=${1:-19} n start deadline left elapsed next=5
   n=$(issue)
   start=$(date +%s)
   deadline=$((start + minutes * 60))
@@ -142,8 +142,8 @@ The request is on the dashboard; whether Mend made a job of it shows only in its
 https://developer.mend.io/github/$repo
   - no new job: Mend dropped the request. Tick the updates there (never one under "Edited/Blocked")
     and press "Create/Rebase", then wait again (dashboard.sh wait);
-  - a job pending or running: wait again. If it stays pending, look for an older job still in
-    progress ahead of it, and open its log;
+  - a job pending or running (its reason "requested"): wait again. If it stays pending, look for an
+    older job still in progress ahead of it, and open its log;
   - the latest job's log shows "mode":"silent": turn silent mode off on that page, then request again.
 EOT
       exit 1

@@ -24,7 +24,7 @@ repository root as `.claude/skills/renovate-update/dashboard.sh <command>`:
 |---|---|
 | `show` | the dashboard's checkboxes, by section |
 | `request [--dry-run]` | tick every checkbox that brings mature updates in, then start `renovate-run.yml` (it ticks "run again") and wait for it |
-| `wait [minutes]` | wait until Renovate has processed the ticked checkboxes (default 60, a progress line every 5), then list its pull requests; on a timeout, print what to check on developer.mend.io |
+| `wait [minutes]` | wait until Renovate has processed the ticked checkboxes (default 19, a progress line every 5), then list its pull requests; on a timeout, print what to check on developer.mend.io |
 | `prs` | Renovate's open pull requests |
 | `wait-ci <pr>` | wait for the CI run on the pull request's head; exit 1 when it failed, with the failed jobs |
 
@@ -92,17 +92,18 @@ come after this pull request is merged (Renovate then opens a new one).
 ## 2. Wait for Renovate
 
 `dashboard.sh wait` in the background. Renovate unticks every checkbox when it has processed them.
-Mend may take a request up within a minute, leave its job pending for a long time, or create no job
-for it at all; only its job list on developer.mend.io shows which, and a job there does not say which
-request created it. Requesting again does not help a pending job. So `wait` gives it 60 minutes, and prints a progress line every 5 (the ticked checkboxes, Renovate's last edit of the
-dashboard).
+Mend may take a request up within a minute, leave its job pending, or create no job for it at all;
+only its job list on developer.mend.io shows which (a job from a request has the reason "requested").
+Measured on 2026-10-07: the job stayed pending 11m42s and ran 1m54s, so Renovate edited the dashboard
+13m36s after the request. `wait` gives it that plus a 5-minute buffer, 19 minutes, and prints a
+progress line every 5 (the ticked checkboxes, Renovate's last edit of the dashboard). Requesting again
+does not help a pending job.
 
 On a timeout, do not request again: print `wait`'s message to the user and stop. It names the job list
 on developer.mend.io and what to do there: with no new job, Mend dropped the request, so tick the
 updates on that page (never one under "Edited/Blocked") and press "Create/Rebase"; with a job pending
 or running, wait again, and if it stays pending, look for an older job still in progress ahead of it;
-with `"mode":"silent"` in the latest job's log,
-turn silent mode off. The user continues with `/renovate-update` once the run is done.
+with `"mode":"silent"` in the latest job's log, turn silent mode off. The user continues with `/renovate-update` once the run is done.
 
 Afterwards list the open Renovate pull requests. With none, there is nothing to update: say what is
 still pending on the dashboard (and when it matures) and stop.
