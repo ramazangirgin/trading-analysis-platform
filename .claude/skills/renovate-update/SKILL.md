@@ -92,15 +92,16 @@ come after this pull request is merged (Renovate then opens a new one).
 ## 2. Wait for Renovate
 
 `dashboard.sh wait` in the background. Renovate unticks every checkbox when it has processed them.
-Mend runs a request from its own queue: within a minute at times, after an hour at others, and
-nothing on GitHub shows which; requesting again does not move it up the queue. So `wait` gives it 60
-minutes, and prints a progress line every 5 (the ticked checkboxes, Renovate's last edit of the
+Mend may take a request up within a minute, leave its job pending for a long time, or create no job
+for it at all; only its job list on developer.mend.io shows which, and a job there does not say which
+request created it. Requesting again does not help a pending job. So `wait` gives it 60 minutes, and prints a progress line every 5 (the ticked checkboxes, Renovate's last edit of the
 dashboard).
 
 On a timeout, do not request again: print `wait`'s message to the user and stop. It names the job list
-on developer.mend.io and what to do there: wait again while a job is queued or running; with no job
-since the request, tick the updates on that page (never one under "Edited/Blocked") and press
-"Create/Rebase", which starts a job on Mend's side; with `"mode":"silent"` in the latest job's log,
+on developer.mend.io and what to do there: with no new job, Mend dropped the request, so tick the
+updates on that page (never one under "Edited/Blocked") and press "Create/Rebase"; with a job pending
+or running, wait again, and if it stays pending, look for an older job still in progress ahead of it;
+with `"mode":"silent"` in the latest job's log,
 turn silent mode off. The user continues with `/renovate-update` once the run is done.
 
 Afterwards list the open Renovate pull requests. With none, there is nothing to update: say what is
