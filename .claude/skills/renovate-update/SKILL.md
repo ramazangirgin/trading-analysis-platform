@@ -1,6 +1,6 @@
 ---
 name: renovate-update
-description: Run a dependency update of this repository end to end without asking at every step - request a Renovate run, tick every mature update on the dependency dashboard, wait for Renovate's pull requests and their CI, and fix a red CI on the update branch (adapt the code, align conflicting versions, or hold one dependency back) until it is green, then hand the pull request over for review and merge. Use when the user asks to update the dependencies, run Renovate, or fix the Renovate pull request, e.g. "/renovate-update", "/renovate-update 103" or "update all dependencies".
+description: Run a dependency update of this repository end to end without asking at every step - request a Renovate run, tick every mature update on the dependency dashboard, wait for Renovate's pull requests and their CI, and fix a red CI on the update branch (adapt the code, bring the tools around it along, and only with the user's consent hold one dependency back) until it is green, then hand the pull request over for review and merge. Use when the user asks to update the dependencies, run Renovate, or fix the Renovate pull request, e.g. "/renovate-update", "/renovate-update 103" or "update all dependencies".
 ---
 
 # Renovate update, end to end
@@ -9,8 +9,9 @@ The hosted Renovate app ([`.github/renovate.json5`](../../../.github/renovate.js
 "Dependency updates") puts every update in one pull request (`renovate/all`), plus one for lock file
 maintenance (`renovate/lock-file-maintenance`). This skill drives it to a green pull request: it
 asks for a run through the dependency dashboard issue, waits for the pull requests, and fixes them
-until CI passes. It runs **without approval gates** up to a green pull request. It never merges on
-its own (see 6).
+until CI passes. It runs **without approval gates** up to a green pull request, with one exception:
+holding a dependency back, which it presents and asks about first (4.4). It never merges on its own
+(see 6).
 
 Input (`$ARGUMENTS`): nothing (a full run from the dashboard), or the number of an open Renovate pull
 request (skip to 3 and only fix that one).
@@ -124,39 +125,56 @@ Renovate's commits, tick its rebase checkbox with `tick` and go back to 2. With 
    | Docker images and Compose smoke test | needs Docker; else reason from the log and let CI verify |
    | Version | should not fail here (update pull requests skip the bump): report it, do not bump |
 
-4. **Fix**, choosing the first that applies:
-   1. **Adapt the code** when the new release documents the change and the change stays contained:
-      a renamed or removed API, a new deprecation turned error, new lint or type-check findings, a
-      formatter's new output (`mise run format`), changed defaults in configuration, test
-      expectations that follow a documented behaviour change.
-   2. **Align conflicting versions** when two updates, or an update and a dependency kept back,
-      do not fit each other (a peer dependency range, a Gradle plugin needing a newer Gradle, a BOM
-      pinning an older library): move the other one to a compatible version, or take the highest
-      mature version of the newer one that fits (`allowedVersions`, see iii).
-   3. **Hold the dependency back** when adapting is a real migration (a major release with
-      breaking changes across the code base, beyond a contained fix), the release is broken (an open
-      upstream regression), or no compatible combination exists:
-      - put its version back to `main`'s in every file Renovate changed for it, and regenerate the
-        lock files;
+4. **Fix the integration.** The goal is the new version working, not a green CI at any price: a
+   downgrade is the last resort, never the first answer to a failure. Work through these in order,
+   and try each one for real (change it, run the reproducing task) before moving on:
+   1. **Adapt the code** to the new release, guided by its notes and migration guide: a renamed or
+      removed API, a new deprecation turned error, new lint or type-check findings, a formatter's
+      new output (`mise run format`), changed defaults in configuration, test expectations that
+      follow a documented behaviour change, a migration codemod the project provides. A migration
+      that touches many files is still this step, as long as it is mechanical and the tests cover it.
+   2. **Bring the neighbours along** when the update does not fit the tools around it (a plugin,
+      a type checker, a linter, a BOM, a peer dependency range): look for a mature release of the
+      neighbour that supports the new version (its changelog, its `peerDependencies`, its issues)
+      and move it too; or move the update to the highest mature version that still fits.
+   3. **Configure around it** when the project or the upstream issue documents a supported way: a
+      compatibility flag, a configuration option, a documented adapter. No hacks that the next
+      reader cannot follow (aliased duplicate packages, patched `node_modules`, copied sources).
+   4. **Challenging: ask before holding back.** When none of these works within this run (the
+      ecosystem has no support yet, the release is broken upstream, the migration needs design
+      decisions or more than a contained change), stop fixing this dependency and present it with
+      `AskUserQuestion` (header `Hold back`): the dependency and versions, the failure (a few log
+      lines), what you tried in 1–3 and why each did not work, what would unblock it (a release, a
+      decision), and the options **Hold back and open a follow-up issue** (first),
+      **Hold back without an issue**, and **Keep trying** (say what you would try next). Fix the
+      rest of the pull request meanwhile. Only after the answer:
       - add a rule at the end of `packageRules` in `.github/renovate.json5`, so the next runs do not
         bring it back:
         ```json5
         {
-          // Held back: <one-line reason>. #<issue> tracks the update.
-          description: "<dependency>: below <version>",
+          // Held back: <one-line reason>.
+          // Upgrade: https://github.com/<owner>/<repo>/issues/<issue> (remove this rule)
+          description: "<dependency>: below <version> (#<issue>)",
           matchPackageNames: ["<dependency>"],
           allowedVersions: "<<version>",
         },
         ```
-        (`matchDepNames` for the custom managers, as the existing rules do);
-      - open an issue for the update, labelled `dependencies`: the version, the failure (log
-        excerpt), the release notes or migration guide, and the rule to remove when it is done
-        (`gh issue create --label dependencies`).
+        (`matchDepNames` for the custom managers, as the existing rules do; `matchFileNames` when
+        only one part of the repository fails, so the others still take the update);
+      - with **Hold back and open a follow-up issue**: open it first, labelled `dependencies`,
+        with the version, the failure (log excerpt), what was tried, what unblocks it, and the rule
+        to remove when it is done (`gh issue create --label dependencies`). Then link it wherever
+        the hold-back leaves a trace: the rule's comment (the issue's full URL) and description
+        (`#<issue>`), and every other comment or TODO the fix leaves in the code, so whoever
+        upgrades later finds all of them by the issue. Without an issue, the rule's comment says
+        what to watch for instead (the release that unblocks it).
 
-      The rest of the update stays on the branch: hold back only what fails.
+      The rest of the update stays on the branch: hold back only what fails, and only where it
+      fails.
    - **TradingAgents** in the update: Renovate's note applies (run `uv lock` in
      `artifact/ta-runner/`, adapt `ta_runner/engine/compat.py` and the contract tests to the new
-     release); hold it back (iii) only when the upstream change is too large for that.
+     release); it goes through 1–3 like any other, and only to 4 when the upstream change is too
+     large for one pull request.
 5. **Check and commit.** `mise run check` plus the reproducing task, both green. One commit per
    fix, with an imperative subject naming the dependency, in the repository's style
    (`Adapt to <dependency> <version>: <what changed>`, `Hold back <dependency> at <version>:
