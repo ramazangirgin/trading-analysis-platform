@@ -156,5 +156,17 @@
       matchUpdateTypes: ["major"],
       enabled: false,
     },
+    {
+      // The frontend runs TypeScript 7 (tsc, as "@typescript/native") side by side with TypeScript
+      // 6's compatibility package as "typescript": vue-tsc and typescript-eslint need its JavaScript
+      // API, which TypeScript 7.0 does not have.
+      // Upgrade: https://github.com/ramazangirgin/trading-analysis-platform/issues/105 (back to one typescript)
+      description: "TypeScript 6 compatibility package in the frontend (#105)",
+      matchFileNames: ["artifact/frontend/package.json"],
+      matchPackageNames: ["@typescript/typescript6"],
+      prBodyNotes: [
+        "**TypeScript 6 compatibility package:** once vue-tsc and typescript-eslint support TypeScript 7's API, go back to a single `typescript` in `artifact/frontend/` (#105).",
+      ],
+    },
   ],
 }
