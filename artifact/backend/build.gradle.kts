@@ -34,6 +34,8 @@ dependencies {
     runtimeOnly(project(":backend:domain:catalog:adapter"))
     runtimeOnly(project(":backend:domain:settings:core"))
     runtimeOnly(project(":backend:domain:settings:adapter"))
+    runtimeOnly(project(":backend:domain:identity:core"))
+    runtimeOnly(project(":backend:domain:identity:adapter"))
     runtimeOnly(libs.springdoc.openapi.webmvc.api)
 
     frontend(project(path = ":frontend", configuration = "dist"))

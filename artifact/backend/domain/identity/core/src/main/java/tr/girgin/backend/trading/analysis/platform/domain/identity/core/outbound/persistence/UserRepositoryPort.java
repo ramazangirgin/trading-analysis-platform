@@ -1,0 +1,28 @@
+package tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence;
+
+import java.util.List;
+import java.util.Optional;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
+
+/** Stores users together with their role assignments. */
+public interface UserRepositoryPort {
+
+    Optional<User> findById(UserId id);
+
+    /** Finds a user by username, ignoring case. */
+    Optional<User> findByUsername(Username username);
+
+    List<User> findAll();
+
+    long count();
+
+    /**
+     * Inserts or updates the user and replaces its role assignments with {@link User#roleIds()}, in
+     * one transaction. A username taken by another user, in any case, fails with Spring's
+     * {@code DataAccessException} as it comes: a {@code DuplicateKeyException} on PostgreSQL, an
+     * {@code UncategorizedSQLException} on SQLite, whose driver Spring does not translate.
+     */
+    void save(User user);
+}
