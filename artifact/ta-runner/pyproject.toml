@@ -9,7 +9,7 @@ dependencies = [
     # GitHub's archive of that tag (no git needed, in the image or locally; uv.lock pins its hash).
     # Bump it together with engine/compat.py and the contract tests (PLAN.md section 10). Renovate
     # opens that pull request (.github/renovate.json5): run `uv lock` and adapt compat.py before merging.
-    "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz",
+    "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.6.0.tar.gz",
 ]
 
 [project.scripts]
