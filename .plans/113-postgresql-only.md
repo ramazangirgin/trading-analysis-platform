@@ -299,6 +299,31 @@ INSERT INTO "PRESETS" ("ID", "NAME", "PAYLOAD", "UPDATED_AT") VALUES (:id, :name
   `@Table(name = "\"ANALYSES\"")` / `@Column` names, or `hibernate.globally_quoted_identifiers`);
   noted on #112 when this pull request merges.
 
+### The naming convention is documented
+
+A new coding-convention document, `docs/coding-convention/backend-database-naming.md`, in the
+shape of the existing ones (title, the rules, examples, where it is checked, why):
+
+- **Rules**: everything in "Uppercase database object names" above. Names in uppercase with
+  underscores, stored that way, so quoted in every statement; explicit constraint and index names
+  (`<TABLE>_PK`, `<TABLE>_<COLUMN>_FK`, `<TABLE>_<COLUMNS>_UK`, `<TABLE>_<COLUMNS>_IDX`); keywords
+  and functions uppercase, unquoted; named parameters in Java camelCase; Flyway's
+  `FLYWAY_SCHEMA_HISTORY`; the database, user and schema keep their lower-case names.
+- **Migrations**: one Flyway migration per domain change, versions global across domains in
+  order of creation, in `db/migration` of the domain's adapter; never edit an applied migration.
+- **Examples**: a `CREATE TABLE` with named constraints, an index, a `SELECT` and an upsert from
+  the adapters; a hand query in psql (`SELECT * FROM "ANALYSES";`).
+- **Where it is checked**: the repository and Spring Boot tests on PostgreSQL catch a statement
+  whose quoting does not match the schema; the stored names themselves are checked by review
+  until #115 adds the automated check (linked).
+- **Why**: the developer's decision on #113: one recognisable style for every database object,
+  the same in migrations, adapter SQL and psql, and fixed names in the catalog rather than
+  generated ones.
+
+`docs/coding-convention/README.md` lists it in the documents table ("Backend (database): table,
+column, constraint and index names, quoting, migrations") and, in the enforcement table, as
+checked by the database tests and by review until #115.
+
 ### `scripts/postgres.sh` is executable
 
 The branch already has it as mode 100755 (done by hand, finding R1-3). `mise.toml`,
@@ -395,11 +420,9 @@ the other scripts, instead of `bash scripts/postgres.sh`.
 - `PLAN.md` is gone and `git grep -n "PLAN\.md" -- ':!.plans'` prints nothing;
   `git diff --stat origin/main -- .plans` lists only this plan.
 - Uppercase names: the repository tests and the Spring Boot tests run every rewritten statement
-  on PostgreSQL. A new test in `:backend` (`DatabaseNamingTest`, a Spring Boot test on a
-  `PostgresTestDatabase`, so all three domains' migrations run) reads `information_schema.tables`,
-  `information_schema.columns`, `information_schema.table_constraints` and `pg_indexes` of schema
-  `public` and asserts that every table, column and index name
-  of the platform (and `FLYWAY_SCHEMA_HISTORY`) equals its uppercase form.
+  on PostgreSQL, so a statement that misses a quote fails (the lower-case name does not exist).
+  The automated check of the stored names (a catalog test, explicit constraint names) is issue
+  #115, not this pull request.
 
 ## Docs to update
 
@@ -412,8 +435,9 @@ the other scripts, instead of `bash scripts/postgres.sh`.
 | Text | `README.md`, CI table, "Backend and frontend" and "End-to-end tests" rows | Every repository and Spring Boot test runs on PostgreSQL in a container (Testcontainers), not only the identity repository; the e2e jar runs on a throwaway PostgreSQL container |
 | Text | `PLAN.md` | Deleted; every reference removed (see "`PLAN.md` is deleted") |
 | Text | `.plans/*.md` (older plans) | None: never edited |
+| Text | `docs/coding-convention/backend-database-naming.md` (new), `docs/coding-convention/README.md` | The naming convention and its index entries (see \"The naming convention is documented\") |
 | Text | `.github/workflows/ci.yml` header comment | As in WP4 |
-| Text | `docs/coding-convention/*.md`, `docs/event-protocol.md`, `deploy/.env.example` | None: none of them names the embedded database or the `postgres` profile today |
+| Text | the other `docs/coding-convention/*.md`, `docs/event-protocol.md`, `deploy/.env.example` | None: none of them names the embedded database or the `postgres` profile today |
 | Screenshot | none | No page changes; the UI is the same |
 
 ## Out of scope
