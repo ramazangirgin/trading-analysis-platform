@@ -80,7 +80,7 @@ class JdbcUserRepositoryAdapter implements UserRepositoryPort {
                 ON CONFLICT (id) DO UPDATE SET username = excluded.username, password_hash = excluded.password_hash,
                     enabled = excluded.enabled, must_change_password = excluded.must_change_password,
                     failed_login_count = excluded.failed_login_count, locked_until = excluded.locked_until,
-                    created_at = excluded.created_at, updated_at = excluded.updated_at
+                    updated_at = excluded.updated_at
                 """).paramSource(toRow.map(user)).update();
         jdbc.sql("DELETE FROM user_roles WHERE user_id = :userId")
                 .param("userId", user.id().value())
