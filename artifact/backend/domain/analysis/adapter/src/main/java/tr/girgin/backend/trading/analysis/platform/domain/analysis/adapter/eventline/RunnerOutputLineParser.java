@@ -13,7 +13,7 @@ import tools.jackson.databind.node.MissingNode;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.json.RunnerOutputLine;
 
 /**
- * Parses runner output. Runner output is untrusted input (PLAN.md section 3.3): a line that is
+ * Parses runner output. Runner output is untrusted input: a line that is
  * not JSON or lacks the envelope yields nothing, and oversized text is cut down again.
  */
 public final class RunnerOutputLineParser {

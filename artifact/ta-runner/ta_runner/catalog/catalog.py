@@ -1,7 +1,7 @@
 """What the installed TradingAgents offers: providers, models, analysts.
 
 Read from upstream at run time so neither the backend nor the UI keeps a hand-maintained
-list (PLAN.md section 10).
+list.
 """
 
 from __future__ import annotations

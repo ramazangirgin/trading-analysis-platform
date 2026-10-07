@@ -7,7 +7,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     # The ONLY place the platform touches TradingAgents code. Pinned to a release tag, fetched as
     # GitHub's archive of that tag (no git needed, in the image or locally; uv.lock pins its hash).
-    # Bump it together with engine/compat.py and the contract tests (PLAN.md section 10). Renovate's
+    # Bump it together with engine/compat.py and the contract tests. Renovate's
     # weekly update pull request includes it (.github/renovate.json5): run `uv lock` and adapt
     # compat.py on that branch before merging.
     "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz",

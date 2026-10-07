@@ -6,7 +6,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
  * Which runner adapter is active: {@code platform.runner=process} (default: ta-runner in a local
- * venv) or {@code docker} (one container per analysis). PLAN.md section 4, D2/D8.
+ * venv) or {@code docker} (one container per analysis).
  */
 public final class RunnerKind {
 

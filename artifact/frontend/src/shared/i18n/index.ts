@@ -6,7 +6,7 @@ export type MessageSchema = typeof en
 export const SUPPORTED_LOCALES = ['en', 'tr'] as const
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number]
 
-// English by default (PLAN.md D5); the viewer's choice is remembered per browser.
+// English by default; the viewer's choice is remembered per browser.
 export const DEFAULT_LOCALE: AppLocale = 'en'
 const STORAGE_KEY = 'tap.locale'
 

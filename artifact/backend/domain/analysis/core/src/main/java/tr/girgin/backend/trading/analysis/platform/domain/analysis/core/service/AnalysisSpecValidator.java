@@ -9,7 +9,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 
 /**
  * Domain checks on a spec. The values end up as process arguments and path components in the
- * runner, so they are held to strict formats (PLAN.md section 7).
+ * runner, so they are held to strict formats.
  */
 final class AnalysisSpecValidator {
 
