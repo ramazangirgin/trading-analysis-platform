@@ -27,7 +27,7 @@ jobs:
   release:
     name: Tag and GitHub Release
     if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       # Push the tag and create the release.

@@ -24,7 +24,7 @@ def isolated_spec(tmp_path, spec_dict, monkeypatch):
 
 
 def test_upstream_version_is_the_pinned_release():
-    assert compat.upstream_version() == "0.5.1"
+    assert compat.upstream_version() == "0.6.0"
 
 
 def test_graph_exposes_the_methods_compat_uses():

@@ -10,7 +10,7 @@ dependencies = [
     # Bump it together with engine/compat.py and the contract tests (PLAN.md section 10). Renovate's
     # weekly update pull request includes it (.github/renovate.json5): run `uv lock` and adapt
     # compat.py on that branch before merging.
-    "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz",
+    "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.6.0.tar.gz",
 ]
 
 [project.scripts]
