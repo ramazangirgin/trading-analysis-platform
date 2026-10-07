@@ -253,20 +253,51 @@ localhost). Known places (`git grep -n "PLAN\.md"`, `.plans/` excepted):
 
 Check: `git grep -n "PLAN\.md" -- ':!.plans'` prints nothing (the older plans may mention it).
 
-### Uppercase database object names
+### Uppercase database object names, stored in uppercase (quoted)
 
-Every database object name is written in uppercase in all SQL: tables, columns, indexes,
-constraints, in the three migrations and in every statement of the four `Jdbc*Adapter` classes
-and the tests (`CREATE TABLE ANALYSES (ID TEXT PRIMARY KEY, TICKER TEXT NOT NULL, …)`,
-`CREATE UNIQUE INDEX USERS_USERNAME_LOWER ON USERS (LOWER(USERNAME))`,
-`SELECT * FROM ANALYSES … ORDER BY CREATED_AT DESC`, `ON CONFLICT (ID) DO UPDATE SET NAME = EXCLUDED.NAME`).
-SQL keywords and functions are uppercase too, as they mostly are already. Named parameters
-(`:createdAt`) keep their Java names.
+Every database object is created and stored with an uppercase name: tables, columns, indexes,
+constraints and the primary keys' and foreign keys' names. PostgreSQL folds unquoted names to
+lower case, so every name is **quoted** wherever it appears, in the three migrations, in every
+statement of the four `Jdbc*Adapter` classes and in every SQL string in the tests:
 
-The names are **not quoted**: PostgreSQL folds unquoted identifiers, so the catalog keeps
-lower-case names and every tool (psql, `pg_dump`, Hibernate in #112, Spring's row mappers, which
-match column labels case-insensitively) works without quoting. Quoting them (`"ANALYSES"`) would
-make every query everywhere quote them as well; that is not done.
+```sql
+CREATE TABLE "ANALYSES" (
+    "ID"         TEXT        NOT NULL,
+    "TICKER"     TEXT        NOT NULL,
+    "CREATED_AT" TIMESTAMPTZ NOT NULL,
+    ...
+    CONSTRAINT "ANALYSES_PK" PRIMARY KEY ("ID")
+);
+CREATE INDEX "ANALYSES_CREATED_AT_IDX" ON "ANALYSES" ("CREATED_AT");
+CREATE UNIQUE INDEX "USERS_USERNAME_LOWER_UK" ON "USERS" (LOWER("USERNAME"));
+
+SELECT * FROM "ANALYSES" WHERE "STATUS" IN (:statuses) ORDER BY "CREATED_AT" DESC
+INSERT INTO "PRESETS" ("ID", "NAME", "PAYLOAD", "UPDATED_AT") VALUES (:id, :name, :payload, :updatedAt)
+    ON CONFLICT ("ID") DO UPDATE SET "NAME" = EXCLUDED."NAME", ...
+```
+
+- Constraints and indexes get explicit names, so no name is generated in lower case by PostgreSQL:
+  `<TABLE>_PK`, `<TABLE>_<COLUMN>_FK`, `<TABLE>_<COLUMNS>_UK` (unique), `<TABLE>_<COLUMNS>_IDX`.
+  Inline `PRIMARY KEY`, `UNIQUE` and `REFERENCES` become named `CONSTRAINT` clauses.
+- SQL keywords and functions are uppercase and unquoted (`SELECT`, `LOWER`, `EXCLUDED`). Named
+  parameters (`:createdAt`) keep their Java names.
+- In Java text blocks the quotes need no escaping; in one-line strings they are escaped (`\"`).
+  Where a statement is built from pieces (the `where` clause of the analysis list), every piece
+  quotes its names.
+- Reading rows: the result columns come back as `ID`, `CREATED_AT`, …; Spring's
+  `SimplePropertyRowMapper` / `DataClassRowMapper` behind `JdbcClient.query(Row.class)` match
+  column labels to record components case-insensitively with underscores removed, so the row
+  records keep their names. A repository test per adapter proves every column round-trips.
+- Flyway's history table is uppercase as well: `spring.flyway.table=FLYWAY_SCHEMA_HISTORY` in
+  `application.properties`, and `.table("FLYWAY_SCHEMA_HISTORY")` in every test's
+  `Flyway.configure()` (Flyway quotes the name itself).
+- Not renamed: the database, the user and the schema (`platform`, `platform`, `public`), which
+  the Compose file, the deploy setup and `pg_dump` commands name; and `CREATE DATABASE test_<n>`
+  in `PostgresTestDatabase`.
+- Anyone querying by hand quotes the names too (`SELECT * FROM "ANALYSES";`): the README's
+  database notes say so in one line. #112 (Hibernate) must map the quoted names (explicit
+  `@Table(name = "\"ANALYSES\"")` / `@Column` names, or `hibernate.globally_quoted_identifiers`);
+  noted on #112 when this pull request merges.
 
 ### `scripts/postgres.sh` is executable
 
@@ -364,7 +395,11 @@ the other scripts, instead of `bash scripts/postgres.sh`.
 - `PLAN.md` is gone and `git grep -n "PLAN\.md" -- ':!.plans'` prints nothing;
   `git diff --stat origin/main -- .plans` lists only this plan.
 - Uppercase names: the repository tests and the Spring Boot tests run every rewritten statement
-  on PostgreSQL; a reviewer checks the SQL in the migrations and adapters for lower-case names.
+  on PostgreSQL. A new test in `:backend` (`DatabaseNamingTest`, a Spring Boot test on a
+  `PostgresTestDatabase`, so all three domains' migrations run) reads `information_schema.tables`,
+  `information_schema.columns`, `information_schema.table_constraints` and `pg_indexes` of schema
+  `public` and asserts that every table, column and index name
+  of the platform (and `FLYWAY_SCHEMA_HISTORY`) equals its uppercase form.
 
 ## Docs to update
 
