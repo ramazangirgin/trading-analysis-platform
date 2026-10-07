@@ -25,9 +25,10 @@ run = "lefthook install"
 
 # The platform's PostgreSQL 18 (scripts/postgres.sh): a local container, in Docker or Podman, that
 # run and dev start on their own. PLATFORM_DB_HOST (and _PORT, _NAME, _USER, _PASSWORD) point the
-# platform at your own server instead, and then no container is started.
+# platform at your own server instead, and then no container is started; for a server on localhost
+# also set PLATFORM_DB_CONTAINER=false.
 [tasks.db]
-description = "Start the local PostgreSQL for run and dev (Docker or Podman), unless PLATFORM_DB_HOST points elsewhere"
+description = "Start the local PostgreSQL for run and dev (Docker or Podman), unless PLATFORM_DB_CONTAINER=false or PLATFORM_DB_HOST points elsewhere"
 run = "bash scripts/postgres.sh start"
 
 [tasks."db:stop"]
