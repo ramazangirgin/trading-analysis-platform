@@ -343,9 +343,10 @@ The Claude Code skill `renovate-update`
 ([`.claude/skills/renovate-update/SKILL.md`](.claude/skills/renovate-update/SKILL.md)) does all of
 this from your machine: `/renovate-update` ticks every mature update on the dashboard (never the
 pending ones) and requests a run, waits for the pull requests and their CI, and fixes a red CI on the
-update branch: it adapts the code to the new release, aligns conflicting versions, or holds one
-dependency back with an `allowedVersions` rule and an issue for it. It stops at a green pull request
-and merges only when you say so. `/renovate-update <pr>` fixes one open update pull request.
+update branch: it adapts the code to the new release and moves the tools around it along. When that
+is not possible yet, it shows you why and asks whether to hold the dependency back (an
+`allowedVersions` rule) and open a follow-up issue, which the rule links. It stops at a green pull
+request and merges only when you say so. `/renovate-update <pr>` fixes one open update pull request.
 
 ### Versioning and releases
 
