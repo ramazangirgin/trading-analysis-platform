@@ -5,9 +5,11 @@
 #   dashboard.sh show                 the dashboard's checkboxes, by section
 #   dashboard.sh request [--dry-run]  tick every checkbox that brings mature updates in, then start
 #                                     the Renovate run workflow (renovate-run.yml): it ticks "run again"
-#   dashboard.sh wait [minutes]       wait until Renovate has processed every ticked checkbox (default 19)
+#   dashboard.sh wait [minutes]       wait until Renovate has processed every ticked checkbox (default 25),
+#                                     with a status line every 30 seconds
 #   dashboard.sh prs                  Renovate's open pull requests
-#   dashboard.sh wait-ci <pr>         wait for the CI run on the pull request's head; exit 1 when it failed
+#   dashboard.sh wait-ci <pr>         wait for the CI run on the pull request's head, with a status line
+#                                     every 30 seconds; exit 1 when it failed
 #
 # Releases younger than minimumReleaseAge (.github/renovate.json5) are listed under "Pending Status
 # Checks"; their checkbox would create them anyway, so `request` never touches it. Neither does it tick
@@ -17,7 +19,7 @@
 # Mend may take a request up within a minute, leave its job pending, or create no job for it at all
 # (all seen on 2026-10-07); only the job list on developer.mend.io shows which. Measured that day:
 # request 10:30:20 UTC, job pending 11m42s, job 1m54s, dashboard edited 10:43:53, 13m36s in all.
-# `wait`'s default is that plus a 5-minute buffer, rounded up: 19 minutes.
+# `wait`'s default leaves room above that: 25 minutes.
 set -euo pipefail
 
 die() {
@@ -117,27 +119,38 @@ cmd_request() {
   echo "Requested a Renovate run on https://github.com/$repo/issues/$n"
 }
 
+# Minutes and seconds since $1 (epoch seconds), as m:ss.
+since() {
+  local d=$(($(date +%s) - $1))
+  printf '%d:%02d' $((d / 60)) $((d % 60))
+}
+
 cmd_wait() {
-  local minutes=${1:-19} n start deadline left elapsed next=5
+  local minutes=${1:-25} n start deadline left edits req ren seen=''
   n=$(issue)
   start=$(date +%s)
   deadline=$((start + minutes * 60))
-  echo "Waiting up to $minutes minutes for Renovate to process https://github.com/$repo/issues/$n"
+  echo "Waiting up to $minutes:00 for Renovate to process https://github.com/$repo/issues/$n."
+  echo "Mend's job usually stays pending about 12 minutes and runs about 2; its job list: https://developer.mend.io/github/$repo"
   while :; do
     left=$(body "$n" | grep -cE '^ *- \[x\] <!--' || true)
     if [ "$left" -eq 0 ]; then
-      echo "Renovate processed the dashboard after $((($(date +%s) - start) / 60)) minutes."
+      echo "[$(since "$start")] Renovate processed the dashboard. Its pull requests:"
       cmd_prs
       return 0
     fi
-    elapsed=$((($(date +%s) - start) / 60))
-    if [ "$elapsed" -ge "$next" ]; then
-      echo "$elapsed min: $left checkbox(es) still ticked; Renovate last edited the dashboard $(last_renovate_edit "$n")"
-      next=$((next + 5))
+    edits=$(dashboard_edits "$n" || true)
+    req=$(awk '$2 != "renovate" { print $1; exit }' <<<"$edits")
+    ren=$(awk '$2 == "renovate" { print $1; exit }' <<<"$edits")
+    if [ -n "$seen" ] && [ "$ren" != "$seen" ]; then
+      echo "[$(since "$start")] Renovate edited the dashboard at ${ren:-?}: its job is running; $left checkbox(es) still ticked."
+    else
+      echo "[$(since "$start") of $minutes:00] Waiting for Mend's job: $left checkbox(es) ticked, requested at ${req:-?}; Renovate's last edit ${ren:-never}."
     fi
+    seen=${ren:-none}
     if [ "$(date +%s)" -ge "$deadline" ]; then
-      cat >&2 <<EOT
-dashboard.sh: Renovate has not processed the dashboard after $minutes minutes ($left checkbox(es) still ticked).
+      cat <<EOT
+Renovate has not processed the dashboard after $minutes minutes ($left checkbox(es) still ticked).
 The request is on the dashboard; whether Mend made a job of it shows only in its job list:
 https://developer.mend.io/github/$repo
   - no new job: Mend dropped the request. Tick the updates there (never one under "Edited/Blocked")
@@ -152,15 +165,15 @@ EOT
   done
 }
 
-# When renovate[bot] last edited the issue (UTC).
-last_renovate_edit() {
+# The dashboard's last 20 edits, newest first: "<time> <login>" per line (renovate[bot] is "renovate").
+dashboard_edits() {
   # $owner, $name and $n are GraphQL variables, not shell ones.
   # shellcheck disable=SC2016
   gh api graphql -F n="$1" -F owner="${repo%/*}" -F name="${repo#*/}" -f query='
     query($owner: String!, $name: String!, $n: Int!) {
       repository(owner: $owner, name: $name) { issue(number: $n) {
         userContentEdits(first: 20) { nodes { editedAt editor { login } } } } } }' \
-    --jq '[.data.repository.issue.userContentEdits.nodes[] | select(.editor.login == "renovate")][0].editedAt // "never (in the last 20 edits)"'
+    --jq '.data.repository.issue.userContentEdits.nodes[] | "\(.editedAt) \(.editor.login // "?")"'
 }
 
 cmd_prs() {
@@ -170,22 +183,37 @@ cmd_prs() {
 }
 
 cmd_wait_ci() {
-  local pr=${1:?usage: dashboard.sh wait-ci <pr>} sha run deadline conclusion
+  local pr=${1:?usage: dashboard.sh wait-ci <pr>} sha run start deadline status jobs prev='' cur conclusion
   sha=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
-  deadline=$(($(date +%s) + 600))
+  start=$(date +%s)
+  deadline=$((start + 600))
+  echo "Waiting for the CI run on #$pr (${sha:0:12})."
   while :; do
     run=$(gh run list --workflow ci.yml --commit "$sha" --event pull_request --limit 1 \
-      --json databaseId --jq '.[0].databaseId // empty')
+      --json databaseId --jq '.[0].databaseId // empty' || true)
     [ -z "$run" ] || break
     [ "$(date +%s)" -lt "$deadline" ] || die "no CI run for $sha after 10 minutes"
-    sleep 20
+    echo "[$(since "$start")] No CI run yet for ${sha:0:12}."
+    sleep 30
   done
-  echo "CI run $run on ${sha:0:12}: https://github.com/$repo/actions/runs/$run"
-  gh run watch "$run" --interval 30 >/dev/null 2>&1 || true
-  conclusion=$(gh run view "$run" --json conclusion --jq .conclusion)
-  echo "Conclusion: $conclusion"
+  echo "[$(since "$start")] CI run: https://github.com/$repo/actions/runs/$run"
+  while :; do
+    if jobs=$(gh run view "$run" --json status,conclusion,jobs 2>/dev/null); then
+      # One line per job whose state changed since the last poll.
+      cur=$(jq -r '.jobs[] | "\(.name): \(if .status == "completed" then .conclusion else .status end)"' <<<"$jobs")
+      comm -13 <(sort <<<"$prev") <(sort <<<"$cur") | sed "s/^/[$(since "$start")] /"
+      prev=$cur
+      jq -r --arg t "$(since "$start")" \
+        '"[\($t)] \([.jobs[] | select(.status == "completed")] | length) of \(.jobs | length) jobs done; running: \([.jobs[] | select(.status != "completed") | .name] | join(", ") | if . == "" then "none" else . end)"' <<<"$jobs"
+      status=$(jq -r .status <<<"$jobs")
+      [ "$status" != completed ] || break
+    fi
+    sleep 30
+  done
+  conclusion=$(jq -r .conclusion <<<"$jobs")
+  echo "[$(since "$start")] CI $conclusion: https://github.com/$repo/actions/runs/$run"
   if [ "$conclusion" != success ]; then
-    gh run view "$run" --json jobs --jq '.jobs[] | select(.conclusion == "failure") | "failed: \(.name)"'
+    jq -r '.jobs[] | select(.conclusion == "failure") | "failed: \(.name)"' <<<"$jobs"
     return 1
   fi
 }
@@ -196,5 +224,5 @@ case ${1:-} in
   wait) cmd_wait "${2:-}" ;;
   prs) cmd_prs ;;
   wait-ci) cmd_wait_ci "${2:-}" ;;
-  *) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+  *) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac
