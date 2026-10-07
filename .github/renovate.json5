@@ -21,7 +21,9 @@
   labels: ["dependencies"],
 
   // Only releases at least 14 days old: a broken or compromised release is usually found and
-  // pulled within days. Covers pnpm 12's own one-day minimumReleaseAge, which CI enforces too.
+  // pulled within days. pnpm (minimumReleaseAge in pnpm-workspace.yaml) and uv (exclude-newer in
+  // pyproject.toml) enforce the same 14 days, also where Renovate cannot: lock file maintenance
+  // regenerates the lock files through them, and Renovate checks no version it picks there.
   // Younger releases wait (the dashboard shows them as pending) and are not put on the branch.
   minimumReleaseAge: "14 days",
   internalChecksFilter: "strict",
