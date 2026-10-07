@@ -23,7 +23,7 @@ export TRADINGAGENTS_CACHE_DIR="$TRADINGAGENTS_HOME/cache"
 export TA_RUNNER_REPLAY="$root/artifact/ta-runner/tests/fixtures/replay-run"
 
 postgres="$root/scripts/postgres.sh"
-database=$(bash "$postgres" throwaway)
+database=$("$postgres" throwaway)
 container=${database%% *}
 export PLATFORM_DB_HOST=127.0.0.1
 export PLATFORM_DB_PORT=${database##* }
@@ -38,7 +38,7 @@ cleanup() {
     kill "$jar_pid" 2>/dev/null || true
     wait "$jar_pid" 2>/dev/null || true
   fi
-  bash "$postgres" throwaway-stop "$container"
+  "$postgres" throwaway-stop "$container"
 }
 trap cleanup EXIT
 trap 'exit 143' INT TERM

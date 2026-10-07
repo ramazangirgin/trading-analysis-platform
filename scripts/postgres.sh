@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # The platform's PostgreSQL 18 for local runs (mise run db, run, dev) and the end-to-end tests.
 # Needs Docker or Podman: CONTAINER_ENGINE picks one, else docker when it is on PATH, else podman.
-# Run it with bash: `bash scripts/postgres.sh <command>`.
 #
 #   postgres.sh start     Start the local container trading-analysis-platform-db (created the first
 #                          time, its data in the volume of the same name) and wait until it accepts

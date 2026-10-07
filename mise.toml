@@ -29,15 +29,15 @@ run = "lefthook install"
 # also set PLATFORM_DB_CONTAINER=false.
 [tasks.db]
 description = "Start the local PostgreSQL for run and dev (Docker or Podman), unless PLATFORM_DB_CONTAINER=false or PLATFORM_DB_HOST points elsewhere"
-run = "bash scripts/postgres.sh start"
+run = "scripts/postgres.sh start"
 
 [tasks."db:stop"]
 description = "Stop the local PostgreSQL container; its data stays in the volume trading-analysis-platform-db"
-run = "bash scripts/postgres.sh stop"
+run = "scripts/postgres.sh stop"
 
 [tasks."db:reset"]
 description = "Remove the local PostgreSQL container and its volume: the next start is an empty database"
-run = "bash scripts/postgres.sh reset"
+run = "scripts/postgres.sh reset"
 
 [tasks.dev]
 description = "Backend on :8080 and Vite (hot reload) on :5173, together; open http://localhost:5173. Starts the local PostgreSQL (mise run db)"
