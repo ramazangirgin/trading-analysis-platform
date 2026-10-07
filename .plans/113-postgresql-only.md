@@ -1,31 +1,38 @@
-# Plan: PostgreSQL only, remove SQLite
+# Plan: PostgreSQL as the only database
 
-- **Issue**: #113 (Persistence: PostgreSQL only, remove SQLite)
+- **Issue**: #113
 - **Plan**: 1 of 1 for this issue; depends on: none
-- **Version bump**: major (docs/coding-convention/repository-versioning-and-releases.md: native runs
-  lose their SQLite database with no migration, and the `postgres` profile, a configuration
-  setting, goes away)
+- **Version bump**: major (docs/coding-convention/repository-versioning-and-releases.md: the
+  database is reset with no migration, as the Flyway history is rewritten; the `postgres` profile,
+  a configuration setting, goes away)
+
+In this plan, "the embedded database" is the single-file database the platform used by default
+until now (driver `org.xerial`, URL `jdbc:<embedded>:${platform.home}/platform.db`). The pattern
+`sq[l]ite` (case-insensitive) finds every mention of it; it is written that way so this plan does
+not match it itself.
 
 ## Goal
 
-PostgreSQL 18 is the platform's only database. `mise run run` and `mise run dev` start a local
-`postgres:18.6` container (Docker or Podman) on their own, or use the developer's own server through
-the `PLATFORM_DB_*` variables. The end-to-end tests run the jar against a throwaway PostgreSQL
-container, and every repository and Spring Boot test runs on PostgreSQL through Testcontainers, so
-the database the tests use is the one the platform runs on. `sqlite-jdbc`, the `postgres` profile,
-the second migration location and the SQLite test variants are gone. An existing Docker Compose
-database upgrades without a manual step. Data in a local `~/.tradingagents-platform/platform.db` is
-not migrated; the README and the pull request (release notes) say so.
+PostgreSQL 18 is the platform's only database, and the repository has no code, comment, test,
+configuration or document that mentions the embedded database any more. `mise run run` and
+`mise run dev` start a local `postgres:18.6` container (Docker or Podman) on their own, or use the
+developer's own server through the `PLATFORM_DB_*` variables. The end-to-end tests run the jar
+against a throwaway PostgreSQL container, and every repository and Spring Boot test runs on
+PostgreSQL through Testcontainers. The migrations are rewritten from scratch for PostgreSQL, with
+its native types (`timestamptz`, `date`, `bigint`, `double precision`), so the database is reset:
+an existing Docker Compose database and an old local `platform.db` file are not migrated. The README
+and the pull request (release notes) say so and give the reset steps. This replaces the issue's
+"upgrades with no manual step" criterion, by the developer's decision on the plan.
 
 ## Affected parts and their conventions
 
 | Part | Conventions that apply |
 |---|---|
-| backend | `docs/coding-convention/backend-java-package-structure.md`: test helpers stay in the test sources of the module that uses them, in the package of the code under test (`….domain.<d>.adapter.persistence`, `….domain.analysis.adapter`, `…` for `:backend`); no new Gradle module. `backend-java-checkstyle.md` and `backend-java-formatting.md` for every changed Java file (`mise run check`). Flyway: versions are global across domains, applied migrations are never edited (their checksum would change). Libraries come from the version catalog `gradle/libs.versions.toml`, versions from the Spring Boot BOM. |
+| backend | `docs/coding-convention/backend-java-package-structure.md`: test helpers stay in the test sources of the module that uses them, in the package of the code under test (`….domain.<d>.adapter.persistence`, `….domain.analysis.adapter`, `…` for `:backend`); no new Gradle module. Row records in `persistence/row/`, MapStruct mappers `*To*Mapper` in `persistence/mapper/`. `backend-java-checkstyle.md` and `backend-java-formatting.md` for every changed Java file (`mise run check`). Flyway: versions are global across domains, one file per domain change. Libraries come from the version catalog `gradle/libs.versions.toml`, versions from the Spring Boot BOM. |
 | e2e | `e2e/start-platform.sh` stays the one entry point Playwright's `webServer` (and `mise run screenshots`) starts. |
 | scripts, mise | Developer entry points are `mise` tasks in `mise.toml` with a `description`; shell scripts under `scripts/` with a header comment saying what they do and what they need, as `scripts/version.sh` does. Docker and Podman must both work, as in `deploy/`. |
 | deploy | `deploy/docker-compose.yml` keeps its `PLATFORM_DB_*` variables; only the profile goes. |
-| CI, Renovate | `.github/workflows/ci.yml` header comment lists what each job runs. `.github/renovate.json5`: the Testcontainers PostgreSQL image follows the Compose image (same group, no majors). |
+| CI, Renovate | `.github/workflows/ci.yml` header comment lists what each job runs. `.github/renovate.json5`: the Testcontainers and script PostgreSQL images follow the Compose image (same group, no majors). |
 | docs | `docs/coding-convention/repository-versioning-and-releases.md` (major bump). Docs in English, plain style. |
 
 ## Design
@@ -39,52 +46,114 @@ not migrated; the README and the pull request (release notes) say so.
 - `application-postgres.properties` is deleted. `deploy/docker-compose.yml` drops
   `SPRING_PROFILES_ACTIVE: postgres`; its `PLATFORM_DB_HOST` / `PLATFORM_DB_PASSWORD` stay.
 - `artifact/backend/build.gradle.kts`: `runtimeOnly(libs.postgresql)` and
-  `runtimeOnly(libs.flyway.database.postgresql)` without the "postgres profile" comment; no
-  `sqlite-jdbc`.
-- `TradingPlatformApplication.main` no longer creates the platform home ("SQLite does not create
-  the database's directory itself"): the adapters that write there create their directories
-  themselves (`JsonlEventStoreAdapter`, the runner adapters, `DotenvSecretStoreAdapter`). The
-  `PlatformHome` helper goes with it, and any test of it.
+  `runtimeOnly(libs.flyway.database.postgresql)` without the "postgres profile" comment. The
+  `org.xerial` driver goes from every build file and from the version catalog.
+- `TradingPlatformApplication.main` no longer creates the platform home (it did so only for the
+  embedded database's file): the adapters that write there create their directories themselves
+  (`JsonlEventStoreAdapter`, the runner adapters, `DotenvSecretStoreAdapter`). The `PlatformHome`
+  helper goes with it, and any test of it.
 
-### Migrations
+### Migrations: a new history, PostgreSQL only (the database is reset)
 
-- `db/migration-postgresql/V4_1__analysis_postgresql_column_types.sql` moves unchanged (byte for
-  byte) to the analysis adapter's `db/migration/`. Flyway records the script name, version and
-  checksum, not the location, so a Compose database that already applied V4_1 validates as before,
-  and a new database gets V1 → V5 with V4_1 in order. The `db/migration-postgresql` directory is
-  removed.
-- No other migration is edited. Their comments that mention SQLite (V4_1, V5) stay as they are:
-  editing them would change their checksums and fail Flyway's validation on every existing
-  database. This is the one exception to "no SQLite mention in the backend".
-- No new type-cleanup migration in this plan (see "Out of scope"): converting the ISO-text
-  timestamps to `timestamptz` changes the row records and mappers of three domains, which #112
-  (JPA/Hibernate) rewrites anyway.
+Every existing migration (`V1`, `V3`, `V4`, and `V4_1` with the `db/migration-postgresql`
+directory in the analysis adapter, `V2` in settings, `V5` in identity) is deleted and replaced by
+one migration per domain, in the single location `db/migration`, written for PostgreSQL only.
+Versions stay global across domains, in order of creation:
+
+- `V1__analysis_create_analyses.sql` (analysis adapter): the `analyses` table in its final shape,
+  with what V3, V4 and V4_1 added folded in: `external_ref` with its unique index, `runner_ref`.
+  Types: `id`, enums and free text `TEXT`; `trade_date DATE`; `max_debate_rounds`,
+  `max_risk_discuss_rounds` `INTEGER`; `llm_calls`, `tool_calls`, `tokens_in`, `tokens_out`,
+  `elapsed_ms` `BIGINT NOT NULL DEFAULT 0`; `cost_usd DOUBLE PRECISION`; `checkpoint_enabled BOOLEAN`;
+  `created_at TIMESTAMPTZ NOT NULL`, `started_at`, `ended_at` `TIMESTAMPTZ`. The same three indexes
+  (`created_at`, `(ticker, trade_date)`, `status`). No data backfill (there is no data).
+- `V2__settings_create_presets.sql` (settings adapter): `presets` with `updated_at TIMESTAMPTZ NOT NULL`;
+  `payload` stays `TEXT` (the adapter treats it as an opaque JSON string; `jsonb` would reformat it).
+- `V3__identity_create_users_and_roles.sql` (identity adapter): today's V5 with
+  `locked_until TIMESTAMPTZ`, `created_at` / `updated_at TIMESTAMPTZ NOT NULL`; the unique index on
+  `lower(username)`, the foreign keys and their cascades as today.
+
+Comments in the new files say what each table and column holds, nothing about other databases.
+
+**Existing databases.** Flyway's validation fails on a database migrated with the old history
+(the checksums of V1 and V2 differ, V3 is not the script it applied, V4–V5 are gone), so the
+platform refuses to start on it rather than mixing the two. It never cleans or drops anything
+itself (`spring.flyway.clean-disabled` stays at its default, true). The reset is a documented
+manual step:
+
+- Docker Compose: `docker compose -f deploy/docker-compose.yml down`, optionally `pg_dump` first
+  (the README already shows it), delete `${PLATFORM_DATA}/postgres`, `up -d`. Analyses that
+  TradingAgents' CLI left in the data dir are imported again on startup; runs started by the
+  platform, presets and users are lost.
+- Local: `mise run db:reset` (see below) removes the local container and its volume; an old
+  `~/.tradingagents-platform/platform.db` file can be deleted.
+
+### Persistence adapters on the native types
+
+The row records and mappers follow the new column types; the domain models (`Instant`,
+`LocalDate`) do not change:
+
+- `AnalysisRow`: `tradeDate` `LocalDate`; `createdAt`, `startedAt`, `endedAt` `OffsetDateTime`.
+  `UserRow`: `lockedUntil`, `createdAt`, `updatedAt` `OffsetDateTime`. `PresetRow`: `updatedAt`
+  `OffsetDateTime`. `OffsetDateTime` because the PostgreSQL driver reads and writes `timestamptz`
+  as `OffsetDateTime` (`setObject` / `getObject`), not as `Instant`; written in UTC.
+- Mappers, one per conversion in each adapter's `persistence/mapper/` package (`*To*Mapper`,
+  MapStruct `@Mapper` interfaces with a `default` method as today):
+  - analysis: `InstantToStringMapper` and `StringToTimestampMapper` are replaced by
+    `InstantToOffsetDateTimeMapper` and `OffsetDateTimeToInstantMapper`; the trade date maps
+    `LocalDate` to `LocalDate` with no mapper;
+  - identity: `InstantToStringMapper`, `OptionalInstantToStringMapper`, `StringToInstantMapper`,
+    `StringToOptionalInstantMapper` are replaced by `InstantToOffsetDateTimeMapper`,
+    `OptionalInstantToOffsetDateTimeMapper`, `OffsetDateTimeToInstantMapper`,
+    `OffsetDateTimeToOptionalInstantMapper`;
+  - settings: `InstantToOffsetDateTimeMapper` and `OffsetDateTimeToInstantMapper`, used by
+    `PresetToPresetRowMapper` and `PresetRowToPresetMapper`.
+- The SQL in `JdbcAnalysisRepositoryAdapter`, `JdbcUserRepositoryAdapter`,
+  `JdbcRoleRepositoryAdapter` and `JdbcPresetRepositoryAdapter` keeps its statements (`ON CONFLICT`
+  and `lower()` are PostgreSQL). `ORDER BY created_at` now orders by time natively; comments about
+  "fixed-width text so text order is time order" go.
+- Precision: `timestamptz` keeps microseconds, the old text kept milliseconds. Round-trip
+  assertions in the adapter tests keep passing; where a test builds an `Instant` with nanoseconds,
+  it truncates it to microseconds.
+
+### Comments and Javadoc that name the embedded database
+
+Every one goes or is rewritten for PostgreSQL alone. Known ones:
+
+- `Username`: lookups ignore case with PostgreSQL's `lower()`, whose result for non-ASCII letters
+  depends on the database's locale; ASCII only keeps "which names are equal" independent of it.
+  The rule itself does not change.
+- `UserRepositoryPort.save`: a username taken by another user fails with Spring's
+  `DuplicateKeyException` (no second exception type).
+- `AdapterTestSupport`, `AnalysesApiIntegrationTest`: "a migrated PostgreSQL database".
+- `application.properties`, `TradingPlatformApplication`, `build.gradle.kts` files: as above.
 
 ### Local PostgreSQL for `mise run run` and `mise run dev` (option b of the issue)
 
 A new script `scripts/postgres.sh` (bash, `set -euo pipefail`), with the engine taken from
 `CONTAINER_ENGINE`, else `docker` when it is on `PATH`, else `podman`:
 
-- `scripts/postgres.sh start`: when `PLATFORM_DB_HOST` is set to anything other than `localhost` or
-  `127.0.0.1`, prints that the developer's own server is used and exits 0 (option c). Otherwise
-  starts the container `trading-analysis-platform-db` if it is not running (creates it the first
-  time, `start`s it when it exists but is stopped): image `postgres:18.6`, named volume
-  `trading-analysis-platform-db` on `/var/lib/postgresql`, port `127.0.0.1:${PLATFORM_DB_PORT:-5432}:5432`,
-  `POSTGRES_DB=platform`, `POSTGRES_USER=platform`, `POSTGRES_HOST_AUTH_METHOD=trust` (the port is
-  published on 127.0.0.1 only, so the application's default empty password works). Then waits up to
-  60 s for `pg_isready -U platform -d platform` inside the container, and fails with the
-  container's last log lines otherwise.
-- `scripts/postgres.sh stop`: stops the container; the volume keeps the data.
-- `scripts/postgres.sh throwaway`: for the end-to-end tests. Starts a `--rm` container labelled
+- `start`: when `PLATFORM_DB_HOST` is set to anything other than `localhost` or `127.0.0.1`,
+  prints that the developer's own server is used and exits 0 (option c). Otherwise starts the
+  container `trading-analysis-platform-db` if it is not running (creates it the first time, starts
+  it when it exists but is stopped): image `postgres:18.6`, named volume
+  `trading-analysis-platform-db` on `/var/lib/postgresql`, port
+  `127.0.0.1:${PLATFORM_DB_PORT:-5432}:5432`, `POSTGRES_DB=platform`, `POSTGRES_USER=platform`,
+  `POSTGRES_HOST_AUTH_METHOD=trust` (the port is published on 127.0.0.1 only, so the application's
+  default empty password works). Then waits up to 60 s for `pg_isready -U platform -d platform`
+  inside the container, and fails with the container's last log lines otherwise.
+- `stop`: stops the container; the volume keeps the data.
+- `reset`: removes the container and its volume (the next `start` creates an empty database).
+- `throwaway`: for the end-to-end tests. Starts a `--rm` container labelled
   `trading-analysis-platform.e2e=true` with a random host port (`-p 127.0.0.1::5432`), waits for
   `pg_isready`, and prints `<container id> <host port>` on stdout. Before starting, it removes
-  stopped or leftover containers with that label (a test run killed with SIGKILL cannot clean up).
+  leftover containers with that label (a test run killed with SIGKILL cannot clean up).
 
 `mise.toml`:
 
 - new task `db` ("Start the local PostgreSQL for run and dev (Docker or Podman), unless
   PLATFORM_DB_HOST points elsewhere"): `scripts/postgres.sh start`;
-- new task `db:stop`: `scripts/postgres.sh stop`;
+- new tasks `db:stop` and `db:reset`;
 - `run` and `dev` get `depends = ["db"]`.
 
 ### End-to-end tests
@@ -93,8 +162,8 @@ A new script `scripts/postgres.sh` (bash, `set -euo pipefail`), with the engine 
 and `PLATFORM_DB_PORT=<host port>`, and runs the jar in the background instead of `exec`: a trap on
 `EXIT INT TERM` stops the jar and removes the container, and the script `wait`s for the jar so
 Playwright's `webServer` still sees one long-running process. The throwaway platform home stays
-(run directories, secrets file). `mise run e2e` and `mise run screenshots` need no change beyond
-their descriptions mentioning that Docker or Podman is required.
+(run directories, secrets file). The `e2e` and `screenshots` task descriptions say that Docker or
+Podman is required.
 
 ### Tests on PostgreSQL (Testcontainers)
 
@@ -109,155 +178,160 @@ module instead of one per class:
   (about 30 lines): a lazily started static `PostgreSQLContainer("postgres:18.6")` (Testcontainers
   stops it with the JVM through Ryuk), and `create()` that runs `CREATE DATABASE test_<n>` on it and
   returns its JDBC URL, user and password (a small record). Duplicated rather than shared through a
-  new test-support module, which the package-structure convention does not have; four copies of a
-  30-line class are cheaper than a new module kind.
+  new test-support module, which the package-structure convention does not have.
 - Docker (or Podman) is required to run the backend tests: no `disabledWithoutDocker`, so a
   missing engine fails the build loudly instead of skipping every database test. The README's
   prerequisites say so; CI's runners have Docker.
-- Analysis adapter: `AdapterTestSupport.Config.dataSource()` migrates a fresh PostgreSQL database
-  (all migrations, as today) instead of `jdbc:sqlite:…/test.db`. `build.gradle.kts`:
-  `testRuntimeOnly(libs.postgresql)`, `testRuntimeOnly(libs.flyway.database.postgresql)`,
-  `testImplementation(libs.testcontainers.postgresql)` instead of `sqlite-jdbc`.
+- Analysis adapter: `AdapterTestSupport.Config.dataSource()` migrates a fresh PostgreSQL database.
+  `build.gradle.kts`: `testRuntimeOnly(libs.postgresql)`,
+  `testRuntimeOnly(libs.flyway.database.postgresql)`, `testImplementation(libs.testcontainers.postgresql)`
+  instead of the `org.xerial` driver.
 - Settings adapter: `JdbcPresetRepositoryAdapterTest.Config.dataSource()` the same way, keeping
-  its `baselineVersion("1")` (only this domain's migration on the module's classpath). Same build
-  changes.
-- Identity adapter: `SqliteIdentityRepositoryTest` is deleted. `IdentityRepositoryContractTest`
-  and `PostgresqlIdentityRepositoryTest` are merged into one concrete `JdbcIdentityRepositoryTest`
-  (the contract's tests, `DuplicateKeyException` asserted directly, no
-  `duplicateUsernameException()` hook), using `PostgresTestDatabase` instead of its own
-  `@Container`. `testcontainers-junit-jupiter` is no longer needed there and is removed from the
-  module and, when nothing else uses it, from the version catalog.
+  `baselineVersion("1")` (only this domain's V2 is on the module's classpath). Same build changes.
+- Identity adapter: the embedded-database variant of the repository test (the class beside
+  `IdentityRepositoryContractTest` and `PostgresqlIdentityRepositoryTest`) is deleted.
+  `IdentityRepositoryContractTest` and `PostgresqlIdentityRepositoryTest` are merged into one
+  concrete `JdbcIdentityRepositoryTest` (the contract's tests, `DuplicateKeyException` asserted
+  directly, no `duplicateUsernameException()` hook), using `PostgresTestDatabase` instead of its own
+  `@Container`, with `baselineVersion("2")` (only V3 is on the module's classpath).
+  `testcontainers-junit-jupiter` is no longer needed there and is removed from the module and,
+  when nothing else uses it, from the version catalog.
 - `:backend`: `TestPlatformHome.register` also registers `spring.datasource.url`, `username` and
   `password` of a fresh `PostgresTestDatabase` per test class, so `TradingPlatformApplicationTests`
-  and `AnalysesApiIntegrationTest` run on PostgreSQL (`AnalysesApiIntegrationTest`'s Javadoc says
-  PostgreSQL instead of SQLite). `build.gradle.kts`: `testImplementation(libs.testcontainers.postgresql)`.
-- `sqlite-jdbc` is removed from `gradle/libs.versions.toml` and every build file.
-
-### Javadoc that names SQLite
-
-- `Username`: lookups ignore case with PostgreSQL's `lower()`, whose result for non-ASCII letters
-  depends on the database's locale; ASCII only keeps "which names are equal" independent of it.
-  The rule itself does not change.
-- `UserRepositoryPort.save`: a username taken by another user fails with Spring's
-  `DuplicateKeyException`.
+  and `AnalysesApiIntegrationTest` run on PostgreSQL. `build.gradle.kts`:
+  `testImplementation(libs.testcontainers.postgresql)`.
 
 ### Renovate
 
-The custom regex manager for the Testcontainers image matches every `PostgresTestDatabase.java`
-and `scripts/postgres.sh` (`postgres:(?<currentValue>[0-9][^"\s]*)`), instead of
+The custom regex manager for the PostgreSQL image matches every `PostgresTestDatabase.java` and
+`scripts/postgres.sh` (`postgres:(?<currentValue>[0-9][^"\s]*)`), instead of
 `PostgresqlIdentityRepositoryTest.java`. It stays under the existing "PostgreSQL: no major updates"
 rule, so the Compose, script and test images move together.
 
+### No mention left anywhere
+
+Beyond the backend, every tracked file is cleaned, historic ones included:
+
+- `PLAN.md`: D13 (line 20), the persistence row (158), the Phase notes (435, 456, 460) and the
+  adapter testing line (598) say PostgreSQL is the only database and the tests run on
+  Testcontainers. Line 47 (upstream TradingAgents' checkpointing in ta-runner) is reworded to
+  "upstream's local checkpoint store", without naming the store's database.
+- The historic plans `.plans/9-renovate-dependency-updates.md`, `.plans/32-compare-runs.md`,
+  `.plans/55-checkstyle-rules-module.md`, `.plans/79-identity-users-roles-tables.md`: each mention
+  is reworded ("the default file database", or the sentence is dropped where it only explained a
+  workaround that no longer exists).
+- `README.md`: see "Docs to update".
+- **The one exception**: `artifact/ta-runner/uv.lock`, generated by `uv lock` from the pinned
+  TradingAgents release, which depends on LangGraph's checkpoint package whose name contains the
+  word. The repository cannot rename a third-party package; it is not the platform's database.
+
 ## Work packages
 
-### WP1: Datasource, migrations and dependencies
+### WP1: Datasource, migrations, persistence adapters and dependencies
 
 - **Depends on**: none
 - **Files**: `artifact/backend/src/main/resources/application.properties`,
   `artifact/backend/src/main/resources/application-postgres.properties` (deleted),
-  `artifact/backend/build.gradle.kts`,
-  `artifact/backend/src/main/java/…/TradingPlatformApplication.java`,
-  `artifact/backend/domain/analysis/adapter/src/main/resources/db/migration-postgresql/V4_1__analysis_postgresql_column_types.sql`
-  (moved to `…/db/migration/`), `gradle/libs.versions.toml`, `deploy/docker-compose.yml`,
-  `Username.java`, `UserRepositoryPort.java`
+  `artifact/backend/build.gradle.kts`, `artifact/backend/src/main/java/…/TradingPlatformApplication.java`;
+  every file under `artifact/backend/domain/*/adapter/src/main/resources/db/` (old migrations and
+  `db/migration-postgresql/` deleted, the three new ones created); `AnalysisRow`, `UserRow`,
+  `PresetRow`; the timestamp mappers listed in the design and the row mappers that use them
+  (`AnalysisToAnalysisRowMapper`, `AnalysisRowToAnalysisMapper`, `UserToUserRowMapper`,
+  `UserRowToUserMapper`, `PresetToPresetRowMapper`, `PresetRowToPresetMapper`, and any other that
+  maps a changed column); the four `Jdbc*Adapter` classes if their parameters change;
+  `gradle/libs.versions.toml`, `deploy/docker-compose.yml`, `Username.java`, `UserRepositoryPort.java`
 - **Steps**:
   - [ ] Move the datasource settings into `application.properties`; delete the profile file
-  - [ ] `git mv` V4_1 into `db/migration/` without changing a byte
-  - [ ] Remove `sqlite-jdbc` from the application's build file and the catalog
+  - [ ] Replace the migrations with the new V1–V3
+  - [ ] Rows and mappers on `OffsetDateTime` / `LocalDate`
+  - [ ] Remove the `org.xerial` driver from the application's build file and the catalog
   - [ ] Drop the home directory creation and `PlatformHome` from `TradingPlatformApplication`
   - [ ] Remove `SPRING_PROFILES_ACTIVE: postgres` from the Compose file
-  - [ ] Update the two Javadoc comments
-- **Tests**: covered by WP2 (the Spring Boot tests start the application on PostgreSQL with the
-  single migration location) and by CI's Compose smoke test (a fresh Compose database, the restart
+  - [ ] Rewrite the Javadoc and comments listed in the design
+- **Tests**: the mapper unit tests that exist for the replaced mappers move to the new ones (UTC
+  in, UTC out, `null` stays `null`); the rest is covered by WP2 (the repository tests round-trip
+  every column on PostgreSQL) and by CI's Compose smoke test (a fresh Compose database, the restart
   and `down`/`up`).
 
 ### WP2: Tests on PostgreSQL
 
-- **Depends on**: WP1 (the catalog and the migration location)
+- **Depends on**: WP1
 - **Files**: `PostgresTestDatabase.java` in the four test source sets named above;
-  `AdapterTestSupport.java`; `JdbcPresetRepositoryAdapterTest.java`;
-  `SqliteIdentityRepositoryTest.java` (deleted), `IdentityRepositoryContractTest.java` and
-  `PostgresqlIdentityRepositoryTest.java` (merged into `JdbcIdentityRepositoryTest.java`);
-  `TestPlatformHome.java`, `TradingPlatformApplicationTests.java`, `AnalysesApiIntegrationTest.java`;
-  the build files of the analysis, settings and identity adapters; `gradle/libs.versions.toml`
-  (`testcontainers-junit-jupiter`, if unused)
+  `AdapterTestSupport.java`; `JdbcPresetRepositoryAdapterTest.java`; the identity repository tests
+  (the embedded variant deleted, the contract and the PostgreSQL variant merged into
+  `JdbcIdentityRepositoryTest.java`); `TestPlatformHome.java`, `TradingPlatformApplicationTests.java`,
+  `AnalysesApiIntegrationTest.java`; the build files of the analysis, settings and identity
+  adapters; `gradle/libs.versions.toml` (`testcontainers-junit-jupiter`, if unused)
 - **Steps**:
   - [ ] Add `PostgresTestDatabase` (one container per JVM, a fresh database per call)
   - [ ] Point every repository test and both Spring Boot tests at it
-  - [ ] Delete the SQLite identity variant and merge the contract into one test class
-  - [ ] Swap the test dependencies from `sqlite-jdbc` to the PostgreSQL driver, Flyway's PostgreSQL
-        support and Testcontainers
+  - [ ] Delete the embedded identity variant and merge the contract into one test class
+  - [ ] Swap the test dependencies to the PostgreSQL driver, Flyway's PostgreSQL support and
+        Testcontainers
 - **Tests**: every existing repository and Spring Boot test, now on `postgres:18.6`. The identity
   contract keeps all its cases, including the case-insensitive duplicate username as
-  `DuplicateKeyException`. `mise run build` passes with Docker running; `grep -ri sqlite` over
-  `artifact/backend` finds only the two applied migrations' comments.
+  `DuplicateKeyException`. A new analysis repository case saves and reads back an analysis with
+  all three timestamps and the trade date, so the native types are covered. `mise run build`
+  passes with Docker running.
 
 ### WP3: Local PostgreSQL and the end-to-end tests
 
 - **Depends on**: WP1
 - **Files**: `scripts/postgres.sh` (new), `mise.toml`, `e2e/start-platform.sh`
 - **Steps**:
-  - [ ] Write `scripts/postgres.sh` with `start`, `stop` and `throwaway`, Docker or Podman
-  - [ ] Add the `db` and `db:stop` tasks; `run` and `dev` depend on `db`
+  - [ ] Write `scripts/postgres.sh` with `start`, `stop`, `reset` and `throwaway`, Docker or Podman
+  - [ ] Add the `db`, `db:stop` and `db:reset` tasks; `run` and `dev` depend on `db`
   - [ ] Start the throwaway database in `start-platform.sh`, point the jar at it, clean up on exit
 - **Tests**: `mise run e2e` passes locally and in CI's *End-to-end tests* job (the whole suite now
   runs on PostgreSQL); `mise run run` starts the container, the platform serves on :8080, and a
-  second `mise run run` reuses the running container; `docker ps -a` shows no e2e container after
-  the tests.
+  second `mise run run` reuses the running container; no e2e container is left after the tests.
 
-### WP4: CI, Renovate and docs
+### WP4: CI, Renovate, docs and the last mentions
 
 - **Depends on**: WP2, WP3
 - **Files**: `.github/workflows/ci.yml` (header comment), `.github/renovate.json5`, `README.md`,
-  `PLAN.md`, `docs/coding-convention/README.md` only if it names the database (it does not today),
-  the three version files (`mise run version:bump major`)
+  `PLAN.md`, the four historic `.plans/*.md` named above, the three version files
+  (`mise run version:bump major`)
 - **Steps**:
   - [ ] Renovate regex manager as in the design
   - [ ] CI header: the build job's tests run on PostgreSQL (Testcontainers); the e2e job's jar runs
-        on a throwaway PostgreSQL container. No job change is needed: both jobs run on
-        `ubuntu-24.04`, which has Docker
-  - [ ] Docs as listed below
+        on a throwaway PostgreSQL container. No job change: both jobs run on `ubuntu-24.04`, which
+        has Docker
+  - [ ] Docs as listed below; `PLAN.md` and the historic plans as in the design
+  - [ ] `git grep -n -i -E 'sq[l]ite' -- ':!artifact/ta-runner/uv.lock'` prints nothing
   - [ ] `mise run version:bump major` (0.18.0 → 1.0.0)
-- **Tests**: CI green; `scripts/version.sh check-bump origin/main`.
+- **Tests**: CI green; `scripts/version.sh check-bump origin/main`; the grep above.
 
 ## Tests
 
 - Backend: every repository test (analysis, settings, identity) and both Spring Boot tests run on
-  `postgres:18.6` through Testcontainers in `mise run build` (CI's *Backend and frontend* job). No
-  SQLite test remains.
+  `postgres:18.6` through Testcontainers in `mise run build` (CI's *Backend and frontend* job),
+  against the new V1–V3. No test on another database remains.
 - End-to-end: the whole Playwright suite runs the jar on a throwaway PostgreSQL container (CI's
   *End-to-end tests* job, `mise run e2e`).
-- Compose: CI's smoke test brings the stack up without the profile, runs an analysis and checks the
-  data survives a database restart and `down`/`up`.
-- Upgrade of an existing Compose database: V4_1 keeps its name and bytes, so its checksum and
-  version are unchanged; Flyway validates the history of a database migrated before this change.
-- The issue's "done when": `git grep -i sqlite -- artifact/backend gradle e2e deploy docs scripts README.md mise.toml .github`
-  finds only the comments of the applied migrations V4_1 and V5.
+- Compose: CI's smoke test brings the stack up on a fresh data folder without the profile, runs an
+  analysis and checks the data survives a database restart and `down`/`up`.
+- "No mention": `git grep -n -i -E 'sq[l]ite' -- ':!artifact/ta-runner/uv.lock'` prints nothing.
 
 ## Docs to update
 
 | What | Where | Change |
 |---|---|---|
-| Text | `README.md`, "Quick start" → "Prerequisites" | Docker or Podman is required: `mise run run` / `mise run dev` start a local PostgreSQL 18 container (`mise run db`, data in the `trading-analysis-platform-db` volume, `mise run db:stop`); or point `PLATFORM_DB_HOST`, `PLATFORM_DB_PORT`, `PLATFORM_DB_NAME`, `PLATFORM_DB_USER`, `PLATFORM_DB_PASSWORD` at your own PostgreSQL 18 server |
-| Text | `README.md`, "Where things live" | Replace the `platform.db (SQLite)` row: analyses, presets and users are in PostgreSQL (the local container's volume, or your server). Add a note: data in an old `~/.tradingagents-platform/platform.db` from before 1.0.0 is not migrated and can be deleted |
-| Text | `README.md`, task list / developer tasks | The new `db` and `db:stop` tasks; `run`, `dev`, `e2e` and `screenshots` need Docker or Podman |
+| Text | `README.md`, "Quick start" → "Prerequisites" | Docker or Podman is required: `mise run run` / `mise run dev` start a local PostgreSQL 18 container (`mise run db`; data in the `trading-analysis-platform-db` volume; `mise run db:stop`, `mise run db:reset`); or point `PLATFORM_DB_HOST`, `PLATFORM_DB_PORT`, `PLATFORM_DB_NAME`, `PLATFORM_DB_USER`, `PLATFORM_DB_PASSWORD` at your own PostgreSQL 18 server |
+| Text | `README.md`, "Where things live" | Replace the `platform.db` row: analyses, presets and users are in PostgreSQL (the local container's volume, or your server) |
+| Text | `README.md`, "Run with Docker Compose" | An "Upgrading to 1.0.0" note: the database schema was recreated, so an existing database is reset (`down`, optional `pg_dump`, delete `${PLATFORM_DATA}/postgres`, `up -d`); the platform does not start on the old one. Local runs: `mise run db:reset` is not needed for a first start; an old `~/.tradingagents-platform/platform.db` can be deleted |
+| Text | `README.md`, task list / developer tasks | The new `db`, `db:stop`, `db:reset` tasks; `run`, `dev`, `e2e`, `screenshots` and `build` need Docker or Podman |
 | Text | `README.md`, CI table, "Backend and frontend" and "End-to-end tests" rows | Every repository and Spring Boot test runs on PostgreSQL in a container (Testcontainers), not only the identity repository; the e2e jar runs on a throwaway PostgreSQL container |
-| Text | `PLAN.md` | D13 (line 20), the persistence row (158), the Phase notes (435, 456, 460) and the adapter testing line (598): PostgreSQL is the only database, tests on Testcontainers done. Line 47 (upstream's LangGraph checkpoint SQLite in ta-runner) is not the platform's database and stays |
+| Text | `PLAN.md`, `.plans/*.md` (historic) | As in "No mention left anywhere" |
 | Text | `.github/workflows/ci.yml` header comment | As in WP4 |
-| Text | `docs/coding-convention/*.md`, `docs/event-protocol.md`, `deploy/.env.example` | None: none of them names SQLite or the `postgres` profile today (checked with `git grep -i sqlite`) |
+| Text | `docs/coding-convention/*.md`, `docs/event-protocol.md`, `deploy/.env.example` | None: none of them names the embedded database or the `postgres` profile today |
 | Screenshot | none | No page changes; the UI is the same |
 
 ## Out of scope
 
-- **`timestamptz` and other type cleanups** (ISO-8601 text timestamps in `analyses`, `presets`,
-  `users`; `trade_date` as text): left to #112, which replaces the JDBC rows and MapStruct mappers
-  with JPA entities anyway, so the timestamp handling is changed once, there. The issue allows this
-  ("Otherwise leave that to #112").
-- **SQL simplifications** that only existed for two dialects (`ON CONFLICT … excluded.` is valid
-  PostgreSQL and stays; `lower()` lookups stay with the unique index on `lower(username)`): #112.
-- **Migrating local SQLite data** (`~/.tradingagents-platform/platform.db`): not done, documented
-  in the README and the pull request.
-- **Historic plans in `.plans/`** that mention SQLite: records of earlier work, not documentation
-  of the current state; unchanged.
-- ta-runner's `uv.lock` (`langgraph-checkpoint-sqlite`, upstream's checkpointing): not the
-  platform's database.
+- **Migrating existing data** (an old Compose database, a local `platform.db` file): the database is
+  reset by the developer's decision; documented in the README and the pull request.
+- **SQL rewrites** beyond the types (`ON CONFLICT … excluded.` and the `lower()` lookups are
+  PostgreSQL and stay): #112 (JPA/Hibernate) replaces the JDBC adapters.
+- ta-runner's `uv.lock`: generated from the upstream release's dependencies (see "No mention left
+  anywhere").
