@@ -12,7 +12,7 @@ checkstyle = "14.3.0"
 spotless = "8.10.3"
 palantirJavaFormat = "2.101.0"
 # Coverage gate of the custom Checkstyle checks (build-logic/checkstyle-rules). 0.8.14+ reads Java 25 classes.
-jacoco = "0.8.14"
+jacoco = "0.8.15"
 mapstruct = "1.6.3"
 # Docker Engine API client for the Docker runner (also talks to Podman's Docker-compatible API).
 dockerJava = "3.7.1"

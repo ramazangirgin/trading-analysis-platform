@@ -17,6 +17,6 @@
     "@playwright/test": "1.63.0",
     "@types/node": "24.19.0",
     "prettier": "3.9.9",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   }
 }
