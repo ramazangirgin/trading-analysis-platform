@@ -24,12 +24,15 @@ repository root as `.claude/skills/renovate-update/dashboard.sh <command>`:
 |---|---|
 | `show` | the dashboard's checkboxes, by section |
 | `request [--dry-run]` | tick every checkbox that brings mature updates in, then start `renovate-run.yml` (it ticks "run again") and wait for it |
-| `wait [minutes]` | wait until Renovate has processed the ticked checkboxes (default 19, a progress line every 5), then list its pull requests; on a timeout, print what to check on developer.mend.io |
+| `wait [minutes]` | wait until Renovate has processed the ticked checkboxes (default 25, a status line every 30 seconds), then list its pull requests; on a timeout, print what to check on developer.mend.io |
 | `prs` | Renovate's open pull requests |
-| `wait-ci <pr>` | wait for the CI run on the pull request's head; exit 1 when it failed, with the failed jobs |
+| `wait-ci <pr>` | wait for the CI run on the pull request's head, a status line every 30 seconds (each job's change, jobs done, still running); exit 1 when it failed, with the failed jobs |
 
-Start `wait` and `wait-ci` with the Bash tool's `run_in_background` and do not poll: you are
-notified when they end.
+Wait actively, so the user sees progress: start `wait` and `wait-ci` with the `Monitor` tool
+(command `.claude/skills/renovate-update/dashboard.sh <command> 2>&1`, `timeout_ms` 1800000; re-arm
+it if it expires before the command ends). Every line they print reaches you as an event; pass each
+one on to the user as a short line (elapsed time, what is pending or running, what changed), and act
+on the last one (the pull requests, or CI's conclusion and failed jobs).
 
 ## Ground rules
 
@@ -91,12 +94,13 @@ come after this pull request is merged (Renovate then opens a new one).
 
 ## 2. Wait for Renovate
 
-`dashboard.sh wait` in the background. Renovate unticks every checkbox when it has processed them.
+`dashboard.sh wait` with `Monitor`. Renovate unticks every checkbox when it has processed them.
 Mend may take a request up within a minute, leave its job pending, or create no job for it at all;
 only its job list on developer.mend.io shows which (a job from a request has the reason "requested").
 Measured on 2026-10-07: the job stayed pending 11m42s and ran 1m54s, so Renovate edited the dashboard
-13m36s after the request. `wait` gives it that plus a 5-minute buffer, 19 minutes, and prints a
-progress line every 5 (the ticked checkboxes, Renovate's last edit of the dashboard). Requesting again
+13m36s after the request. `wait` gives it 25 minutes and prints a status line every 30 seconds:
+the elapsed time, the ticked checkboxes, when the run was requested, and Renovate's last edit of the
+dashboard (a new edit means its job is running). Requesting again
 does not help a pending job.
 
 On a timeout, do not request again: print `wait`'s message to the user and stop. It names the job list
@@ -110,7 +114,7 @@ still pending on the dashboard (and when it matures) and stop.
 
 ## 3. Wait for CI
 
-For every open Renovate pull request, start `dashboard.sh wait-ci <pr>` in the background (all of
+For every open Renovate pull request, start `dashboard.sh wait-ci <pr>` with `Monitor` (all of
 them at once). Green: go to 6 for it. Red: go to 4. Read the pull request body too: it lists every
 update (from → to) with release notes, and Renovate's notes (the TradingAgents one below).
 
