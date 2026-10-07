@@ -1,6 +1,6 @@
 {
   "name": "trading-analysis-platform-frontend",
-  "version": "0.18.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.6.0",

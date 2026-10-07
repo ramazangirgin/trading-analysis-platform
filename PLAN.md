@@ -17,7 +17,7 @@
 | D10 | Dependency boundary | ✅ Platform (backend + frontend) has **no dependency on TradingAgents code**; only the separately installed `ta-runner` imports it (§3.2) |
 | D11 | Backend stack & structure | ✅ Java + Spring Boot, following [job-radar](https://github.com/ramazangirgin/job-radar): **a modular monolith with a backend-for-frontend (BFF) in front and hexagonal domains behind it. All code lives under `tr.girgin.backend.trading.analysis.platform`** (§3.4) |
 | D12 | Packaging | ✅ Frontend and backend ship as **one artifact / one container**: the Vue build is bundled into the Spring Boot jar and served by it. Code lives in `artifact/backend` and `artifact/frontend`; `artifact/ta-runner` is the third, separate artifact (§3.9) |
-| D13 | Database in Docker | ✅ The Docker Compose setup always uses **PostgreSQL** (`postgres:18.6`, the newest release), with its data in a folder on the host (`${PLATFORM_DATA}/postgres`), so restarts and `down`/`up` keep it. Native runs keep SQLite. Tests of DB code move to PostgreSQL in Testcontainers (next step) |
+| D13 | Database | ✅ **PostgreSQL** (`postgres:18.6`, the newest release) is the only database. Docker Compose keeps its data in a folder on the host (`${PLATFORM_DATA}/postgres`), so restarts and `down`/`up` keep it; native runs (`mise run run`, `mise run dev`) start a local container or use your own server. Tests of DB code run on PostgreSQL in Testcontainers |
 
 ## 1. Goals and Scope
 
@@ -44,7 +44,7 @@ A management platform that runs on top of the [TauricResearch/TradingAgents](htt
 | Library API | `TradingAgentsGraph(selected_analysts, debug, config, callbacks)` → `.propagate(ticker, date, asset_type)` or `.graph.stream(...)` | `ta-runner` uses `graph.stream` + LangChain `callbacks` for the live event stream |
 | Config | `DEFAULT_CONFIG` + `TRADINGAGENTS_*` env overrides (`default_config.py`) | Run parameters can be passed via env and/or a config dict |
 | Outputs | `~/.tradingagents/logs/<TICKER>/<DATE>/reports/{1_analysts..5_portfolio, complete_report.md}`, `TradingAgentsStrategy_logs/full_states_log_<date>.json`, `memory/trading_memory.md`, `cache/` | The backend reads and indexes this directory (plain files, no code dependency) |
-| Checkpoint | `checkpoint_enabled` + SQLite (`begin_checkpoint`/`checkpoint_input`/`end_checkpoint`) | "Resume where it left off" comes for free |
+| Checkpoint | `checkpoint_enabled` + upstream's local checkpoint store (`begin_checkpoint`/`checkpoint_input`/`end_checkpoint`) | "Resume where it left off" comes for free |
 | Docker | `python:3.12-slim`, `ENTRYPOINT ["tradingagents"]`, volume `/home/appuser/.tradingagents` | The image is reused as the base of the runner image |
 
 ### 2.2 Reference backend: `job-radar`
@@ -155,7 +155,7 @@ Runner output is **untrusted input** (same stance as job-radar's model output): 
 | Java | 25 (LTS), via Gradle toolchain |
 | Build | Gradle 9.7.1, Kotlin DSL, version catalog (`gradle/libs.versions.toml`), convention plugins (`build-logic/`) |
 | Framework | Spring Boot 4.1.1 (webmvc, actuator, virtual threads enabled for SSE and process I/O) |
-| Persistence | Spring Data JDBC + Flyway; SQLite by default (single file next to the data dir), PostgreSQL via profile on the server |
+| Persistence | Spring Data JDBC + Flyway; PostgreSQL only (a local container for native runs, the Compose service on the server) |
 | JSON | Jackson (JSONL parsing in the runner adapter) |
 | Docker | docker-java (Phase 2, Docker runner adapter) |
 | Mapping | MapStruct 1.6.3 (`unmappedTargetPolicy=ERROR`) |
@@ -432,7 +432,7 @@ Phase 0 notes:
 Verified end to end on 2026-09-29: a DeepSeek run started from the New Analysis form streamed live into Run Detail (pipeline, feed, debates) and finished `Overweight`; the six runs in `~/.tradingagents/logs` were imported with their ratings.
 
 Phase 1 decisions and deviations:
-- **Persistence:** Spring JDBC `JdbcClient` + Flyway instead of Spring Data JDBC, which has no SQLite dialect. Specs and stats are stored as columns, not `spec_json`/`stats_json`. Flyway versions are global across domains (`V1` analysis, `V2` settings).
+- **Persistence:** Spring JDBC `JdbcClient` + Flyway instead of Spring Data JDBC. Specs and stats are stored as columns, not `spec_json`/`stats_json`. Flyway versions are global across domains (`V1` analysis, `V2` settings).
 - **No `reports` table:** reports are read from the data dir on demand (they are small and upstream rewrites them); the `analyses` table holds one `EXTERNAL` row per imported ticker/date.
 - **Secrets:** the platform writes only `${platform.home}/secrets.env` (0600, atomic replace). Other dotenv files (e.g. TradingAgents' own `.env`) are read-only extra sources and lose to it. Only `*_API_KEY` / `*_BASE_URL` can be written, and the runner never receives `PATH`, `DYLD_*`, `LD_*`, `PYTHON*`, `JAVA_*` from these files.
 - **Platform state** lives in `~/.tradingagents-platform` (`platform.db`, `runs/<id>/{spec.json,events.jsonl,run.log}`), apart from upstream's data dir.
@@ -453,11 +453,11 @@ Still open from §3.6 (moved to Phase 2): importing `runs.json` (failed/interrup
   - The catalog and runner health check run `ta-runner catalog/version` in a short-lived container. Podman answers a missing container with 500 instead of 404; both count as gone. `platform.runner=process|docker` picks the adapters.
 - [x] `deploy/Dockerfile` (single platform image: backend + UI), PostgreSQL profile, `deploy/docker-compose.yml` (2026-09-30)
   - Platform image: the jar on `eclipse-temurin:25-jre-noble`, non-root; `mise run docker-build` builds both images.
-  - PostgreSQL (D13): `postgres` profile; `V4_1` (PostgreSQL only) widens `cost_usd` to double precision and the counters to bigint, which SQLite stores as 8 bytes anyway.
+  - PostgreSQL (D13) is the only database; the migrations use its native types (`timestamptz`, `date`, `bigint`, `double precision`).
   - Compose: init step (folder owners), postgres, docker-socket-proxy v0.5.0 (`CONTAINERS`, `POST`, `ALLOW_START`, `ALLOW_STOP` only), platform on 127.0.0.1. All data under `PLATFORM_DATA`. `:z` on bind mounts and the SELinux shared label on the runner's data mount (Podman machines and Fedora/RHEL enforce SELinux). Verified with Podman 5.8 and Compose v5.5.1: stack up, health UP, an analysis container started and removed through the proxy, data kept across a PostgreSQL restart and `down`/`up`.
   - Not done: Caddy for TLS (comes with auth); images in a registry.
 - [x] CI on GitHub Actions (2026-09-30): `.github/workflows/ci.yml` on every branch push, every pull request and on demand; a final "CI passed" job is the single check `main` requires before a pull request merges: backend + frontend (`mise run build`), ta-runner (`mise run runner-test`), both Docker images and the Compose smoke test (`deploy/smoke-test.sh`). Room for more jobs: image publishing (GHCR), security scanning
-- [ ] Testcontainers with PostgreSQL (`postgres:18.6`, Testcontainers 2.0.5) for the tests of DB code (repository adapters, integration tests), replacing SQLite there
+- [ ] Testcontainers with PostgreSQL (`postgres:18.6`, Testcontainers 2.0.5) for the tests of DB code (repository adapters, integration tests)
 - [x] Finding/reconciling orphaned runs on backend restart (2026-09-30, process runner): `runner_ref` is stored when a run starts; on startup a RUNNING run's recorded events are replayed first (a run that ended while the platform was down gets its real outcome), a runner still alive is followed again through its `events.jsonl` (live view and stop work again), one that is gone is failed with `platform_restarted`; QUEUED runs are queued again in order. `ta-runner` keeps writing `events.jsonl` when its stdout breaks. The Docker adapter needs the same `reattach` by container id
 - [x] Reports page (3 panes), export md/html/pdf, rerun, presets UI (2026-09-30): `/reports` = index (one entry per ticker/date, the newest finished analysis) / contents (sections and their h1-h3, debates) / reader, folding to one column on phones; export is built in the browser from the same sanitized, localized rendering (Markdown, standalone HTML, PDF through the print dialog), not in the backend; presets can be renamed and deleted in Settings; rerun was already on Run Detail
 - [ ] Single-user auth (D6): Spring Security, password from config → session cookie; mandatory when exposed beyond localhost, optional on localhost
@@ -595,7 +595,7 @@ and where to start. Mark items ✅ here when done.
 - **Architecture:** `ArchitectureTest` (ArchUnit) — job-radar rules + platform additions (§3.4).
 - **Domain services:** unit tests against stub outbound ports (e.g. `AnalysisServiceTest` with a fake `RunnerPort`: event flow, stop, queue, per ticker/date lock).
 - **Mappers:** one test per mapper, especially runner output normalization (malformed/unknown events, rating spellings).
-- **Adapters:** `ProcessRunnerAdapter` against a fake runner script that prints canned JSONL; data dir reader against a fixture copy of `~/.tradingagents`; JDBC adapters with SQLite (and PostgreSQL via Testcontainers in Phase 2).
+- **Adapters:** `ProcessRunnerAdapter` against a fake runner script that prints canned JSONL; data dir reader against a fixture copy of `~/.tradingagents`; JDBC adapters on PostgreSQL via Testcontainers.
 - **BFF:** `@WebMvcTest` per controller, SSE included.
 - **Frontend:** Vitest (composables/stores), Playwright (new analysis → live feed → report; with a fake SSE server).
 - **E2E smoke:** a single ticker with a real cheap model (manual / nightly).
