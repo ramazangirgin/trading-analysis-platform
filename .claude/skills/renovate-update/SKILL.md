@@ -1,6 +1,6 @@
 ---
 name: renovate-update
-description: Run a dependency update of this repository end to end without asking at every step - request a Renovate run, tick every mature update on the dependency dashboard, wait for Renovate's pull requests and their CI, and fix a red CI on the update branch (adapt the code, bring the tools around it along, and only with the user's consent hold one dependency back) until it is green, then hand the pull request over for review and merge. Use when the user asks to update the dependencies, run Renovate, or fix the Renovate pull request, e.g. "/renovate-update", "/renovate-update 103" or "update all dependencies".
+description: Run a dependency update of this repository end to end without asking at every step - trigger the Renovate run workflow (renovate-run.yml), tick every mature update on the dependency dashboard, wait for Renovate's pull requests and their CI, and fix a red CI on the update branch (adapt the code, bring the tools around it along, and only with the user's consent hold one dependency back) until it is green, then hand the pull request over for review and merge. Use when the user asks to update the dependencies, run Renovate, or fix the Renovate pull request, e.g. "/renovate-update", "/renovate-update 103" or "update all dependencies".
 ---
 
 # Renovate update, end to end
@@ -9,7 +9,8 @@ The hosted Renovate app ([`.github/renovate.json5`](../../../.github/renovate.js
 "Dependency updates") puts every update in one pull request (`renovate/all`), plus one for lock file
 maintenance (`renovate/lock-file-maintenance`). This skill drives it to a green pull request: it
 asks for a run through the dependency dashboard issue, waits for the pull requests, and fixes them
-until CI passes. It runs **without approval gates** up to a green pull request, with one exception:
+until CI passes. Every run starts with the *Renovate run* workflow
+([`renovate-run.yml`](../../../.github/workflows/renovate-run.yml)). It runs **without approval gates** up to a green pull request, with one exception:
 holding a dependency back, which it presents and asks about first (4.4). It never merges on its own
 (see 6).
 
@@ -22,8 +23,8 @@ repository root as `.claude/skills/renovate-update/dashboard.sh <command>`:
 | Command | What it does |
 |---|---|
 | `show` | the dashboard's checkboxes, by section |
-| `tick [--dry-run]` | tick every checkbox that brings mature updates in, plus "run again" |
-| `wait [minutes]` | wait until Renovate has processed the ticked checkboxes (default 20), then list its pull requests |
+| `request [--dry-run]` | tick every checkbox that brings mature updates in, then start `renovate-run.yml` (it ticks "run again") and wait for it |
+| `wait [minutes]` | wait until Renovate has processed the ticked checkboxes (default 60, a progress line every 5), then list its pull requests; on a timeout, print what to check on developer.mend.io |
 | `prs` | Renovate's open pull requests |
 | `wait-ci <pr>` | wait for the CI run on the pull request's head; exit 1 when it failed, with the failed jobs |
 
@@ -38,7 +39,7 @@ notified when they end.
   days (check the release date before choosing a version by hand).
 - **Never rebase a branch someone has pushed to.** Once the skill commits on `renovate/all`,
   Renovate stops updating it; ticking its "rebase" checkbox recreates it from scratch and drops
-  the fixes. `tick` already leaves it alone; do not tick it by hand either.
+  the fixes. `request` already leaves it alone; do not tick it by hand either.
 - **Green by fixing, never by weakening.** No skipped or deleted tests, no disabled checks, no
   edits to `.github/workflows/`, no new suppressions to silence a new lint rule's findings (fix
   the code; a justified suppression follows the in-place convention, with a reason), no
@@ -66,26 +67,41 @@ started on, to switch back to it at the end.
 Print the dashboard: what is awaiting schedule, open (with its pull request), pending (not yet
 mature), errored, rate-limited or ignored. When the input was a pull request, go to 3.
 
-## 1. Request the run
+## 1. Trigger the Renovate run workflow
 
 ```sh
-.claude/skills/renovate-update/dashboard.sh tick
+.claude/skills/renovate-update/dashboard.sh request
 ```
 
-It ticks, in one edit of the dashboard issue: "awaiting schedule" (the Monday schedule also holds a
-manual run), "rate-limited", "pending approval", "errored" (retry), "rebase" of a branch with only
-Renovate's own commits (so an open update pull request takes the newer mature releases), and "run
-again". It prints each checkbox it ticked or left.
+The run is always requested through `renovate-run.yml` (`gh workflow run renovate-run.yml`), never
+by ticking "run again" with the user's login: the app takes up the workflow's edit within a minute,
+while an edit made with the user's `gh` login waited for its next scheduled run, an hour or more.
 
-If it ticked nothing, a run is still pending: go to 2 and wait for it. If a branch was left because
+`request` first ticks, in one edit of the dashboard issue, what the run should bring in: "awaiting
+schedule" (the Monday schedule also holds a manual run), "rate-limited", "pending approval",
+"errored" (retry), and "rebase" of a branch with only Renovate's own commits (so an open update
+pull request takes the newer mature releases). A "run again" left ticked by an earlier request is
+unticked in the same edit, since the workflow only ticks an unticked one. Then it starts the
+workflow, waits for it, and prints each checkbox it ticked or left and the workflow run's link. If
+the workflow fails, show its log (`gh run view <run> --log-failed`) and stop.
+
+If a branch was left because
 it has other commits and the dashboard shows new mature updates for it, say so in the summary: they
 come after this pull request is merged (Renovate then opens a new one).
 
 ## 2. Wait for Renovate
 
-`dashboard.sh wait` in the background. Renovate unticks every checkbox when it has processed them,
-usually within a few minutes. On a timeout, say so: the run may be queued at Mend, or the repository
-may be in silent mode (the job log on developer.mend.io shows `"mode":"silent"`). Then stop.
+`dashboard.sh wait` in the background. Renovate unticks every checkbox when it has processed them.
+Mend runs a request from its own queue: within a minute at times, after an hour at others, and
+nothing on GitHub shows which; requesting again does not move it up the queue. So `wait` gives it 60
+minutes, and prints a progress line every 5 (the ticked checkboxes, Renovate's last edit of the
+dashboard).
+
+On a timeout, do not request again: print `wait`'s message to the user and stop. It names the job list
+on developer.mend.io and what to do there: wait again while a job is queued or running; with no job
+since the request, tick the updates on that page (never one under "Edited/Blocked") and press
+"Create/Rebase", which starts a job on Mend's side; with `"mode":"silent"` in the latest job's log,
+turn silent mode off. The user continues with `/renovate-update` once the run is done.
 
 Afterwards list the open Renovate pull requests. With none, there is nothing to update: say what is
 still pending on the dashboard (and when it matures) and stop.
@@ -97,7 +113,7 @@ them at once). Green: go to 6 for it. Red: go to 4. Read the pull request body t
 update (from → to) with release notes, and Renovate's notes (the TradingAgents one below).
 
 When the pull request is `BEHIND` main (`gh pr view <pr> --json mergeStateStatus`) and has only
-Renovate's commits, tick its rebase checkbox with `tick` and go back to 2. With other commits, see 5.
+Renovate's commits, tick its rebase checkbox with `request` and go back to 2. With other commits, see 5.
 
 ## 4. Fix a red CI (at most 3 attempts per pull request)
 
