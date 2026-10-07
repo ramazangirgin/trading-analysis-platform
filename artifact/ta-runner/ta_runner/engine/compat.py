@@ -2,7 +2,7 @@
 
 Some of these are semi-internal upstream APIs (``_log_state``, ``_resuming``,
 ``propagator``). Keeping them in one module means an upstream upgrade touches one file,
-and the contract tests (PLAN.md section 9) exercise exactly this surface.
+and the contract tests exercise exactly this surface.
 Mirrors the upstream CLI's run path (cli/run.py in v0.5.1) so a platform run behaves
 like a CLI run: settled decision log, past context, instrument identity, checkpoints.
 """
@@ -130,7 +130,7 @@ def results_dir(spec: RunSpec) -> Path:
 
 def write_reports(spec: RunSpec, results_dir: Path, final_state: dict[str, Any]) -> Path:
     """Report tree in the same place the upstream CLI uses:
-    ``<results_dir>/<TICKER>/<DATE>/reports`` (PLAN.md section 3.6)."""
+    ``<results_dir>/<TICKER>/<DATE>/reports``."""
     target = results_dir / safe_ticker_component(spec.ticker) / spec.trade_date / "reports"
     return write_report_tree(final_state, spec.ticker, target)
 

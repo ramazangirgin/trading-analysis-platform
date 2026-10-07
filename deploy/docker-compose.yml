@@ -1,4 +1,4 @@
-# TradingAgents Platform on one machine (PLAN.md section 4, deployment 2):
+# TradingAgents Platform on one machine:
 #   platform            backend + UI, http://127.0.0.1:${PLATFORM_PORT}
 #   postgres            the platform's database; its data lives in ${PLATFORM_DATA}/postgres
 #   docker-socket-proxy the only way to the Docker socket: containers only, no exec, images or volumes

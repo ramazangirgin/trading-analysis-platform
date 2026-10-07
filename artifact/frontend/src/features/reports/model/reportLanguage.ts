@@ -2,7 +2,7 @@
  * Upstream writes some fixed English text into every report whatever the output language:
  * structured-output labels ("**Rating**:", "**Executive Summary**:"), the rating scale words
  * and debate prefixes ("Bull Analyst:"). The model's own text is already in the chosen
- * language, so only these are translated, at display time (PLAN.md section 3.7).
+ * language, so only these are translated, at display time.
  */
 const TR_LABELS: Record<string, string> = {
   Rating: 'Karar',

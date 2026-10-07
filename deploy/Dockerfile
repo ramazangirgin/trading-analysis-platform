@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Platform image: the single jar (backend + UI) on a Java 25 JRE (PLAN.md section 3.9, D12).
+# Platform image: the single jar (backend + UI) on a Java 25 JRE.
 # Build the jar first; `mise run docker-build` does both:
 #
 #   ./gradlew :backend:bootJar

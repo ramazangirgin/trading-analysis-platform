@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ta-runner image: the TradingAgents runtime (pinned by uv.lock) with ta-runner on top. The platform
-# starts one short-lived container per analysis from it (PLAN.md section 4, option B).
+# starts one short-lived container per analysis from it.
 #
 #   docker build --build-arg VERSION="$(scripts/version.sh)" -t ta-runner:latest artifact/ta-runner
 #

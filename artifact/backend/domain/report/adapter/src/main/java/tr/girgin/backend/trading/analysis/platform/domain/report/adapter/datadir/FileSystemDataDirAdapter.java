@@ -33,7 +33,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.datadir.DataDirPort;
 
 /**
- * Reads upstream's results directory (PLAN.md section 3.6), read-only:
+ * Reads upstream's results directory, read-only:
  * <pre>
  * &lt;results&gt;/&lt;TICKER&gt;/&lt;DATE&gt;/reports/{1_analysts..5_portfolio}/*.md   report tree
  * &lt;results&gt;/&lt;TICKER&gt;/TradingAgentsStrategy_logs/full_states_log_&lt;DATE&gt;.json

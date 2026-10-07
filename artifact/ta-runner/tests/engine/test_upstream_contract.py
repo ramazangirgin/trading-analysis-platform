@@ -1,4 +1,4 @@
-"""Contract tests: the upstream surface compat.py relies on (PLAN.md section 9).
+"""Contract tests: the upstream surface compat.py relies on.
 
 Run on every upstream version bump. Builds the real graph (no LLM call is made) so node
 wiring, state keys and the semi-internal APIs are checked against the pinned release.

@@ -25,7 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.RunH
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.history.RunHistoryPort;
 
 /**
- * Reads {@code <data-dir>/runs.json}, the run history a third-party UI keeps (PLAN.md section 3.6):
+ * Reads {@code <data-dir>/runs.json}, the run history a third-party UI keeps:
  * <pre>
  * {"version": 1, "runs": {"&lt;id&gt;": {"ticker", "date", "selected", "status", "started_at", "ended_at",
  *   "error", "stats": {"llm_calls", …, "cost_usd", "elapsed_s"}, "params": {"provider", "deep_model", …}}}}

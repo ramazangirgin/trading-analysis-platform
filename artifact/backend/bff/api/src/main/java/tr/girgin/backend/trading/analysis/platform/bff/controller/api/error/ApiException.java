@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
 
-/** Thrown by delegates to answer with an error code the frontend translates (PLAN.md section 3.7). */
+/** Thrown by delegates to answer with an error code the frontend translates. */
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;

@@ -35,7 +35,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunnerPort;
 
 /**
- * Runs ta-runner as a local child process (PLAN.md section 4, option A): one process per run,
+ * Runs ta-runner as a local child process: one process per run,
  * started with an argument list (never a shell), stdout read line by line on a virtual thread,
  * stderr kept as {@code run.log} in the run directory.
  *

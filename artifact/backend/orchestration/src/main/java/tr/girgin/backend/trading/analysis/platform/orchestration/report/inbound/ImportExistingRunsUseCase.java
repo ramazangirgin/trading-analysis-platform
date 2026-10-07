@@ -4,6 +4,6 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.model.Im
 
 public interface ImportExistingRunsUseCase {
 
-    /** Registers every run found in the data dir as an EXTERNAL analysis (PLAN.md section 3.6). */
+    /** Registers every run found in the data dir as an EXTERNAL analysis. */
     ImportResult importExistingRuns();
 }

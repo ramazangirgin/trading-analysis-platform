@@ -4,8 +4,9 @@
 
 A web platform for running and managing [TradingAgents](https://github.com/TauricResearch/TradingAgents)
 analyses without modifying its code: start an analysis from the browser, watch the agents work live,
-then read the decision, the reports and the debates, and export them. See [PLAN.md](PLAN.md) for the design and
-roadmap and [docs/event-protocol.md](docs/event-protocol.md) for the runner contract.
+then read the decision, the reports and the debates, and export them. The roadmap is the
+[GitHub issues](https://github.com/ramazangirgin/trading-analysis-platform/issues);
+[docs/event-protocol.md](docs/event-protocol.md) describes the runner contract.
 
 ![An analysis: agent pipeline and the final decision](docs/screenshots/run-decision.png)
 
@@ -218,8 +219,8 @@ platform picks it up again.
   `/var/home/core/trading-analysis-platform`) or recreate it with `podman machine init --volume
   $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
   rootful one).
-- **Exposing it beyond localhost** needs authentication and HTTPS first (planned, see
-  [PLAN.md](PLAN.md) §7); the port is published on 127.0.0.1 only.
+- **Exposing it beyond localhost** needs authentication and HTTPS first (not built yet; see the
+  [GitHub issues](https://github.com/ramazangirgin/trading-analysis-platform/issues)); the port is published on 127.0.0.1 only.
 - The first start takes about a minute (longer under Podman's VM on macOS).
 
 ### Upgrading to 1.0.0

@@ -21,7 +21,7 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.He
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthStatus;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.SystemHealth;
 
-/** First-run and troubleshooting checks, across domains (PLAN.md section 3.4). */
+/** First-run and troubleshooting checks, across domains. */
 @Service
 class SystemHealthService implements SystemHealthUseCase {
 

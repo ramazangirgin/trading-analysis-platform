@@ -54,7 +54,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunnerPort;
 
 /**
- * Runs each analysis in its own ta-runner container (PLAN.md section 4, option B; D8). The handle
+ * Runs each analysis in its own ta-runner container. The handle
  * is the container id.
  *
  * <ul>

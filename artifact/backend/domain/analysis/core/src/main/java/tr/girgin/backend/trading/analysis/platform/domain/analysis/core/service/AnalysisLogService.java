@@ -8,7 +8,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runlog.RunLogPort;
 
-/** Serves run logs with anything that looks like an API key masked (PLAN.md section 7). */
+/** Serves run logs with anything that looks like an API key masked. */
 @Service
 class AnalysisLogService implements ReadAnalysisLogsUseCase {
 
