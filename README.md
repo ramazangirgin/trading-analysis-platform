@@ -321,20 +321,22 @@ The hosted [Renovate](https://docs.renovatebot.com/) app ([`.github/renovate.jso
 keeps every pinned dependency current: the Gradle version catalog and wrapper, the pnpm packages of
 `artifact/frontend/` and `e2e/`, Node.js and pnpm of the build, ta-runner's uv dependencies, the
 TradingAgents release, `mise.toml`'s tools, the Dockerfiles, the Compose file and the workflows'
-actions. It opens grouped pull requests on Monday mornings (Europe/Berlin), plus weekly lock file
-maintenance: Spring Boot, Gradle build, Frontend tooling, Python dependencies, Docker base images,
-PostgreSQL, GitHub Actions and Tools; a major update gets a pull request of its own. Java stays on 25,
-Python on 3.12, and PostgreSQL gets no major updates. Renovate's dependency dashboard issue lists
-everything it tracks. Nothing merges automatically: an update pull request runs the full CI and is
-merged by an admin like any other. Update pull requests skip the version bump and ship with the next
-release (see below). To run Renovate now instead of waiting for Monday, start the *Renovate run*
-workflow ([`renovate-run.yml`](.github/workflows/renovate-run.yml)) from the Actions tab or with
-`gh workflow run renovate-run.yml`; it ticks the "run again" checkbox on the dashboard issue, which
-you can also tick by hand.
+actions. On Monday mornings (Europe/Berlin) it opens **one pull request with every update**, majors
+included ("Update all dependencies", branch `renovate/all`), plus one for lock file maintenance. Java
+stays on 25, Python on 3.12, Node.js on LTS majors, and PostgreSQL gets no major updates. Renovate's
+dependency dashboard issue lists everything it tracks. Nothing merges automatically: the update pull
+request runs the full CI and is merged by an admin like any other. Update pull requests skip the
+version bump and ship with the next release (see below).
 
-A TradingAgents update is a pull request of its own and CI fails until you finish it: run `uv lock`
-in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py` and the
-contract tests to the new release.
+The schedule also holds for a manual run: to get the update pull request before Monday, tick
+"Create all awaiting schedule PRs at once" on the dashboard issue (that starts a run). The *Renovate
+run* workflow ([`renovate-run.yml`](.github/workflows/renovate-run.yml)), from the Actions tab or
+`gh workflow run renovate-run.yml`, ticks the dashboard's "run again" checkbox: a run without the
+schedule, for example to rebase the pull request after `main` moved.
+
+When the update includes TradingAgents, CI fails until you finish it on the pull request's branch:
+run `uv lock` in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py`
+and the contract tests to the new release.
 
 ### Versioning and releases
 
