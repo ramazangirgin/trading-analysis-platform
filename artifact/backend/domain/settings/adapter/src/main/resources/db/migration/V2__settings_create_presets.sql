@@ -1,9 +1,11 @@
 -- Settings domain. Flyway versions are global across domains, in order of creation.
--- Saved analysis presets. payload is the preset's settings as an opaque JSON string, kept as TEXT so
+-- Names are uppercase and quoted, constraints and indexes are named explicitly.
+-- Saved analysis presets. PAYLOAD is the preset's settings as an opaque JSON string, kept as TEXT so
 -- it is stored exactly as written.
-CREATE TABLE presets (
-    id         TEXT PRIMARY KEY,
-    name       TEXT        NOT NULL,
-    payload    TEXT        NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL
+CREATE TABLE "PRESETS" (
+    "ID"         TEXT        NOT NULL,
+    "NAME"       TEXT        NOT NULL,
+    "PAYLOAD"    TEXT        NOT NULL,
+    "UPDATED_AT" TIMESTAMPTZ NOT NULL,
+    CONSTRAINT "PRESETS_PK" PRIMARY KEY ("ID")
 );

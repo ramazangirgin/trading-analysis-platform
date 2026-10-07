@@ -41,7 +41,7 @@ class JdbcRoleRepositoryAdapter implements RoleRepositoryPort {
 
     @Override
     public Optional<Role> findById(RoleId id) {
-        return withPermissions(jdbc.sql("SELECT * FROM roles WHERE id = :id")
+        return withPermissions(jdbc.sql("SELECT * FROM \"ROLES\" WHERE \"ID\" = :id")
                         .param("id", id.value())
                         .query(RoleRow.class)
                         .list())
@@ -51,7 +51,7 @@ class JdbcRoleRepositoryAdapter implements RoleRepositoryPort {
 
     @Override
     public Optional<Role> findByName(String name) {
-        return withPermissions(jdbc.sql("SELECT * FROM roles WHERE name = :name")
+        return withPermissions(jdbc.sql("SELECT * FROM \"ROLES\" WHERE \"NAME\" = :name")
                         .param("name", name)
                         .query(RoleRow.class)
                         .list())
@@ -61,7 +61,7 @@ class JdbcRoleRepositoryAdapter implements RoleRepositoryPort {
 
     @Override
     public List<Role> findAll() {
-        return withPermissions(jdbc.sql("SELECT * FROM roles ORDER BY name")
+        return withPermissions(jdbc.sql("SELECT * FROM \"ROLES\" ORDER BY \"NAME\"")
                 .query(RoleRow.class)
                 .list());
     }
@@ -70,15 +70,16 @@ class JdbcRoleRepositoryAdapter implements RoleRepositoryPort {
     @Transactional
     public void save(Role role) {
         jdbc.sql("""
-                INSERT INTO roles (id, name, built_in, description) VALUES (:id, :name, :builtIn, :description)
-                ON CONFLICT (id) DO UPDATE SET name = excluded.name, built_in = excluded.built_in,
-                    description = excluded.description
+                INSERT INTO "ROLES" ("ID", "NAME", "BUILT_IN", "DESCRIPTION")
+                VALUES (:id, :name, :builtIn, :description)
+                ON CONFLICT ("ID") DO UPDATE SET "NAME" = EXCLUDED."NAME", "BUILT_IN" = EXCLUDED."BUILT_IN",
+                    "DESCRIPTION" = EXCLUDED."DESCRIPTION"
                 """).paramSource(toRow.map(role)).update();
-        jdbc.sql("DELETE FROM role_permissions WHERE role_id = :roleId")
+        jdbc.sql("DELETE FROM \"ROLE_PERMISSIONS\" WHERE \"ROLE_ID\" = :roleId")
                 .param("roleId", role.id().value())
                 .update();
         for (Permission permission : role.permissions()) {
-            jdbc.sql("INSERT INTO role_permissions (role_id, permission) VALUES (:roleId, :permission)")
+            jdbc.sql("INSERT INTO \"ROLE_PERMISSIONS\" (\"ROLE_ID\", \"PERMISSION\") VALUES (:roleId, :permission)")
                     .param("roleId", role.id().value())
                     .param("permission", permission.key())
                     .update();
@@ -100,7 +101,7 @@ class JdbcRoleRepositoryAdapter implements RoleRepositoryPort {
     private Map<String, Set<Permission>> permissionsByRole(Collection<String> roleIds) {
         Map<String, Set<Permission>> result = new HashMap<>();
         List<RolePermissionRow> grants = jdbc.sql(
-                        "SELECT role_id, permission FROM role_permissions WHERE role_id IN (:roleIds)")
+                        "SELECT \"ROLE_ID\", \"PERMISSION\" FROM \"ROLE_PERMISSIONS\" WHERE \"ROLE_ID\" IN (:roleIds)")
                 .param("roleIds", roleIds)
                 .query(RolePermissionRow.class)
                 .list();

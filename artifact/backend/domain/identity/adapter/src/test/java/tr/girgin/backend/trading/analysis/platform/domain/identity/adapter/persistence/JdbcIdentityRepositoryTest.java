@@ -184,7 +184,7 @@ class JdbcIdentityRepositoryTest {
         Role role = saveRole("assigned-role", Set.of(Permission.ANALYSIS_RUN));
         users.save(user("role-holder", Set.of(role.id())));
 
-        assertThatThrownBy(() -> jdbc.sql("DELETE FROM roles WHERE id = :id")
+        assertThatThrownBy(() -> jdbc.sql("DELETE FROM \"ROLES\" WHERE \"ID\" = :id")
                         .param("id", role.id().value())
                         .update())
                 .isInstanceOf(DataAccessException.class);
@@ -197,7 +197,7 @@ class JdbcIdentityRepositoryTest {
         User user = user("goes-away", Set.of(role.id()));
         users.save(user);
 
-        jdbc.sql("DELETE FROM users WHERE id = :id")
+        jdbc.sql("DELETE FROM \"USERS\" WHERE \"ID\" = :id")
                 .param("id", user.id().value())
                 .update();
 
@@ -213,7 +213,7 @@ class JdbcIdentityRepositoryTest {
         assertThatThrownBy(() -> users.save(user)).isInstanceOf(DataAccessException.class);
 
         assertThat(users.findById(user.id())).isEmpty();
-        assertThat(jdbc.sql("SELECT count(*) FROM user_roles WHERE user_id = :id")
+        assertThat(jdbc.sql("SELECT COUNT(*) FROM \"USER_ROLES\" WHERE \"USER_ID\" = :id")
                         .param("id", user.id().value())
                         .query(Long.class)
                         .single())
@@ -254,6 +254,7 @@ class JdbcIdentityRepositoryTest {
             // Only this domain's migration: V1 and V2 belong to other modules.
             Flyway.configure()
                     .dataSource(dataSource)
+                    .table("FLYWAY_SCHEMA_HISTORY")
                     .baselineVersion("2")
                     .baselineOnMigrate(true)
                     .load()

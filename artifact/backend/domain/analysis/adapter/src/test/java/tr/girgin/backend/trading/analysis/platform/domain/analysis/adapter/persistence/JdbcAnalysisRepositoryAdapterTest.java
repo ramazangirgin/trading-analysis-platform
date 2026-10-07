@@ -62,7 +62,7 @@ class JdbcAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         assertThat(found.startedAt()).isEqualTo(created.plusNanos(1_000));
         assertThat(found.endedAt()).isEqualTo(created.plusSeconds(90).plusNanos(2_000));
         assertThat(found.spec().tradeDate()).isEqualTo(LocalDate.of(2026, 9, 25));
-        assertThat(jdbc.sql("SELECT trade_date FROM analyses WHERE id = :id")
+        assertThat(jdbc.sql("SELECT \"TRADE_DATE\" FROM \"ANALYSES\" WHERE \"ID\" = :id")
                         .param("id", queued.id().value())
                         .query(LocalDate.class)
                         .single())
