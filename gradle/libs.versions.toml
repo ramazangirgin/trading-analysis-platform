@@ -42,6 +42,10 @@ flyway-core = { module = "org.flywaydb:flyway-core" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc" }
 postgresql = { module = "org.postgresql:postgresql" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+# Only the crypto module (password hashing), not the starter: the starter would lock every endpoint.
+spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }

@@ -50,6 +50,8 @@ include(
     ":backend:domain:catalog:adapter",
     ":backend:domain:settings:core",
     ":backend:domain:settings:adapter",
+    ":backend:domain:identity:core",
+    ":backend:domain:identity:adapter",
     ":frontend",
 )
 
