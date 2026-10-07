@@ -5,7 +5,7 @@ import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.row.UserRow;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 
-@Mapper(uses = {InstantToStringMapper.class, OptionalInstantToStringMapper.class})
+@Mapper(uses = {InstantToOffsetDateTimeMapper.class, OptionalInstantToOffsetDateTimeMapper.class})
 public interface UserToUserRowMapper {
 
     @Mapping(target = "id", source = "id.value")

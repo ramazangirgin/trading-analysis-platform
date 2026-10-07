@@ -11,5 +11,7 @@ dependencies {
     implementation(libs.slf4j.api)
 
     testImplementation(libs.flyway.core)
-    testRuntimeOnly(libs.sqlite.jdbc)
+    testRuntimeOnly(libs.postgresql)
+    testRuntimeOnly(libs.flyway.database.postgresql)
+    testImplementation(libs.testcontainers.postgresql)
 }

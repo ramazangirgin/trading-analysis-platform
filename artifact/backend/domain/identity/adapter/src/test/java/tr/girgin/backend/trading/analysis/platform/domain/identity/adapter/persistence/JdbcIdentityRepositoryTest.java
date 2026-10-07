@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 import javax.sql.DataSource;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -14,8 +15,11 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.UserRowToUserMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
@@ -28,11 +32,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
-/**
- * The repository cases, run against each database by a subclass that supplies the {@link DataSource}
- * (migrated with this domain's Flyway migration) in its own configuration.
- */
-abstract class IdentityRepositoryContractTest {
+/** The repositories against a PostgreSQL database migrated with this domain's Flyway migration. */
+@SpringJUnitConfig(JdbcIdentityRepositoryTest.Config.class)
+class JdbcIdentityRepositoryTest {
 
     private static final Instant CREATED = Instant.parse("2026-10-01T10:00:00Z");
     private static final Instant UPDATED = Instant.parse("2026-10-02T11:30:15.250Z");
@@ -141,11 +143,8 @@ abstract class IdentityRepositoryContractTest {
     void aSecondUserWithTheSameUsernameInAnotherCaseIsRejected() {
         users.save(user("Taken.Name", Set.of()));
 
-        assertThatThrownBy(() -> users.save(user("taken.name", Set.of()))).isInstanceOf(duplicateUsernameException());
+        assertThatThrownBy(() -> users.save(user("taken.name", Set.of()))).isInstanceOf(DuplicateKeyException.class);
     }
-
-    /** The exception type the database's driver ends up as, which the port's Javadoc documents. */
-    abstract Class<? extends DataAccessException> duplicateUsernameException();
 
     @Test
     void countAndFindAllSeeEveryUser() {
@@ -241,12 +240,26 @@ abstract class IdentityRepositoryContractTest {
                 roleIds);
     }
 
-    /** The beans every database setup shares; a subclass's configuration extends it and adds the data source. */
     @Configuration
     @EnableTransactionManagement
     @Import({JdbcUserRepositoryAdapter.class, JdbcRoleRepositoryAdapter.class})
     @ComponentScan(basePackageClasses = UserRowToUserMapper.class)
-    abstract static class BaseConfig {
+    static class Config {
+
+        @Bean
+        DataSource dataSource() {
+            PostgresTestDatabase.Database database = PostgresTestDatabase.create();
+            DriverManagerDataSource dataSource =
+                    new DriverManagerDataSource(database.url(), database.username(), database.password());
+            // Only this domain's migration: V1 and V2 belong to other modules.
+            Flyway.configure()
+                    .dataSource(dataSource)
+                    .baselineVersion("2")
+                    .baselineOnMigrate(true)
+                    .load()
+                    .migrate();
+            return dataSource;
+        }
 
         @Bean
         JdbcClient jdbcClient(DataSource dataSource) {

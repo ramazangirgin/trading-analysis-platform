@@ -1,10 +1,13 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.persistence.row;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+
 /** One row of the {@code analyses} table. */
 public record AnalysisRow(
         String id,
         String ticker,
-        String tradeDate,
+        LocalDate tradeDate,
         String assetType,
         String analysts,
         String llmProvider,
@@ -24,9 +27,9 @@ public record AnalysisRow(
         long tokensOut,
         Double costUsd,
         long elapsedMs,
-        String createdAt,
-        String startedAt,
-        String endedAt,
+        OffsetDateTime createdAt,
+        OffsetDateTime startedAt,
+        OffsetDateTime endedAt,
         String errorCode,
         String errorMessage,
         String externalRef,

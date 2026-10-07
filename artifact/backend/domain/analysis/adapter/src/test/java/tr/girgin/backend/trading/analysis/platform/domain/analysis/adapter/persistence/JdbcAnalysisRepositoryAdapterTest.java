@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.AdapterTestSupport;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
@@ -27,6 +28,9 @@ class JdbcAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     @Autowired
     private JdbcAnalysisRepositoryAdapter repository;
 
+    @Autowired
+    private JdbcClient jdbc;
+
     @Test
     void roundTripsAnAnalysisThroughEveryTransition() {
         Instant created = Instant.parse("2026-09-29T10:00:00.123Z");
@@ -41,6 +45,28 @@ class JdbcAnalysisRepositoryAdapterTest extends AdapterTestSupport {
 
         assertThat(repository.findById(queued.id())).contains(done);
         assertThat(repository.findById(queued.id()).orElseThrow().spec()).isEqualTo(queued.spec());
+    }
+
+    @Test
+    void keepsTheTradeDateAndAllThreeTimestampsInTheirNativeTypes() {
+        Instant created = Instant.parse("2026-09-29T23:59:59.123456Z");
+        Analysis queued = Analysis.queued(AnalysisId.newId(), spec("ZZTYPES"), created);
+        Analysis done = queued.running(created.plusNanos(1_000), "4244")
+                .finished(AnalysisStatus.COMPLETED, created.plusSeconds(90).plusNanos(2_000), null, null);
+        repository.insert(queued);
+        repository.update(done);
+
+        Analysis found = repository.findById(queued.id()).orElseThrow();
+
+        assertThat(found.createdAt()).isEqualTo(created);
+        assertThat(found.startedAt()).isEqualTo(created.plusNanos(1_000));
+        assertThat(found.endedAt()).isEqualTo(created.plusSeconds(90).plusNanos(2_000));
+        assertThat(found.spec().tradeDate()).isEqualTo(LocalDate.of(2026, 9, 25));
+        assertThat(jdbc.sql("SELECT trade_date FROM analyses WHERE id = :id")
+                        .param("id", queued.id().value())
+                        .query(LocalDate.class)
+                        .single())
+                .isEqualTo(LocalDate.of(2026, 9, 25));
     }
 
     @Test

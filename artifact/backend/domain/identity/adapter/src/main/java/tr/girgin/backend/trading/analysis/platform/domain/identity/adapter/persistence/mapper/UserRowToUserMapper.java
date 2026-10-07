@@ -11,8 +11,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
             StringToUserIdMapper.class,
             StringToUsernameMapper.class,
             StringToPasswordHashMapper.class,
-            StringToInstantMapper.class,
-            StringToOptionalInstantMapper.class
+            OffsetDateTimeToInstantMapper.class,
+            OffsetDateTimeToOptionalInstantMapper.class
         })
 public interface UserRowToUserMapper {
 

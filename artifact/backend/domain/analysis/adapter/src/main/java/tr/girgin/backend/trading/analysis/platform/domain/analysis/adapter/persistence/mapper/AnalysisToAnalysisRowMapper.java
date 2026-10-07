@@ -5,7 +5,7 @@ import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.persistence.row.AnalysisRow;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 
-@Mapper(uses = {InstantToStringMapper.class, AnalystListToStringMapper.class, DurationToMillisMapper.class})
+@Mapper(uses = {InstantToOffsetDateTimeMapper.class, AnalystListToStringMapper.class, DurationToMillisMapper.class})
 public interface AnalysisToAnalysisRowMapper {
 
     @Mapping(target = "id", source = "id.value")
