@@ -21,7 +21,7 @@ All packages start with `tr.girgin.backend.trading.analysis.platform` (written `
 | `:backend:domain:<d>:adapter` | `….domain.<d>.adapter` | Outbound adapters, one sub-package per port |
 | `:backend` | `…` | `TradingPlatformApplication` only; assembles the modules at runtime |
 
-Domains: `analysis`, `report`, `catalog`, `settings`.
+Domains: `analysis`, `report`, `catalog`, `settings`, `identity`.
 
 ## Package layout
 
@@ -67,6 +67,8 @@ Today's adapter packages:
 | `domain.analysis.adapter.runlog` | `RunLogFileAdapter` | |
 | `domain.analysis.adapter.runner` | `ProcessRunnerAdapter`, `DockerRunnerAdapter` | `spec`, `mapper`, `support` |
 | `domain.catalog.adapter.runner` | `TaRunnerEngineInfoAdapter`, `DockerEngineInfoAdapter` | `json`, `mapper`, `support` |
+| `domain.identity.adapter.password` | `DelegatingPasswordHasherAdapter` | |
+| `domain.identity.adapter.persistence` | `JdbcRoleRepositoryAdapter`, `JdbcUserRepositoryAdapter` | `row`, `mapper` |
 | `domain.report.adapter.datadir` | `FileSystemDataDirAdapter`, `FileSystemDataDirWatchAdapter` | `json` |
 | `domain.report.adapter.history` | `JsonRunHistoryAdapter` | |
 | `domain.report.adapter.prices` | `CsvPriceCacheAdapter` | |
