@@ -97,8 +97,11 @@ user_roles       user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     `List<Role> findAll()`, `void save(Role)` (insert or update the role and replace its
     permissions).
   - Saving a user whose username is taken by another user (in any case) fails; the adapter throws
-    Spring's `DuplicateKeyException` as it comes. Turning it into a domain error is left to #88,
-    the first caller.
+    Spring's `DuplicateKeyException` as it comes on PostgreSQL. On SQLite Spring has no error codes,
+    so it is an `UncategorizedSQLException`, the same type as a foreign-key failure; the contract
+    tests pin both. Turning it into a domain error is left to #88, the first caller, which cannot
+    rely on the exception type on SQLite (e.g. check `findByUsername` before saving, or register a
+    `SQLExceptionTranslator` for SQLITE_CONSTRAINT_UNIQUE, extended code 2067).
 - `outbound/password/PasswordHasherPort`: `PasswordHash hash(CharSequence rawPassword)`,
   `boolean matches(CharSequence rawPassword, PasswordHash hash)`,
   `boolean needsRehash(PasswordHash hash)` (true when the stored algorithm is not the current
