@@ -138,8 +138,14 @@ Renovate's commits, tick its rebase checkbox with `tick` and go back to 2. With 
       neighbour that supports the new version (its changelog, its `peerDependencies`, its issues)
       and move it too; or move the update to the highest mature version that still fits.
    3. **Configure around it** when the project or the upstream issue documents a supported way: a
-      compatibility flag, a configuration option, a documented adapter. No hacks that the next
-      reader cannot follow (aliased duplicate packages, patched `node_modules`, copied sources).
+      compatibility flag, a configuration option, a compatibility package, the old and new version
+      side by side (TypeScript 7's announcement documents `@typescript/typescript6` as `typescript`
+      next to TypeScript 7 for tools that need the old API). Read the release announcement and the
+      neighbours' upstream issues for it (`gh search issues --repo <owner>/<repo> "<dependency>
+      <version>"`): maintainers often point at the supported setup there. No undocumented hacks
+      (patched `node_modules`, copied sources, private entry points). A workaround like this leaves
+      a follow-up (back to the plain setup once the neighbours catch up): present it in the summary
+      and, with the user's consent, open an issue for it, linked as in 4.
    4. **Challenging: ask before holding back.** When none of these works within this run (the
       ecosystem has no support yet, the release is broken upstream, the migration needs design
       decisions or more than a contained change), stop fixing this dependency and present it with
