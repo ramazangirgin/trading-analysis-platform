@@ -141,8 +141,11 @@ abstract class IdentityRepositoryContractTest {
     void aSecondUserWithTheSameUsernameInAnotherCaseIsRejected() {
         users.save(user("Taken.Name", Set.of()));
 
-        assertThatThrownBy(() -> users.save(user("taken.name", Set.of()))).isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> users.save(user("taken.name", Set.of()))).isInstanceOf(duplicateUsernameException());
     }
+
+    /** The exception type the database's driver ends up as, which the port's Javadoc documents. */
+    abstract Class<? extends DataAccessException> duplicateUsernameException();
 
     @Test
     void countAndFindAllSeeEveryUser() {
