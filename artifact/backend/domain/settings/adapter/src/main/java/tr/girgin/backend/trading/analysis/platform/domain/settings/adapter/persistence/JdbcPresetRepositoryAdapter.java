@@ -26,14 +26,14 @@ class JdbcPresetRepositoryAdapter implements PresetRepositoryPort {
 
     @Override
     public List<Preset> findAll() {
-        return jdbc.sql("SELECT * FROM presets").query(PresetRow.class).list().stream()
+        return jdbc.sql("SELECT * FROM \"PRESETS\"").query(PresetRow.class).list().stream()
                 .map(toPreset::map)
                 .toList();
     }
 
     @Override
     public Optional<Preset> findById(PresetId id) {
-        return jdbc.sql("SELECT * FROM presets WHERE id = :id")
+        return jdbc.sql("SELECT * FROM \"PRESETS\" WHERE \"ID\" = :id")
                 .param("id", id.value())
                 .query(PresetRow.class)
                 .optional()
@@ -43,15 +43,16 @@ class JdbcPresetRepositoryAdapter implements PresetRepositoryPort {
     @Override
     public void save(Preset preset) {
         jdbc.sql("""
-                INSERT INTO presets (id, name, payload, updated_at) VALUES (:id, :name, :payload, :updatedAt)
-                ON CONFLICT (id) DO UPDATE SET name = excluded.name, payload = excluded.payload,
-                    updated_at = excluded.updated_at
+                INSERT INTO "PRESETS" ("ID", "NAME", "PAYLOAD", "UPDATED_AT")
+                VALUES (:id, :name, :payload, :updatedAt)
+                ON CONFLICT ("ID") DO UPDATE SET "NAME" = EXCLUDED."NAME", "PAYLOAD" = EXCLUDED."PAYLOAD",
+                    "UPDATED_AT" = EXCLUDED."UPDATED_AT"
                 """).paramSource(toRow.map(preset)).update();
     }
 
     @Override
     public boolean delete(PresetId id) {
-        return jdbc.sql("DELETE FROM presets WHERE id = :id")
+        return jdbc.sql("DELETE FROM \"PRESETS\" WHERE \"ID\" = :id")
                         .param("id", id.value())
                         .update()
                 == 1;

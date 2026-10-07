@@ -201,7 +201,8 @@ down` stops everything; `up -d` brings it back with all data.
 | `tradingagents/` | TradingAgents' reports, price cache and memory log, written by the analysis containers |
 
 Back up the whole folder; for the database alone, `docker compose -f deploy/docker-compose.yml exec
-postgres pg_dump -U platform platform > platform.sql`.
+postgres pg_dump -U platform platform > platform.sql`. Table and column names are uppercase and
+stored quoted, so a hand query quotes them too: `SELECT * FROM "ANALYSES";`.
 
 **How analyses run:** the platform asks the engine, through docker-socket-proxy, for one
 `ta-runner` container per analysis: read-only root filesystem, no Linux capabilities, a non-root

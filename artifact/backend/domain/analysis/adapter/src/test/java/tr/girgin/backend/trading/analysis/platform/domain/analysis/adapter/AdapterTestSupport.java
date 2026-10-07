@@ -73,7 +73,11 @@ public abstract class AdapterTestSupport {
             PostgresTestDatabase.Database database = PostgresTestDatabase.create();
             DriverManagerDataSource dataSource =
                     new DriverManagerDataSource(database.url(), database.username(), database.password());
-            Flyway.configure().dataSource(dataSource).load().migrate();
+            Flyway.configure()
+                    .dataSource(dataSource)
+                    .table("FLYWAY_SCHEMA_HISTORY")
+                    .load()
+                    .migrate();
             return dataSource;
         }
 

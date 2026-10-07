@@ -54,6 +54,7 @@ class JdbcPresetRepositoryAdapterTest {
             // Only this domain's migration: V1 belongs to another module.
             Flyway.configure()
                     .dataSource(dataSource)
+                    .table("FLYWAY_SCHEMA_HISTORY")
                     .baselineVersion("1")
                     .baselineOnMigrate(true)
                     .load()

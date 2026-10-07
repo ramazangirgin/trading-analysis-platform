@@ -23,10 +23,11 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
     private static final int LIST_LIMIT = 500;
 
     private static final String INSERT = """
-            INSERT INTO analyses (id, ticker, trade_date, asset_type, analysts, llm_provider, deep_think_llm,
-                quick_think_llm, max_debate_rounds, max_risk_discuss_rounds, output_language, checkpoint_enabled,
-                status, source, rating, decision, llm_calls, tool_calls, tokens_in, tokens_out, cost_usd,
-                elapsed_ms, created_at, started_at, ended_at, error_code, error_message, external_ref, runner_ref)
+            INSERT INTO "ANALYSES" ("ID", "TICKER", "TRADE_DATE", "ASSET_TYPE", "ANALYSTS", "LLM_PROVIDER",
+                "DEEP_THINK_LLM", "QUICK_THINK_LLM", "MAX_DEBATE_ROUNDS", "MAX_RISK_DISCUSS_ROUNDS",
+                "OUTPUT_LANGUAGE", "CHECKPOINT_ENABLED", "STATUS", "SOURCE", "RATING", "DECISION", "LLM_CALLS",
+                "TOOL_CALLS", "TOKENS_IN", "TOKENS_OUT", "COST_USD", "ELAPSED_MS", "CREATED_AT", "STARTED_AT",
+                "ENDED_AT", "ERROR_CODE", "ERROR_MESSAGE", "EXTERNAL_REF", "RUNNER_REF")
             VALUES (:id, :ticker, :tradeDate, :assetType, :analysts, :llmProvider, :deepThinkLlm,
                 :quickThinkLlm, :maxDebateRounds, :maxRiskDiscussRounds, :outputLanguage, :checkpointEnabled,
                 :status, :source, :rating, :decision, :llmCalls, :toolCalls, :tokensIn, :tokensOut, :costUsd,
@@ -35,25 +36,27 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
 
     // The spec and creation time never change after insert.
     private static final String UPDATE = """
-            UPDATE analyses SET status = :status, rating = :rating, decision = :decision,
-                llm_calls = :llmCalls, tool_calls = :toolCalls, tokens_in = :tokensIn, tokens_out = :tokensOut,
-                cost_usd = :costUsd, elapsed_ms = :elapsedMs, started_at = :startedAt, ended_at = :endedAt,
-                error_code = :errorCode, error_message = :errorMessage, runner_ref = :runnerRef
-            WHERE id = :id
+            UPDATE "ANALYSES" SET "STATUS" = :status, "RATING" = :rating, "DECISION" = :decision,
+                "LLM_CALLS" = :llmCalls, "TOOL_CALLS" = :toolCalls, "TOKENS_IN" = :tokensIn,
+                "TOKENS_OUT" = :tokensOut, "COST_USD" = :costUsd, "ELAPSED_MS" = :elapsedMs,
+                "STARTED_AT" = :startedAt, "ENDED_AT" = :endedAt, "ERROR_CODE" = :errorCode,
+                "ERROR_MESSAGE" = :errorMessage, "RUNNER_REF" = :runnerRef
+            WHERE "ID" = :id
             """;
 
     // An imported record follows its files, spec and creation time included.
     private static final String REPLACE_IMPORTED = """
-            UPDATE analyses SET ticker = :ticker, trade_date = :tradeDate, asset_type = :assetType,
-                analysts = :analysts, llm_provider = :llmProvider, deep_think_llm = :deepThinkLlm,
-                quick_think_llm = :quickThinkLlm, max_debate_rounds = :maxDebateRounds,
-                max_risk_discuss_rounds = :maxRiskDiscussRounds, output_language = :outputLanguage,
-                checkpoint_enabled = :checkpointEnabled, status = :status, rating = :rating, decision = :decision,
-                llm_calls = :llmCalls, tool_calls = :toolCalls, tokens_in = :tokensIn, tokens_out = :tokensOut,
-                cost_usd = :costUsd, elapsed_ms = :elapsedMs, created_at = :createdAt, started_at = :startedAt,
-                ended_at = :endedAt, error_code = :errorCode, error_message = :errorMessage,
-                external_ref = :externalRef
-            WHERE id = :id AND source = 'EXTERNAL'
+            UPDATE "ANALYSES" SET "TICKER" = :ticker, "TRADE_DATE" = :tradeDate, "ASSET_TYPE" = :assetType,
+                "ANALYSTS" = :analysts, "LLM_PROVIDER" = :llmProvider, "DEEP_THINK_LLM" = :deepThinkLlm,
+                "QUICK_THINK_LLM" = :quickThinkLlm, "MAX_DEBATE_ROUNDS" = :maxDebateRounds,
+                "MAX_RISK_DISCUSS_ROUNDS" = :maxRiskDiscussRounds, "OUTPUT_LANGUAGE" = :outputLanguage,
+                "CHECKPOINT_ENABLED" = :checkpointEnabled, "STATUS" = :status, "RATING" = :rating,
+                "DECISION" = :decision, "LLM_CALLS" = :llmCalls, "TOOL_CALLS" = :toolCalls,
+                "TOKENS_IN" = :tokensIn, "TOKENS_OUT" = :tokensOut, "COST_USD" = :costUsd,
+                "ELAPSED_MS" = :elapsedMs, "CREATED_AT" = :createdAt, "STARTED_AT" = :startedAt,
+                "ENDED_AT" = :endedAt, "ERROR_CODE" = :errorCode, "ERROR_MESSAGE" = :errorMessage,
+                "EXTERNAL_REF" = :externalRef
+            WHERE "ID" = :id AND "SOURCE" = 'EXTERNAL'
             """;
 
     private final JdbcClient jdbc;
@@ -91,7 +94,7 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
 
     @Override
     public Optional<Analysis> findByExternalRef(String externalRef) {
-        return jdbc.sql("SELECT * FROM analyses WHERE external_ref = :externalRef")
+        return jdbc.sql("SELECT * FROM \"ANALYSES\" WHERE \"EXTERNAL_REF\" = :externalRef")
                 .param("externalRef", externalRef)
                 .query(AnalysisRow.class)
                 .optional()
@@ -100,7 +103,7 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
 
     @Override
     public Optional<Analysis> findById(AnalysisId id) {
-        return jdbc.sql("SELECT * FROM analyses WHERE id = :id")
+        return jdbc.sql("SELECT * FROM \"ANALYSES\" WHERE \"ID\" = :id")
                 .param("id", id.value())
                 .query(AnalysisRow.class)
                 .optional()
@@ -112,16 +115,16 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         List<String> conditions = new ArrayList<>();
         Map<String, Object> params = new LinkedHashMap<>();
         if (filter.status() != null) {
-            conditions.add("status = :status");
+            conditions.add("\"STATUS\" = :status");
             params.put("status", filter.status().name());
         }
         if (filter.ticker() != null) {
-            conditions.add("ticker = :ticker");
+            conditions.add("\"TICKER\" = :ticker");
             params.put("ticker", filter.ticker());
         }
         String where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
         return jdbc
-                .sql("SELECT * FROM analyses" + where + " ORDER BY created_at DESC LIMIT " + LIST_LIMIT)
+                .sql("SELECT * FROM \"ANALYSES\"" + where + " ORDER BY \"CREATED_AT\" DESC LIMIT " + LIST_LIMIT)
                 .params(params)
                 .query(AnalysisRow.class)
                 .list()
@@ -136,7 +139,7 @@ class JdbcAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
             return List.of();
         }
         return jdbc
-                .sql("SELECT * FROM analyses WHERE status IN (:statuses)")
+                .sql("SELECT * FROM \"ANALYSES\" WHERE \"STATUS\" IN (:statuses)")
                 .param("statuses", statuses.stream().map(Enum::name).toList())
                 .query(AnalysisRow.class)
                 .list()
