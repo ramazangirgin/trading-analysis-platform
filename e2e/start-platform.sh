@@ -1,8 +1,9 @@
 #!/bin/sh
 # Starts the built jar for the end-to-end tests (playwright.config.ts): a throwaway platform home and
 # TradingAgents data dir, and the real ta-runner replaying a recording instead of calling an LLM
-# (artifact/ta-runner/tests/fixtures/replay-run). Needs the jar (./gradlew :backend:bootJar) and
-# ta-runner's venv (uv sync in artifact/ta-runner).
+# (artifact/ta-runner/tests/fixtures/replay-run), on a throwaway PostgreSQL container
+# (scripts/postgres.sh throwaway) that is removed when the platform stops. Needs the jar
+# (./gradlew :backend:bootJar), ta-runner's venv (uv sync in artifact/ta-runner), and Docker or Podman.
 set -eu
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -21,7 +22,30 @@ export TRADINGAGENTS_RESULTS_DIR="$TRADINGAGENTS_HOME/logs"
 export TRADINGAGENTS_CACHE_DIR="$TRADINGAGENTS_HOME/cache"
 export TA_RUNNER_REPLAY="$root/artifact/ta-runner/tests/fixtures/replay-run"
 
+postgres="$root/scripts/postgres.sh"
+database=$(bash "$postgres" throwaway)
+container=${database%% *}
+export PLATFORM_DB_HOST=127.0.0.1
+export PLATFORM_DB_PORT=${database##* }
+echo "PostgreSQL for the end-to-end tests: container $container on port $PLATFORM_DB_PORT"
+
+# The jar runs in the background so the trap can remove the container however the script ends;
+# the script waits for it, so Playwright still sees one long-running process.
+jar_pid=
+cleanup() {
+  trap - EXIT INT TERM
+  if [ -n "$jar_pid" ]; then
+    kill "$jar_pid" 2>/dev/null || true
+    wait "$jar_pid" 2>/dev/null || true
+  fi
+  bash "$postgres" throwaway-stop "$container"
+}
+trap cleanup EXIT
+trap 'exit 143' INT TERM
+
 # From the repository root: the default runner command is relative to it. No external key files,
 # so a developer's own keys never reach the tests.
 cd "$root"
-exec java -jar "$jar" --server.port="${E2E_PORT:-8090}" --platform.secrets.external-env-files=
+java -jar "$jar" --server.port="${E2E_PORT:-8090}" --platform.secrets.external-env-files= &
+jar_pid=$!
+wait "$jar_pid"
