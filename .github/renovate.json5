@@ -1,5 +1,5 @@
-// Renovate (the hosted GitHub app) keeps every pinned dependency current: grouped update pull
-// requests once a week, plus lock file maintenance. See README, "Continuous integration".
+// Renovate (the hosted GitHub app) keeps every pinned dependency current: one pull request with
+// every update once a week, plus lock file maintenance. See README, "Continuous integration".
 // Renovate reads this file from main; it lists everything it tracks in its dependency dashboard issue.
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
@@ -9,7 +9,7 @@
   // dockerfile, docker-compose, github-actions and mise (mise.toml).
   extends: ["config:recommended"],
 
-  // One batch a week, not a stream of pull requests; the Monday morning's review picks them up.
+  // One batch a week, not a stream of pull requests; the Monday morning's review picks it up.
   schedule: ["before 6am on monday"],
   timezone: "Europe/Berlin",
 
@@ -19,6 +19,10 @@
 
   // The release notes list these under "Build, CI and dependencies" (.github/release.yml).
   labels: ["dependencies"],
+
+  // Every update in one pull request (below), majors included: one review, one CI run, one merge
+  // and no version clashes between update pull requests. A major gets no pull request of its own.
+  separateMajorMinor: false,
 
   // pnpm-lock.yaml and uv.lock, refreshed within their ranges, on the same schedule.
   lockFileMaintenance: {
@@ -84,29 +88,21 @@
     },
   ],
 
-  // Later rules override earlier ones, so the broad groups come first.
+  // Later rules override earlier ones: the one group first, then the limits.
   packageRules: [
     {
-      description: "Gradle build: the other catalog entries and the Gradle wrapper",
-      matchManagers: ["gradle", "gradle-wrapper"],
-      groupName: "Gradle build",
+      description: "All dependencies: one pull request a week",
+      matchPackageNames: ["*"],
+      groupName: "all dependencies",
+      groupSlug: "all",
     },
     {
-      description: "Gradle build: JaCoCo and palantir-java-format (version catalog, read by build-logic)",
-      matchManagers: ["custom.regex"],
-      matchDepNames: ["org.jacoco:org.jacoco.agent", "com.palantir.javaformat:palantir-java-format"],
-      groupName: "Gradle build",
-    },
-    {
-      description: "Spring Boot (BOM and plugin) and springdoc, which is built for it",
-      matchManagers: ["gradle"],
-      matchPackageNames: ["org.springframework.boot", "org.springframework.boot:**", "org.springdoc:**"],
-      groupName: "Spring Boot",
-    },
-    {
-      description: "Frontend tooling: the packages of artifact/frontend/ and e2e/",
-      matchManagers: ["npm"],
-      groupName: "Frontend tooling",
+      // A new TradingAgents needs code changes, so the pull request fails CI until they are made.
+      description: "TradingAgents",
+      matchDepNames: ["TauricResearch/TradingAgents"],
+      prBodyNotes: [
+        "**TradingAgents is in this update:** run `uv lock` in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py` and the contract tests to the new release. CI fails until then.",
+      ],
     },
     {
       // The package.json engines field is a lower bound ("node >=24"), not a pin.
@@ -116,12 +112,6 @@
       enabled: false,
     },
     {
-      description: "Frontend tooling: Node.js and pnpm of the build (version catalog)",
-      matchManagers: ["custom.regex"],
-      matchDepNames: ["node", "pnpm"],
-      groupName: "Frontend tooling",
-    },
-    {
       // Odd majors are short-lived releases without long-term support.
       description: "Node.js: even (LTS) majors only",
       matchManagers: ["custom.regex"],
@@ -129,30 +119,8 @@
       allowedVersions: "/^\\d*[02468]\\./",
     },
     {
-      description: "Python dependencies of ta-runner (TradingAgents has its own rule)",
-      matchManagers: ["pep621"],
-      matchPackageNames: ["!tradingagents"],
-      groupName: "Python dependencies",
-    },
-    {
-      // Alone and never grouped: a new TradingAgents needs code changes, so it must not hold up
-      // (or be held up by) other updates.
-      description: "TradingAgents",
-      matchDepNames: ["TauricResearch/TradingAgents"],
-      groupName: null,
-      prBodyNotes: [
-        "**Before merging:** run `uv lock` in `artifact/ta-runner/` and commit `uv.lock`, and adapt `ta_runner/engine/compat.py` and the contract tests to the new release. CI fails until then.",
-      ],
-    },
-    {
-      description: "Docker base images (PostgreSQL and uv have their own rules)",
-      matchManagers: ["dockerfile", "docker-compose"],
-      matchPackageNames: ["!postgres", "!ghcr.io/astral-sh/uv"],
-      groupName: "Docker base images",
-    },
-    {
       // Java 25 is the LTS the build targets; Python 3.12 is ta-runner's requires-python.
-      description: "Base images stay on Java 25 and Python 3.12",
+      description: "Base images stay on Java 25",
       matchManagers: ["dockerfile"],
       matchPackageNames: ["eclipse-temurin"],
       matchUpdateTypes: ["major"],
@@ -167,35 +135,12 @@
     },
     {
       // A major PostgreSQL version needs a data migration. When #10 adds Testcontainers, its
-      // postgres:18.x reference joins this group.
-      description: "PostgreSQL: its own group, no major updates",
+      // postgres:18.x reference follows this rule too.
+      description: "PostgreSQL: no major updates",
       matchManagers: ["docker-compose"],
       matchPackageNames: ["postgres"],
       matchUpdateTypes: ["major"],
       enabled: false,
-    },
-    {
-      description: "PostgreSQL",
-      matchManagers: ["docker-compose"],
-      matchPackageNames: ["postgres"],
-      groupName: "PostgreSQL",
-    },
-    {
-      description: "GitHub Actions",
-      matchManagers: ["github-actions"],
-      groupName: "GitHub Actions",
-    },
-    {
-      // uv is in mise.toml (local and CI) and in the runner image: one pull request for both.
-      description: "Tools: mise.toml and the uv image",
-      matchManagers: ["mise"],
-      groupName: "Tools",
-    },
-    {
-      description: "Tools: the uv image",
-      matchManagers: ["dockerfile"],
-      matchPackageNames: ["ghcr.io/astral-sh/uv"],
-      groupName: "Tools",
     },
     {
       // Same reason as the eclipse-temurin image: the build targets Java 25.
