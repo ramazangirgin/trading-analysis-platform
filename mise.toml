@@ -42,7 +42,7 @@ run = "bash scripts/postgres.sh reset"
 [tasks.dev]
 description = "Backend on :8080 and Vite (hot reload) on :5173, together; open http://localhost:5173. Starts the local PostgreSQL (mise run db)"
 depends = ["db"]
-run ="./gradlew --parallel --console=plain :backend:bootRun :frontend:pnpmDev"
+run = "./gradlew --parallel --console=plain :backend:bootRun :frontend:pnpmDev"
 
 [tasks.build]
 description = "Test everything and build the single jar (backend + UI); the backend tests need Docker or Podman"
