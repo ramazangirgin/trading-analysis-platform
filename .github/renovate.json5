@@ -20,6 +20,12 @@
   // The release notes list these under "Build, CI and dependencies" (.github/release.yml).
   labels: ["dependencies"],
 
+  // Only releases at least 14 days old: a broken or compromised release is usually found and
+  // pulled within days. Covers pnpm 12's own one-day minimumReleaseAge, which CI enforces too.
+  // Younger releases wait (the dashboard shows them as pending) and are not put on the branch.
+  minimumReleaseAge: "14 days",
+  internalChecksFilter: "strict",
+
   // Every update in one pull request (below), majors included: one review, one CI run, one merge
   // and no version clashes between update pull requests. A major gets no pull request of its own.
   separateMajorMinor: false,
@@ -95,13 +101,6 @@
       matchPackageNames: ["*"],
       groupName: "all dependencies",
       groupSlug: "all",
-    },
-    {
-      // pnpm (12) refuses to install a package version younger than a day (its default
-      // minimumReleaseAge), in CI too: Renovate waits as long, or the update fails CI.
-      description: "npm packages: at least a day old, as pnpm requires",
-      matchDatasources: ["npm"],
-      minimumReleaseAge: "1 day",
     },
     {
       // A new TradingAgents needs code changes, so the pull request fails CI until they are made.
