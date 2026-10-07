@@ -322,7 +322,8 @@ keeps every pinned dependency current: the Gradle version catalog and wrapper, t
 `artifact/frontend/` and `e2e/`, Node.js and pnpm of the build, ta-runner's uv dependencies, the
 TradingAgents release, `mise.toml`'s tools, the Dockerfiles, the Compose file and the workflows'
 actions. On Monday mornings (Europe/Berlin) it opens **one pull request with every update**, majors
-included ("Update all dependencies", branch `renovate/all`), plus one for lock file maintenance. Java
+included ("Update all dependencies", branch `renovate/all`), plus one for lock file maintenance. It
+only takes releases at least **14 days old**; younger ones wait as "pending" on the dashboard. Java
 stays on 25, Python on 3.12, Node.js on LTS majors, and PostgreSQL gets no major updates. Renovate's
 dependency dashboard issue lists everything it tracks. Nothing merges automatically: the update pull
 request runs the full CI and is merged by an admin like any other. Update pull requests skip the
