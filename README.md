@@ -29,6 +29,11 @@ Docker Compose, where each analysis runs in its own container and the data is ke
   Install it with `curl https://mise.run | sh` (or `brew install mise`).
 - An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
   Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
+- Docker or Podman. `mise run run` and `mise run dev` start a local PostgreSQL 18 container
+  (`mise run db`; its data is in the volume `trading-analysis-platform-db`; `mise run db:stop` stops
+  it, `mise run db:reset` deletes its data). To use your own PostgreSQL 18 server instead, set
+  `PLATFORM_DB_HOST`, `PLATFORM_DB_PORT`, `PLATFORM_DB_NAME`, `PLATFORM_DB_USER` and
+  `PLATFORM_DB_PASSWORD`; then no container is started (Docker is still needed for the backend tests).
 - Nothing else: Node.js and pnpm are downloaded by the build, Python 3.12 by uv.
 
 ### 2. Start the platform
@@ -215,12 +220,30 @@ platform picks it up again.
   [PLAN.md](PLAN.md) §7); the port is published on 127.0.0.1 only.
 - The first start takes about a minute (longer under Podman's VM on macOS).
 
+### Upgrading to 1.0.0
+
+PostgreSQL is now the platform's only database, and its schema was recreated, so **an existing
+database is reset, not migrated**: the platform does not start on the old one (Flyway rejects its
+history). Analyses that TradingAgents' CLI left in the data folder are imported again on startup;
+runs the platform started, presets and users are lost. To reset:
+
+```sh
+docker compose -f deploy/docker-compose.yml down
+# optional, to keep a copy: start only postgres, run the pg_dump above, then down again
+rm -rf "$PLATFORM_DATA/postgres"        # the folder PLATFORM_DATA names in deploy/.env
+docker compose -f deploy/docker-compose.yml up -d
+```
+
+For runs on your machine (`mise run run`) nothing is needed on a first start; a
+`~/.tradingagents-platform/platform.db` file from an earlier version is no longer used and can be
+deleted. `mise run db:reset` empties the local database later, whenever you want a fresh one.
+
 ## Where things live
 
 
 | Path | What |
 |---|---|
-| `~/.tradingagents-platform/platform.db` | Analyses, presets and users (SQLite) |
+| PostgreSQL | Analyses, presets and users: in the local container's volume `trading-analysis-platform-db`, or on your own server ([Prerequisites](#1-prerequisites)) |
 | `~/.tradingagents-platform/runs/<id>/` | `spec.json`, `events.jsonl` (replayed to the UI), `run.log` (runner stderr) |
 | `~/.tradingagents-platform/prices.json` | Optional: your own LLM prices, over the ones ta-runner ships (see below) |
 | `~/.tradingagents/logs/` | TradingAgents' own reports, shared with its CLI; runs found here are imported (read-only) |
@@ -267,12 +290,15 @@ to just use the app, `mise run run` is enough.
 
 ```sh
 mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks
-mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173
+mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173 (starts the local PostgreSQL)
 mise run build         # all tests (ArchUnit included), lint (Checkstyle included), and the single jar
-mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed
+mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed (starts the local PostgreSQL)
+mise run db            # start the local PostgreSQL container (run and dev do it for you)
+mise run db:stop       # stop it; the data stays in the volume
+mise run db:reset      # remove the container and its volume: the next start is an empty database
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
-mise run e2e           # end-to-end tests: the jar in Google Chrome, ta-runner replaying a recording
+mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome, ta-runner replaying a recording
 mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
 mise run check         # quick check before pushing: package structure, lint, formatting, type-check (no tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
@@ -284,7 +310,8 @@ mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
 
-`mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
+`run`, `dev`, `build`, `test`, `e2e` and `screenshots` need Docker or Podman (a PostgreSQL container;
+the backend tests start theirs through Testcontainers). `mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
 needs overriding; with [mise activated](https://mise.jdx.dev/getting-started.html#activate-mise) in
 your shell, plain `./gradlew` and `uv` in this directory use the same versions.
 
@@ -295,10 +322,10 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 
 | Job | What |
 |---|---|
-| Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, the identity repository against PostgreSQL in a container (Testcontainers), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), frontend lint and tests, the jar |
+| Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), frontend lint and tests, the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
-| End-to-end tests | The build job's jar in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
+| End-to-end tests | The build job's jar, on a throwaway PostgreSQL container, in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so

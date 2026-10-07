@@ -95,11 +95,12 @@
       extractVersionTemplate: "^v(?<version>.+)$",
     },
     {
-      // The Testcontainers image in the Java tests is the Compose file's PostgreSQL: it is
+      // The Testcontainers image in the Java tests (PostgresTestDatabase) and the local and
+      // end-to-end database (scripts/postgres.sh) are the Compose file's PostgreSQL: they are
       // updated in the same pull request.
       customType: "regex",
-      managerFilePatterns: ["/PostgresqlIdentityRepositoryTest\\.java$/"],
-      matchStrings: ['PostgreSQLContainer\\("postgres:(?<currentValue>[^"]+)"\\)'],
+      managerFilePatterns: ["/PostgresTestDatabase\\.java$/", "/^scripts/postgres\\.sh$/"],
+      matchStrings: ['postgres:(?<currentValue>[0-9][^"\\s]*)'],
       depNameTemplate: "postgres",
       datasourceTemplate: "docker",
     },
