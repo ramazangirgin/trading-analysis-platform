@@ -172,7 +172,7 @@ user_roles       user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   `@EnableTransactionManagement`) and run Flyway with `baselineVersion("4")` (only this domain's
   migration is on the test classpath, as in `JdbcPresetRepositoryAdapterTest`):
   - SQLite: a temp file with `foreign_keys=true`, like the application's URL;
-  - PostgreSQL: a Testcontainers `postgres:18` container (the Compose version),
+  - PostgreSQL: a Testcontainers `postgres:18.6` container (the Compose version, kept in step by Renovate),
     `@Testcontainers(disabledWithoutDocker = true)` so a machine without Docker skips it, as the
     Docker runner tests do; CI's build job has Docker, so it runs there.
 

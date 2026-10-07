@@ -18,7 +18,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class PostgresqlIdentityRepositoryTest extends IdentityRepositoryContractTest {
 
     @Container
-    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
+    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6");
 
     @Override
     Class<? extends DataAccessException> duplicateUsernameException() {
