@@ -7,7 +7,7 @@
 ## Goal
 
 The backend gets a fifth domain, `identity`, that stores users, roles and the permissions of each
-role, in the file database and in PostgreSQL. It is the storage the rest of #78 builds on (login in #80, the
+role, in SQLite and in PostgreSQL. It is the storage the rest of #78 builds on (login in #80, the
 first admin in #82, built-in roles in #87, user management in #88). Nothing uses it yet: no
 endpoint, UI or behaviour changes, and existing data is untouched. The repository is tested against
 both databases.
@@ -33,7 +33,7 @@ both databases.
   `spring-security-crypto` (new catalog entry `spring-security-crypto`, version from the Spring Boot
   BOM). Only the crypto module, **not** `spring-boot-starter-security`: the starter would switch on
   Spring Security's auto-configuration and lock every endpoint, which is #80's job. Test
-  dependencies: `flyway-core`, the file database's JDBC driver, and for PostgreSQL `postgresql`,
+  dependencies: `flyway-core`, `sqlite-jdbc`, and for PostgreSQL `postgresql`,
   `flyway-database-postgresql` and Testcontainers' PostgreSQL module plus its JUnit Jupiter
   integration (new catalog entries, versions from the Spring Boot BOM; Testcontainers 2.x
   coordinates, check them against the BOM).
@@ -59,15 +59,15 @@ user_roles       user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
                  INDEX user_roles_role_id ON user_roles (role_id)
 ```
 
-- **Case-insensitive username**: a unique expression index on `lower(username)`, which both
-  databases support, and lookups by `lower(username) = lower(:username)`. The username
-  keeps the case it was entered in. The file database's `lower()` folds ASCII only, so the core restricts
+- **Case-insensitive username**: a unique expression index on `lower(username)`, which SQLite (3.9+)
+  and PostgreSQL both support, and lookups by `lower(username) = lower(:username)`. The username
+  keeps the case it was entered in. SQLite's `lower()` folds ASCII only, so the core restricts
   usernames to ASCII (see `Username`), and both databases then agree.
 - **No PostgreSQL-specific migration**: every column is `TEXT`, `BOOLEAN` or a small `INTEGER`
   (`failed_login_count` fits 4 bytes), which mean the same in both databases. The V4_1 reason (4-byte
   `REAL`/`INTEGER` for large values) does not apply. The migration's header comment says so.
 - `user_roles.role_id` has no cascade: deleting a role still assigned to users fails, which is the
-  rule #90 needs. The file database enforces foreign keys because the datasource URL sets `foreign_keys=true`.
+  rule #90 needs. SQLite enforces foreign keys because the datasource URL sets `foreign_keys=true`.
 - No rows are seeded: the built-in roles come with #87, the first admin with #82.
 
 ### Core (`….domain.identity.core`)
@@ -97,11 +97,11 @@ user_roles       user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     `List<Role> findAll()`, `void save(Role)` (insert or update the role and replace its
     permissions).
   - Saving a user whose username is taken by another user (in any case) fails; the adapter throws
-    Spring's `DuplicateKeyException` as it comes on PostgreSQL. On the file database Spring has no
-    error codes, so it is an `UncategorizedSQLException`, the same type as a foreign-key failure;
-    the contract tests pin both. Turning it into a domain error is left to #88, the first caller,
-    which cannot rely on the exception type on the file database (e.g. check `findByUsername`
-    before saving, or register a `SQLExceptionTranslator` for its unique-constraint error).
+    Spring's `DuplicateKeyException` as it comes on PostgreSQL. On SQLite Spring has no error codes,
+    so it is an `UncategorizedSQLException`, the same type as a foreign-key failure; the contract
+    tests pin both. Turning it into a domain error is left to #88, the first caller, which cannot
+    rely on the exception type on SQLite (e.g. check `findByUsername` before saving, or register a
+    `SQLExceptionTranslator` for SQLITE_CONSTRAINT_UNIQUE, extended code 2067).
 - `outbound/password/PasswordHasherPort`: `PasswordHash hash(CharSequence rawPassword)`,
   `boolean matches(CharSequence rawPassword, PasswordHash hash)`,
   `boolean needsRehash(PasswordHash hash)` (true when the stored algorithm is not the current
@@ -161,17 +161,17 @@ user_roles       user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   `…/adapter/src/main/resources/db/migration/V5__identity_create_users_and_roles.sql`,
   `…/adapter/persistence/{JdbcUserRepositoryAdapter,JdbcRoleRepositoryAdapter}.java`,
   `…/adapter/persistence/row/*.java`, `…/adapter/persistence/mapper/*.java`,
-  `…/adapter/src/test/java/…/adapter/persistence/{IdentityRepositoryContractTest, one test class per database}.java`
+  `…/adapter/src/test/java/…/adapter/persistence/{IdentityRepositoryContractTest,SqliteIdentityRepositoryTest,PostgresqlIdentityRepositoryTest}.java`
 - **Steps**:
   - [ ] Adapter module build file (with test dependencies) and `package-info`
   - [ ] Migration
   - [ ] Rows, mappers, both JDBC adapters
-  - [ ] Tests against both databases
+  - [ ] Tests against SQLite and PostgreSQL
 - **Tests**: one abstract `IdentityRepositoryContractTest` with the cases, run by two subclasses
   that each supply a `DataSource`, a `JdbcClient` and a `DataSourceTransactionManager` (with
   `@EnableTransactionManagement`) and run Flyway with `baselineVersion("4")` (only this domain's
   migration is on the test classpath, as in `JdbcPresetRepositoryAdapterTest`):
-  - the file database: a temp file with `foreign_keys=true`, like the application's URL;
+  - SQLite: a temp file with `foreign_keys=true`, like the application's URL;
   - PostgreSQL: a Testcontainers `postgres:18.6` container (the Compose version, kept in step by Renovate),
     `@Testcontainers(disabledWithoutDocker = true)` so a machine without Docker skips it, as the
     Docker runner tests do; CI's build job has Docker, so it runs there.
@@ -208,9 +208,9 @@ user_roles       user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
 ## Tests
 
 - Unit tests of the core model (WP1) and the hashing adapter (WP3).
-- Repository tests against both databases (WP2) prove "the repository round-trips users,
+- Repository tests against SQLite and PostgreSQL (WP2) prove "the repository round-trips users,
   roles and assignments".
-- "The app starts with the new tables": on the file database, `TradingPlatformApplicationTests` and
+- "The app starts with the new tables": on SQLite, `TradingPlatformApplicationTests` and
   `AnalysesApiIntegrationTest` start the application with every migration including V5; on
   PostgreSQL, the PostgreSQL test runs the same migration, and CI's Compose smoke test
   (`deploy/smoke-test.sh`) starts the real image on PostgreSQL 18. "Existing data is untouched":
