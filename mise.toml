@@ -23,12 +23,28 @@ run = [
 description = "Install the Git hooks (lefthook.yml): lint and import checks on staged files before a commit"
 run = "lefthook install"
 
+# The platform's PostgreSQL 18 (scripts/postgres.sh): a local container, in Docker or Podman, that
+# run and dev start on their own. PLATFORM_DB_HOST (and _PORT, _NAME, _USER, _PASSWORD) point the
+# platform at your own server instead, and then no container is started.
+[tasks.db]
+description = "Start the local PostgreSQL for run and dev (Docker or Podman), unless PLATFORM_DB_HOST points elsewhere"
+run = "bash scripts/postgres.sh start"
+
+[tasks."db:stop"]
+description = "Stop the local PostgreSQL container; its data stays in the volume trading-analysis-platform-db"
+run = "bash scripts/postgres.sh stop"
+
+[tasks."db:reset"]
+description = "Remove the local PostgreSQL container and its volume: the next start is an empty database"
+run = "bash scripts/postgres.sh reset"
+
 [tasks.dev]
-description = "Backend on :8080 and Vite (hot reload) on :5173, together; open http://localhost:5173"
-run = "./gradlew --parallel --console=plain :backend:bootRun :frontend:pnpmDev"
+description = "Backend on :8080 and Vite (hot reload) on :5173, together; open http://localhost:5173. Starts the local PostgreSQL (mise run db)"
+depends = ["db"]
+run ="./gradlew --parallel --console=plain :backend:bootRun :frontend:pnpmDev"
 
 [tasks.build]
-description = "Test everything and build the single jar (backend + UI)"
+description = "Test everything and build the single jar (backend + UI); the backend tests need Docker or Podman"
 run = "./gradlew build"
 
 [tasks.runner-test]
@@ -37,7 +53,7 @@ dir = "artifact/ta-runner"
 run = ["uv run ruff check .", "uv run lint-imports", "uv run pytest -q"]
 
 [tasks.e2e]
-description = "End-to-end tests (e2e/, Playwright): the built jar with ta-runner replaying a recording, in a real browser"
+description = "End-to-end tests (e2e/, Playwright): the built jar on a throwaway PostgreSQL container (Docker or Podman) with ta-runner replaying a recording, in a real browser"
 # Runs in the installed Google Chrome; E2E_BROWSER_CHANNEL picks another browser channel.
 run = [
   "./gradlew --console=plain :backend:bootJar",
@@ -47,8 +63,9 @@ run = [
 ]
 
 [tasks.screenshots]
-description = "Take the README's screenshots (e2e/screenshots/*.shot.ts) into docs/screenshots/: mise run screenshots [name filter]"
-# Like the end-to-end tests: the built jar with ta-runner replaying a recording, in Google Chrome.
+description = "Take the README's screenshots (e2e/screenshots/*.shot.ts) into docs/screenshots/: mise run screenshots [name filter]; needs Docker or Podman"
+# Like the end-to-end tests: the built jar on a throwaway PostgreSQL container with ta-runner
+# replaying a recording, in Google Chrome.
 run = [
   "./gradlew --console=plain :backend:bootJar",
   "cd artifact/ta-runner && uv sync",
@@ -84,11 +101,12 @@ run = [
 ]
 
 [tasks.test]
-description = "All tests: backend, frontend, ta-runner"
+description = "All tests: backend (needs Docker or Podman), frontend, ta-runner"
 depends = ["build", "runner-test"]
 
 [tasks.run]
-description = "Build the single jar (UI included) if anything changed and run it on http://127.0.0.1:8080"
+description = "Build the single jar (UI included) if anything changed and run it on http://127.0.0.1:8080, on the local PostgreSQL (mise run db)"
+depends = ["db"]
 # bootJar is up to date in seconds when nothing changed, and rebuilds after a git pull.
 run = [
   "./gradlew --console=plain :backend:bootJar",
