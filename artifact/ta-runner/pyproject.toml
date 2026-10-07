@@ -24,6 +24,9 @@ dev = [
 ]
 
 [tool.uv]
+# Only releases at least 14 days old, as Renovate's minimumReleaseAge: Renovate cannot check the
+# versions uv picks when it regenerates uv.lock (lock file maintenance).
+exclude-newer = "14 days"
 # Intel Macs: several packages stopped publishing x86_64 macOS wheels, and building them
 # needs a Rust toolchain. Pin to the last releases with universal2 wheels, on Intel Macs only.
 constraint-dependencies = [

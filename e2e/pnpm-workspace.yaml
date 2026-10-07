@@ -5,15 +5,4 @@ minimumReleaseAge: 20160
 # 2026-10-09 22:10 UTC. Remove these afterwards:
 # https://github.com/ramazangirgin/trading-analysis-platform/issues/108
 minimumReleaseAgeExclude:
-  - 'dompurify@3.4.16'
-  - 'eslint-plugin-vue@10.11.1'
-  - 'vite@8.3.1'
-  - 'vitest@5.0.2'
-  - '@vitest/mocker@5.0.2'
-  - '@vitest/spy@5.0.2'
   - '@types/node@24.19.0'
-
-# pnpm runs no dependency build scripts unless listed here.
-allowBuilds:
-  # Its install script only fetches a native binding when the platform package is missing.
-  unrs-resolver: false
