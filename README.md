@@ -224,6 +224,14 @@ platform picks it up again.
   [GitHub issues](https://github.com/ramazangirgin/trading-analysis-platform/issues)); the port is published on 127.0.0.1 only.
 - The first start takes about a minute (longer under Podman's VM on macOS).
 
+### Upgrading to 2.0.0
+
+The database is migrated in place on the first start: enum columns become PostgreSQL enum types, an
+analysis's analysts an array, and a role's permissions an array on the role (the `ROLE_PERMISSIONS`
+table goes away). No data is lost, and nothing needs to be done. An older release cannot run on the
+migrated database, so take a copy first if you may want to go back (the `pg_dump` above, with the
+platform stopped).
+
 ### Upgrading to 1.0.0
 
 PostgreSQL is now the platform's only database, and its schema was recreated, so **an existing
@@ -315,7 +323,8 @@ mise run version:bump minor   # raise it (major, minor or patch) in every file; 
 ```
 
 `run`, `dev`, `build`, `test`, `e2e` and `screenshots` need Docker or Podman (a PostgreSQL container;
-the backend tests start theirs through Testcontainers). `mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
+the backend tests start theirs through Testcontainers; on a Podman machine the build points
+Testcontainers' cleanup container at the machine's own socket, so no local setting is needed). `mise tasks` lists them. Tasks run with the pinned Java on `PATH` and `JAVA_HOME` set, so nothing
 needs overriding; with [mise activated](https://mise.jdx.dev/getting-started.html#activate-mise) in
 your shell, plain `./gradlew` and `uv` in this directory use the same versions.
 

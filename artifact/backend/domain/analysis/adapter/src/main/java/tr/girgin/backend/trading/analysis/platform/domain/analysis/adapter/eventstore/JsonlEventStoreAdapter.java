@@ -16,10 +16,10 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.RunnerOutputLineParser;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.mapper.RunnerOutputLineToRunEventMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventstore.mapper.RunEventTypeToStringMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.eventstore.EventStorePort;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.EnumToLowerCaseNameMapper;
 
 /**
  * Reads the {@code events.jsonl} ta-runner writes into each run directory, and appends the few
@@ -31,14 +31,14 @@ class JsonlEventStoreAdapter implements EventStorePort {
     private static final int PROTOCOL_VERSION = 1;
 
     private final RunnerOutputLineToRunEventMapper eventMapper;
-    private final RunEventTypeToStringMapper typeMapper;
+    private final EnumToLowerCaseNameMapper typeMapper;
     private final RunnerOutputLineParser parser = new RunnerOutputLineParser();
     private final JsonMapper json = JsonMapper.builder().build();
     private final Path runsDir;
 
     JsonlEventStoreAdapter(
             RunnerOutputLineToRunEventMapper eventMapper,
-            RunEventTypeToStringMapper typeMapper,
+            EnumToLowerCaseNameMapper typeMapper,
             @Value("${platform.home}") Path platformHome) {
         this.eventMapper = eventMapper;
         this.typeMapper = typeMapper;

@@ -39,6 +39,11 @@ the same findings as the build.
 - Not allowed: `sun.*`, `com.sun.*`, `jdk.internal.*`, JUnit 4 (`org.junit.Assert`, `org.junit.Test`,
   `junit.framework`, …), commons-lang 2 (`org.apache.commons.lang`), and `javax.annotation.Nullable` /
   `Nonnull` (nullness annotations come from JSpecify, #11).
+- Not allowed, in main and test code: `org.springframework.jdbc` (`JdbcClient`, `JdbcTemplate`, …).
+  Persistence goes through Spring Data JPA ([persistence](backend-java-persistence.md)). `spring-jdbc`
+  stays on the classpath, because Spring Data JPA's `spring-orm` is built on it, so the compiler would
+  not stop an import. `PersistenceArchitectureTest` bans it in main code; ArchUnit does not import test code, so
+  this check covers it there.
 
 ### Naming
 - Defaults (camelCase, PascalCase) for types, methods, fields, parameters, local, lambda, catch and

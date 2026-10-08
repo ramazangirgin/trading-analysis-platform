@@ -33,10 +33,16 @@ spring-boot-starter-validation = { module = "org.springframework.boot:spring-boo
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
-spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+spring-boot-test = { module = "org.springframework.boot:spring-boot-test" }
 spring-context = { module = "org.springframework:spring-context" }
-spring-jdbc = { module = "org.springframework:spring-jdbc" }
+# The Spring Data repositories and Specifications of the persistence adapters; spring-jdbc stays on
+# the classpath through spring-orm but no code uses it (docs/coding-convention/backend-java-persistence.md).
+spring-data-jpa = { module = "org.springframework.data:spring-data-jpa" }
+jakarta-persistence-api = { module = "jakarta.persistence:jakarta.persistence-api" }
+# For @JdbcTypeCode (PostgreSQL enum and array columns).
+hibernate-core = { module = "org.hibernate.orm:hibernate-core" }
 jackson-databind = { module = "tools.jackson.core:jackson-databind" }
 flyway-core = { module = "org.flywaydb:flyway-core" }
 postgresql = { module = "org.postgresql:postgresql" }

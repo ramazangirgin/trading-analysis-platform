@@ -1,0 +1,182 @@
+# Backend: Java persistence
+
+How the backend stores data: Spring Data JPA with Hibernate on PostgreSQL, the schema owned by
+Flyway. Where each persistence class lives, how domain types map to columns, and which check
+enforces each rule. Table, column and type names follow
+[backend-database-naming.md](backend-database-naming.md). Packages follow
+[backend-java-package-structure.md](backend-java-package-structure.md).
+
+## Rules
+
+- **Only Spring Data JPA / Hibernate.** Production and test code do not use `JdbcClient`,
+  `JdbcTemplate`, `NamedParameterJdbcTemplate`, a raw `DataSource` or `Connection`, or a native query
+  (`@Query(nativeQuery = true)`, `@NativeQuery`, `EntityManager.createNativeQuery`, Hibernate's
+  `createNativeMutationQuery`, stored procedure queries). Queries are derived methods, JPQL `@Query`,
+  or `Specification`s. The reasons:
+  - one mapping per table instead of SQL strings that drift from the migrations;
+  - every query is typed against the entities, so a rename fails at startup instead of at run time;
+  - Hibernate checks every entity against the schema at startup (`ddl-auto=validate`).
+- **No `spring-jdbc` declared.** `spring-jdbc` is not in the version catalog and no module declares
+  it. It still arrives at runtime: Spring Data JPA needs `spring-orm`, whose `JpaTransactionManager`
+  and exception translation are built on it. So the compiler cannot stop an import; ArchUnit
+  (main code) and Checkstyle (test code) do.
+- **Flyway owns the schema.** `spring.jpa.hibernate.ddl-auto=validate`: Hibernate never creates or
+  alters a table, and an entity that does not match its migration fails at startup. Every schema
+  change is a new migration ([backend-database-naming.md](backend-database-naming.md#migrations)).
+- **The domain core knows nothing of persistence.** A core never imports `jakarta.persistence`,
+  `org.hibernate` or `org.springframework.data`. Entities, embeddables, converters and repositories
+  live in the adapter, and MapStruct maps entity ↔ domain model at the adapter boundary. The
+  `*RepositoryPort` interfaces stay persistence-agnostic.
+
+## Where each class lives
+
+```
+domain/<d>/adapter/persistence/
+  Jpa<X>RepositoryAdapter     implements the port (@Component, package-private)
+  <X>JpaRepository            Spring Data repository (package-private, used by its adapter only)
+  entity/                     @Entity, @Embeddable, AttributeConverter: public, the root uses them
+  mapper/                     MapStruct mappers entity <-> domain
+```
+
+| Kind | Suffix | Example | Place |
+|---|---|---|---|
+| `@Entity` | `Entity` | `AnalysisEntity`, `UserEntity` | `adapter.<port>.entity` |
+| `@Embeddable` | `Embeddable` | `AnalysisSpecEmbeddable`, `UserIdEmbeddable` | `adapter.<port>.entity` |
+| `AttributeConverter` | `AttributeConverter` | `UsernameAttributeConverter` | `adapter.<port>.entity` |
+| Spring Data repository | `JpaRepository` | `AnalysisJpaRepository` | `adapter.persistence`, next to its adapter |
+| Port implementation | `Jpa<X>RepositoryAdapter` | `JpaAnalysisRepositoryAdapter` | `adapter.persistence` |
+
+The suffix says what a class is, so `Analysis` (domain) and `AnalysisEntity` (table) are never
+confused, in code or in a stack trace. The suffix is on the class only: the table keeps the name its
+migration gives it (`@Table(name = "ANALYSES")`), and JPQL uses the class name
+(`select a from AnalysisEntity a`).
+
+## Mapping domain types
+
+| Domain type | Mapping | Example |
+|---|---|---|
+| An ID wrapper (`PresetId`, `AnalysisId`, `UserId`, `RoleId`) | `@EmbeddedId` with an adapter-side `@Embeddable` holding one `value` on column `ID` | `@EmbeddedId PresetIdEmbeddable id` |
+| Any other single-value wrapper (`Username`, `PasswordHash`, a `RoleId` in a collection) | The core type on the entity, with an `AttributeConverter` applied by `@Convert` (never `autoApply`) | `@Convert(converter = UsernameAttributeConverter.class) Username username` |
+| A group of columns that is one domain value | `@Embeddable` | `AnalysisSpecEmbeddable`, `RunStatsEmbeddable` |
+| An enum | A PostgreSQL enum type whose labels are the Java constant names: `@Enumerated(EnumType.STRING)`, `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS_STATUS\""` | `AnalysisStatus status` |
+| A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYST\"[]"` | `List<Analyst> analysts`, `Set<Permission> permissions` |
+| References to another aggregate | An `@ElementCollection` on a join table, so the foreign key stays; never a `@ManyToMany` between aggregates | `Set<RoleId> roleIds` on `USER_ROLES` |
+| A timestamp | `Instant` on a `TIMESTAMPTZ` column | `Instant createdAt` |
+
+Why these choices:
+
+- **IDs are embeddables, not converted.** JPA does not apply an `AttributeConverter` to an `@Id`
+  (Jakarta Persistence 3.2, §3.9). The core records cannot be the embeddables themselves, since the
+  core has no JPA. MapStruct maps `UserId` ↔ `UserIdEmbeddable` by their `value`.
+- **No enum is stored as text.** The database knows the allowed values, and a value Java does not
+  know fails on write instead of on read. The labels are the constant names (`ANALYSIS_READ_ALL`),
+  even where the API uses another form (`Permission#key()`, `analysis:read:all`), so no converter is
+  needed.
+- **Arrays for value sets, join tables for references.** An array is read with its row, with no
+  extra query and no entity graph. But an array element cannot have a foreign key, so a set of IDs
+  of another aggregate (`USER_ROLES`) stays a join table: `USER_ROLES_ROLE_ID_FK` is what keeps a
+  role that is still assigned from being deleted.
+- **Aggregates refer to each other by ID.** Loading a user never loads its roles.
+
+Entities are classes, as JPA needs: a public no-arg constructor, accessors for MapStruct, and no
+business logic beyond copying state between two entities of the same table. Entities do not
+override `equals` / `hashCode`; adapters compare domain records, never entities. The ID embeddables
+do, by `value`, and are `Serializable`, as JPA requires of an `@EmbeddedId`.
+
+## Repositories and adapters
+
+- **Upsert** is `repository.save(entity)`: an entity with an assigned ID is merged (insert or
+  update). A column that must keep its first value is `@Column(updatable = false)` (`USERS.CREATED_AT`).
+- **Insert only**: an entity whose insert must fail on an existing ID implements `Persistable` with
+  a `@Transient` "new" flag, so `save` is a `persist` (`AnalysisEntity`).
+- **Partial updates** load the managed entity in a `@Transactional` adapter method and copy only
+  the fields that may change. Dirty checking writes them (`JpaAnalysisRepositoryAdapter#update`).
+- **A constraint error that the port promises** surfaces in the call: `saveAndFlush` inside
+  `@Transactional`. Spring's exception translation turns a unique violation into
+  `DuplicateKeyException`.
+- **No N+1 queries**: a finder of an entity with an `@ElementCollection` carries
+  `@EntityGraph(attributePaths = "…")`.
+- **Read methods that map entities** are `@Transactional(readOnly = true)`, so a lazy collection
+  never escapes a closed session (`spring.jpa.open-in-view=false`).
+- **Lists with a limit** use `findBy(spec, q -> q.sortBy(…).limit(n).all())`: one query, no
+  `COUNT`. A `Page` would add a count the port never needs.
+- **Index-friendly lookups**: a case-insensitive lookup is JPQL `lower(u.username) = lower(:username)`,
+  matching the `LOWER(...)` unique index. A derived `IgnoreCase` method would use `upper(...)` and
+  miss it.
+
+## Configuration
+
+In `artifact/backend/src/main/resources/application.properties`:
+
+| Property | Value | Why |
+|---|---|---|
+| `spring.jpa.hibernate.ddl-auto` | `validate` | Flyway owns the schema |
+| `spring.jpa.open-in-view` | `false` | No session held open for the web request |
+| `spring.jpa.show-sql` | `false` | No SQL in the log |
+| `spring.jpa.hibernate.naming.physical-strategy` | `org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl` | Spring Boot's default strategy lower-cases every name, quoted ones too |
+| `spring.jpa.properties.hibernate.globally_quoted_identifiers` | `true` | The uppercase names in `@Table` / `@Column` reach PostgreSQL quoted, as written |
+
+The adapter tests load the same JPA settings from `jpa-test.properties` in the test fixtures of
+`:backend:library:persistence`. Keep the two in sync. The application's Spring Boot tests run on the
+real file, so a drift shows up there.
+
+## Shared persistence code
+
+`:backend:library:persistence` holds technical persistence code that more than one adapter needs.
+Like every shared library, it holds no domain type and no business rule
+([package structure](backend-java-package-structure.md#shared-libraries)):
+
+- **Main source set**: empty today. A base type that a second adapter needs (an insert-only
+  `Persistable` base, a generic `AttributeConverter`, a `@NoRepositoryBean` base repository) moves
+  here, never copied. There is no `@MappedSuperclass` for timestamps: `PRESETS`, `ANALYSES` and
+  `USERS` do not share their timestamp columns, and inheritance would only couple them.
+- **Test fixtures** (Gradle's `java-test-fixtures`): the shared test code of the persistence
+  adapters, used with `testImplementation(testFixtures(project(":backend:library:persistence")))`.
+  Gradle keeps test fixtures off every main classpath, and the ArchUnit tests do not import them
+  (`DoNotIncludeTestFixtures`).
+
+## Tests
+
+- Every repository is tested against PostgreSQL (Testcontainers), through its port.
+- **`@JpaAdapterTest`** (test fixtures) wires Hibernate, Spring Data JPA repositories and
+  transactions as in the application, with `jpa-test.properties`. The test's own `Config` provides:
+  - the data source, from `PostgresTestDatabase`: one container per test JVM, a fresh database per
+    context;
+  - the migrations, through `TestMigrations` (only the module's own migrations, plus test-only seed
+    migrations for migration tests);
+  - `@AutoConfigurationPackage`, which keeps the entity and repository scan in the module;
+  - a `@ComponentScan` of its adapter and mappers.
+
+  Each module's test therefore also validates its entities against its migrations.
+- **No test-managed transaction.** No repository test is `@Transactional`, and `@DataJpaTest` is not
+  used. Every port call runs in its own transaction as in production, so a read after a write goes
+  to the database, not to the persistence context. Otherwise "creation time kept" or "duplicate
+  username fails" could pass without the database ever seeing the statement.
+- **No `JdbcClient` in tests either.**
+  - Checks go through the ports and the package-private repositories.
+  - Column types are covered by `ddl-auto=validate`.
+  - Migration tests seed old-form rows with a test-only Flyway migration
+    (`src/test/resources/db/seed/<domain>`, e.g. `V1_1__analysis_seed_old_rows.sql`) between the
+    real versions.
+- On a Podman machine (macOS, Windows), the build points Testcontainers' Ryuk at the socket inside
+  the machine's VM (`build-logic`, `tradinganalysisplatform.java-library`), so the tests run on
+  Docker and Podman alike without local settings.
+
+## Where it is checked
+
+The ArchUnit rules are in
+[`PersistenceArchitectureTest`](../../artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PersistenceArchitectureTest.java),
+except `domain_core_does_not_depend_on_infrastructure`, which is in `ArchitectureTest`.
+
+
+| Rule | Check |
+|---|---|
+| No `org.springframework.jdbc`, `java.sql`, `javax.sql` in production code | `PersistenceArchitectureTest.production_code_does_not_use_plain_sql` |
+| No `org.springframework.jdbc` in test code | Checkstyle `IllegalImport` (`config/checkstyle/checkstyle.xml`) |
+| No native query | `PersistenceArchitectureTest.no_native_queries` |
+| Entities, embeddables, converters in `adapter.<port>.entity`, and nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities` |
+| Spring Data repositories next to their adapter | `spring_data_repositories_live_in_persistence_roots`, `port_package_roots_hold_only_adapters` |
+| Suffixes `Entity`, `Embeddable`, `AttributeConverter`, `JpaRepository` | `persistence_classes_are_named_by_kind` |
+| Enums as PostgreSQL enum types or arrays, never text | `enums_are_not_stored_as_text` |
+| The core has no persistence dependency | `domain_core_does_not_depend_on_infrastructure` |
+| Entities match their migrations | `ddl-auto=validate` in the adapter tests and the Spring Boot tests |

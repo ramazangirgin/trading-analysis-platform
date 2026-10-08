@@ -7,23 +7,26 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import javax.sql.DataSource;
-import org.flywaydb.core.Flyway;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.DurationToMillisMapper;
+import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
+import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
+import tr.girgin.backend.trading.analysis.platform.library.persistence.TestMigrations;
 
 /**
  * All analysis adapters wired as in the application, against a temporary platform home and a
  * migrated PostgreSQL database. The runner command is a shell script each test writes itself.
  */
+@JpaAdapterTest
 @SpringJUnitConfig(AdapterTestSupport.Config.class)
 public abstract class AdapterTestSupport {
 
@@ -65,25 +68,15 @@ public abstract class AdapterTestSupport {
     }
 
     @Configuration
-    @ComponentScan(basePackageClasses = AdapterTestSupport.class)
+    @AutoConfigurationPackage
+    @ComponentScan(basePackageClasses = {AdapterTestSupport.class, DurationToMillisMapper.class})
     static class Config {
 
         @Bean
         DataSource dataSource() {
-            PostgresTestDatabase.Database database = PostgresTestDatabase.create();
-            DriverManagerDataSource dataSource =
-                    new DriverManagerDataSource(database.url(), database.username(), database.password());
-            Flyway.configure()
-                    .dataSource(dataSource)
-                    .table("FLYWAY_SCHEMA_HISTORY")
-                    .load()
-                    .migrate();
+            DataSource dataSource = PostgresTestDatabase.create().dataSource();
+            TestMigrations.migrate(dataSource, null);
             return dataSource;
-        }
-
-        @Bean
-        JdbcClient jdbcClient(DataSource dataSource) {
-            return JdbcClient.create(dataSource);
         }
     }
 }
