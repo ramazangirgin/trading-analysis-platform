@@ -27,6 +27,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.MappedSuperclass;
 import java.util.Collection;
 import java.util.Set;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.repository.NativeQuery;
@@ -209,6 +210,15 @@ class PersistenceArchitectureTest {
                                 field,
                                 field.getFullName() + " holds an enum without @JdbcTypeCode(NAMED_ENUM) or"
                                         + " @JdbcTypeCode(ARRAY)"));
+                    } else if (jdbcType == SqlTypes.ARRAY
+                            && field.tryGetAnnotationOfType(ColumnTransformer.class)
+                                    .map(ColumnTransformer::write)
+                                    .filter(write -> !write.isBlank())
+                                    .isEmpty()) {
+                        events.add(SimpleConditionEvent.violated(
+                                field,
+                                field.getFullName() + " is an enum array without a @ColumnTransformer(write ="
+                                        + " \"cast(? as ...[])\"): Hibernate binds varchar[]"));
                     }
                 }
             }
