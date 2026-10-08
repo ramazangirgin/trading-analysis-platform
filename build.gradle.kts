@@ -13,6 +13,8 @@ buildscript {
             // Jackson 3 from the Spring Boot Gradle plugin: 3.1.5.
             classpath(pin("jackson3-core"))
             classpath(pin("jackson3-databind"))
+            // commons-lang3 from the Spring Boot Gradle plugin (commons-compress): 3.16.0.
+            classpath(pin("commons-lang3"))
         }
     }
 }

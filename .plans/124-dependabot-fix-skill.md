@@ -170,15 +170,16 @@ for its tests only and gets no pin unless `dependencies` shows a vulnerable vers
 
 ### WP4: Fix today's alerts by following the skill
 
+- **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**: `gradle/libs.versions.toml`, `build-logic/src/main/kotlin/tradinganalysisplatform.java-library.gradle.kts`, `build.gradle.kts`
 - **Steps**:
   - [ ] Sections 1–4 of the skill on the open alerts; record the table of section 5 in the pull request body
-  - [ ] Catalog: the versions and libraries of the table, under a comment block "Security pins (Dependabot)": each with its GHSA IDs and "remove when <parent> brings ≥ <version>" (Spring Boot > 4.1.1 for Tomcat and Jackson 3; docker-java > 3.7.1 for Bouncy Castle and Jackson 2)
-  - [ ] Convention plugin: `implementation(platform(...))` for the two Jackson BOMs and `constraints { implementation(...) { because("<GHSA IDs>") } }` for Tomcat and Bouncy Castle, next to the Spring Boot BOM
-  - [ ] Root `build.gradle.kts`: `buildscript { dependencies { constraints { classpath(...) } } }` for Jackson 2, Jackson 3 and commons-lang3, with the same comments
-  - [ ] One commit per group (Jackson 2, Jackson 3, Bouncy Castle, Tomcat, commons-lang3)
-  - [ ] Check with `./gradlew buildEnvironment` and `dependencies` / `dependencyInsight` on every project that no vulnerable version is left on any runtime, test or build script classpath; paste the before/after versions into the pull request body
+  - [x] Catalog: the versions and libraries of the table, under a comment block "Security pins (Dependabot)": each with its GHSA IDs and "remove when <parent> brings ≥ <version>" (Spring Boot > 4.1.1 for Tomcat and Jackson 3; docker-java > 3.7.1 for Bouncy Castle and Jackson 2)
+  - [x] Convention plugin: `implementation(platform(...))` for the two Jackson BOMs and `constraints { implementation(...) { because("<GHSA IDs>") } }` for Tomcat and Bouncy Castle, next to the Spring Boot BOM
+  - [x] Root `build.gradle.kts`: `buildscript { dependencies { constraints { classpath(...) } } }` for Jackson 2, Jackson 3 and commons-lang3, with the same comments
+  - [x] One commit per group (Jackson 2, Jackson 3, Bouncy Castle, Tomcat, commons-lang3)
+  - [x] Check with `./gradlew buildEnvironment` and `dependencies` / `dependencyInsight` on every project that no vulnerable version is left on any runtime, test or build script classpath; paste the before/after versions into the pull request body
 - **Tests**: `mise run check` (includes `analyzeDependencies`), `mise run build` (every backend
   test against the new Tomcat, Jackson and Bouncy Castle; the Docker runner tests use docker-java
   with the new Bouncy Castle), `mise run e2e` if Docker is available.
