@@ -118,6 +118,9 @@ jobs:
       - name: Agent scripts' Python tests (scripts/agent)
         run: mise run agent:test
 
+      - name: Skill helpers' Python tests (.claude/skills)
+        run: mise run skill:test
+
   images:
     name: Docker images and Compose smoke test
     needs: build

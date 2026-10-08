@@ -158,13 +158,14 @@ for its tests only and gets no pin unless `dependencies` shows a vulnerable vers
 
 ### WP3: Test task in check and CI
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `mise.toml`, `.github/workflows/ci.yml`
 - **Steps**:
-  - [ ] Task `skill:test` ("Python tests of the Claude Code skills' helpers"):
+  - [x] Task `skill:test` ("Python tests of the Claude Code skills' helpers"):
         `uv run --no-project python -m unittest discover -s .claude/skills/dependabot-fix -p 'test_*.py'`
-  - [ ] Add it to `check` after `agent:test`
-  - [ ] CI, *ta-runner* job: a step "Skill helpers' Python tests (.claude/skills)" after the agent scripts' step
+  - [x] Add it to `check` after `agent:test`
+  - [x] CI, *ta-runner* job: a step "Skill helpers' Python tests (.claude/skills)" after the agent scripts' step
 - **Tests**: `mise run skill:test` and `mise run check` pass; CI runs the step.
 
 ### WP4: Fix today's alerts by following the skill
