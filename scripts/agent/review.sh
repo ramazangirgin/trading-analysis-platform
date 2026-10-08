@@ -7,12 +7,13 @@
 # Posts one GitHub review with an inline comment per finding (priority, problem, possible
 # solutions; ID R<round>-<n>), or, with no findings, the approval of the reviewed commit; and a
 # summary comment with the counts per priority, which also holds the findings for fix.sh. Changes no
-# code.
+# code. Its files are in .git/agent/<issue>-<slug>/ (review-<round>.json is the agent's result).
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
 pr=${1:?usage: $0 <pr>}
 branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
+use_state "$branch"
 use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 round=$(($(count_steps "$pr" review) + 1))
@@ -59,10 +60,11 @@ schema=$(
         "properties": {"path": {"type": "string"}, "line": {"type": "integer"}}}}}}}}}
 EOF
 )
-run_agent "$AGENT_REVIEW_MODEL" "$AGENT_TMP/review.md" "$AGENT_TMP/review-agent.json" "${AGENT_REVIEW_TOOLS[@]}" -- --json-schema "$schema"
+result=$AGENT_TMP/review-$round.json
+run_agent "$AGENT_REVIEW_MODEL" "$AGENT_TMP/review.md" "$result" "${AGENT_REVIEW_TOOLS[@]}" -- --json-schema "$schema"
 
 gh_list "repos/{owner}/{repo}/pulls/$pr/files" >"$AGENT_TMP/files.json"
-py "$AGENT_DIR/review.py" build "$round" "$head" "$AGENT_TMP/review-agent.json" "$AGENT_TMP/files.json" "$AGENT_TMP"
+py "$AGENT_DIR/review.py" build "$round" "$head" "$result" "$AGENT_TMP/files.json" "$AGENT_TMP"
 gh api "repos/{owner}/{repo}/pulls/$pr/reviews" --input "$AGENT_TMP/review.json" >/dev/null
-AGENT_STEP_MARKER=$(cat "$AGENT_TMP/marker.txt") post_step "$pr" review "$round" "$AGENT_TMP/summary.md" "$AGENT_TMP/review-agent.json"
+AGENT_STEP_MARKER=$(cat "$AGENT_TMP/marker.txt") post_step "$pr" review "$round" "$AGENT_TMP/summary.md" "$result"
 log "review round $round posted on #$pr"

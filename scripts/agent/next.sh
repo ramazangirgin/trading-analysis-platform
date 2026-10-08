@@ -19,7 +19,9 @@
 #
 # Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
 # the next step). Over AGENT_MAX_CI_FIXES or AGENT_MAX_TOKENS, it comments, removes the label and
-# stops. Interrupted (Ctrl+C), it continues where it was when started again.
+# stops. Interrupted (Ctrl+C), it continues where it was when started again. Its log, the agents'
+# streams and its lock are in .git/agent/<issue>-<slug>/ (run.log, run.pid); a second run on the
+# same branch is refused.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
@@ -31,13 +33,17 @@ fi
 target=${1:?usage: $0 [--dry-run] <plan branch | pr>}
 if [[ $target =~ ^[0-9]+$ ]]; then
   pr=$target
+  branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
 else
-  pr=$(pr_of_branch "$target")
-  if [ -z "$pr" ]; then
-    log "$target has no open pull request; nothing to do"
-    exit 0
-  fi
+  branch=$target
+  pr=$(pr_of_branch "$branch")
 fi
+use_state "$branch"
+if [ -z "$pr" ]; then
+  log "$target has no open pull request; nothing to do"
+  exit 0
+fi
+$dry_run || lock_run
 
 # stop <reason>: hand the pull request back to the developer.
 stop() {

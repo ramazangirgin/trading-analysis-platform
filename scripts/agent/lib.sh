@@ -15,6 +15,10 @@
 #   AGENT_CI_TIMEOUT     minutes to wait for CI on a push; default 60
 #   AGENT_BASE_BRANCH    the branch plans start from and pull requests go into; default main.
 #                        Steps on an existing pull request use its base instead.
+#
+# Everything a run leaves behind (prompts, agent results and streams, run.log, the lock run.pid, the
+# package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
+# (use_state), where a later run finds it.
 
 set -euo pipefail
 
@@ -33,6 +37,7 @@ fi
 AGENT_DIR=$AGENT_SCRIPTS
 REPO_ROOT=$AGENT_REPO_ROOT
 cd "$REPO_ROOT"
+AGENT_CMDLINE="$(basename "$0") $*"
 
 # The agents call mise by name; mise's installer puts it into ~/.local/bin, which is not always on
 # PATH (a shell without mise activated).
@@ -51,7 +56,8 @@ AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 # Label on an agent's pull request; removing it stops the loop.
 AGENT_LABEL=agent
 
-# Per-run scratch files (prompts, agent output), kept for a look after a failure.
+# Scratch files (prompts, agent output), kept for a look after a failure. A script that knows its
+# plan branch moves them to the branch's state directory (use_state).
 AGENT_TMP=${AGENT_TMP:-${TMPDIR:-/tmp}/agent-$$}
 mkdir -p "$AGENT_TMP"
 
@@ -59,6 +65,61 @@ log() { echo "agent: $*" >&2; }
 die() {
   echo "agent: $*" >&2
   exit 1
+}
+
+# --- State per plan branch -----------------------------------------------------------------------
+
+# use_state <plan branch>: AGENT_STATE is .git/agent/<issue>-<slug>/ (the main repository's .git in a
+# linked worktree, so every worktree finds the same state), never committed and never touched by
+# git clean. AGENT_TMP points at it: prompts, results (*.json) and streams (*.jsonl) go there. The
+# outermost script copies its stderr (the "agent:" lines and the agents' progress) into run.log;
+# nested scripts see AGENT_LOGGING and do not copy it again.
+use_state() {
+  local common name
+  common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
+  name=$(plan_name_of_branch "$1")
+  AGENT_STATE=$common/agent/${name//\//-}
+  mkdir -p "$AGENT_STATE"
+  rmdir "$AGENT_TMP" 2>/dev/null || true # the scratch directory made above, if still empty
+  AGENT_TMP=$AGENT_STATE
+  if [ -z "${AGENT_LOGGING:-}" ]; then
+    export AGENT_LOGGING=1
+    log_header
+    exec 2> >(tee -a "$AGENT_STATE/run.log" >&2)
+  fi
+  log "state: $AGENT_STATE (log: $AGENT_STATE/run.log)"
+}
+
+# A header line in run.log for each start: the date, the script and its arguments.
+log_header() { echo "=== $(date '+%Y-%m-%d %H:%M:%S') $AGENT_CMDLINE ===" >>"$AGENT_STATE/run.log"; }
+
+# The process of a run that holds the lock of this state directory, or nothing.
+active_run() {
+  local pid
+  pid=$(cat "$AGENT_STATE/run.pid" 2>/dev/null || true)
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then echo "$pid"; fi
+}
+
+# Takes the lock (run.pid) of this state directory, unless an outer script holds it already
+# (AGENT_LOCKED). A run.pid naming a live process stops the script; a stale one is replaced. The
+# lock is released when the script ends, also on Ctrl+C or kill.
+lock_run() {
+  [ -z "${AGENT_LOCKED:-}" ] || return 0
+  local pid
+  pid=$(active_run)
+  [ -z "$pid" ] || die "a run is already active: pid $pid, log $AGENT_STATE/run.log"
+  if [ -e "$AGENT_STATE/run.pid" ]; then
+    log "replacing the stale lock of pid $(cat "$AGENT_STATE/run.pid")"
+    rm -f "$AGENT_STATE/run.pid"
+  fi
+  (
+    set -o noclobber
+    echo $$ >"$AGENT_STATE/run.pid"
+  ) 2>/dev/null || die "a run is already active (log $AGENT_STATE/run.log)"
+  export AGENT_LOCKED=1
+  trap 'rm -f "$AGENT_STATE/run.pid"' EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM HUP
 }
 
 # Python for the JSON / diff helpers (standard library only): uv's, as elsewhere in the repository
@@ -168,7 +229,9 @@ AGENT_REVIEW_TOOLS=(
 # run_agent <model> <prompt file> <output json> [tool...] [-- extra claude args...]
 # Runs Claude Code headless and writes its JSON result (result, structured_output, usage,
 # session_id) to <output json>. Fails if the agent reports an error. While it runs, each step of
-# the agent (tool calls, messages, to-dos) is logged; the full stream goes to <output json>l.
+# the agent (tool calls, messages, to-dos) is logged; the full stream goes to <output json>l. The
+# files of an earlier run of the same name (an interrupted one has a stream and no result) are kept
+# under a name with the time, so that its usage still counts.
 run_agent() {
   local model=$1 prompt=$2 out=$3
   shift 3
@@ -184,7 +247,12 @@ run_agent() {
 
   use_claude_login
   log "running $(model_name "$model") ($(basename "$prompt")); full log: ${out}l"
-  rm -f "$out"
+  if [ -e "$out" ] || [ -e "${out}l" ]; then
+    local old
+    old="${out%.json}.$(date +%Y%m%d%H%M%S)-$$"
+    if [ -e "${out}l" ]; then mv "${out}l" "$old.jsonl"; fi
+    if [ -e "$out" ]; then mv "$out" "$old.json"; fi
+  fi
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
   env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format stream-json --verbose --permission-mode dontAsk \
@@ -224,10 +292,18 @@ tokens_used() { pr_steps "$1" | awk '{ t += $3 } END { print t + 0 }'; }
 # post_step <pr> <step> <round> <body file> [agent result json...]
 # AGENT_STEP_MARKER adds "key=value" pairs to the marker (review: approved=0|1 head=<sha>).
 post_step() {
-  local pr=$1 step=$2 round=$3 body=$4
+  local pr=$1 step=$2 round=$3 body=$4 result stream
   shift 4
+  # Each result with the streams of its interrupted runs (run_agent keeps them next to it).
+  local -a runs=()
+  for result in "$@"; do
+    runs+=("$result")
+    for stream in "${result%.json}".*.jsonl; do
+      if [ -e "$stream" ]; then runs+=("$stream"); fi
+    done
+  done
   {
-    echo "<!-- agent-step step=$step round=$round ${AGENT_STEP_MARKER:+$AGENT_STEP_MARKER }$(usage_marker "$@") -->"
+    echo "<!-- agent-step step=$step round=$round ${AGENT_STEP_MARKER:+$AGENT_STEP_MARKER }$(usage_marker ${runs[@]+"${runs[@]}"}) -->"
     cat "$body"
   } >"$AGENT_TMP/comment.md"
   gh pr comment "$pr" --body-file "$AGENT_TMP/comment.md" >/dev/null
@@ -253,9 +329,23 @@ else:
 
 # --- Git -----------------------------------------------------------------------------------------
 
-# Checks out branch $1 at its remote head, with a clean working tree.
+# Checks out branch $1 at its remote head, with a clean working tree. With --keep-changes, a dirty
+# working tree is accepted when $1 is the current branch already (the uncommitted work of an
+# interrupted run): the fast-forward then fails, leaving everything as it is, if it would
+# overwrite those changes.
 checkout_branch() {
-  [ -z "$(git status --porcelain)" ] || die "the working tree is not clean"
+  local keep=false
+  if [ "${1:-}" = --keep-changes ]; then
+    keep=true
+    shift
+  fi
+  if [ -n "$(git status --porcelain)" ]; then
+    if $keep && [ "$(git branch --show-current)" = "$1" ]; then
+      log "keeping the uncommitted changes on $1"
+    else
+      die "the working tree is not clean"
+    fi
+  fi
   log "checking out $1"
   git fetch --quiet origin "$AGENT_BASE_BRANCH" "$1"
   git switch --quiet "$1" 2>/dev/null || git switch --quiet -c "$1" --track "origin/$1"
