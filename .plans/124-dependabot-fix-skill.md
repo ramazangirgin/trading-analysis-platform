@@ -186,12 +186,13 @@ for its tests only and gets no pin unless `dependencies` shows a vulnerable vers
 
 ### WP5: Docs and version
 
+- **Status**: done
 - **Depends on**: WP2, WP3, WP4
 - **Files**: `README.md`, `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] README, "Dependency updates": a paragraph on `/dependabot-fix` after the `renovate-update` one
-  - [ ] README: the `mise run check` line and the CI table's ta-runner row name `skill:test`
-  - [ ] `mise run version:bump minor`, its own commit
+  - [x] README, "Dependency updates": a paragraph on `/dependabot-fix` after the `renovate-update` one
+  - [x] README: the `mise run check` line and the CI table's ta-runner row name `skill:test`
+  - [x] `mise run version:bump minor`, its own commit
 - **Tests**: `scripts/version.sh check-bump origin/main`
 
 ## Tests
