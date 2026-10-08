@@ -59,7 +59,7 @@ migration gives it (`@Table(name = "ANALYSES")`), and JPQL uses the class name
 | Any other single-value wrapper (`Username`, `PasswordHash`, a `RoleId` in a collection) | The core type on the entity, with an `AttributeConverter` applied by `@Convert` (never `autoApply`) | `@Convert(converter = UsernameAttributeConverter.class) Username username` |
 | A group of columns that is one domain value | `@Embeddable` | `AnalysisSpecEmbeddable`, `RunStatsEmbeddable` |
 | An enum | A PostgreSQL enum type whose labels are the Java constant names: `@Enumerated(EnumType.STRING)`, `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS_STATUS\""` | `AnalysisStatus status` |
-| A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYST\"[]"` | `List<Analyst> analysts`, `Set<Permission> permissions` |
+| A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYST\"[]"`. An enum array also needs `@ColumnTransformer(write = "cast(? as \"ANALYST\"[])")` (see below) | `List<Analyst> analysts`, `Set<Permission> permissions` |
 | References to another aggregate | An `@ElementCollection` on a join table, so the foreign key stays; never a `@ManyToMany` between aggregates | `Set<RoleId> roleIds` on `USER_ROLES` |
 | A timestamp | `Instant` on a `TIMESTAMPTZ` column | `Instant createdAt` |
 
@@ -72,6 +72,12 @@ Why these choices:
   know fails on write instead of on read. The labels are the constant names (`ANALYSIS_READ_ALL`),
   even where the API uses another form (`Permission#key()`, `analysis:read:all`), so no converter is
   needed.
+- **An enum array carries a SQL cast.** Hibernate binds the array of an enum as `varchar[]`, which
+  PostgreSQL rejects for a column of an enum-array type, so the first insert would fail even though
+  `ddl-auto=validate` passes. `@ColumnTransformer(write = "cast(? as \"<ENUM_TYPE>\"[])")` on the
+  field casts the bound value. It is the one SQL fragment allowed in production code: it is a column
+  write expression inside the mapping, not a query, so the plain-SQL rule above does not cover it.
+  `enums_are_not_stored_as_text` fails an enum array without it.
 - **Arrays for value sets, join tables for references.** An array is read with its row, with no
   extra query and no entity graph. But an array element cannot have a foreign key, so a set of IDs
   of another aggregate (`USER_ROLES`) stays a join table: `USER_ROLES_ROLE_ID_FK` is what keeps a
@@ -177,6 +183,6 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 | Entities, embeddables, converters in `adapter.<port>.entity`, and nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities` |
 | Spring Data repositories next to their adapter | `spring_data_repositories_live_in_persistence_roots`, `port_package_roots_hold_only_adapters` |
 | Suffixes `Entity`, `Embeddable`, `AttributeConverter`, `JpaRepository` | `persistence_classes_are_named_by_kind` |
-| Enums as PostgreSQL enum types or arrays, never text | `enums_are_not_stored_as_text` |
+| Enums as PostgreSQL enum types or arrays, never text; an enum array carries its `@ColumnTransformer` cast | `enums_are_not_stored_as_text` |
 | The core has no persistence dependency | `domain_core_does_not_depend_on_infrastructure` |
 | Entities match their migrations | `ddl-auto=validate` in the adapter tests and the Spring Boot tests |
