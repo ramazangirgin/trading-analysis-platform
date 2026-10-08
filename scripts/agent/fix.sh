@@ -8,11 +8,13 @@
 # "Address R<round>-<n>: <summary>", through the pre-commit hook; a declined one changes nothing.
 # Either way the review thread gets a reply (commit SHA and what changed, or the reason). Threads a
 # developer resolved are skipped. Pushes once at the end, and leaves a step comment with the outcomes.
+# Its files are in .git/agent/<issue>-<slug>/ (fix-R<round>-<n>.json is the result for a finding).
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
 pr=${1:?usage: $0 <pr>}
 branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
+use_state "$branch"
 use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 round=$(($(count_steps "$pr" fix) + 1))

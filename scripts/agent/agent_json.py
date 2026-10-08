@@ -4,8 +4,12 @@
                                                     stderr, the stream to <log.jsonl>, the final
                                                     result to <result.json>
     agent_json.py get <result.json> <key>           a top-level value (structured_output as JSON)
-    agent_json.py usage-line <result.json>...       tokens and cost, for the log
-    agent_json.py usage-marker <result.json>...     "tokens=... tokens_in=... ..." for a step marker
+    agent_json.py usage-line <run>...               tokens and cost, for the log
+    agent_json.py usage-marker <run>...             "tokens=... tokens_in=... ..." for a step marker
+
+A <run> is a result file (x.json) or its stream (x.jsonl). A stream whose result is missing (a run
+that was interrupted) adds its tokens only, and marks the total partial (`partial=1`).
+
     agent_json.py steps < comment bodies            "<step> <round> <tokens>" per marker found
     agent_json.py usage-table < comment bodies      Markdown table of the tokens per step
     agent_json.py approved-head < comment bodies    the commit the latest review approved, if any
@@ -14,6 +18,7 @@ Standard library only: run with `uv run --no-project python`.
 """
 
 import json
+import os
 import re
 import sys
 import threading
@@ -129,11 +134,56 @@ def load(path):
         return json.load(f)
 
 
+def stream_result(path):
+    """The result of a stream-json log as (result, complete). A run cut off before its `result`
+    event has none: its messages' usage is summed instead (no cost), each message ID once, as a
+    message can arrive as several events that repeat its usage; subagents' messages included."""
+    messages, result = {}, None
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if event.get("type") == "result":
+                result = event
+            elif event.get("type") == "assistant":
+                message = event.get("message") or {}
+                if not isinstance(message.get("usage"), dict):
+                    continue
+                seen = messages.setdefault(message.get("id") or event.get("uuid") or len(messages), {})
+                for field, value in message["usage"].items():
+                    if isinstance(value, int):
+                        seen[field] = max(seen.get(field, 0), value)
+    if result is not None:
+        return result, True
+    summed = {}
+    for seen in messages.values():
+        for field, value in seen.items():
+            summed[field] = summed.get(field, 0) + value
+    return {"usage": summed}, False
+
+
 def usage(paths):
-    """Sums the usage of the given results: input (uncached + cached), output, cost."""
-    total = {"in": 0, "cached": 0, "out": 0, "cost": 0.0}
+    """Sums the usage of the given runs: input (uncached + cached), output, cost.
+
+    A run is a result file (`x.json`) or its stream (`x.jsonl`); either path names the run. The
+    result is used when it exists, so a run is never counted twice. Without one, the stream is:
+    tokens only, and the total is marked partial."""
+    total = {"in": 0, "cached": 0, "out": 0, "cost": 0.0, "partial": False}
+    runs = []
     for path in paths:
-        result = load(path)
+        run = path[:-1] if path.endswith(".jsonl") else path
+        if run not in runs:
+            runs.append(run)
+    for run in runs:
+        if os.path.exists(run):
+            result = load(run)
+        elif os.path.exists(run + "l"):
+            result, complete = stream_result(run + "l")
+            total["partial"] = total["partial"] or not complete
+        else:
+            continue
         u = result.get("usage") or {}
         total["in"] += u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
         total["cached"] += u.get("cache_read_input_tokens", 0)
@@ -141,6 +191,36 @@ def usage(paths):
         total["cost"] += result.get("total_cost_usd") or 0.0
     total["tokens"] = total["in"] + total["cached"] + total["out"]
     return total
+
+
+def usage_marker(u):
+    marker = (
+        f"tokens={u['tokens']} tokens_in={u['in']} tokens_cached={u['cached']} "
+        f"tokens_out={u['out']} cost_usd={u['cost']:.4f}"
+    )
+    return marker + " partial=1" if u["partial"] else marker
+
+
+def usage_table(rows):
+    """The Markdown table of the tokens per step; a cost is "at least" when a run was cut off."""
+    lines = ["| Step | Round | Input | Cached input | Output | Cost (API prices) |", "|---|---|---|---|---|---|"]
+    totals, cost, partial = [0, 0, 0], 0.0, False
+    for m in rows:
+        values = [int(m.get(k, 0)) for k in ("tokens_in", "tokens_cached", "tokens_out")]
+        totals = [a + b for a, b in zip(totals, values)]
+        cost += float(m.get("cost_usd", 0))
+        cut = m.get("partial") == "1"
+        partial = partial or cut
+        cells = " | ".join(f"{v:,}" for v in values)
+        lines.append(
+            f"| {m.get('step')} | {m.get('round')} | {cells} | {'at least ' if cut else ''}${float(m.get('cost_usd', 0)):.2f} |"
+        )
+    cells = " | ".join(f"**{v:,}**" for v in totals)
+    if partial:
+        lines.append(f"| **Total** | | {cells} | **at least ${cost:.2f}** (an interrupted run's cost is unknown) |")
+    else:
+        lines.append(f"| **Total** | | {cells} | **${cost:.2f}** |")
+    return "\n".join(lines)
 
 
 def parse_marker(text):
@@ -161,13 +241,10 @@ def main(argv):
         print(json.dumps(value) if isinstance(value, (dict, list)) else value)
     elif command == "usage-line":
         u = usage(args)
-        print(f"{u['in']} in, {u['cached']} cached, {u['out']} out, ${u['cost']:.2f} at API prices")
+        cost = f"at least ${u['cost']:.2f}" if u["partial"] else f"${u['cost']:.2f}"
+        print(f"{u['in']} in, {u['cached']} cached, {u['out']} out, {cost} at API prices")
     elif command == "usage-marker":
-        u = usage(args)
-        print(
-            f"tokens={u['tokens']} tokens_in={u['in']} tokens_cached={u['cached']} "
-            f"tokens_out={u['out']} cost_usd={u['cost']:.4f}"
-        )
+        print(usage_marker(usage(args)))
     elif command == "steps":
         for m in markers(sys.stdin):
             print(m.get("step", "?"), m.get("round", "0"), m.get("tokens", "0"))
@@ -176,18 +253,7 @@ def main(argv):
         if reviews and reviews[-1].get("approved") == "1":
             print(reviews[-1].get("head", ""))
     elif command == "usage-table":
-        rows = list(markers(sys.stdin))
-        print("| Step | Round | Input | Cached input | Output | Cost (API prices) |")
-        print("|---|---|---|---|---|---|")
-        totals, cost = [0, 0, 0], 0.0
-        for m in rows:
-            values = [int(m.get(k, 0)) for k in ("tokens_in", "tokens_cached", "tokens_out")]
-            totals = [a + b for a, b in zip(totals, values)]
-            cost += float(m.get("cost_usd", 0))
-            cells = " | ".join(f"{v:,}" for v in values)
-            print(f"| {m.get('step')} | {m.get('round')} | {cells} | ${float(m.get('cost_usd', 0)):.2f} |")
-        cells = " | ".join(f"**{v:,}**" for v in totals)
-        print(f"| **Total** | | {cells} | **${cost:.2f}** |")
+        print(usage_table(list(markers(sys.stdin))))
     else:
         sys.exit(f"unknown command: {command}")
 
