@@ -98,8 +98,12 @@ do, by `value`, and are `Serializable`, as JPA requires of an `@EmbeddedId`.
 - **Partial updates** load the managed entity in a `@Transactional` adapter method and copy only
   the fields that may change. Dirty checking writes them (`JpaAnalysisRepositoryAdapter#update`).
 - **A constraint error that the port promises** surfaces in the call: `saveAndFlush` inside
-  `@Transactional`. Spring's exception translation turns a unique violation into
-  `DuplicateKeyException`.
+  `@Transactional`. With JPA, Spring's exception translation yields a
+  `DataIntegrityViolationException` for unique and foreign-key violations alike. An adapter whose
+  port promises `DuplicateKeyException` translates it: it walks the cause chain for a Hibernate
+  `ConstraintViolationException` of kind UNIQUE and rethrows `DuplicateKeyException`
+  (`JpaUserRepositoryAdapter#save`). Move that helper to `:backend:library:persistence` once a
+  second adapter needs it.
 - **No N+1 queries**: a finder of an entity with an `@ElementCollection` carries
   `@EntityGraph(attributePaths = "…")`.
 - **Read methods that map entities** are `@Transactional(readOnly = true)`, so a lazy collection
