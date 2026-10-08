@@ -312,7 +312,7 @@ mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts, dependency check (deptry) and tests only
 mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome, ta-runner replaying a recording
 mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
-mise run check         # quick check before pushing: package structure, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' Python tests (no other tests)
+mise run check         # quick check before pushing: package structure, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' and skill helpers' Python tests (`agent:test`, `skill:test`; no other tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
 mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does
 mise run hooks         # install the Git hooks (lefthook.yml)
@@ -336,7 +336,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Job | What |
 |---|---|
 | Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), the dependency analysis (every module declares the libraries it uses and no others), frontend lint, tests and Knip (unused and unlisted packages), the jar |
-| ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)) |
+| ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)); then `mise run skill:test`: the Python tests of the Claude Code skills' helpers ([`.claude/skills/`](.claude/skills)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | End-to-end tests | The build job's jar, on a throwaway PostgreSQL container, in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
@@ -387,6 +387,19 @@ update branch: it adapts the code to the new release and moves the tools around 
 is not possible yet, it shows you why and asks whether to hold the dependency back (an
 `allowedVersions` rule) and open a follow-up issue, which the rule links. It stops at a green pull
 request and merges only when you say so. `/renovate-update <pr>` fixes one open update pull request.
+
+Renovate only moves direct and pinned dependencies, so Dependabot alerts on transitive ones stay
+open. The Claude Code skill `dependabot-fix`
+([`.claude/skills/dependabot-fix/SKILL.md`](.claude/skills/dependabot-fix/SKILL.md)) closes them:
+`/dependabot-fix` takes all open alerts, `/dependabot-fix maven` (or `pip`, `npm`) one ecosystem, and
+`/dependabot-fix 16 17 18` the given alert numbers. It groups the alerts by release family, finds
+where each group comes from, picks the newest mature (at least 14 days old), stable version that fixes
+every alert of the group and checks it against `renovate.json5`. After you approve the table it pins
+the version on a branch, one commit per group, with a comment that names the advisories and says when
+the pin can go (the parent release that brings the fix), and opens a pull request that lists the
+alerts it closes. Groups that only a pre-release or a major fixes are reported, not applied. The
+alerts close when Dependabot rescans `main` after the merge. The helper's tests run with
+`mise run skill:test`.
 
 ### Versioning and releases
 
