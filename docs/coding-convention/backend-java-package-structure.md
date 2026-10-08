@@ -93,7 +93,7 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Controller, delegate interface | `bff.controller.api` (root) | `controller_root_holds_only_controllers_and_delegates` |
 | `ApiException`, `@RestControllerAdvice` | `bff.controller.api.error` | `exceptions_live_in_exception_packages`, `exception_packages_hold_only_exceptions_and_error_codes` |
 | Delegate implementation `*ApiDelegateImpl` | `bff.delegate.impl` (root), nothing else there | `delegate_impls_live_at_the_delegate_root`, `delegate_root_holds_only_delegate_impls` |
-| MapStruct mapper | an adapter's `…mapper` package or `bff.delegate.impl.mapper` | `mappers_live_at_layer_boundaries` |
+| MapStruct mapper | an adapter's `…mapper` package, `bff.delegate.impl.mapper` or `library.mapper` (the shared mapper library) | `mappers_live_at_layer_boundaries` |
 | Anything in a `mapper` package | is a MapStruct mapper (or its generated `*Impl`) | `mapper_packages_hold_only_mappers` |
 | `*ExceptionToApiExceptionMapper` | `bff.delegate.impl.mapper.error`, nothing else there | `exception_mappers_live_in_mapper_error`, `mapper_error_holds_only_exception_mappers` |
 | `@Entity` `*Entity`, `@Embeddable` `*Embeddable`, `*AttributeConverter` | `domain.<d>.adapter.<port>.entity`, nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities`, `persistence_classes_are_named_by_kind` |
