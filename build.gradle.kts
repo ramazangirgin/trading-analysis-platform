@@ -1,3 +1,19 @@
+// Security pins (Dependabot) for the build script classpath (the plugins below and what they bring in);
+// versions and removal conditions in gradle/libs.versions.toml. The version catalog accessors are not
+// available in this block.
+buildscript {
+    val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+    fun pin(alias: String): String =
+        libs.findLibrary(alias).get().get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }
+    dependencies {
+        constraints {
+            // Jackson 2 from the node-gradle plugin: 2.14.2.
+            classpath(pin("jackson2-core"))
+            classpath(pin("jackson2-databind"))
+        }
+    }
+}
+
 plugins {
     base
     alias(libs.plugins.spring.boot) apply false

@@ -23,6 +23,15 @@ pnpm = "12.6.0"
 # Fails the build on used-but-undeclared and declared-but-unused dependencies of the backend modules.
 dependencyAnalyze = "2.0.0"
 
+# Security pins (Dependabot): transitive dependencies held at a patched, mature (14+ days old) release
+# because their parent still brings a vulnerable one. The pins sit in the convention plugin (runtime
+# and test classpaths) and in the root build.gradle.kts (build script classpath).
+# Jackson 2 (com.fasterxml.jackson.core), alerts on jackson-core and jackson-databind: 2.14.2 on the
+# build script classpath (node-gradle plugin), 2.21.5 / 2.22.1 at runtime (docker-java-core, Spring
+# Boot's BOM, swagger-core-jakarta). Remove when docker-java > 3.7.1, springdoc > 3.1.1 and
+# node-gradle > 7.1.0 bring >= 2.22.3.
+jackson2 = "2.22.3"
+
 [libraries]
 # BOM. The Spring Boot Gradle plugin does NOT apply dependency management on its own,
 # so the platform must be imported explicitly - otherwise starters resolve to no version.
@@ -84,6 +93,10 @@ docker-java-api = { module = "com.github.docker-java:docker-java-api", version.r
 docker-java-transport = { module = "com.github.docker-java:docker-java-transport", version.ref = "dockerJava" }
 docker-java-core = { module = "com.github.docker-java:docker-java-core", version.ref = "dockerJava" }
 docker-java-transport-httpclient5 = { module = "com.github.docker-java:docker-java-transport-httpclient5", version.ref = "dockerJava" }
+# Security pins (Dependabot), versions above.
+jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
+jackson2-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson2" }
+jackson2-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson2" }
 # Gradle plugin used by the build-logic convention plugins.
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 dependency-analyze-gradle-plugin = { module = "ca.cutterslade.analyze:ca.cutterslade.analyze.gradle.plugin", version.ref = "dependencyAnalyze" }
