@@ -162,14 +162,15 @@ WP2 and WP3 do not depend on WP1. WP4 needs all three.
 
 ### WP2: Frontend Knip check
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/frontend/package.json`, `artifact/frontend/pnpm-lock.yaml`,
   `artifact/frontend/knip.json` (new), `artifact/frontend/build.gradle.kts`,
   `artifact/frontend/.prettierignore` only if Knip's file needs it
 - **Steps**:
-  - [ ] Add Knip, its config and the `deps:check` script
-  - [ ] Fix or justify every finding
-  - [ ] `pnpmDepsCheck` Gradle task, wired into `check`
+  - [x] Add Knip, its config and the `deps:check` script
+  - [x] Fix or justify every finding
+  - [x] `pnpmDepsCheck` Gradle task, wired into `check`
 - **Tests**: `./gradlew :frontend:check` green. Proof that it fails: an unused package added to
   `package.json` and an import of a transitive-only package, both shown in the pull request
   description and reverted.

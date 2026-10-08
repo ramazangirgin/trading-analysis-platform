@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint . && prettier --check .",
+    "deps:check": "knip --dependencies",
     "format": "prettier --write .",
     "test": "vitest run",
     "api:types": "openapi-typescript openapi.json -o src/shared/api/schema.d.ts"
@@ -40,6 +41,7 @@
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-boundaries": "7.2.0",
     "eslint-plugin-vue": "10.11.1",
+    "knip": "6.38.0",
     "openapi-typescript": "7.13.0",
     "prettier": "3.9.9",
     "typescript": "npm:@typescript/typescript6@6.0.2",
