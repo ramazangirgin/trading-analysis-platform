@@ -57,8 +57,11 @@ the framework), so an exception is for those cases; for everything else, fix the
 | Frontend | `artifact/frontend/knip.jsonc` | `ignoreDependencies`, `ignoreBinaries`. JSON with comments |
 | ta-runner | `[tool.deptry]` in `artifact/ta-runner/pyproject.toml` | `per_rule_ignores`, `package_module_name_map` |
 
-At the time of writing there are none in the module build files; the only exception outside is in
-`knip.jsonc` (`@types/markdown-it`, which TypeScript picks up without an import).
+At the time of writing there are none in the module build files. The exceptions that exist: in the
+convention plugin, the test starter as the aggregator for test classes
+(`permitTestAggregatorUse`) and permitted as unused in modules without tests
+(`permitTestUnusedDeclared`); in `knip.jsonc`, `@types/markdown-it`, which TypeScript picks up
+without an import.
 
 ## Decisions
 
