@@ -10,6 +10,9 @@ buildscript {
             // Jackson 2 from the node-gradle plugin: 2.14.2.
             classpath(pin("jackson2-core"))
             classpath(pin("jackson2-databind"))
+            // Jackson 3 from the Spring Boot Gradle plugin: 3.1.5.
+            classpath(pin("jackson3-core"))
+            classpath(pin("jackson3-databind"))
         }
     }
 }

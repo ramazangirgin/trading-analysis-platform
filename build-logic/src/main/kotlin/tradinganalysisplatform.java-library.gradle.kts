@@ -28,6 +28,8 @@ dependencies {
     // Security pins (Dependabot), versions and removal conditions in gradle/libs.versions.toml.
     // Jackson 2 (docker-java-core, swagger-core-jakarta): the BOM aligns every Jackson 2 module.
     implementation(platform(libs.findLibrary("jackson2-bom").get()))
+    // Jackson 3 (Spring Boot's BOM): stays on the 3.1 line of Spring Boot 4.1.
+    implementation(platform(libs.findLibrary("jackson3-bom").get()))
 
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
     testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())
