@@ -75,12 +75,13 @@ run = [
 ]
 
 [tasks.check]
-description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint (Checkstyle, ESLint, ruff), formatting (Spotless, Prettier), type-check, the custom Checkstyle checks' own tests; no other tests"
+description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint (Checkstyle, ESLint, ruff), formatting (Spotless, Prettier), type-check, the custom Checkstyle checks' own tests, the agent scripts' Python tests; no other tests"
 run = [
   "./gradlew --console=plain spotlessCheck checkstyleRulesCheck checkstyleMain checkstyleTest :backend:test --tests '*ArchitectureTest' :frontend:pnpmLint",
   "artifact/frontend/with-node.sh pnpm run type-check",
   "e2e/with-node.sh pnpm run type-check",
   "cd artifact/ta-runner && uv run ruff check . && uv run lint-imports",
+  { task = "agent:test" },
 ]
 
 # Formatting of every file: Java (Spotless, Palantir Java Format), the frontend and e2e/ (Prettier).
@@ -161,6 +162,10 @@ run = "scripts/agent/implement.sh"
 [tasks."agent:next"]
 description = "Continue the review → fix loop of an agent PR to its end: mise run agent:next plan/<issue>-<slug>"
 run = "scripts/agent/next.sh"
+
+[tasks."agent:test"]
+description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser and the usage figures"
+run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
 
 [tasks.clean]
 description = "Remove build outputs"
