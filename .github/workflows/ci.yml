@@ -7,8 +7,8 @@
 #              repository and Spring Boot test on PostgreSQL in a container through Testcontainers),
 #              frontend lint and tests, the single jar
 #   runner     ta-runner: ruff, import-linter (package structure) and pytest, upstream contract
-#              tests included
-#   images     both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
+#              tests included; also the Python tests of the agent scripts (scripts/agent)
+#   images    both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
 #   e2e        end-to-end tests (e2e/, Playwright): the build job's jar in Google Chrome, with
 #              ta-runner replaying a recording instead of calling an LLM, the jar on a throwaway
 #              PostgreSQL container (scripts/postgres.sh)
@@ -113,6 +113,9 @@ jobs:
 
       - name: Lint and test
         run: mise run runner-test
+
+      - name: Agent scripts' Python tests (scripts/agent)
+        run: mise run agent:test
 
   images:
     name: Docker images and Compose smoke test

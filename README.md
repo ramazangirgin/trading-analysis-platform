@@ -312,7 +312,7 @@ mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts and tests only
 mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome, ta-runner replaying a recording
 mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
-mise run check         # quick check before pushing: package structure, lint, formatting, type-check (no tests)
+mise run check         # quick check before pushing: package structure, lint, formatting, type-check, the agent scripts' Python tests (no other tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
 mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does
 mise run hooks         # install the Git hooks (lefthook.yml)
@@ -336,7 +336,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Job | What |
 |---|---|
 | Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), frontend lint and tests, the jar |
-| ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included |
+| ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | End-to-end tests | The build job's jar, on a throwaway PostgreSQL container, in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
