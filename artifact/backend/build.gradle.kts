@@ -13,10 +13,18 @@ val frontend = configurations.create("frontend") {
 }
 
 dependencies {
-    implementation(libs.spring.boot.starter)
-    implementation(libs.spring.boot.starter.actuator)
-    implementation(libs.spring.boot.starter.data.jpa)
-    implementation(libs.spring.boot.starter.flyway)
+    implementation(libs.spring.boot)
+    implementation(libs.spring.boot.autoconfigure)
+    implementation(libs.spring.context)
+
+    // The starters: the application gets the auto-configuration (Tomcat, Jackson, Hibernate Validator,
+    // JPA, Flyway, actuator) from them, the library modules declare libraries only.
+    runtimeOnly(libs.spring.boot.starter)
+    runtimeOnly(libs.spring.boot.starter.actuator)
+    runtimeOnly(libs.spring.boot.starter.webmvc)
+    runtimeOnly(libs.spring.boot.starter.validation)
+    runtimeOnly(libs.spring.boot.starter.data.jpa)
+    runtimeOnly(libs.spring.boot.starter.flyway)
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.flyway.database.postgresql)
 
@@ -39,9 +47,17 @@ dependencies {
 
     frontend(project(path = ":frontend", configuration = "dist"))
 
-    testImplementation(libs.archunit.junit5)
+    testImplementation(libs.archunit)
+    testImplementation(libs.archunit.junit5.api)
+    testRuntimeOnly(libs.archunit.junit5)
     testImplementation(libs.mapstruct)
-    testImplementation(libs.spring.boot.starter.webmvc.test)
+    testImplementation(libs.spring.boot.webmvc.test)
+    testRuntimeOnly(libs.spring.boot.starter.webmvc.test)
+    testImplementation(libs.spring.web)
+    testImplementation(libs.spring.data.commons)
+    testImplementation(libs.spring.data.jpa)
+    testImplementation(libs.jakarta.persistence.api)
+    testImplementation(libs.hibernate.core)
     testImplementation(libs.jackson.databind)
     testImplementation(testFixtures(project(":backend:library:persistence")))
 }
