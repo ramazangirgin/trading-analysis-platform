@@ -126,6 +126,7 @@ for its tests only and gets no pin unless `dependencies` shows a vulnerable vers
 
 ### WP1: Helper script and its tests
 
+- **Status**: not done: the developer run could not write files under .claude/skills/dependabot-fix/ (Write and mkdir were refused)
 - **Depends on**: none
 - **Files**: `.claude/skills/dependabot-fix/alerts.py`, `.claude/skills/dependabot-fix/test_alerts.py`
 - **Steps**:
