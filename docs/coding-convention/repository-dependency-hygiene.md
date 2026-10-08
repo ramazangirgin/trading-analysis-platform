@@ -31,15 +31,17 @@ jobs run them. When the Gradle analysis fails in CI, the reports under
   `bff:api` declares `spring-web`, `spring-context` or `jakarta.validation-api`, never
   `spring-boot-starter-*`. The starters (`spring-boot-starter-webmvc`, `-validation`) are
   `runtimeOnly` in `:backend`, where the application gets its auto-configuration. Versions come from
-  the Spring Boot BOM, which the convention plugin imports; only `docker-java-*` have a version in
-  `gradle/libs.versions.toml`.
+  the Spring Boot BOM, which the convention plugin imports, so those libraries have no version in
+  `gradle/libs.versions.toml`; the others (`docker-java-*`, ArchUnit, MapStruct, springdoc) take a
+  `version.ref`.
 - **The test starter is the one aggregator.** The convention plugin gives every module
   `spring-boot-starter-test`, and its classes (AssertJ, JUnit, Mockito, Spring Test) count as used
   through it (`permitTestAggregatorUse`). A module without tests is not reported for it. Main code
   declares every library it imports.
 - **Test fixtures** (`library:persistence`) declare the libraries they use as `testFixturesApi`, and
-  what only has to be on the adapters' test runtime classpath (starter, Flyway's PostgreSQL module,
-  the driver) as `testFixturesRuntimeOnly`.
+  what only has to be on the adapters' test runtime classpath (the starter, Flyway's PostgreSQL
+  module) as `testFixturesRuntimeOnly`. The PostgreSQL driver is `testFixturesApi`, because the
+  fixtures use its `DataSource` class (`PGSimpleDataSource`).
 - The plugin only runs compilation and the analysis: the convention plugin cuts its dependencies on
   the other tasks of a module (`bootTestRun` would need a database).
 - **Out of scope:** `build-logic/checkstyle-rules` is a build of its own without the convention
