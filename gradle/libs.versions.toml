@@ -30,19 +30,29 @@ dependencyAnalyze = "2.0.0"
 # build script classpath (node-gradle plugin), 2.21.5 / 2.22.1 at runtime (docker-java-core, Spring
 # Boot's BOM, swagger-core-jakarta). Remove when docker-java > 3.7.1, springdoc > 3.1.1 and
 # node-gradle > 7.1.0 bring >= 2.22.3.
+# Advisories: GHSA-5jmj-h7xm-6q6v GHSA-7hhh-6rmp-j9qf GHSA-cxp5-3px4-pw24 GHSA-gx83-3vf8-gh7j
+# GHSA-h46c-h94j-95f3 GHSA-hgj6-7826-r7m5 GHSA-j3rv-43j4-c7qm GHSA-p6pp-m3f8-5c89
+# GHSA-q4xh-88c3-wmh7 GHSA-r7wm-3cxj-wff9 GHSA-rmj7-2vxq-3g9f GHSA-vvgp-rfg2-7rr6
+# GHSA-wjgm-6hv5-3cvf GHSA-wv8q-qhhj-9h54.
 jackson2 = "2.22.3"
 # Jackson 3 (tools.jackson.core), alerts on jackson-core and jackson-databind: 3.1.5 from Spring Boot
 # 4.1.1's BOM and the Spring Boot Gradle plugin. Stays on Spring Boot 4.1's 3.1 line. Remove when
 # Spring Boot > 4.1.1 brings >= 3.1.7.
+# Advisories: GHSA-7hhh-6rmp-j9qf GHSA-cxp5-3px4-pw24 GHSA-gx83-3vf8-gh7j GHSA-p6pp-m3f8-5c89
+# GHSA-q4xh-88c3-wmh7 GHSA-wjgm-6hv5-3cvf GHSA-wv8q-qhhj-9h54.
 jackson3 = "3.1.7"
 # Bouncy Castle, alerts on bcprov, bcpkix and bcutil: 1.82 from docker-java-core 3.7.1. Remove when
 # docker-java > 3.7.1 brings >= 1.86.
+# Advisories: GHSA-574f-3g2m-x479 GHSA-9pwp-9qqc-pr26 GHSA-c3fc-8qff-9hwx GHSA-p93r-85wp-75v3
+# GHSA-qp49-qgx5-5m26 GHSA-wg6q-6289-32hp.
 bouncycastle = "1.86"
 # Tomcat, alerts on tomcat-embed-core, -el and -websocket: 11.0.24 from Spring Boot 4.1.1's BOM. Remove
 # when Spring Boot > 4.1.1 brings >= 11.0.26.
+# Advisories: GHSA-9xv2-5v5q-p794 GHSA-gcx9-497g-6cp6 GHSA-h3x4-894j-xpx5.
 tomcat = "11.0.26"
 # commons-lang3, alert on the build script classpath: 3.16.0 via the Spring Boot Gradle plugin's
 # commons-compress. Remove when the Spring Boot Gradle plugin brings >= 3.20.0.
+# Advisories: GHSA-j288-q9x7-2f5v.
 commonsLang3 = "3.20.0"
 
 [libraries]
