@@ -191,16 +191,17 @@ WP2 and WP3 do not depend on WP1. WP4 needs all three.
 
 ### WP4: mise, CI, convention doc, README, version
 
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3
 - **Files**: `mise.toml` (`check`), `.github/workflows/ci.yml` (report upload, the jobs comment at
   the top), `docs/coding-convention/repository-dependency-hygiene.md` (new),
   `docs/coding-convention/README.md`, `README.md`, `gradle.properties`,
   `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py` (version bump)
 - **Steps**:
-  - [ ] `mise run check` runs the three checks; description updated
-  - [ ] CI uploads the dependency-analysis reports on failure
-  - [ ] The convention document and the README changes (below)
-  - [ ] `mise run version:bump minor`
+  - [x] `mise run check` runs the three checks; description updated
+  - [x] CI uploads the dependency-analysis reports on failure
+  - [x] The convention document and the README changes (below)
+  - [x] `mise run version:bump minor`
 - **Tests**: `mise run check` green; CI green on the pull request.
 
 ## Tests

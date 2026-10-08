@@ -15,6 +15,7 @@ enforces each rule.
 | [backend-java-persistence.md](backend-java-persistence.md) | Backend (Java): Spring Data JPA / Hibernate only, no plain SQL; entities, embeddables, converters, repositories, enum and array columns, the shared persistence library and its test fixtures |
 | [repository-git-hooks.md](repository-git-hooks.md) | Whole repository: the pre-commit hook (lefthook), what it runs on which files, how to install, run or skip it |
 | [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
+| [repository-dependency-hygiene.md](repository-dependency-hygiene.md) | Whole repository: declare what you use, use what you declare (Gradle analysis, Knip, deptry), exceptions |
 
 The structure documents cover package / folder placement and the dependencies between packages.
 The Checkstyle document covers the backend's naming, imports, size and coding rules, and the project
@@ -36,11 +37,14 @@ Every rule is checked in three places, by the same tool:
 | Frontend | [Prettier](https://prettier.io/) (formatting) | `artifact/frontend/.prettierrc.json` | `pnpm lint`, part of `mise run build`, `mise run check` and `mise run format-check`; `mise run format` fixes | pre-commit, staged files |
 | Frontend | [eslint-plugin-boundaries](https://www.jsboundaries.dev/) and `no-restricted-imports` | `artifact/frontend/eslint.config.js` | `pnpm lint`, part of `mise run build` (`:frontend:pnpmLint`) and `mise run check` | pre-commit |
 | ta-runner | [import-linter](https://import-linter.readthedocs.io/) (`lint-imports`) and ruff `TID` | `artifact/ta-runner/pyproject.toml` | `mise run runner-test`, `mise run check` | pre-commit |
+| Backend | [gradle-dependency-analyze](repository-dependency-hygiene.md) (used-undeclared, declared-unused libraries) | `build-logic/.../tradinganalysisplatform.java-library.gradle.kts` | `./gradlew analyzeDependencies`, part of `mise run build` and `mise run check` | none (too slow) |
+| Frontend | [Knip](repository-dependency-hygiene.md) (unused and unlisted packages) | `artifact/frontend/knip.jsonc` | `pnpm run deps:check` (`:frontend:pnpmDepsCheck`), part of `mise run build` and `mise run check` | none |
+| ta-runner | [deptry](repository-dependency-hygiene.md) (DEP001–DEP004) | `[tool.deptry]` in `artifact/ta-runner/pyproject.toml` | `uv run deptry .`, part of `mise run runner-test` and `mise run check` | none |
 
 - **CI** runs all of them: the *Backend and frontend* job (`mise run format-check` for the formatting
   of every file, then `mise run build`) and the *ta-runner* job (`mise run runner-test`), see [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). CI is
   the authority: a hook can be skipped, a failing CI check blocks the merge.
-- **`mise run check`** runs every structure check, lint and the frontend type-check, and the custom Checkstyle checks' own tests, but no other tests:
+- **`mise run check`** runs every structure check, lint, the dependency checks and the frontend type-check, and the custom Checkstyle checks' own tests, but no other tests:
   the quick check before pushing (seconds when Gradle is warm).
 - **Git hooks** run them before a commit, for the staged files' part of the code base: configured in
   [`lefthook.yml`](../../lefthook.yml), installed with `mise run hooks`; what runs, and why lefthook:
