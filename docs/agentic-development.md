@@ -13,7 +13,7 @@ flowchart TD
     skill --> plan["Development plan<br/>.plans/#lt;issue#gt;-#lt;slug#gt;.md<br/>alone on branch plan/#lt;issue#gt;-#lt;slug#gt;"]
     plan --> approvePlan{"Developer:<br/>plan right?"}
     approvePlan -- "no: edit the plan on its branch" --> plan
-    approvePlan -- "yes: mise run agent:run" --> implement["Developer agent (Sonnet)<br/>implement with tests, mise run check,<br/>version bump, commit"]
+    approvePlan -- "yes: mise run agent:run" --> implement["Developer agent (Sonnet)<br/>one run per work package: tests, commits,<br/>plan updated, push; then mise run check, version bump"]
     implement --> draft["Draft pull request<br/>Closes #issue (last plan) or Part of #issue, label agent"]
     draft --> ci{"CI passed?"}
     ci -- "red" --> fixCi["Developer agent (Sonnet)<br/>fix CI from the failed job's log<br/>(up to 3 attempts)"]
@@ -48,7 +48,7 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | 2 | One branch per plan, holding only that plan file | `scripts/agent/plan-branch.sh` (the skill runs it) | `plan/<issue>-<slug>` pushed, linked on the issue |
 | 3 | Plan review: edit the plan on its branch, or approve it | Developer | — |
 | 4 | Start the agents | Developer: `mise run agent:run plan/<issue>-<slug>` | — |
-| 5 | Implement with tests, `mise run check`, version bump; push; open a **draft** pull request; fix a red CI | Developer agent: `implement.sh`, `fix-ci.sh` | Draft PR labelled `agent`, **CI passed** green |
+| 5 | Implement one work package per agent run, with tests, and push after each; `mise run check`, version bump; open a **draft** pull request; fix a red CI | Developer agent: `implement.sh`, `fix-ci.sh` | Draft PR labelled `agent`, **CI passed** green |
 | 6 | Review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | Review agent: `review.sh` | PR review + summary comment |
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
@@ -76,7 +76,25 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
 - **The pull request is the state.** Every step leaves one comment with a hidden marker
   (`<!-- agent-step step=review round=1 tokens=… -->`). `next.sh` reads the next step from these
   markers and CI's result; nothing else is stored, so an interrupted run continues where it was.
-  Comments by other accounts are ignored.
+  Comments by other accounts are ignored. This covers the review → fix loop; before the pull request
+  exists, the plan branch is the state (next bullets).
+- **Progress is in the plan.** Every work package has a `- **Status**:` line in the plan: `open`,
+  `done` (every step ticked, `- [x]`) or `not done: <reason>`. The developer agent sets it and ticks
+  the steps in the plan file, in the same commit as the code, and the script reads it back
+  (`scripts/agent/plan.py`) to know which package is next and whether one is finished. Every commit of a
+  package ends with the trailer `Work-package: WP2`, so `git log --grep '^Work-package: WP2$'` lists
+  its commits. The plan does not hold a commit SHA: a commit cannot name its own.
+- **One agent run per work package.** `implement.sh` runs the developer agent once per package, in
+  the order of the `Depends on` lines, each in a fresh session, and pushes the branch after each
+  one. The context of a run stays small, the work survives the machine, and an interrupted
+  implementation starts again at the package it was on: the packages the plan on the branch marks
+  `done` or `not done` are skipped.
+- **The state directory is inside `.git`.** Everything a run leaves behind goes to
+  `.git/agent/<issue>-<slug>/` of the plan branch: `run.log` (the scripts' and agents' progress
+  lines), every prompt, agent result (`*.json`) and stream (`*.jsonl`), `current` (the package the
+  implementation is on) and `run.pid` (the lock). Inside `.git` it is never committed, survives
+  `git clean`, and is shared by the worktrees of the repository. A later run, even of another
+  script, finds it. It is not deleted by the scripts; delete it after the merge.
 - **The plan file is merged with the code.** It stays in `.plans/` as the record of why the change
   looks the way it does.
 - **Sonnet develops, Opus reviews.** The developer agent does most of the work (implementing,
@@ -146,13 +164,21 @@ session until it is right; then the skill pushes one branch per plan
 (`mise run agent:plan-branch .plans/<issue>-<slug>.md`) and links it on the issue. The local plan
 file is removed once its branch is pushed, so the working tree is clean for step 5.
 
+The scripts read the plan's work packages, so their format is fixed: a `### WP<id>: <name>` heading,
+a `- **Status**: open` line (the agent sets `done` or `not done: <reason>` and ticks the steps), a
+`- **Depends on**:` line with package IDs (`none`, `WP1, WP2`, a range `WP2–WP4`), optionally followed by a
+reason in parentheses, and `- [ ]` steps. A plan without `Status` lines counts every package as
+`open`; a plan without work packages is one package.
+
 ### 3. Review the plan
 
 This is the first of the two decisions that are yours. Read the plan on its branch and check:
 
 - the goal matches the issue, and "Out of scope" leaves out what it should;
 - each part names the right conventions, and the design puts the code where they say;
-- every work package has its tests, and the tests prove the issue's "done when";
+- every work package has its tests, and the tests prove the issue's "done when"; every `Status` is
+  `open` and the `Depends on` lines are right (they decide the order the agent works in, and each
+  package is pushed on its own, so it should leave the repository green);
 - the version bump (`minor`, `major` for a breaking change);
 - "Docs to update" covers the README text for the feature and every screenshot: a new page gets
   one, a page whose look changes gets it retaken. "Later" is not an option: the review agent checks
@@ -169,22 +195,28 @@ mise run agent:run plan/32-compare-runs
 ```
 
 From a clean working tree (the scripts switch to the plan branch). It runs steps 5–9 of the flow:
-the developer agent (Sonnet) implements the plan with tests, checks it, bumps the version, pushes
-and opens a **draft** pull request labelled `agent` (`Closes #<issue>`, or `Part of #<issue>`
-while other plans of the issue are not merged yet); after **CI passed**, the
+the developer agent (Sonnet) implements the plan one work package at a time, each with its tests,
+commits and update of the plan, and the script pushes the branch after every package (that starts
+CI, which cancels the run of the previous push). Then the script checks the whole, the last package
+bumps the version, and it opens a **draft** pull request labelled `agent` (`Closes #<issue>`, or
+`Part of #<issue>` while other plans of the issue are not merged yet); after **CI passed**, the
 review agent (Opus) reviews it, the developer agent fixes the findings, CI runs again, and once
 more; then the pull request gets a final comment and is marked ready for review. It waits for CI
 after every push, so it takes a while: leave the terminal open. Follow it on the pull request,
 where every step leaves a comment, or in the terminal: while an agent runs, each of its steps (tool
 call, message, to-do) is printed as one line with the time since it started, and after two quiet
-minutes (a long build) a "still working" line. The full stream of each agent call is saved next to
-its result, as `$TMPDIR/agent-<pid>/<step>.jsonl`; its path is printed when the agent starts.
+minutes (a long build) a "still working" line. The same lines go to
+`.git/agent/<issue>-<slug>/run.log` (appended, one header line per start), next to every agent's
+result and full stream (`wp-WP2.json`, `wp-WP2.jsonl`, `review-1.json`, …); the paths are printed
+when the agent starts. A second run on the same branch is refused while one is active (the lock,
+`run.pid` in the same directory).
 
 The scripts run from a copy of `scripts/agent/` taken at start, so switching branches does not
 change the running scripts or prompts. Each step can also be run on its own:
 
 ```sh
 mise run agent:implement plan/32-compare-runs        # implement, push, draft pull request
+scripts/agent/implement.sh --dry-run plan/32-compare-runs # work packages and their status, what a run would do
 scripts/agent/next.sh --dry-run plan/32-compare-runs # which step is next
 mise run agent:next plan/32-compare-runs             # continue the loop to its end
 scripts/agent/review.sh <pr>                         # one step: review, fix, fix-ci, finalise
@@ -193,6 +225,17 @@ scripts/agent/review.sh <pr>                         # one step: review, fix, fi
 `AGENT_BASE_BRANCH=<branch>` starts the plan branch from, and opens the pull request into, another
 branch than `main` (a stacked change, or trying out a change to the agents themselves); later steps
 use the pull request's base.
+
+To keep a run going when the terminal (or the Claude Code session) closes, start it detached:
+
+```sh
+mise run agent:detach run.sh plan/32-compare-runs    # or implement.sh, next.sh <pr>, …
+tail -f .git/agent/32-compare-runs/run.log           # follow it
+kill -- -<pid>                                       # stop it (the pid printed at the start)
+```
+
+`detach.sh` starts the script in a new session with its output in `run.log`, and prints the process
+ID and the log. Stopping it releases the lock; started again, the run resumes (see below).
 
 #### Step by step, with an approval for each step
 
@@ -216,8 +259,17 @@ its plan branches and pull requests and continues there.
 
 ### 5. When a run stops early
 
-- **Ctrl+C**, a closed laptop, a crash: start `mise run agent:run` again; it continues where it was
-  (the state is on the pull request).
+- **Ctrl+C**, a closed laptop, a crash, a usage limit: start `mise run agent:run` again; it
+  continues where it was. During the implementation the state is the plan on the branch: the
+  packages it marks `done` or `not done` are skipped, and the uncommitted work of the package that
+  was interrupted stays in the working tree, where the agent is told to read it, keep what is right
+  and finish it. Nothing is discarded. (`implement.sh --dry-run <branch>` shows which package that
+  is.) The pull request is opened as in an uninterrupted run. Later, the state is the pull request.
+  The tokens of the interrupted run are counted from its stream in the step's usage, marked
+  partial: the cost shows as "at least", because an interrupted run's cost is unknown.
+- **A run is already active** (`a run is already active: pid …`): the lock of the branch is held by a
+  live process. Follow it in its `run.log`, or stop it (`kill -- -<pid>` for a detached one). A lock
+  of a process that is gone is replaced.
 - **The loop gave up** (a comment "Agent loop stopped", the `agent` label removed, the pull request
   still a draft): CI stayed red after `AGENT_MAX_CI_FIXES` attempts, the developer agent found no
   fix, CI took longer than `AGENT_CI_TIMEOUT`, or the run went over `AGENT_MAX_TOKENS`. Fix the
@@ -299,7 +351,8 @@ the branch it stacks on has merged: `gh pr edit <pr> --base main`, then step 8.
   the second one merges, or change its `Part of` to `Closes` before merging it.
 - The plan stays in `.plans/` on `main`, next to the code it explains.
 - Locally: `git switch main && git pull`, and delete the local plan branch
-  (`git branch -D plan/<issue>-<slug>`).
+  (`git branch -D plan/<issue>-<slug>`) and its state directory
+  (`rm -rf .git/agent/<issue>-<slug>`).
 
 ## Documentation and screenshots
 
@@ -338,7 +391,8 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_BASE_BRANCH` | `main` | Where plan branches start and pull requests go |
 
 Costs in the final comment are Claude Code's own figures at API prices; with a subscription login
-they show the usage, not a bill.
+they show the usage, not a bill. The usage of runs from before the state directory existed, or of
+a state directory that is gone (another machine), is not available; the implement comment says so.
 
 ## Safety
 
@@ -352,6 +406,7 @@ they show the usage, not a bill.
 
 ## Not done yet
 
-- **Parallel work packages** each in their own `git worktree`: for now one developer agent works
-  through the packages and may hand independent ones to subagents.
+- **Parallel work packages** each in their own `git worktree` (#70): for now the packages run one
+  after the other, one agent run each; the per-package loop (`plan.py next`) is what parallel runs
+  will build on.
 - **Sub-issues** for the plans of a split issue.
