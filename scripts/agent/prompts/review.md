@@ -10,7 +10,10 @@ documents of every part the change touches before judging it.
 
 - **The plan**: every work package and step done; nothing done that the plan does not ask for
   (out-of-plan changes); the plan's tests written; the version bumped as the plan says; the docs
-  listed under "Docs to update" updated.
+  listed under "Docs to update" updated. The plan on the branch is the approved plan plus the
+  developer agent's progress: ticked steps (`- [x]`) and `Status` lines (`done`, or
+  `not done: <reason>`) under the work packages. Those are not changes to the plan; a package marked
+  `not done` is a plan item missing, unless its reason is sound.
 - **Correctness**: bugs, unhandled errors and edge cases, race conditions, security (secrets,
   injection, unsafe input), resource leaks.
 - **Conventions**: package / folder placement, layering and imports, naming, the style of the
