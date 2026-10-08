@@ -31,6 +31,10 @@ dependencyAnalyze = "2.0.0"
 # Boot's BOM, swagger-core-jakarta). Remove when docker-java > 3.7.1, springdoc > 3.1.1 and
 # node-gradle > 7.1.0 bring >= 2.22.3.
 jackson2 = "2.22.3"
+# Jackson 3 (tools.jackson.core), alerts on jackson-core and jackson-databind: 3.1.5 from Spring Boot
+# 4.1.1's BOM and the Spring Boot Gradle plugin. Stays on Spring Boot 4.1's 3.1 line. Remove when
+# Spring Boot > 4.1.1 brings >= 3.1.7.
+jackson3 = "3.1.7"
 
 [libraries]
 # BOM. The Spring Boot Gradle plugin does NOT apply dependency management on its own,
@@ -97,6 +101,9 @@ docker-java-transport-httpclient5 = { module = "com.github.docker-java:docker-ja
 jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
 jackson2-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson2" }
 jackson2-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson2" }
+jackson3-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson3" }
+jackson3-core = { module = "tools.jackson.core:jackson-core", version.ref = "jackson3" }
+jackson3-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson3" }
 # Gradle plugin used by the build-logic convention plugins.
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 dependency-analyze-gradle-plugin = { module = "ca.cutterslade.analyze:ca.cutterslade.analyze.gradle.plugin", version.ref = "dependencyAnalyze" }
