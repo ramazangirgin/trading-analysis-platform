@@ -148,6 +148,7 @@ for its tests only and gets no pin unless `dependencies` shows a vulnerable vers
 
 ### WP2: The skill
 
+- **Status**: not done: the developer run could not write files under .claude/skills/dependabot-fix/ (Write and mkdir were refused)
 - **Depends on**: WP1 (the commands it names)
 - **Files**: `.claude/skills/dependabot-fix/SKILL.md`
 - **Steps**:
