@@ -303,16 +303,16 @@ to just use the app, `mise run run` is enough.
 ```sh
 mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks
 mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173 (starts the local PostgreSQL)
-mise run build         # all tests (ArchUnit included), lint (Checkstyle included), and the single jar
+mise run build         # all tests (ArchUnit included), lint (Checkstyle included), dependency checks (Gradle analysis, Knip), and the single jar
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed (starts the local PostgreSQL)
 mise run db            # start the local PostgreSQL container (run and dev do it for you)
 mise run db:stop       # stop it; the data stays in the volume
 mise run db:reset      # remove the container and its volume: the next start is an empty database
 mise run test          # backend + frontend + ta-runner tests
-mise run runner-test   # ta-runner lint, import contracts and tests only
+mise run runner-test   # ta-runner lint, import contracts, dependency check (deptry) and tests only
 mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome, ta-runner replaying a recording
 mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
-mise run check         # quick check before pushing: package structure, lint, formatting, type-check, the agent scripts' Python tests (no other tests)
+mise run check         # quick check before pushing: package structure, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' Python tests (no other tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
 mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does
 mise run hooks         # install the Git hooks (lefthook.yml)
@@ -335,8 +335,8 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 
 | Job | What |
 |---|---|
-| Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), frontend lint and tests, the jar |
-| ta-runner | `mise run runner-test`: ruff, import-linter (package structure) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)) |
+| Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), the dependency analysis (every module declares the libraries it uses and no others), frontend lint, tests and Knip (unused and unlisted packages), the jar |
+| ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | End-to-end tests | The build job's jar, on a throwaway PostgreSQL container, in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Docker images and Compose smoke test | Both images (GitHub's build cache), the runner image under the platform's lockdown flags, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
@@ -465,7 +465,9 @@ Where each kind of class, component or module belongs, and what may import what,
 ESLint, import-linter) and by CI. The backend's Java code is also checked by Checkstyle
 ([rules and suppressions](docs/coding-convention/backend-java-checkstyle.md)) and formatted with
 Spotless and Palantir Java Format ([formatting](docs/coding-convention/backend-java-formatting.md));
-the frontend is formatted with Prettier. Git hooks run the static checks on staged files before a
+the frontend is formatted with Prettier. The dependency declarations are checked too: each part
+declares what it uses and nothing else ([dependency hygiene](docs/coding-convention/repository-dependency-hygiene.md)).
+Git hooks run the static checks on staged files before a
 commit; the backend's formatting check (changed files only), Checkstyle and ArchUnit rules run in
 that hook too when Java files are staged, and CI checks the formatting of every file.
 `mise run check` runs every structure check, lint, formatting check and the type-check by hand;

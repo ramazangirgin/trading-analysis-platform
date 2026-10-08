@@ -5,9 +5,9 @@
 #   build      backend + frontend: formatting of every file (Spotless, Prettier), Checkstyle, all
 #              Gradle tests (ArchUnit, Docker runner against the runner's Docker, every
 #              repository and Spring Boot test on PostgreSQL in a container through Testcontainers),
-#              frontend lint and tests, the single jar
-#   runner     ta-runner: ruff, import-linter (package structure) and pytest, upstream contract
-#              tests included; also the Python tests of the agent scripts (scripts/agent)
+#              dependency analysis (Gradle), frontend lint, tests and Knip, the single jar
+#   runner     ta-runner: ruff, import-linter (package structure), deptry and pytest, upstream
+#              contract tests included; also the Python tests of the agent scripts (scripts/agent)
 #   images    both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
 #   e2e        end-to-end tests (e2e/, Playwright): the build job's jar in Google Chrome, with
 #              ta-runner replaying a recording instead of calling an LLM, the jar on a throwaway
@@ -84,6 +84,7 @@ jobs:
             artifact/**/build/reports/tests/
             artifact/**/build/test-results/
             artifact/**/build/reports/checkstyle/
+            artifact/**/build/reports/dependency-analyze/
           if-no-files-found: ignore
 
       - name: Platform jar (for the images job)
