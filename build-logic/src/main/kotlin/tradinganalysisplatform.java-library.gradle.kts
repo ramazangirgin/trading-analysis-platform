@@ -31,6 +31,15 @@ dependencies {
     // Jackson 3 (Spring Boot's BOM): stays on the 3.1 line of Spring Boot 4.1.
     implementation(platform(libs.findLibrary("jackson3-bom").get()))
 
+    constraints {
+        // Bouncy Castle 1.82 from docker-java-core.
+        for (alias in listOf("bouncycastle-bcprov", "bouncycastle-bcpkix", "bouncycastle-bcutil")) {
+            implementation(libs.findLibrary(alias).get()) {
+                because("Dependabot alerts on Bouncy Castle (bcprov, bcpkix, bcutil)")
+            }
+        }
+    }
+
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
     testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())
 
