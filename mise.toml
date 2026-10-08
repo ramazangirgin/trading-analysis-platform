@@ -75,13 +75,14 @@ run = [
 ]
 
 [tasks.check]
-description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint (Checkstyle, ESLint, ruff), formatting (Spotless, Prettier), type-check, dependency declarations (Gradle analysis, Knip, deptry), the custom Checkstyle checks' own tests, the agent scripts' Python tests; no other tests"
+description = "Quick check before pushing: package structure (ArchUnit, ESLint, import-linter), lint (Checkstyle, ESLint, ruff), formatting (Spotless, Prettier), type-check, dependency declarations (Gradle analysis, Knip, deptry), the custom Checkstyle checks' own tests, the agent scripts' and the Claude Code skills' Python tests; no other tests"
 run = [
   "./gradlew --console=plain spotlessCheck checkstyleRulesCheck checkstyleMain checkstyleTest :backend:test --tests '*ArchitectureTest' :frontend:pnpmLint :frontend:pnpmDepsCheck analyzeDependencies",
   "artifact/frontend/with-node.sh pnpm run type-check",
   "e2e/with-node.sh pnpm run type-check",
   "cd artifact/ta-runner && uv run ruff check . && uv run lint-imports && uv run deptry .",
   { task = "agent:test" },
+  { task = "skill:test" },
 ]
 
 # Formatting of every file: Java (Spotless, Palantir Java Format), the frontend and e2e/ (Prettier).
@@ -170,6 +171,10 @@ run = "scripts/agent/detach.sh"
 [tasks."agent:test"]
 description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser and the usage figures"
 run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
+
+[tasks."skill:test"]
+description = "Python tests of the Claude Code skills' helpers (.claude/skills/dependabot-fix/test_*.py)"
+run = "uv run --no-project python -m unittest discover -s .claude/skills/dependabot-fix -p 'test_*.py'"
 
 [tasks.clean]
 description = "Remove build outputs"
