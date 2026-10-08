@@ -141,18 +141,19 @@ WP2 and WP3 do not depend on WP1. WP4 needs all three.
 
 ### WP1: Java dependency analysis
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `gradle/libs.versions.toml`, `build-logic/build.gradle.kts`,
   `build-logic/src/main/kotlin/tradinganalysisplatform.java-library.gradle.kts`, root
   `build.gradle.kts`, every `artifact/backend/**/build.gradle.kts` with a finding, possibly
   `artifact/backend/domain/report/adapter/build.gradle.kts` switching its plugin
 - **Steps**:
-  - [ ] Catalog entries, plugin in `build-logic` and on the root, applied in the convention plugin, configured to fail, report files on
-  - [ ] BOM on the `apiHelper` configuration
-  - [ ] Find and remove what makes the analysis run `bootTestRun`
-  - [ ] Test starter as an aggregator for test classes
-  - [ ] Fix the findings module by module (table above), rerun with `--continue` until green
-  - [ ] `./gradlew build` green; the jar starts, `/actuator/info` answers, and the UI loads
+  - [x] Catalog entries, plugin in `build-logic` and on the root, applied in the convention plugin, configured to fail, report files on
+  - [x] BOM on the `apiHelper` configuration
+  - [x] Find and remove what makes the analysis run `bootTestRun`
+  - [x] Test starter as an aggregator for test classes
+  - [x] Fix the findings module by module (table above), rerun with `--continue` until green
+  - [x] `./gradlew build` green; the jar starts, `/actuator/info` answers, and the UI loads
 - **Tests**: the existing backend tests (ArchUnit, adapter tests on PostgreSQL, Spring Boot tests
   `TradingPlatformApplicationTests`, `AnalysesApiIntegrationTest`) prove that the moved starters and
   test-fixture dependencies change nothing at runtime. The e2e job proves the jar still serves the

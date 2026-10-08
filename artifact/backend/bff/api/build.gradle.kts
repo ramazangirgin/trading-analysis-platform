@@ -5,6 +5,10 @@ plugins {
 description = "BFF REST controllers, delegate interfaces and web DTOs"
 
 dependencies {
-    api(libs.spring.boot.starter.webmvc)
-    api(libs.spring.boot.starter.validation)
+    // Libraries, not starters: the application (:backend) brings the starters.
+    api(libs.spring.core)
+    api(libs.spring.context)
+    api(libs.spring.web)
+    api(libs.spring.webmvc)
+    api(libs.jakarta.validation.api)
 }
