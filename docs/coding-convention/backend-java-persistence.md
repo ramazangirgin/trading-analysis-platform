@@ -8,11 +8,12 @@ enforces each rule. Table, column and type names follow
 
 ## Rules
 
-- **Only Spring Data JPA / Hibernate.** Production and test code do not use `JdbcClient`,
-  `JdbcTemplate`, `NamedParameterJdbcTemplate`, a raw `DataSource` or `Connection`, or a native query
-  (`@Query(nativeQuery = true)`, `@NativeQuery`, `EntityManager.createNativeQuery`, Hibernate's
-  `createNativeMutationQuery`, stored procedure queries). Queries are derived methods, JPQL `@Query`,
-  or `Specification`s. The reasons:
+- **Only Spring Data JPA / Hibernate.** Production code uses no `JdbcClient`, `JdbcTemplate`,
+  `NamedParameterJdbcTemplate`, raw `DataSource` or `Connection` (`java.sql`, `javax.sql`). Test code
+  uses no `org.springframework.jdbc`; the test fixtures may create the database and a `DataSource`
+  to run the migrations. Neither uses a native query (`@Query(nativeQuery = true)`, `@NativeQuery`,
+  `EntityManager.createNativeQuery`, Hibernate's `createNativeMutationQuery`, stored procedure
+  queries). Queries are derived methods, JPQL `@Query`, or `Specification`s. The reasons:
   - one mapping per table instead of SQL strings that drift from the migrations;
   - every query is typed against the entities, so a rename fails at startup instead of at run time;
   - Hibernate checks every entity against the schema at startup (`ddl-auto=validate`).
