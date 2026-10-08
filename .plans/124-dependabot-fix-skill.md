@@ -126,16 +126,16 @@ for its tests only and gets no pin unless `dependencies` shows a vulnerable vers
 
 ### WP1: Helper script and its tests
 
-- **Status**: not done: the developer run could not write files under .claude/skills/dependabot-fix/ (Write and mkdir were refused)
+- **Status**: done
 - **Depends on**: none
 - **Files**: `.claude/skills/dependabot-fix/alerts.py`, `.claude/skills/dependabot-fix/test_alerts.py`
 - **Steps**:
-  - [ ] Version comparator, pre-release detection, GitHub range parser
-  - [ ] JSON5 reader and the `renovate` command
-  - [ ] `alerts` (fetch, normalise, family grouping, per-line required minimum)
-  - [ ] `versions` (Maven metadata + `.pom` `Last-Modified`, PyPI, npm; maturity and `eligible_from`)
-  - [ ] `candidates` (fixes every alert, mature, stable, same major; `waiting`, `needs_prerelease`, `needs_major`)
-  - [ ] Run each command once for real against today's alerts and registries, and fix what differs from the table above
+  - [x] Version comparator, pre-release detection, GitHub range parser
+  - [x] JSON5 reader and the `renovate` command
+  - [x] `alerts` (fetch, normalise, family grouping, per-line required minimum)
+  - [x] `versions` (Maven metadata + `.pom` `Last-Modified`, PyPI, npm; maturity and `eligible_from`)
+  - [x] `candidates` (fixes every alert, mature, stable, same major; `waiting`, `needs_prerelease`, `needs_major`)
+  - [x] Run each command once for real against today's alerts and registries, and fix what differs from the table above
 - **Tests**: `test_alerts.py` (unittest, no network: the fetch functions replaced by fixtures built
   from today's alerts): version ordering and pre-releases (`2.4.20-Beta1`, `4.2.0-M2`, `3.0.0-rc4`,
   `1.85.2`); range matching (`>= 2.19.0, <= 2.21.6`, `< 1.85`); grouping of the Jackson 2 alerts into
@@ -148,12 +148,12 @@ for its tests only and gets no pin unless `dependencies` shows a vulnerable vers
 
 ### WP2: The skill
 
-- **Status**: not done: the developer run could not write files under .claude/skills/dependabot-fix/ (Write and mkdir were refused)
+- **Status**: done
 - **Depends on**: WP1 (the commands it names)
 - **Files**: `.claude/skills/dependabot-fix/SKILL.md`
 - **Steps**:
-  - [ ] Frontmatter (`name: dependabot-fix`, a `description` with trigger phrases: "/dependabot-fix", "fix the Dependabot alerts", "fix the security alerts")
-  - [ ] Command table of `alerts.py`, ground rules, sections 0–7 as in the design
+  - [x] Frontmatter (`name: dependabot-fix`, a `description` with trigger phrases: "/dependabot-fix", "fix the Dependabot alerts", "fix the security alerts")
+  - [x] Command table of `alerts.py`, ground rules, sections 0–7 as in the design
 - **Tests**: none of its own (Markdown); WP4 follows it.
 
 ### WP3: Test task in check and CI
