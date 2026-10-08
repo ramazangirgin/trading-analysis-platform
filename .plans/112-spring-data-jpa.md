@@ -555,6 +555,26 @@ New or changed rules (field names as in the package-structure document):
     `ROLE_PERMISSIONS` rows for every key before V5 runs. The test reads the roles back with every
     permission, and checks that a role with no permissions gets `{}`.
 
+### WP6: Testcontainers on a Podman machine (added during implementation, approved by the developer)
+
+- **Depends on**: WP1c (the shared `PostgresTestDatabase`)
+- **Why**: the repository tests did not start on the developer's Podman machine (macOS). Ryuk,
+  Testcontainers' cleanup container, mounts the `DOCKER_HOST` socket path. That is the host's path
+  and does not exist inside the machine's VM ("read-only file system"). The agent had worked around
+  it with an untracked `mise.local.toml` that switched Ryuk off. The developer asked for a fix
+  committed in the right place, one that works for every developer, Docker and Podman alike.
+- **Files**: `build-logic/src/main/kotlin/tradinganalysisplatform.java-library.gradle.kts`;
+  `README.md` (the tasks paragraph); `docs/coding-convention/backend-java-persistence.md` (Tests)
+- **Steps**:
+  - [x] Every Gradle `Test` task: when `DOCKER_HOST` points at a Podman machine and neither
+        `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` nor `TESTCONTAINERS_RYUK_DISABLED` is set, a rootful
+        machine gets `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/run/podman/podman.sock`, the socket
+        inside the VM, so Ryuk keeps cleaning up. A rootless machine gets
+        `TESTCONTAINERS_RYUK_DISABLED=true`, since its socket path depends on its user. Docker, and
+        Podman on Linux without a machine, are unchanged. A value set in the environment wins.
+- **Tests**: the repository tests on a rootful Podman machine with Ryuk running, and CI (Docker)
+  unchanged.
+
 ### WP5: Convention, docs and ArchUnit rules
 
 - **Depends on**: WP1b, WP2–WP4 (the rules must pass on the migrated code)
