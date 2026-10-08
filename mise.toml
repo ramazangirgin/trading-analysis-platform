@@ -49,9 +49,9 @@ description = "Test everything and build the single jar (backend + UI); the back
 run = "./gradlew build"
 
 [tasks.runner-test]
-description = "ta-runner lint, import contracts and tests"
+description = "ta-runner lint, import contracts, dependency check (deptry) and tests"
 dir = "artifact/ta-runner"
-run = ["uv run ruff check .", "uv run lint-imports", "uv run pytest -q"]
+run = ["uv run ruff check .", "uv run lint-imports", "uv run deptry .", "uv run pytest -q"]
 
 [tasks.e2e]
 description = "End-to-end tests (e2e/, Playwright): the built jar on a throwaway PostgreSQL container (Docker or Podman) with ta-runner replaying a recording, in a real browser"
