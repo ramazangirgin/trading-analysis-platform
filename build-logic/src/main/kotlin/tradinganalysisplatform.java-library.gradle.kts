@@ -38,6 +38,12 @@ dependencies {
                 because("Dependabot alerts on Bouncy Castle (bcprov, bcpkix, bcutil)")
             }
         }
+        // Tomcat 11.0.24 from Spring Boot's BOM.
+        for (alias in listOf("tomcat-embed-core", "tomcat-embed-el", "tomcat-embed-websocket")) {
+            implementation(libs.findLibrary(alias).get()) {
+                because("Dependabot alerts on Tomcat (tomcat-embed-core, -el, -websocket)")
+            }
+        }
     }
 
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
