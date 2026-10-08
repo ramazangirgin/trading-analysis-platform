@@ -19,7 +19,13 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.elements.GivenClassesConjunction;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.mapstruct.Mapper;
+import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -29,7 +35,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @SuppressWarnings({"checkstyle:ConstantName", "checkstyle:DeclarationOrder", "checkstyle:HideUtilityClassConstructor"})
 @AnalyzeClasses(
         packages = "tr.girgin.backend.trading.analysis.platform",
-        importOptions = ImportOption.DoNotIncludeTests.class)
+        importOptions = {ImportOption.DoNotIncludeTests.class, DoNotIncludeTestFixtures.class})
 class ArchitectureTest {
 
     private static final String BASE = "tr.girgin.backend.trading.analysis.platform";
@@ -55,6 +61,7 @@ class ArchitectureTest {
     private static final String DOMAIN_ADAPTER_PORT = BASE + ".domain.*.adapter.*";
     private static final String DOMAIN_ADAPTER_PORT_SUB = BASE + ".domain.*.adapter.*.*..";
     private static final String DOMAIN_ADAPTER_MAPPER = BASE + ".domain.*.adapter..mapper..";
+    private static final String LIBRARY_MAPPER = BASE + ".library.mapper..";
     private static final String DOMAIN_CORE_SUB = BASE + ".domain.*.core.*..";
     private static final String ORCHESTRATION_FEATURE_SUB = BASE + ".orchestration.*.*..";
     private static final String INBOUND = "..inbound..";
@@ -176,6 +183,8 @@ class ArchitectureTest {
                     "java.sql..",
                     "org.springframework.jdbc..",
                     "org.springframework.data..",
+                    "jakarta.persistence..",
+                    "org.hibernate..",
                     "com.fasterxml.jackson..",
                     "tools.jackson..")
             .orShould()
@@ -224,6 +233,7 @@ class ArchitectureTest {
                     BASE + ".domain.*",
                     BASE + ".domain.*.core",
                     BASE + ".domain.*.adapter",
+                    BASE + ".library",
                     BASE + ".orchestration",
                     BASE + ".orchestration.*")
             .because("a module's root package only groups its sub-packages (package-info aside)");
@@ -270,40 +280,22 @@ class ArchitectureTest {
             .haveNameMatching(".*Api(Controller|Delegate)");
 
     @ArchTest
-    static final ArchRule rows_live_in_row_packages = topLevelClasses()
-            .and()
-            .haveSimpleNameEndingWith("Row")
-            .should()
-            .resideInAPackage(DOMAIN_ADAPTER + "row..")
-            .because("persistence rows (table shapes) live in adapter.<port>.row");
-
-    @ArchTest
-    static final ArchRule row_packages_hold_only_row_records = topLevelClasses()
-            .and()
-            .resideInAPackage("..row..")
-            .should()
-            .beAssignableTo(Record.class)
-            .andShould()
-            .haveSimpleNameEndingWith("Row");
-
-    @ArchTest
     static final ArchRule adapter_records_live_in_data_packages = topLevelClasses()
             .and()
             .resideInAPackage(DOMAIN_ADAPTER)
             .and()
             .areAssignableTo(Record.class)
             .should()
-            .resideInAnyPackage("..row..", "..json..", "..spec..")
-            .because("rows, JSON shapes and runner specs each have a sub-package;"
-                    + " an adapter package root holds adapters");
+            .resideInAnyPackage("..json..", "..spec..")
+            .because("JSON shapes and runner specs each have a sub-package; an adapter package root holds adapters");
 
     @ArchTest
     static final ArchRule adapter_sub_packages_are_known_kinds = topLevelClasses()
             .and()
             .resideInAPackage(DOMAIN_ADAPTER_PORT_SUB)
             .should()
-            .resideInAnyPackage("..mapper..", "..row..", "..json..", "..spec..", "..support..")
-            .because("an adapter port package splits into mapper, row, json, spec and support only");
+            .resideInAnyPackage("..mapper..", "..entity..", "..json..", "..spec..", "..support..")
+            .because("an adapter port package splits into mapper, entity, json, spec and support only");
 
     @ArchTest
     static final ArchRule port_adapters_live_at_the_port_package_root = topLevelClasses()
@@ -322,7 +314,10 @@ class ArchitectureTest {
             .resideOutsideOfPackages(SHARED_ADAPTER_PACKAGES)
             .should()
             .implement(resideInAPackage(DOMAIN_OUTBOUND))
-            .because("rows, JSON shapes, mappers and helpers go into the port's sub-packages");
+            .orShould()
+            .beAssignableTo(Repository.class)
+            .because("entities, JSON shapes, mappers and helpers go into the port's sub-packages;"
+                    + " next to its adapter a persistence package holds the adapter's Spring Data repositories");
 
     @ArchTest
     static final ArchRule domain_core_sub_packages_are_known_kinds = topLevelClasses()
@@ -381,8 +376,9 @@ class ArchitectureTest {
             .that()
             .areAnnotatedWith(Mapper.class)
             .should()
-            .resideInAnyPackage(DOMAIN_ADAPTER_MAPPER, BFF_IMPL_MAPPER)
-            .because("mapping happens where data crosses a boundary, in that boundary's mapper package");
+            .resideInAnyPackage(DOMAIN_ADAPTER_MAPPER, BFF_IMPL_MAPPER, LIBRARY_MAPPER)
+            .because("mapping happens where data crosses a boundary, in that boundary's mapper package;"
+                    + " the generic converters two modules need are in the shared mapper library");
 
     @ArchTest
     static final ArchRule mappers_are_named_after_their_mapping = classes()
@@ -400,9 +396,42 @@ class ArchitectureTest {
             .should()
             .haveName("map");
 
+    @ArchTest
+    static final ArchRule mappers_are_not_duplicated_across_modules = classes()
+            .that()
+            .areAnnotatedWith(Mapper.class)
+            .should(haveASimpleNameNoOtherMapperHas())
+            .because("a converter two modules need lives once, in the shared mapper library, never as a copy");
+
     /** Top-level project classes, without {@code package-info} and generated nested types. */
     private static GivenClassesConjunction topLevelClasses() {
         return classes().that().areTopLevelClasses().and().doNotHaveSimpleName("package-info");
+    }
+
+    private static ArchCondition<JavaClass> haveASimpleNameNoOtherMapperHas() {
+        return new ArchCondition<>("have a simple name no other mapper has") {
+            private final Map<String, List<String>> namesBySimpleName = new HashMap<>();
+
+            @Override
+            public void init(Collection<JavaClass> allObjectsToTest) {
+                for (JavaClass mapper : allObjectsToTest) {
+                    namesBySimpleName
+                            .computeIfAbsent(mapper.getSimpleName(), _ -> new ArrayList<>())
+                            .add(mapper.getName());
+                }
+            }
+
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                List<String> others = namesBySimpleName.get(javaClass.getSimpleName()).stream()
+                        .filter(name -> !name.equals(javaClass.getName()))
+                        .toList();
+                if (!others.isEmpty()) {
+                    events.add(SimpleConditionEvent.violated(
+                            javaClass, javaClass.getName() + " has the same name as " + String.join(", ", others)));
+                }
+            }
+        };
     }
 
     private static ArchCondition<JavaClass> implementOnlyProjectInterfacesThat(DescribedPredicate<JavaClass> allowed) {

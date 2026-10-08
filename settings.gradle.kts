@@ -52,6 +52,8 @@ include(
     ":backend:domain:settings:adapter",
     ":backend:domain:identity:core",
     ":backend:domain:identity:adapter",
+    ":backend:library:mapper",
+    ":backend:library:persistence",
     ":frontend",
 )
 

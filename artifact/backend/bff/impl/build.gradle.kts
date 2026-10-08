@@ -11,5 +11,6 @@ dependencies {
     implementation(project(":backend:domain:report:core"))
     implementation(project(":backend:domain:catalog:core"))
     implementation(project(":backend:domain:settings:core"))
+    implementation(project(":backend:library:mapper"))
     implementation(libs.jackson.databind)
 }

@@ -40,8 +40,35 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-parameters")
 }
 
+// Testcontainers on a Podman machine (macOS, Windows): Ryuk, its cleanup container, mounts the
+// DOCKER_HOST socket path, which is the host's path and does not exist inside the machine's VM
+// ("read-only file system"). A rootful machine serves the API at /run/podman/podman.sock inside the
+// VM, so Ryuk gets that path and keeps cleaning up; a rootless machine's path depends on its user,
+// so Ryuk is switched off there. Docker, and Podman on Linux without a machine, need neither. A
+// value set in the environment always wins.
+val podmanMachineTestcontainersEnv: Map<String, String> by lazy {
+    val dockerHost = providers.environmentVariable("DOCKER_HOST").orNull.orEmpty()
+    val onPodmanMachine = dockerHost.contains("/podman/machine/") || dockerHost.contains("podman-machine")
+    val alreadySet = listOf("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "TESTCONTAINERS_RYUK_DISABLED")
+        .any { providers.environmentVariable(it).isPresent }
+    if (!onPodmanMachine || alreadySet) {
+        emptyMap()
+    } else {
+        val rootful = providers.exec {
+            commandLine("podman", "machine", "inspect", "--format", "{{.Rootful}}")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.get().trim() == "true"
+        if (rootful) {
+            mapOf("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE" to "/run/podman/podman.sock")
+        } else {
+            mapOf("TESTCONTAINERS_RYUK_DISABLED" to "true")
+        }
+    }
+}
+
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    environment(podmanMachineTestcontainersEnv)
 }
 
 // Checkstyle on main and test sources (checkstyleMain, checkstyleTest), part of `check` and so of

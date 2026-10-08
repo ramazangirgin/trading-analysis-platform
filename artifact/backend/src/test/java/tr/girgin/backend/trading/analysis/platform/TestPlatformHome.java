@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 /**
  * A throwaway platform home per test class, also used as the data dir, so tests never touch

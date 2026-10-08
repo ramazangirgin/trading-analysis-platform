@@ -85,8 +85,11 @@
         <module name="UnusedImports"/>
         <module name="RedundantImport"/>
         <module name="IllegalImport">
-            <!-- JDK internals, JUnit 4, commons-lang 2. Nullness annotations come from JSpecify (#11). -->
-            <property name="illegalPkgs" value="sun, com.sun, jdk.internal, junit.framework, org.apache.commons.lang"/>
+            <!-- JDK internals, JUnit 4, commons-lang 2. Nullness annotations come from JSpecify (#11).
+                 org.springframework.jdbc: persistence goes through Spring Data JPA; the ArchUnit rule
+                 production_code_does_not_use_plain_sql covers main code, this covers test code too. -->
+            <property name="illegalPkgs"
+                      value="sun, com.sun, jdk.internal, junit.framework, org.apache.commons.lang, org.springframework.jdbc"/>
             <property name="illegalClasses" value="
                 org.junit.Assert, org.junit.Assume, org.junit.Test, org.junit.Before, org.junit.After,
                 org.junit.BeforeClass, org.junit.AfterClass, org.junit.Ignore, org.junit.Rule,

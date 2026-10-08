@@ -15,7 +15,7 @@ val frontend = configurations.create("frontend") {
 dependencies {
     implementation(libs.spring.boot.starter)
     implementation(libs.spring.boot.starter.actuator)
-    implementation(libs.spring.boot.starter.jdbc)
+    implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.flyway)
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.flyway.database.postgresql)
@@ -34,6 +34,7 @@ dependencies {
     runtimeOnly(project(":backend:domain:settings:adapter"))
     runtimeOnly(project(":backend:domain:identity:core"))
     runtimeOnly(project(":backend:domain:identity:adapter"))
+    runtimeOnly(project(":backend:library:mapper"))
     runtimeOnly(libs.springdoc.openapi.webmvc.api)
 
     frontend(project(path = ":frontend", configuration = "dist"))
@@ -42,7 +43,7 @@ dependencies {
     testImplementation(libs.mapstruct)
     testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.jackson.databind)
-    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(testFixtures(project(":backend:library:persistence")))
 }
 
 springBoot {
