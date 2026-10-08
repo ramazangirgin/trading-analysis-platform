@@ -2,6 +2,9 @@ plugins {
     base
     alias(libs.plugins.spring.boot) apply false
     alias(libs.plugins.node) apply false
+    // The dependency analysis refuses to run unless it is also applied to the root project. The
+    // modules get it from the convention plugin (build-logic).
+    alias(libs.plugins.dependency.analyze)
 }
 
 // The custom Checkstyle checks (build-logic/checkstyle-rules) are an included build: Gradle cannot run
