@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // The entry (src/app/main.ts) comes from index.html through Knip's Vite plugin.
+  "project": ["src/**/*.{ts,vue}"],
+  "ignoreDependencies": [
+    // markdown-it ships no types of its own; TypeScript picks @types/markdown-it up implicitly,
+    // there is no import for Knip to see.
+    "@types/markdown-it",
+  ],
+}

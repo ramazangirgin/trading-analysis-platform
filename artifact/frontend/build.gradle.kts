@@ -43,6 +43,14 @@ val pnpmTest = tasks.register<PnpmTask>("pnpmTest") {
     outputs.upToDateWhen { true }
 }
 
+val pnpmDepsCheck = tasks.register<PnpmTask>("pnpmDepsCheck") {
+    description = "Runs Knip: fails on unused and unlisted packages in package.json"
+    dependsOn(tasks.pnpmInstall)
+    args.set(listOf("run", "deps:check"))
+    inputs.files(sources + listOf("knip.jsonc"))
+    outputs.upToDateWhen { true }
+}
+
 // Regenerates src/shared/api/schema.d.ts from openapi.json (`mise run api-types` refreshes both).
 tasks.register<PnpmTask>("pnpmApiTypes") {
     description = "Generates the TypeScript API types from openapi.json"
@@ -58,7 +66,7 @@ tasks.register<PnpmTask>("pnpmDev") {
 }
 
 tasks.assemble { dependsOn(pnpmBuild) }
-tasks.check { dependsOn(pnpmLint, pnpmTest) }
+tasks.check { dependsOn(pnpmLint, pnpmTest, pnpmDepsCheck) }
 tasks.clean { delete("dist") }
 
 // Consumed by :backend, which copies it into classpath:/static.
