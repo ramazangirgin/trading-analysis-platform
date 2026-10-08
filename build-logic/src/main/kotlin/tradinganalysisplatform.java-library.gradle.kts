@@ -2,6 +2,7 @@ plugins {
     `java-library`
     checkstyle
     id("com.diffplug.spotless")
+    id("ca.cutterslade.analyze")
 }
 
 val libs = the<VersionCatalogsExtension>().named("libs")
@@ -32,6 +33,46 @@ dependencies {
     // default one, so Checkstyle itself is declared too (same version as toolVersion below).
     add("checkstyle", libs.findLibrary("checkstyle").get())
     add("checkstyle", "tradinganalysisplatform:checkstyle-rules")
+}
+
+// Dependency analysis (gradle-dependency-analyze): the build fails on a library the code uses but the
+// module does not declare, and on one it declares but does not use. Part of `check`. The plugin
+// fails by default; exceptions go into its permit* configurations, in the build file of the module.
+// See docs/coding-convention/repository-dependency-hygiene.md.
+tasks.withType<ca.cutterslade.gradle.analyze.AnalyzeDependenciesTask>().configureEach {
+    warnUsedUndeclared = false
+    warnUnusedDeclared = false
+    warnSuperfluous = false
+    logDependencyInformationToFiles = true
+}
+
+// The plugin makes its tasks depend on every task of the module that produces classes or a jar: the
+// tests, Checkstyle and (in :backend) bootTestRun, which fails without a database. The analysis needs
+// the compiled classes only; the classpath inputs bring the other modules' jars on their own.
+afterEvaluate {
+    tasks.named("analyzeClassesDependencies") {
+        setDependsOn(listOf("compileJava", "classes"))
+    }
+    tasks.named("analyzeTestClassesDependencies") {
+        setDependsOn(listOf("compileJava", "classes", "compileTestJava", "testClasses"))
+    }
+    // A module without tests declares the test starter (every module gets it) but cannot use it.
+    // Not permitted for modules with tests: there the permit would hide the starter from the aggregator.
+    if (sourceSets["test"].allSource.isEmpty) {
+        dependencies.add("permitTestUnusedDeclared", libs.findLibrary("spring-boot-starter-test").get())
+    }
+}
+
+dependencies {
+    // The test starter is the one aggregator: tests use AssertJ, JUnit, Mockito and Spring Test
+    // through it, and a module without tests does not fail on it.
+    add("permitTestAggregatorUse", libs.findLibrary("spring-boot-starter-test").get())
+}
+
+// The plugin copies the `api` declarations into its own apiHelper configurations, and has its own permit*
+// ones; none of them sees the BOM imported on `implementation`, so a starter would resolve without a version.
+configurations.matching { it.name.startsWith("apiHelper") || it.name.startsWith("permit") }.configureEach {
+    dependencies.add(project.dependencies.platform(libs.findLibrary("spring-boot-bom").get().get()))
 }
 
 // Spring resolves @PathVariable/@RequestParam names from parameter names. The Spring Boot
