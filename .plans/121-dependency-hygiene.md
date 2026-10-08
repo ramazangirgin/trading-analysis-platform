@@ -177,13 +177,14 @@ WP2 and WP3 do not depend on WP1. WP4 needs all three.
 
 ### WP3: ta-runner deptry check
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/ta-runner/pyproject.toml`, `artifact/ta-runner/uv.lock`, `mise.toml`
   (`runner-test`)
 - **Steps**:
-  - [ ] Add deptry to the dev group and `[tool.deptry]`
-  - [ ] Declare `langchain-core`, fix or justify the other findings, with a comment for every ignore
-  - [ ] `uv run deptry .` in `runner-test`
+  - [x] Add deptry to the dev group and `[tool.deptry]`
+  - [x] Declare `langchain-core`, fix or justify the other findings, with a comment for every ignore
+  - [x] `uv run deptry .` in `runner-test`
 - **Tests**: `mise run runner-test` green, upstream contract tests included. The ta-runner image
   still builds (CI's images job). Proof that it fails: an unused package in `[project.dependencies]`
   and an import from `ta_runner/` of a dev-only package, shown and reverted.

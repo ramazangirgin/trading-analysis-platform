@@ -11,6 +11,9 @@ dependencies = [
     # weekly update pull request includes it (.github/renovate.json5): run `uv lock` and adapt
     # compat.py on that branch before merging.
     "tradingagents @ https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz",
+    # Imported by the engine (callbacks), but its version is TradingAgents' decision: no range here,
+    # uv.lock pins what TradingAgents resolves to.
+    "langchain-core",
 ]
 
 [project.scripts]
@@ -18,6 +21,7 @@ ta-runner = "ta_runner.__main__:main"
 
 [dependency-groups]
 dev = [
+    "deptry>=0.23",
     "import-linter>=2.3",
     "pytest>=8.4",
     "ruff>=0.15",
@@ -46,6 +50,10 @@ allow-direct-references = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+
+# deptry (`deptry .`): declare what ta_runner/ and tests/ import, declare nothing else.
+[tool.deptry]
+known_first_party = ["ta_runner"]
 
 [tool.ruff]
 line-length = 100
