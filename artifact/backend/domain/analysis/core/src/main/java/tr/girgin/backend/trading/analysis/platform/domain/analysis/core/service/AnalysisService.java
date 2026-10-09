@@ -1,6 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.Comparator;
@@ -64,6 +64,7 @@ class AnalysisService
     private final CredentialsPort credentials;
     private final EventStorePort eventStore;
     private final AnalysisEventHub hub;
+    private final Clock clock;
     private final int maxConcurrentRuns;
 
     private final Object lock = new Object();
@@ -78,6 +79,7 @@ class AnalysisService
             CredentialsPort credentials,
             EventStorePort eventStore,
             AnalysisEventHub hub,
+            Clock clock,
             @Value("${platform.analysis.max-concurrent-runs:2}") int maxConcurrentRuns) {
         if (maxConcurrentRuns < 1) {
             throw new IllegalArgumentException("platform.analysis.max-concurrent-runs must be at least 1");
@@ -87,6 +89,7 @@ class AnalysisService
         this.credentials = credentials;
         this.eventStore = eventStore;
         this.hub = hub;
+        this.clock = clock;
         this.maxConcurrentRuns = maxConcurrentRuns;
     }
 
@@ -142,7 +145,7 @@ class AnalysisService
     @Override
     public Analysis start(AnalysisSpec spec) {
         AnalysisSpecValidator.validate(spec, LocalDate.now());
-        Analysis analysis = Analysis.queued(AnalysisId.newId(), spec, Instant.now());
+        Analysis analysis = Analysis.queued(AnalysisId.newId(), spec, clock.instant());
         synchronized (lock) {
             ensureNotActive(spec);
             repository.insert(analysis);
@@ -223,7 +226,7 @@ class AnalysisService
             try {
                 RunHandle handle = runner.start(id, analysis.spec(), credentials.environment(), new Sink(id));
                 running.put(id, handle);
-                repository.update(analysis.running(Instant.now(), handle.ref()));
+                repository.update(analysis.running(clock.instant(), handle.ref()));
                 log.info("Started {} ({})", id, handle.ref());
             } catch (RuntimeException e) {
                 log.error("Could not start {}", id, e);
@@ -238,7 +241,7 @@ class AnalysisService
      * end is recorded and a RUN_FINISHED event appended, so replaying clients see it too.
      */
     private void end(Analysis analysis, RunOutcome outcome, String errorCode, String message) {
-        repository.update(analysis.finished(outcome.toStatus(), Instant.now(), errorCode, message));
+        repository.update(analysis.finished(outcome.toStatus(), clock.instant(), errorCode, message));
         long seq = eventStore.read(analysis.id(), 0).stream()
                         .mapToLong(RunEvent::seq)
                         .max()
@@ -257,7 +260,7 @@ class AnalysisService
             payload.put("error", message);
         }
         RunEvent event =
-                new RunEvent(seq, Instant.now(), RunEventType.RUN_FINISHED, null, outcome, null, message, payload);
+                new RunEvent(seq, clock.instant(), RunEventType.RUN_FINISHED, null, outcome, null, message, payload);
         eventStore.append(analysis.id(), event);
         hub.publish(analysis.id(), event);
     }
