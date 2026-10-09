@@ -21,7 +21,7 @@ All packages start with `tr.girgin.backend.trading.analysis.platform` (written `
 | `:backend:domain:<d>:core` | `….domain.<d>.core` | The domain: model, ports, services |
 | `:backend:domain:<d>:adapter` | `….domain.<d>.adapter` | Outbound adapters, one sub-package per port |
 | `:backend:library:<library>` | `….library.<library>` | A shared library: technical code only, no domain type ([Shared libraries](#shared-libraries)) |
-| `:backend` | `…` | `TradingPlatformApplication` only; assembles the modules at runtime |
+| `:backend` | `…` | `TradingPlatformApplication` and the application-wide `Clock` bean; assembles the modules at runtime |
 
 Domains: `analysis`, `report`, `catalog`, `settings`, `identity`.
 
@@ -142,7 +142,7 @@ libraries it uses:
 | Gradle project | Root package | Holds | Used by |
 |---|---|---|---|
 | `:backend:library:mapper` | `….library.mapper` | Generic MapStruct scalar mappers: `DurationToMillisMapper`, `EnumToLowerCaseNameMapper` | `bff:impl`, `domain:analysis:adapter` |
-| `:backend:library:persistence` | `….library.persistence` | Technical persistence code (none yet), and in its test fixtures the shared test code of the persistence adapters ([persistence](backend-java-persistence.md#shared-persistence-code)) | the persistence adapters' and `:backend`'s tests |
+| `:backend:library:persistence` | `….library.persistence` | The JPA auditing configuration (`JpaAuditingConfiguration`, `ClockDateTimeProvider`), and in its test fixtures the shared test code of the persistence adapters ([persistence](backend-java-persistence.md#shared-persistence-code)) | `domain:settings:adapter`, `domain:identity:adapter`, `:backend` (runtime); the persistence adapters' and `:backend`'s tests |
 
 - **Technical code only, never domain logic.** A library holds generic building blocks with no
   project type, no domain concept and no business rule, one kind of code per library. It may depend

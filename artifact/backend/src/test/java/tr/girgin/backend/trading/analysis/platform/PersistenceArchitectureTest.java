@@ -24,12 +24,20 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -71,6 +79,10 @@ class PersistenceArchitectureTest {
             "createStoredProcedureQuery",
             "createNamedStoredProcedureQuery",
             "createStoredProcedureCall");
+
+    /** The Spring Data auditing annotations, which only work with the auditing entity listener. */
+    private static final Set<Class<? extends Annotation>> AUDITING_ANNOTATIONS =
+            Set.of(CreatedDate.class, LastModifiedDate.class, CreatedBy.class, LastModifiedBy.class);
 
     // --- Persistence -----------------------------------------------------------------------
 
@@ -156,6 +168,16 @@ class PersistenceArchitectureTest {
             .should(mapEnumsToPostgresEnumTypes())
             .because("an enum column is a PostgreSQL enum type and a set of enums an array of it, never text");
 
+    @ArchTest
+    static final ArchRule audited_entities_have_the_auditing_listener = classes()
+            .that(DescribedPredicate.describe(
+                    "have an auditing field",
+                    javaClass -> javaClass.getFields().stream()
+                            .anyMatch(field -> AUDITING_ANNOTATIONS.stream().anyMatch(field::isAnnotatedWith))))
+            .should(haveTheAuditingListener())
+            .because("without the listener the auditing annotations are silently ignored, and a NOT NULL column"
+                    + " fails only on insert");
+
     // --- Shared libraries --------------------------------------------------------------------
 
     @ArchTest
@@ -220,6 +242,24 @@ class PersistenceArchitectureTest {
                                 field.getFullName() + " is an enum array without a @ColumnTransformer(write ="
                                         + " \"cast(? as ...[])\"): Hibernate binds varchar[]"));
                     }
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> haveTheAuditingListener() {
+        return new ArchCondition<>("be annotated with @EntityListeners(AuditingEntityListener.class)") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                boolean listed = javaClass
+                        .tryGetAnnotationOfType(EntityListeners.class)
+                        .map(listeners -> Arrays.asList(listeners.value()).contains(AuditingEntityListener.class))
+                        .orElse(false);
+                if (!listed) {
+                    events.add(SimpleConditionEvent.violated(
+                            javaClass,
+                            javaClass.getName() + " has an auditing field but no"
+                                    + " @EntityListeners(AuditingEntityListener.class)"));
                 }
             }
         };
