@@ -144,7 +144,7 @@ class AnalysisService
 
     @Override
     public Analysis start(AnalysisSpec spec) {
-        AnalysisSpecValidator.validate(spec, LocalDate.now());
+        AnalysisSpecValidator.validate(spec, LocalDate.now(clock));
         Analysis analysis = Analysis.queued(AnalysisId.newId(), spec, clock.instant());
         synchronized (lock) {
             ensureNotActive(spec);

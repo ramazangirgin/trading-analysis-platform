@@ -26,7 +26,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 
 class AnalysisServiceTest {
 
-    private static final Instant NOW = Instant.parse("2026-03-04T05:06:07Z");
+    private static final Instant NOW = Instant.parse("2026-10-01T05:06:07Z");
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
     private Fakes.Repository repository;
@@ -57,6 +57,14 @@ class AnalysisServiceTest {
         assertThat(eventStore.read(started.id(), 0))
                 .singleElement()
                 .satisfies(e -> assertThat(e.timestamp()).isEqualTo(NOW));
+    }
+
+    @Test
+    void validatesTheTradeDateAgainstTheClocksDate() {
+        LocalDate today = LocalDate.ofInstant(NOW, ZoneOffset.UTC);
+
+        assertThat(service.start(Fakes.spec("NVDA", today)).status()).isEqualTo(AnalysisStatus.RUNNING);
+        assertInvalid(Fakes.spec("MU", today.plusDays(1)), "tradeDate");
     }
 
     @Test
@@ -110,7 +118,7 @@ class AnalysisServiceTest {
     void rejectsInvalidSpecsWithTheOffendingField() {
         AnalysisSpec future = new AnalysisSpec(
                 "NVDA",
-                LocalDate.now().plusDays(1),
+                LocalDate.ofInstant(NOW, ZoneOffset.UTC).plusDays(1),
                 AssetType.STOCK,
                 List.of(Analyst.MARKET),
                 "openai",
