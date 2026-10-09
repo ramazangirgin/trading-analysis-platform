@@ -388,7 +388,8 @@ class AfterMergeTest(unittest.TestCase):
 
     def test_gone_from_the_graph(self):
         status = alerts.after_merge_status(api_alert("open"), True, {"3.1.7"})
-        self.assertTrue(status["status"].startswith("open: not in the graph any more"))
+        self.assertEqual(status["status"], "open: not in the graph any more")
+        self.assertIn("wait", status["note"])
 
     def test_versions_it_cannot_read_are_skipped(self):
         status = alerts.after_merge_status(api_alert("open"), True, {"7.*.*", "3.1.7"})

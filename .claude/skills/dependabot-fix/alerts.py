@@ -635,7 +635,11 @@ def after_merge_status(alert, submission_current, graph_versions):
     still = sorted((v for v in graph_versions if vulnerable(v, vulnerable_range)), key=version_key)
     if still:
         return {"number": number, "status": "open: still in the graph", "versions": still}
-    return {"number": number, "status": "open: not in the graph any more, Dependabot not updated yet"}
+    return {
+        "number": number,
+        "status": "open: not in the graph any more",
+        "note": "Dependabot has not caught up with the submission yet: wait, then run it again",
+    }
 
 
 def vulnerable(version, vulnerable_range):
