@@ -62,7 +62,7 @@ migration gives it (`@Table(name = "ANALYSES")`), and JPQL uses the class name
 | An enum | A PostgreSQL enum type whose labels are the Java constant names: `@Enumerated(EnumType.STRING)`, `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS_STATUS\""` | `AnalysisStatus status` |
 | A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYST\"[]"`. An enum array also needs `@ColumnTransformer(write = "cast(? as \"ANALYST\"[])")` (see below) | `List<Analyst> analysts`, `Set<Permission> permissions` |
 | References to another aggregate | An `@ElementCollection` on a join table, so the foreign key stays; never a `@ManyToMany` between aggregates | `Set<RoleId> roleIds` on `USER_ROLES` |
-| A timestamp | `Instant` on a `TIMESTAMPTZ` column | `Instant createdAt` |
+| A timestamp | `Instant` on a `TIMESTAMPTZ` column; a domain fact or an audit field ([Timestamps](#timestamps-domain-facts-and-audit-fields)) | `Instant createdAt` |
 
 Why these choices:
 
@@ -93,7 +93,9 @@ do, by `value`, and are `Serializable`, as JPA requires of an `@EmbeddedId`.
 ## Repositories and adapters
 
 - **Upsert** is `repository.save(entity)`: an entity with an assigned ID is merged (insert or
-  update). A column that must keep its first value is `@Column(updatable = false)` (`USERS.CREATED_AT`).
+  update). A column that must keep its first value is `@Column(updatable = false)`. `USERS.CREATED_AT`
+  is kept by `@CreatedDate` and the load-and-copy save of `JpaUserRepositoryAdapter`;
+  `updatable = false` stays on it as a guard.
 - **Insert only**: an entity whose insert must fail on an existing ID implements `Persistable` with
   a `@Transient` "new" flag, so `save` is a `persist` (`AnalysisEntity`).
 - **Partial updates** load the managed entity in a `@Transactional` adapter method and copy only
@@ -114,6 +116,41 @@ do, by `value`, and are `Serializable`, as JPA requires of an `@EmbeddedId`.
 - **Index-friendly lookups**: a case-insensitive lookup is JPQL `lower(u.username) = lower(:username)`,
   matching the `LOWER(...)` unique index. A derived `IgnoreCase` method would use `upper(...)` and
   miss it.
+
+## Timestamps: domain facts and audit fields
+
+**A timestamp is a domain fact when the domain gives it its value or decides with it**: it can
+differ from the time of the write, or a rule or ordering in the core uses it. Then the core sets it
+from the injected `java.time.Clock`. **Otherwise it is an audit field**: it records when the row was
+written, and Spring Data JPA auditing sets it (`@CreatedDate`, `@LastModifiedDate`).
+
+| Column | Kind | Why |
+|---|---|---|
+| `ANALYSES.CREATED_AT` | Domain fact | An imported run takes the start time of the original run, and recovery orders queued analyses by it. Set by the analysis core from the `Clock` |
+| `USERS.CREATED_AT` | Audit field (`@CreatedDate`) | When the row was inserted; no rule reads it |
+| `USERS.UPDATED_AT` | Audit field (`@LastModifiedDate`) | When the row was last written; no rule reads it |
+| `PRESETS.UPDATED_AT` | Audit field (`@LastModifiedDate`) | When the preset was last saved. It is shown to the user, but it only records the write |
+
+- **One `Clock` bean.** `TradingPlatformApplication` defines `Clock.systemUTC()`; cores and adapters
+  inject `java.time.Clock`, which is neither a persistence nor a Spring type, so the core rule holds.
+  A test passes a fixed clock instead of calling `Instant.now()`.
+- **`ClockDateTimeProvider`** (`:backend:library:persistence`) feeds auditing from that `Clock`,
+  truncated to microseconds, which `TIMESTAMPTZ` keeps: the value returned from `save` equals the one
+  read back later. `JpaAuditingConfiguration` enables auditing with it.
+- **Every entity with an audit field** has `@EntityListeners(AuditingEntityListener.class)`.
+- **The records keep audited fields for reading.** `Preset.updatedAt`, `User.createdAt` and
+  `User.updatedAt` are `null` on a record the core builds before its first save, and set on every
+  record a port returns: `save` returns the stored record, mapped from the entity after the flush.
+- **The mappers ignore audited fields** (`@Mapping(target = "…", ignore = true)`): an adapter never
+  writes one from the domain.
+- **Presets** are saved with `saveAndFlush` (a merge). The incoming entity has `updatedAt == null`,
+  so the row is always dirty and every save sets `UPDATED_AT`, also with unchanged content.
+- **Users** are not merged: a merge would copy the incoming `createdAt == null` onto the managed
+  entity. `JpaUserRepositoryAdapter#save` loads the managed entity by ID. If it exists, it copies the
+  domain fields and role IDs onto it and clears `updatedAt`, so the flush always updates the row and
+  auditing sets the time. If not, it persists the new entity.
+- **`@CreatedBy` / `@LastModifiedBy`** are the way to record who wrote a row. They need
+  authentication and new columns, so they are added with the login, not before.
 
 ## Configuration
 
@@ -137,12 +174,14 @@ real file, so a drift shows up there.
 Like every shared library, it holds no domain type and no business rule
 ([package structure](backend-java-package-structure.md#shared-libraries)):
 
-- **Main source set**: empty today. A base type that a second adapter needs (an insert-only
-  `Persistable` base, a generic `AttributeConverter`, a `@NoRepositoryBean` base repository) moves
-  here, never copied. There is no `@MappedSuperclass` for timestamps: `PRESETS`, `ANALYSES` and
-  `USERS` do not share their timestamp columns, and inheritance would only couple them.
+- **Main source set**: `JpaAuditingConfiguration` and `ClockDateTimeProvider`
+  ([Timestamps](#timestamps-domain-facts-and-audit-fields)). A base type that a second adapter needs
+  (an insert-only `Persistable` base, a generic `AttributeConverter`, a `@NoRepositoryBean` base
+  repository) moves here, never copied. There is no `@MappedSuperclass` for timestamps: `PRESETS`,
+  `ANALYSES` and `USERS` do not share their timestamp columns, and inheritance would only couple them.
 - **Test fixtures** (Gradle's `java-test-fixtures`): the shared test code of the persistence
-  adapters, used with `testImplementation(testFixtures(project(":backend:library:persistence")))`.
+  adapters (`@JpaAdapterTest`, `MutableTestClock`), used with
+  `testImplementation(testFixtures(project(":backend:library:persistence")))`.
   Gradle keeps test fixtures off every main classpath, and the ArchUnit tests do not import them
   (`DoNotIncludeTestFixtures`).
 
@@ -157,6 +196,11 @@ Like every shared library, it holds no domain type and no business rule
     migrations for migration tests);
   - `@AutoConfigurationPackage`, which keeps the entity and repository scan in the module;
   - a `@ComponentScan` of its adapter and mappers.
+
+  It also imports `JpaAuditingConfiguration` and a `MutableTestClock` as the `Clock` bean (a fixed
+  start instant, `set(Instant)` and `advance(Duration)`), so every adapter test is wired as the
+  application is, with a time it controls. Audited columns are asserted against that clock, on insert
+  and on update.
 
   Each module's test therefore also validates its entities against its migrations.
 - **No test-managed transaction.** No repository test is `@Transactional`, and `@DataJpaTest` is not
@@ -191,5 +235,6 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 | Spring Data repositories next to their adapter | `spring_data_repositories_live_in_persistence_roots`, `port_package_roots_hold_only_adapters` |
 | Suffixes `Entity`, `Embeddable`, `AttributeConverter`, `JpaRepository` | `persistence_classes_are_named_by_kind` |
 | Enums as PostgreSQL enum types or arrays, never text; an enum array carries its `@ColumnTransformer` cast | `enums_are_not_stored_as_text` |
+| An entity with an auditing field has `@EntityListeners(AuditingEntityListener.class)` | `audited_entities_have_the_auditing_listener` |
 | The core has no persistence dependency | `domain_core_does_not_depend_on_infrastructure` |
 | Entities match their migrations | `ddl-auto=validate` in the adapter tests and the Spring Boot tests |

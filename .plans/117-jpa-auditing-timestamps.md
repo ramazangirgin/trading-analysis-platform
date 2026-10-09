@@ -205,14 +205,15 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
 
 ### WP5: Architecture rule and docs
 
+- **Status**: done
 - **Depends on**: WP2, WP3
 - **Files**:
   - `artifact/backend/src/test/java/…/PersistenceArchitectureTest.java`
   - `docs/coding-convention/backend-java-persistence.md`
   - `docs/coding-convention/backend-java-package-structure.md`
 - **Steps**:
-  - [ ] Add `audited_entities_have_the_auditing_listener`.
-  - [ ] Update the docs (see "Docs to update").
+  - [x] Add `audited_entities_have_the_auditing_listener`.
+  - [x] Update the docs (see "Docs to update").
 - **Tests**: the new ArchUnit rule passes on the code. Check that it fails when the listener is
   removed from `PresetEntity` (locally, not committed).
 
