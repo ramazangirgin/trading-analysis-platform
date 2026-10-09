@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.mapstruct.Mapper;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -324,6 +325,18 @@ class ArchitectureTest {
             .because("entities, JSON shapes, mappers and helpers go into the port's sub-packages;"
                     + " next to its adapter a persistence package holds the adapter's Spring Data repositories"
                     + " and the domain's <Domain>PersistenceConfiguration (its schema and Flyway bean)");
+
+    @ArchTest
+    static final ArchRule domain_adapter_configurations_are_persistence_configurations = classes()
+            .that()
+            .resideInAPackage(DOMAIN_ADAPTER)
+            .and()
+            .areAnnotatedWith(Configuration.class)
+            .should()
+            .haveNameMatching(BASE.replace(".", "\\.")
+                    + "\\.domain\\.([a-z]+)\\.adapter\\.persistence\\.[A-Z][a-z]+PersistenceConfiguration")
+            .because("the only configuration class of a domain adapter is its <Domain>PersistenceConfiguration"
+                    + " (schema and Flyway bean) in adapter.persistence; adapters are plain components");
 
     @ArchTest
     static final ArchRule domain_core_sub_packages_are_known_kinds = topLevelClasses()
