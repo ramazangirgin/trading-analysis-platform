@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.entity.UserEntity;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.UserEntityToUserMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.UserIdToUserIdEmbeddableMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.UserToUserEntityMapper;
@@ -62,18 +63,42 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
      * unique or foreign-key violation inside this call. Spring translates both to a
      * {@link DataIntegrityViolationException}; the port promises a {@link DuplicateKeyException} for
      * a taken username, so a unique violation is rethrown as that.
+     *
+     * <p>Not a plain merge: the incoming entity has {@code createdAt == null}, and a merge would copy that onto
+     * the stored row's managed entity, so the returned user would lose its creation time. An existing user is
+     * loaded and the domain fields are copied onto it instead. Its {@code updatedAt} is cleared so the flush
+     * always updates the row and auditing sets the time, also when nothing else changed.
      */
     @Override
     @Transactional
-    public void save(User user) {
+    public User save(User user) {
         try {
-            repository.saveAndFlush(toEntity.map(user));
+            UserEntity incoming = toEntity.map(user);
+            UserEntity stored = repository
+                    .findById(incoming.getId())
+                    .map(existing -> copyOnto(existing, incoming))
+                    .orElseGet(() -> repository.save(incoming));
+            repository.flush();
+            return toUser.map(stored);
         } catch (DataIntegrityViolationException e) {
             if (isUniqueViolation(e)) {
                 throw new DuplicateKeyException("The username is taken by another user", e);
             }
             throw e;
         }
+    }
+
+    private static UserEntity copyOnto(UserEntity existing, UserEntity incoming) {
+        existing.setUsername(incoming.getUsername());
+        existing.setPasswordHash(incoming.getPasswordHash());
+        existing.setEnabled(incoming.isEnabled());
+        existing.setMustChangePassword(incoming.isMustChangePassword());
+        existing.setFailedLoginCount(incoming.getFailedLoginCount());
+        existing.setLockedUntil(incoming.getLockedUntil());
+        existing.setUpdatedAt(null);
+        existing.getRoleIds().clear();
+        existing.getRoleIds().addAll(incoming.getRoleIds());
+        return existing;
     }
 
     private static boolean isUniqueViolation(Throwable failure) {

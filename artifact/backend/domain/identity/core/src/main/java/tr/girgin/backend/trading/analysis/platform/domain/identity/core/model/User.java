@@ -5,7 +5,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/** A person who signs in, with the roles assigned to them. */
+/**
+ * A person who signs in, with the roles assigned to them.
+ *
+ * @param createdAt when the user was first saved. An audit field: persistence sets it, so it is {@code null} on a
+ *     user the core builds before its first save, and set on every user the repository returns.
+ * @param updatedAt when the user was last saved. An audit field like {@code createdAt}.
+ */
 public record User(
         UserId id,
         Username username,
@@ -23,8 +29,6 @@ public record User(
         Objects.requireNonNull(username, "username");
         Objects.requireNonNull(passwordHash, "passwordHash");
         Objects.requireNonNull(lockedUntil, "lockedUntil");
-        Objects.requireNonNull(createdAt, "createdAt");
-        Objects.requireNonNull(updatedAt, "updatedAt");
         roleIds = Set.copyOf(roleIds);
     }
 
