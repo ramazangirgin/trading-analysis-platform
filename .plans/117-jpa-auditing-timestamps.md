@@ -108,6 +108,7 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
 
 ### WP1: Clock and auditing wiring
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/library/persistence/build.gradle.kts`
@@ -121,11 +122,11 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
   - `artifact/backend/src/main/java/…/TradingPlatformApplication.java`
   - `artifact/backend/build.gradle.kts`
 - **Steps**:
-  - [ ] Add the `Clock` bean to `TradingPlatformApplication`.
-  - [ ] Add `ClockDateTimeProvider` and `JpaAuditingConfiguration` with their dependencies.
-  - [ ] Add `MutableTestClock` and `TestClockConfiguration` to the test fixtures, and import them
+  - [x] Add the `Clock` bean to `TradingPlatformApplication`.
+  - [x] Add `ClockDateTimeProvider` and `JpaAuditingConfiguration` with their dependencies.
+  - [x] Add `MutableTestClock` and `TestClockConfiguration` to the test fixtures, and import them
         and `JpaAuditingConfiguration` in `@JpaAdapterTest`.
-  - [ ] Put `:backend:library:persistence` on the application's runtime classpath.
+  - [x] Put `:backend:library:persistence` on the application's runtime classpath.
 - **Tests**: `ClockDateTimeProviderTest` (unit): returns the clock's instant truncated to
   microseconds. `TradingPlatformApplicationTests` still starts the context (one `Clock`, auditing
   enabled).
