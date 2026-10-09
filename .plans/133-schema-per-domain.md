@@ -309,7 +309,7 @@ Compose), as for 1.0.0.
 
 ### WP4: Documentation and version
 
-- **Depends on**: WP1 to WP3
+- **Depends on**: WP1, WP2, WP3
 - **Files**: `docs/coding-convention/backend-database-naming.md`, `docs/coding-convention/backend-java-persistence.md`,
   `docs/coding-convention/backend-java-package-structure.md`, `docs/coding-convention/README.md`, `README.md`,
   `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
