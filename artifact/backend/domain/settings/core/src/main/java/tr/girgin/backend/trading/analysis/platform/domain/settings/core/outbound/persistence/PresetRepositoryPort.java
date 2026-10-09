@@ -12,7 +12,8 @@ public interface PresetRepositoryPort {
 
     Optional<Preset> findById(PresetId id);
 
-    void save(Preset preset);
+    /** Inserts or updates the preset and returns it as stored, with its audited {@code updatedAt}. */
+    Preset save(Preset preset);
 
     boolean delete(PresetId id);
 }

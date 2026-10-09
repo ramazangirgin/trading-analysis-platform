@@ -3,12 +3,16 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.pers
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /** One row of the {@code PRESETS} table. */
 @Entity
 @Table(name = "PRESETS")
+@EntityListeners(AuditingEntityListener.class)
 public class PresetEntity {
 
     @EmbeddedId
@@ -20,6 +24,7 @@ public class PresetEntity {
     @Column(name = "PAYLOAD", nullable = false)
     private String payload;
 
+    @LastModifiedDate
     @Column(name = "UPDATED_AT", nullable = false)
     private Instant updatedAt;
 
