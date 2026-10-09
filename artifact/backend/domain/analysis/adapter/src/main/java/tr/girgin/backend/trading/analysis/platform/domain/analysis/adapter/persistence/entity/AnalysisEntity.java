@@ -14,6 +14,7 @@ import java.time.Instant;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.persistence.AnalysisPersistenceConfiguration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
@@ -24,7 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ra
  * (it fails on an existing ID, without the {@code SELECT} a {@code merge} would add).
  */
 @Entity
-@Table(name = "ANALYSES")
+@Table(name = "ANALYSES", schema = AnalysisPersistenceConfiguration.SCHEMA)
 public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     @EmbeddedId
@@ -35,17 +36,17 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "STATUS", nullable = false, columnDefinition = "\"ANALYSIS_STATUS\"")
+    @Column(name = "STATUS", nullable = false, columnDefinition = "\"ANALYSIS\".\"ANALYSIS_STATUS\"")
     private AnalysisStatus status;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "SOURCE", nullable = false, columnDefinition = "\"ANALYSIS_SOURCE\"")
+    @Column(name = "SOURCE", nullable = false, columnDefinition = "\"ANALYSIS\".\"ANALYSIS_SOURCE\"")
     private AnalysisSource source;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "RATING", columnDefinition = "\"RATING\"")
+    @Column(name = "RATING", columnDefinition = "\"ANALYSIS\".\"RATING\"")
     private Rating rating;
 
     @Column(name = "DECISION")

@@ -74,6 +74,7 @@ spring-boot-test = { module = "org.springframework.boot:spring-boot-test" }
 spring-boot = { module = "org.springframework.boot:spring-boot" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }
 spring-boot-data-jpa = { module = "org.springframework.boot:spring-boot-data-jpa" }
+spring-boot-flyway = { module = "org.springframework.boot:spring-boot-flyway" }
 spring-boot-hibernate = { module = "org.springframework.boot:spring-boot-hibernate" }
 spring-boot-transaction = { module = "org.springframework.boot:spring-boot-transaction" }
 spring-context = { module = "org.springframework:spring-context" }

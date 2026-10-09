@@ -15,6 +15,7 @@ import java.util.Set;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.IdentityPersistenceConfiguration;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -24,7 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
  * held by ID, as the domain's {@code User} does: loading a user never loads roles.
  */
 @Entity
-@Table(name = "USERS")
+@Table(name = "USERS", schema = IdentityPersistenceConfiguration.SCHEMA)
 @EntityListeners(AuditingEntityListener.class)
 public class UserEntity {
 
@@ -61,7 +62,10 @@ public class UserEntity {
     private Instant updatedAt;
 
     @ElementCollection
-    @CollectionTable(name = "USER_ROLES", joinColumns = @JoinColumn(name = "USER_ID"))
+    @CollectionTable(
+            name = "USER_ROLES",
+            schema = IdentityPersistenceConfiguration.SCHEMA,
+            joinColumns = @JoinColumn(name = "USER_ID"))
     @Column(name = "ROLE_ID", nullable = false)
     @Convert(converter = RoleIdAttributeConverter.class)
     private Set<RoleId> roleIds = new HashSet<>();

@@ -35,9 +35,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.MutableTestClock;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.TestMigrations;
 
-/** The repositories against a PostgreSQL database migrated with this domain's Flyway migrations. */
+/** The repositories against a PostgreSQL database migrated by this domain's own Flyway bean. */
 @JpaAdapterTest
 @SpringJUnitConfig(JpaIdentityRepositoryTest.Config.class)
 class JpaIdentityRepositoryTest {
@@ -328,10 +327,7 @@ class JpaIdentityRepositoryTest {
 
         @Bean
         DataSource dataSource() {
-            DataSource dataSource = PostgresTestDatabase.create().dataSource();
-            // Only this domain's migrations: V1 and V2 belong to other modules.
-            TestMigrations.migrate(dataSource, "2");
-            return dataSource;
+            return PostgresTestDatabase.create().dataSource();
         }
     }
 }

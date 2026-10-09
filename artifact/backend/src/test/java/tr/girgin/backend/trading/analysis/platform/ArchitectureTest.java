@@ -169,8 +169,11 @@ class ArchitectureTest {
             .and()
             .areMetaAnnotatedWith(Component.class)
             .and(not(assignableTo(MAPSTRUCT_MAPPER)))
+            .and()
+            .haveSimpleNameNotEndingWith("PersistenceConfiguration")
             .should()
-            .implement(resideInAPackage(DOMAIN_OUTBOUND));
+            .implement(resideInAPackage(DOMAIN_OUTBOUND))
+            .because("a domain's <Domain>PersistenceConfiguration (its schema and Flyway bean) is no adapter");
 
     @ArchTest
     static final ArchRule domain_core_does_not_depend_on_infrastructure = noClasses()
@@ -312,12 +315,15 @@ class ArchitectureTest {
             .resideInAPackage(DOMAIN_ADAPTER_PORT)
             .and()
             .resideOutsideOfPackages(SHARED_ADAPTER_PACKAGES)
+            .and()
+            .haveSimpleNameNotEndingWith("PersistenceConfiguration")
             .should()
             .implement(resideInAPackage(DOMAIN_OUTBOUND))
             .orShould()
             .beAssignableTo(Repository.class)
             .because("entities, JSON shapes, mappers and helpers go into the port's sub-packages;"
-                    + " next to its adapter a persistence package holds the adapter's Spring Data repositories");
+                    + " next to its adapter a persistence package holds the adapter's Spring Data repositories"
+                    + " and the domain's <Domain>PersistenceConfiguration (its schema and Flyway bean)");
 
     @ArchTest
     static final ArchRule domain_core_sub_packages_are_known_kinds = topLevelClasses()

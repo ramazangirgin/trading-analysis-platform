@@ -20,11 +20,11 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 import tr.girgin.backend.trading.analysis.platform.library.mapper.DurationToMillisMapper;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.TestMigrations;
 
 /**
  * All analysis adapters wired as in the application, against a temporary platform home and a
- * migrated PostgreSQL database. The runner command is a shell script each test writes itself.
+ * PostgreSQL database that the domain's own Flyway bean migrates. The runner command is a shell script
+ * each test writes itself.
  */
 @JpaAdapterTest
 @SpringJUnitConfig(AdapterTestSupport.Config.class)
@@ -74,9 +74,7 @@ public abstract class AdapterTestSupport {
 
         @Bean
         DataSource dataSource() {
-            DataSource dataSource = PostgresTestDatabase.create().dataSource();
-            TestMigrations.migrate(dataSource, null);
-            return dataSource;
+            return PostgresTestDatabase.create().dataSource();
         }
     }
 }

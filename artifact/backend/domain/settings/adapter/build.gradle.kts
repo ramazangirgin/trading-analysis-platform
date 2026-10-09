@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.spring.data.commons)
     implementation(libs.spring.data.jpa)
     implementation(libs.jakarta.persistence.api)
+    implementation(libs.flyway.core)
 
     testImplementation(testFixtures(project(":backend:library:persistence")))
 }
