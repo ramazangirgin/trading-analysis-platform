@@ -116,6 +116,7 @@ reports a library the new tests use but `:backend` does not declare, declare it 
 
 ### WP1: The check and its tests
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/DatabaseNamingCheck.java` (new)
@@ -124,13 +125,13 @@ reports a library the new tests use but `:backend` does not declare, declare it 
   - `artifact/backend/src/test/resources/db/naming-violations/V900__naming_violations.sql` (new)
   - `artifact/backend/build.gradle.kts` (only if the dependency analysis asks for a declaration)
 - **Steps**:
-  - [ ] Write `DatabaseNamingCheck` as designed: catalog queries, the rules, the two exemptions
+  - [x] Write `DatabaseNamingCheck` as designed: catalog queries, the rules, the two exemptions
         (NOT NULL constraints, the inside of `FLYWAY_SCHEMA_HISTORY`), sorted violation lines, the
         table names it saw.
-  - [ ] Write the fixture migration with one violation per rule and one correct table.
-  - [ ] Write `DatabaseNamingCheckTest` with the exact expected violation lines.
-  - [ ] Write `DatabaseNamingTest` on the application's schema.
-  - [ ] Run `./gradlew :backend:test` and `mise run check`.
+  - [x] Write the fixture migration with one violation per rule and one correct table.
+  - [x] Write `DatabaseNamingCheckTest` with the exact expected violation lines.
+  - [x] Write `DatabaseNamingTest` on the application's schema.
+  - [x] Run `./gradlew :backend:test` and `mise run check`.
 - **Tests**: `DatabaseNamingTest` proves the application's schema follows the convention today;
   `DatabaseNamingCheckTest` proves that every rule fails on a migration that breaks it and passes
   on one that keeps it (the issue's "fails on a new migration with a lower-case or unquoted
