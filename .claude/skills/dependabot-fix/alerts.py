@@ -10,6 +10,13 @@
         current line or major), and the ones waiting, needing a pre-release or a major
     alerts.py renovate <ecosystem> <package> <version> [--current <version>]
         the rules of .github/renovate.json5 that touch the package, and whether the version breaks one
+    alerts.py gradle-scan [--alerts <file>] [<group-id>...]
+        every configuration of every Gradle project (root and included builds, build script
+        classpaths too) that resolves a version in a vulnerable range of the Maven groups' alerts;
+        an empty list when none does
+    alerts.py after-merge [--merge <sha>] <number>...
+        after the merge: per alert, fixed, or still open and why (the dependency submission on main
+        has not run on the merge yet, or the graph still has a vulnerable version)
 
 Every command prints JSON on stdout. "Mature" is Renovate's minimumReleaseAge, read from
 .github/renovate.json5 on every call (14 days when it is not set): pnpm and uv enforce the same age.
@@ -471,6 +478,197 @@ def renovate_findings(config, package, version, current=None):
     }
 
 
+# --- Gradle: every configuration of every project --------------------------------------------
+
+# GitHub's Automatic Dependency Submission runs Gradle on every push to main and submits the
+# resolved graph of every configuration (test fixtures included), under settings.gradle.kts. A
+# vulnerable version that any configuration still resolves keeps its alert open, so the check has to
+# look at every one of them, not only the runtime classpath.
+
+# The builds of the repository: the root build and the included builds. Each runs `dependencies`
+# for every project, and `buildEnvironment` for its build script classpath (the plugins).
+GRADLE_BUILDS = [".", "build-logic", "build-logic/checkstyle-rules"]
+
+PROJECT_HEADER = re.compile(r"(Root project|Project) '([^']*)'.*")
+CONFIGURATION_HEADER = re.compile(r"([A-Za-z][\w]*)(?: - (.*))?")
+TREE_LINE = re.compile(r"[| ]*[+\\]--- (.+)")
+
+
+def parse_dependency(text):
+    """One tree entry ("g:n:1.0 -> 1.1 (*)") as (package, requested, resolved, flag); None for a
+    project, a FAILED one, or an entry that is not a module."""
+    flag = None
+    flag_match = re.fullmatch(r"(.*?) \(([c*n])\)", text)
+    if flag_match:
+        text, flag = flag_match.groups()
+    if text.startswith("project ") or text.endswith(" FAILED"):
+        return None
+    coordinates, _, replaced = text.partition(" -> ")
+    parts = coordinates.split(":", 2)
+    if len(parts) < 2:
+        return None
+    requested = parts[2] if len(parts) == 3 else None
+    resolved = replaced or requested
+    if not resolved:
+        return None
+    return f"{parts[0]}:{parts[1]}", requested, resolved.strip(), flag
+
+
+def parse_gradle_report(text, build="."):
+    """The output of `dependencies` and `buildEnvironment` (one or more projects) as records of
+    the versions each configuration resolves. Constraints (c) and configurations that are not
+    resolved (n) are left out: they show a declaration, not a resolved version."""
+    records = []
+    project = None
+    configuration = None
+    for raw in text.splitlines():
+        line_text = raw.rstrip()
+        header = PROJECT_HEADER.fullmatch(line_text)
+        if header:
+            project = ":" if header.group(1) == "Root project" else header.group(2)
+            configuration = None
+            continue
+        entry = TREE_LINE.fullmatch(line_text)
+        if entry:
+            if configuration is None:
+                continue
+            parsed = parse_dependency(entry.group(1))
+            if parsed is None:
+                continue
+            package, requested, resolved, flag = parsed
+            if flag in ("c", "n"):
+                continue
+            records.append(
+                {
+                    "build": build,
+                    "project": project or ":",
+                    "configuration": configuration,
+                    "package": package,
+                    "requested": requested,
+                    "resolved": resolved,
+                }
+            )
+            continue
+        configuration_header = CONFIGURATION_HEADER.fullmatch(line_text)
+        if configuration_header and not raw.startswith(" "):
+            description = configuration_header.group(2) or ""
+            configuration = None if description.endswith("(n)") else configuration_header.group(1)
+        elif not line_text:
+            configuration = None
+    return records
+
+
+def vulnerable_records(groups, records):
+    """Per group, the resolved versions that are in a vulnerable range of one of its alerts."""
+    result = []
+    for group in groups:
+        found = {}
+        for record in records:
+            for alert in group["alerts"]:
+                if record["package"] != alert["package"] or not alert["vulnerable_range"]:
+                    continue
+                try:
+                    vulnerable = in_range(record["resolved"], alert["vulnerable_range"])
+                except ValueError:
+                    continue
+                if vulnerable:
+                    key = (record["build"], record["project"], record["configuration"], record["package"], record["resolved"])
+                    found.setdefault(key, set()).add(alert["number"])
+        if found:
+            result.append(
+                {
+                    "id": group["id"],
+                    "resolved": [
+                        {
+                            "build": build,
+                            "project": project,
+                            "configuration": configuration,
+                            "package": package,
+                            "version": version,
+                            "alerts": sorted(numbers),
+                        }
+                        for (build, project, configuration, package, version), numbers in sorted(found.items())
+                    ],
+                }
+            )
+    return result
+
+
+def gradle(build, *arguments):
+    command = [str(REPO_ROOT / "gradlew"), "-q", "--console=plain"]
+    if build != ".":
+        command += ["-p", build]
+    out = subprocess.run(command + list(arguments), cwd=REPO_ROOT, check=True, capture_output=True, text=True)
+    return out.stdout
+
+
+def gradle_records():
+    """The resolved versions of every configuration of every project of every build."""
+    records = []
+    for build in GRADLE_BUILDS:
+        projects = re.findall(r"Project '(:[^']+)'", gradle(build, "projects"))
+        tasks = ["dependencies"] + [f"{project}:dependencies" for project in projects]
+        records += parse_gradle_report(gradle(build, *tasks), build)
+        environment = gradle(build, "buildEnvironment")
+        records += parse_gradle_report(environment, build)
+    return records
+
+
+# --- After the merge -------------------------------------------------------------------------
+
+SUBMISSION_WORKFLOW = "Automatic Dependency Submission"
+
+
+def after_merge_status(alert, submission_current, graph_versions):
+    """What happened to one alert after the merge.
+
+    alert: the alert as the API returns it; submission_current: whether the dependency submission
+    on main has run on the merge (or later); graph_versions: the versions of the alert's package in
+    the dependency graph (the SBOM)."""
+    number = alert["number"]
+    state = alert.get("state")
+    if state != "open":
+        return {"number": number, "status": state}
+    if not submission_current:
+        return {"number": number, "status": "open: submission not run yet"}
+    vulnerable_range = (alert.get("security_vulnerability") or {}).get("vulnerable_version_range") or ""
+    still = sorted((v for v in graph_versions if in_range(v, vulnerable_range)), key=version_key)
+    if still:
+        return {"number": number, "status": "open: still in the graph", "versions": still}
+    return {"number": number, "status": "open: not in the graph any more, Dependabot not updated yet"}
+
+
+def sbom_versions(sbom):
+    """Package name -> versions in the dependency graph (gh api .../dependency-graph/sbom)."""
+    versions = {}
+    for package in sbom.get("sbom", {}).get("packages", []):
+        name, version = package.get("name"), package.get("versionInfo")
+        if name and version:
+            versions.setdefault(name, set()).add(version)
+    return versions
+
+
+def gh_json(*arguments):
+    out = subprocess.run(["gh", *arguments], check=True, capture_output=True, text=True).stdout
+    return json.loads(out)
+
+
+def submission_current(merge):
+    """The latest dependency submission run on main, and whether it ran on the merge or later."""
+    runs = gh_json(
+        "run", "list", "--workflow", SUBMISSION_WORKFLOW, "--branch", "main", "--limit", "1",
+        "--json", "headSha,status,conclusion,createdAt",
+    )
+    run = runs[0] if runs else None
+    if run is None or run["status"] != "completed" or run["conclusion"] != "success":
+        return run, False
+    if merge is None:
+        return run, True
+    subprocess.run(["git", "fetch", "--quiet", "origin", "main"], cwd=REPO_ROOT, check=True)
+    ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", merge, run["headSha"]], cwd=REPO_ROOT)
+    return run, ancestor.returncode == 0
+
+
 # --- Command line ----------------------------------------------------------------------------
 
 
@@ -503,6 +701,12 @@ def main(argv=None):
     p.add_argument("package")
     p.add_argument("version")
     p.add_argument("--current")
+    p = commands.add_parser("gradle-scan")
+    p.add_argument("groups", nargs="*", help="group ids; all groups when none")
+    p.add_argument("--alerts", help="a saved `alerts` output instead of reading the alerts again")
+    p = commands.add_parser("after-merge")
+    p.add_argument("numbers", nargs="+", type=int)
+    p.add_argument("--merge", help="the merge commit; the submission must have run on it or later")
     args = parser.parse_args(argv)
 
     if args.command == "alerts":
@@ -523,6 +727,22 @@ def main(argv=None):
         print_json(candidates(group, versions, args.current))
     elif args.command == "renovate":
         print_json(renovate_findings(load_renovate(), args.package, args.version, args.current))
+    elif args.command == "gradle-scan":
+        if args.alerts:
+            groups = json.loads(pathlib.Path(args.alerts).read_text(encoding="utf-8"))
+        else:
+            groups = group_alerts([normalise(a) for a in fetch_alerts()])
+        groups = [g for g in groups if g["ecosystem"] == "maven" and (not args.groups or g["id"] in args.groups)]
+        print_json(vulnerable_records(groups, gradle_records()))
+    elif args.command == "after-merge":
+        run, current = submission_current(args.merge)
+        graph = sbom_versions(gh_json("api", "repos/{owner}/{repo}/dependency-graph/sbom"))
+        statuses = []
+        for number in args.numbers:
+            alert = gh_json("api", f"repos/{{owner}}/{{repo}}/dependabot/alerts/{number}")
+            package = alert["dependency"]["package"]["name"]
+            statuses.append({"package": package, **after_merge_status(alert, current, graph.get(package, set()))})
+        print_json({"submission": run, "submission_current": current, "alerts": statuses})
 
 
 if __name__ == "__main__":
