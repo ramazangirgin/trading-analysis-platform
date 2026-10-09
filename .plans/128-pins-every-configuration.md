@@ -150,10 +150,11 @@ recorded JSON.
 
 ### WP4: Version bump
 
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3
 - **Files**: `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] `mise run version:bump minor` in its own commit
+  - [x] `mise run version:bump minor` in its own commit
 - **Tests**: the *Version* CI job.
 
 ## Tests
