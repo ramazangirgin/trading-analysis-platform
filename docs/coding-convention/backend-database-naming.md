@@ -22,6 +22,12 @@ every name is quoted wherever it appears: in the migrations, in the entity mappi
   | Unique constraint or unique index | `<TABLE>_<COLUMNS>_UK` |
   | Index | `<TABLE>_<COLUMNS>_IDX` |
 
+- **Two exemptions**, where the name is not ours to choose:
+  - A `NOT NULL` constraint keeps the name PostgreSQL 18 gives it (`<TABLE>_<COLUMN>_not_null`). It is
+    a column property, written as `NOT NULL` in the column definition and never as a named
+    constraint.
+  - Flyway's history table has our name, but its columns, primary key and index are created by Flyway
+    in lower case and cannot be configured.
 - **Enum types** are named in upper snake case after the Java enum they mirror (`AnalysisStatus` →
   `"ANALYSIS_STATUS"`). Their labels are the Java constant names (`'ANALYSIS_READ_ALL'`), in
   declaration order, and the migration comments which enum the type mirrors. A set of enum values is
@@ -105,7 +111,8 @@ SELECT * FROM "ANALYSES";
 | Where | What it catches |
 |---|---|
 | The repository tests and the Spring Boot tests, on PostgreSQL through Testcontainers, with `ddl-auto=validate` (`./gradlew :backend:test` and the adapter modules' tests, part of `mise run build`) | An entity whose table, column or type name does not match the schema fails at startup; a migration whose names are wrong fails its tests |
-| Review | The stored names themselves: uppercase, explicit constraint and index names following the table above. An automated check of the catalog is planned in [#115](https://github.com/ramazangirgin/trading-analysis-platform/issues/115); until it lands, the reviewer checks every new migration |
+| [`DatabaseNamingTest`](../../artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/DatabaseNamingTest.java) (`./gradlew :backend:test`, part of `mise run build`; needs Docker) | The stored names after every migration of every domain: a table, column, constraint, index or enum type whose name is not uppercase, and a constraint or index that does not follow the four name patterns above (which is also how a name PostgreSQL generated shows up, e.g. `ANALYSES_pkey`). A failure lists every violation, one line each, e.g. `index "analyses_bad_idx" on table "ANALYSES": not uppercase`. A named check constraint is reported too: the convention has no name for it yet, so adding one starts with this document |
+| [`DatabaseNamingCheckTest`](../../artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/DatabaseNamingCheckTest.java) | The check itself: it runs a test-only migration that breaks every rule (`src/test/resources/db/naming-violations`) and asserts the exact violations, plus one correct table that yields none |
 
 ## Why
 
@@ -113,3 +120,7 @@ One recognisable style for every database object, the same in migrations, entity
 and fixed constraint and index names in the catalog instead of generated ones. It was the
 developer's decision on #113. The cost: every name is quoted in every statement, and anyone writing
 SQL by hand has to know it.
+
+The check reads the catalog, not the SQL, and there is no SQL linter. The code has no SQL of its own,
+the catalog is what PostgreSQL actually stored, and one test covers every migration of every domain
+without another tool in the hook.

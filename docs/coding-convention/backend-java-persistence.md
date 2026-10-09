@@ -164,7 +164,9 @@ Like every shared library, it holds no domain type and no business rule
   to the database, not to the persistence context. Otherwise "creation time kept" or "duplicate
   username fails" could pass without the database ever seeing the statement.
 - **No `JdbcClient` in tests either.**
-  - Checks go through the ports and the package-private repositories.
+  - Checks go through the ports and the package-private repositories. The one exception is
+    `DatabaseNamingCheck` ([database naming](backend-database-naming.md)): the catalog has no
+    entities, so it reads it with plain JDBC (`java.sql`). `org.springframework.jdbc` stays banned.
   - Column types are covered by `ddl-auto=validate`.
   - Migration tests seed old-form rows with a test-only Flyway migration
     (`src/test/resources/db/seed/<domain>`, e.g. `V1_1__analysis_seed_old_rows.sql`) between the
