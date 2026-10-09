@@ -397,8 +397,12 @@ where each group comes from, picks the newest mature (at least 14 days old), sta
 every alert of the group and checks it against `renovate.json5`. After you approve the table it pins
 the version on a branch, one commit per group, with a comment that names the advisories and says when
 the pin can go (the parent release that brings the fix), and opens a pull request that lists the
-alerts it closes. Groups that only a pre-release or a major fixes are reported, not applied. The
-alerts close when Dependabot rescans `main` after the merge. The helper's tests run with
+alerts it closes. Groups that only a pre-release or a major fixes are reported, not applied. For
+Gradle, GitHub's alerts come from Automatic Dependency Submission, which resolves **every**
+configuration of every project (test fixtures and plugin classpaths included) on each push to
+`main`; the skill checks the fix the same way (`alerts.py gradle-scan`) before it commits. The alerts
+close once that submission has run on `main` after the merge, and `alerts.py after-merge` then
+reports each one as fixed or says why it is still open. The helper's tests run with
 `mise run skill:test`.
 
 ### Versioning and releases

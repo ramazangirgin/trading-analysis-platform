@@ -119,16 +119,16 @@ recorded JSON.
 
 ### WP2: Helper commands `gradle-scan` and `after-merge`
 
-- **Status**: not done: Edit on .claude/skills/dependabot-fix/ was denied by the permission mode, so alerts.py and test_alerts.py were not changed
+- **Status**: done (in the interactive session: the developer agent's permission mode denies edits under `.claude/`)
 - **Depends on**: none
 - **Files**: `.claude/skills/dependabot-fix/alerts.py`, `.claude/skills/dependabot-fix/test_alerts.py`
 - **Steps**:
-  - [ ] Parse `gradle dependencies` / `buildEnvironment` output into
+  - [x] Parse `gradle dependencies` / `buildEnvironment` output into
     `(configuration, group:name, requested, resolved)` records (`->` replacements, `(c)`, `(*)`,
     `(n)` not resolved, `FAILED`)
-  - [ ] `gradle-scan`: run the commands, match the records against the groups' vulnerable ranges
+  - [x] `gradle-scan`: run the commands, match the records against the groups' vulnerable ranges
     (the existing `in_range`), print JSON
-  - [ ] `after-merge`: alert state, latest submission run on `main`, SBOM versions in range, one status
+  - [x] `after-merge`: alert state, latest submission run on `main`, SBOM versions in range, one status
     per alert
 - **Tests**: `test_alerts.py`: the parser on a recorded tree with a replaced version, a constraint, an
   omitted repeat and a configuration that resolves nothing; a record in and out of range; the
@@ -136,14 +136,14 @@ recorded JSON.
 
 ### WP3: The skill and the README
 
-- **Status**: not done: Edit on .claude/skills/dependabot-fix/SKILL.md was denied by the permission mode, and WP2 (the commands it documents) is not done
+- **Status**: done (in the interactive session, as WP2)
 - **Depends on**: WP2
 - **Files**: `.claude/skills/dependabot-fix/SKILL.md`, `README.md`
 - **Steps**:
-  - [ ] SKILL.md: the two commands in the helper table; step 2 and 6.3 use `gradle-scan`; the
+  - [x] SKILL.md: the two commands in the helper table; step 2 and 6.3 use `gradle-scan`; the
     after-merge check; the note that GitHub's graph is the resolved graph of every configuration,
     submitted by Automatic Dependency Submission on every push to `main`
-  - [ ] README "Dependency updates": the alerts close once Automatic Dependency Submission has run on
+  - [x] README "Dependency updates": the alerts close once Automatic Dependency Submission has run on
     `main` after the merge; `/dependabot-fix` checks every configuration and reports alerts that stay
     open
 - **Tests**: none (text).
