@@ -643,7 +643,10 @@ def after_merge_status(alert, submission_current, graph_versions):
 
 
 def vulnerable(version, vulnerable_range):
-    """in_range, but False for a version it cannot read (the graph has "7.*.*" for Actions)."""
+    """in_range, but False for a version it cannot read: a wildcard (the graph has "7.*.*" for
+    Actions), which version_key would otherwise read as a post-release, or one in_range rejects."""
+    if "*" in version:
+        return False
     try:
         return in_range(version, vulnerable_range)
     except ValueError:

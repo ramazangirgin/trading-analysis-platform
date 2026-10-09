@@ -396,6 +396,9 @@ class AfterMergeTest(unittest.TestCase):
         self.assertNotEqual(status["status"], "open: still in the graph")
         status = alerts.after_merge_status(api_alert("open"), True, {"7.*.*", "3.1.5"})
         self.assertEqual(status["versions"], ["3.1.5"])
+        # A wildcard on the vulnerable line is not a version either (version_key reads it as 3-post).
+        status = alerts.after_merge_status(api_alert("open"), True, {"3.*", "3.1.*", "3.1.7"})
+        self.assertEqual(status["status"], "open: not in the graph any more")
 
     def test_real_sbom_names_match_the_alerts(self):
         # From `gh api repos/{owner}/{repo}/dependency-graph/sbom` on 2026-10-09: the names carry no
