@@ -6,11 +6,15 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -21,6 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
  */
 @Entity
 @Table(name = "USERS")
+@EntityListeners(AuditingEntityListener.class)
 public class UserEntity {
 
     @EmbeddedId
@@ -46,10 +51,12 @@ public class UserEntity {
     @Column(name = "LOCKED_UNTIL")
     private Instant lockedUntil;
 
-    // Not updatable: a save of an existing user keeps the time of the first one.
+    // Not updatable as a guard: auditing sets it on insert and a save of an existing user keeps it.
+    @CreatedDate
     @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @LastModifiedDate
     @Column(name = "UPDATED_AT", nullable = false)
     private Instant updatedAt;
 

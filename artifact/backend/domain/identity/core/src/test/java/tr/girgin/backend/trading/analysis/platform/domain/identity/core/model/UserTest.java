@@ -27,6 +27,25 @@ class UserTest {
     }
 
     @Test
+    void auditFieldsAreNullBeforeTheFirstSave() {
+        User user = new User(
+                UserId.newId(),
+                new Username("alice"),
+                new PasswordHash("{noop}x"),
+                true,
+                false,
+                0,
+                Optional.empty(),
+                null,
+                null,
+                Set.of());
+
+        assertThat(user.createdAt()).isNull();
+        assertThat(user.updatedAt()).isNull();
+        assertThat(user.withRoleIds(Set.of(RoleId.newId())).createdAt()).isNull();
+    }
+
+    @Test
     void copiesTheRoleSetAndKeepsItImmutable() {
         Set<RoleId> roles = new HashSet<>(Set.of(RoleId.newId()));
         User user = user(UserId.newId(), new Username("alice"), roles);

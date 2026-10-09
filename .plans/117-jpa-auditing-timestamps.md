@@ -162,6 +162,7 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
 
 ### WP3: Users audited
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/domain/identity/core/src/main/java/…/identity/core/model/User.java`
@@ -173,10 +174,10 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
   - `artifact/backend/domain/identity/adapter/src/main/java/…/identity/adapter/persistence/JpaUserRepositoryAdapter.java`
   - `artifact/backend/domain/identity/adapter/src/test/java/…/identity/adapter/persistence/JpaIdentityRepositoryTest.java`
 - **Steps**:
-  - [ ] Make `User.createdAt` / `updatedAt` nullable before the first save, and document it.
+  - [x] Make `User.createdAt` / `updatedAt` nullable before the first save, and document it.
         `withRoleIds` keeps them as they are.
-  - [ ] Make `UserRepositoryPort.save` return the stored `User`.
-  - [ ] Add the auditing annotations to `UserEntity`, ignore both fields in the entity mapper, and
+  - [x] Make `UserRepositoryPort.save` return the stored `User`.
+  - [x] Add the auditing annotations to `UserEntity`, ignore both fields in the entity mapper, and
         change the adapter's `save` to the load-and-copy form of the design.
 - **Tests** (`JpaIdentityRepositoryTest`, with `MutableTestClock`):
   - A new user gets `createdAt == updatedAt ==` the clock's time, in the returned record and on read.
