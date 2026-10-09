@@ -25,11 +25,20 @@ root as `uv run --no-project python .claude/skills/dependabot-fix/alerts.py <com
 | `versions <ecosystem> <package> [--today YYYY-MM-DD]` | the released versions with their date, oldest first, flagged `prerelease`, `mature` and `eligible_from` |
 | `candidates <group-id> [--alerts <file>] [--current <version>]` | the versions that fix **every** alert of the group: `suggested` (newest mature, stable, on the current release line, else on the current major), `leaves_line`, `newest_same_major`, `waiting` (fixes, not mature yet), `needs_prerelease`, `needs_major` |
 | `renovate <ecosystem> <package> <version> [--current <version>]` | the rules of `.github/renovate.json5` that touch the package (read on every call): disabled updates, `allowedVersions` it breaks, `prBodyNotes` to pass on; `breaks` when one forbids the version |
+| `gradle-scan [--alerts <file>] [<group-id>...]` | every configuration of every Gradle project (the root build, `build-logic`, `build-logic/checkstyle-rules`, and their build script classpaths) that resolves a version in a vulnerable range of the Maven groups' alerts; `[]` when none does. About 20 seconds with a warm Gradle |
+| `after-merge [--merge <sha>] <number>...` | after the merge, per alert: `fixed` (or `dismissed`), `open: submission not run yet`, `open: still in the graph` with the vulnerable versions the dependency graph still has, or `open: not in the graph any more` (Dependabot has not caught up yet) |
 
 "Mature" is Renovate's `minimumReleaseAge` from `.github/renovate.json5` (14 days), the same age
 pnpm (`minimumReleaseAge`) and uv (`exclude-newer`) enforce: a younger version would be dropped
 again by the next lock file maintenance. Maven release dates come from the `.pom`'s
 `Last-Modified` on Maven Central (`search.maven.org`'s index is stale).
+
+**What GitHub sees.** For Gradle, the alerts come from Automatic Dependency Submission: on every push
+to `main` GitHub runs Gradle and submits the resolved graph of **every** configuration (test
+fixtures, Checkstyle, the plugins' classpaths), under the manifest `settings.gradle.kts`. A
+vulnerable version that any one configuration still resolves keeps its alert open, however clean the
+runtime classpath is. That is what `gradle-scan` checks (#128: Jackson 3.1.5 stayed on
+`:backend:library:persistence`'s test fixtures after #124 had pinned 3.1.7).
 
 ## Ground rules
 
@@ -76,7 +85,7 @@ configuration or plugin brings the library in. Find it:
 
 | Ecosystem | Commands |
 |---|---|
-| Maven (Gradle) | `./gradlew -q buildEnvironment` (the root build script classpath: the plugins), `./gradlew -q -p build-logic buildEnvironment dependencies` (the convention plugins' build), `./gradlew -q <project>:dependencies` for every project (`./gradlew -q projects` lists them), then `./gradlew -q <project>:dependencyInsight --dependency <name> --configuration <cfg>` for the path |
+| Maven (Gradle) | `alerts.py gradle-scan --alerts "$TMPDIR/dependabot-groups.json"` first: every project and configuration that resolves a vulnerable version. Then, for the path: `./gradlew -q buildEnvironment` (the root build script classpath: the plugins), `./gradlew -q -p build-logic buildEnvironment dependencies` (the convention plugins' build), `./gradlew -q <project>:dependencies` for every project (`./gradlew -q projects` lists them), then `./gradlew -q <project>:dependencyInsight --dependency <name> --configuration <cfg>` for the path |
 | pip (uv) | `uv tree --invert --package <name>` in `artifact/ta-runner/`; also read `[tool.uv] constraint-dependencies` in its `pyproject.toml` (a constraint can hold a version on purpose, for example the Intel-Mac `cryptography<49`) |
 | npm (pnpm) | `artifact/frontend/with-node.sh pnpm why <name>` in `artifact/frontend/`, `e2e/with-node.sh pnpm why <name>` in `e2e/` |
 
@@ -142,8 +151,9 @@ Per group, the least invasive fix that holds:
 2. **Otherwise pin the library**, where the repository already sets versions:
    - **Gradle, runtime and test classpaths**: the version and library in `gradle/libs.versions.toml`
      under the "Security pins (Dependabot)" comment, then in the convention plugin
-     (`build-logic/src/main/kotlin/tradinganalysisplatform.java-library.gradle.kts`) an
-     `implementation(platform(...))` for a family with a BOM (Jackson) or a constraint with
+     (`build-logic/src/main/kotlin/tradinganalysisplatform.java-library.gradle.kts`), in its
+     `sourceSets.configureEach` block (every source set's `implementation`: main, test, test
+     fixtures), a `platform(...)` for a family with a BOM (Jackson) or a constraint with
      `because(...)` for the others (Tomcat, Bouncy Castle).
    - **Gradle, build script classpath** (a plugin brings it): a `classpath(...)` constraint in the
      root `build.gradle.kts`' `buildscript` block, version from the catalog.
@@ -153,8 +163,10 @@ Per group, the least invasive fix that holds:
 
    The pin's comment names the GHSA IDs, the version that brings the vulnerable one and from
    where, and when the pin can go: "remove when <parent> > <version> brings >= <fixed version>".
-3. **Check it is gone**: rerun the commands of 2 and compare the resolved versions with the
-   vulnerable ranges.
+3. **Check it is gone**: Gradle: `alerts.py gradle-scan --alerts "$TMPDIR/dependabot-groups.json" <group-id>...`
+   must print `[]` for the applied groups; a configuration it still lists is fixed before the
+   commit, never left for later. uv and pnpm: rerun the commands of 2 and compare the resolved
+   versions with the vulnerable ranges.
 4. **Commit per group**: `Fix <family> alerts: <version>` with the GHSA IDs and the alert numbers in
    the body. Then `~/.local/bin/mise run check`, and the task that runs the affected tests:
    `mise run build` (Gradle), `mise run runner-test` (uv), the frontend's tests and `mise run e2e`
@@ -175,7 +187,21 @@ Per group, the least invasive fix that holds:
 - what needs a pre-release, a major or a parent that has no fix yet, and was not applied;
 - the pins and the parent release that lets each go;
 - suggested dismissals, with the reason, for the developer to do;
-- that the alerts close only when Dependabot rescans `main` after the merge: a check before that
-  still lists them.
+- that the alerts close only after the merge, once the dependency graph of `main` is updated (8).
 
 Switch back to the branch you started on.
+
+## 8. After the merge
+
+The developer merges (6). Then, for the alerts the pull request said it closes:
+
+```sh
+gh run list --workflow "Automatic Dependency Submission" --branch main --limit 1   # wait for it (Gradle)
+alerts.py after-merge --merge <merge commit> <number>...
+```
+
+Report one line per alert. `open: submission not run yet` and `open: not in the graph any more`
+mean wait (Dependabot needs a few minutes after the submission), then run it again. `open: still in
+the graph` means the fix missed a configuration or a lock file: run `gradle-scan` (or the commands
+of 2) on `main`, say where the version still comes from, and fix it like a new run of this skill.
+Never dismiss it to make the list clean.
