@@ -1,45 +1,59 @@
 ---
 name: develop-issue
-description: Take a GitHub issue of this repository through the whole agentic development flow (plan, plan branch, developer agent, CI, review → fix rounds, finalise, update with main, merge), one step at a time, asking the developer to approve every step before it runs. Use when the user asks to develop, implement or run the agents on an issue end to end, e.g. "/develop-issue 61", "/develop-issue https://github.com/<owner>/<repo>/issues/61" or "develop issue #61 step by step".
+description: Take a GitHub issue of this repository through the whole agentic development flow (plan, plan branch, developer agent, CI, review → fix rounds, finalise, update with main) in one run. It asks the developer only to approve the plan, runs every other step without asking, and sends a notification when the pull request is ready for the developer's review. It never merges unless asked. Use when the user asks to develop, implement or run the agents on an issue end to end, e.g. "/develop-issue 61", "/develop-issue https://github.com/<owner>/<repo>/issues/61" or "develop issue #61".
 ---
 
-# Develop an issue, step by step
+# Develop an issue
 
 The whole [agentic development flow](../../../docs/agentic-development.md) for one issue, driven
-from this Claude Code session. Every step runs only after the developer approves it here. It adds
-no new behaviour of its own: planning is the [`plan-from-issue`](../plan-from-issue/SKILL.md)
-skill, invoked from here, and every other step runs one of the
-scripts in [`scripts/agent/`](../../../scripts/agent) that `mise run agent:run` would run in one go.
-So the result is the same pull request, with the same state comments, and `mise run agent:next`
-can take over at any point.
+from this Claude Code session. The developer approves the plan; every later step runs without
+asking, and the run ends with a notification that the pull request is ready for the developer's
+review. It adds no new behaviour of its own: planning is the
+[`plan-from-issue`](../plan-from-issue/SKILL.md) skill, invoked from here, and every other step runs
+one of the scripts in [`scripts/agent/`](../../../scripts/agent) that `mise run agent:run` would run
+in one go. So the result is the same pull request, with the same state comments, and
+`mise run agent:next` can take over at any point.
 
 Input (`$ARGUMENTS`): an issue number (`61`, `#61`) or an issue link
 (`https://github.com/<owner>/<repo>/issues/61`). Ask for it if none was given. A link to another
 repository than this one (`gh repo view --json nameWithOwner`) is an error: stop and say so.
 
-## Approval gates
+## One approval: the plan
 
-Every step marked **Gate** below is a gate:
+The plan (step 1) is the only step that waits for the developer. Everything after it (pushing the
+plan branch, implementing, CI fixes, reviews, fix rounds, finalising, the update with `main`) runs
+without asking. Before each step, say in one or two lines what it does and the command, then run
+it; after it, report what it did.
 
-1. First say in two or three lines what the step does, the exact command, and what it changes
-   (files, branches, pushes, comments on GitHub, agent tokens, roughly how long it takes).
-2. Then ask with `AskUserQuestion`: header `Step <n>`, the options **Run it** (first), **Skip**
-   (only where skipping makes sense) and **Stop here**. Add step-specific options where listed.
-3. Run the step only on **Run it**. An answer in "Other" is a change request: make the change (to
-   the plan, the command, a setting), then ask again. **Stop here** ends the skill: print where it
-   stopped and the command that continues from there.
+The run stops without asking, and notifies the developer (see [Notifications](#notifications)),
+when:
 
-An approval covers that one step only, never the next one or a later run of the same step. Steps
-without a gate (reading, waiting for CI, printing state) run without asking. If a step fails, show
-the error and the end of its output, and ask what to do (retry, fix it by hand, stop). Never retry
-on your own.
+- a step fails: show the error and the end of its output. Never retry on your own;
+- the loop stops (`stopping: <reason>`, step 4.5);
+- the rebase on `main` conflicts in a file other than the version files (step 5);
+- the pull request is ready for review (step 6).
+
+Merging is never part of the run. It is the developer's decision; merge only when the developer asks
+for it in this session (step 7).
 
 Long-running scripts (the agents, CI): start them with the Bash tool's `run_in_background`. Do not
 poll. When the completion notification arrives, read the end of the output and report it. Each
 agent prints the path of its full stream (`$TMPDIR/agent-<pid>/<step>.jsonl`). Keep that path for
 when something goes wrong.
 
-## 0. Where the issue stands (no gate)
+## Notifications
+
+The developer is likely away while the agents run, so every stop ends with a notification: the
+`PushNotification` tool (load it with `ToolSearch`, `select:PushNotification`), one line under 200
+characters that leads with what to act on:
+
+- ready: `#<n> PR #<pr> ready for your review: <approved by the review agent | N open findings>, CI passed`;
+- stopped: `#<n> stopped at <step>: <reason>, PR #<pr>`.
+
+Send one notification per stop, never for routine progress. Print the same message, with the pull
+request link, in the session as well.
+
+## 0. Where the issue stands
 
 ```sh
 gh auth status
@@ -60,40 +74,33 @@ first step that is not done: step 1 when there is no plan branch, step 3 for the
 without a pull request, step 4 for an open draft labelled `agent`, step 5 for a pull request ready
 for review. Say where you are starting and why.
 
-## 1. Plan and push the plan branches (the `plan-from-issue` skill)
+## 1. Plan (the approval)
 
 Invoke the [`plan-from-issue`](../plan-from-issue/SKILL.md) skill with the Skill tool
-(`plan-from-issue`, argument: the issue number), and follow it through its section 4. It reads the
+(`plan-from-issue`, argument: the issue number), and follow it through its section 3. It reads the
 issue and the documents of every part it touches, writes `.plans/<n>-<slug>.md` (several plans when
-the issue does not fit one pull request), shows them and changes them until the developer agrees,
-and then pushes one `plan/<n>-<slug>` branch per plan.
+the issue does not fit one pull request), shows them and changes them until the developer agrees.
 
-Its approvals are this skill's gates for the plan, asked the same way:
+Show the plan(s) in full and ask with `AskUserQuestion`, header `Plan`, the options
+**Approve the plan**, **Change it** and **Stop here**. On **Change it**, or an answer in "Other",
+change the plan and ask again, until it is approved. Its open questions must be answered in the plan
+before it can be approved. This is the last question of the run: say so in the question ("after
+this, the run goes on to the pull request without asking").
 
-- **The plan**: show the plan(s) in full and ask with the options **Approve the plan**,
-  **Change it** and **Stop here**. On **Change it**, or an answer in "Other", change the plan and
-  ask again, until it is approved. Its open questions must be answered in the plan before it can be
-  approved.
-- **The push**: then gate `scripts/agent/plan-branch.sh .plans/<n>-<slug>.md` (every plan of the
-  issue). It pushes the branch from `origin/main` with only the plan file, comments the branch link
-  on the issue and removes the local file.
+## 2. Push the plan branches
 
-Leave out its section 5 ("Tell the user what is next"): instead of handing over to
-`mise run agent:run`, this skill continues with step 3. Step 2 is the developer's look at the
-pushed plan.
+Right after the approval, run `scripts/agent/plan-branch.sh .plans/<n>-<slug>.md` for every plan of
+the issue (the `plan-from-issue` skill's section 4). It pushes the branch from `origin/main` with
+only the plan file, comments the branch link on the issue and removes the local file. Leave out its
+section 5 ("Tell the user what is next"): continue with step 3.
 
-## 2. The plan on GitHub (no gate)
+For a split issue, steps 3 to 6 run once per plan, in the order of their dependencies. A plan that
+depends on another one waits until that one is merged: run the plans that do not wait, then stop
+with their pull requests ready for review, and say which plan comes next once they are merged
+(`/develop-issue <n>` continues there). Say which plan you are on in every report
+("plan 2 of 3: plan/<n>-<slug>").
 
-After the push, the plan is on GitHub, where the developer can still review and edit it. Offer
-**Review it on GitHub first** as an extra option at the next gate: on that answer, print the
-branch links and stop. The developer continues later with `/develop-issue <n>`, which picks up at
-step 3.
-
-For a split issue, steps 3 to 7 run once per plan, in the order of their dependencies. A plan that
-depends on another one starts only after that one is merged (step 7). Say which plan you are on
-in every gate ("plan 2 of 3: plan/<n>-<slug>").
-
-## 3. Implement (Gate)
+## 3. Implement
 
 Command: `scripts/agent/implement.sh plan/<n>-<slug>` (`mise run agent:implement`), in the
 background. The developer agent (`AGENT_MODEL`, Sonnet by default) implements the plan with tests,
@@ -104,68 +111,44 @@ when the developer has set any (`AGENT_*` in the environment).
 When it finishes, print the pull request link and the "Summary" and "Not done or done differently"
 sections of its body (`gh pr view <pr> --json body`).
 
-## 4. The review → fix loop (one gate per step)
+## 4. The review → fix loop
 
 Repeat until the pull request is ready for review:
 
-1. Ask the loop for its next step (no gate): `scripts/agent/next.sh --dry-run <pr>`. It prints
+1. Ask the loop for its next step: `scripts/agent/next.sh --dry-run <pr>`. It prints
    `next step: <step>`, a `waiting for` line, or `stopping: <reason>`.
-2. **wait** (CI is still running on the head): no gate. In the background, run
+2. **wait** (CI is still running on the head): in the background, run
    `sleep 30; gh pr checks <pr> --watch --interval 30` and wait for its notification, then go back
    to 1. Watch every check, not `--required` only: **CI passed** is reported only once the other
    jobs are done, so `--required` exits at once with "no required checks reported". The first
-   seconds after a push have no checks at all, hence the `sleep`. After
-   `AGENT_CI_TIMEOUT` minutes (60 by default) without a result, say so and ask: wait longer, or
-   stop.
-3. **fix-ci**, **review**, **fix**, **finalise**: gate it, then run the step script in the
-   background: `scripts/agent/fix-ci.sh <pr>`, `review.sh <pr>`, `fix.sh <pr>` or
-   `finalise.sh <pr>`. Before the gate, give what the step is based on:
+   seconds after a push have no checks at all, hence the `sleep`. After `AGENT_CI_TIMEOUT` minutes
+   (60 by default) without a result, stop and notify.
+3. **fix-ci**, **review**, **fix**, **finalise**: run the step script in the background:
+   `scripts/agent/fix-ci.sh <pr>`, `review.sh <pr>`, `fix.sh <pr>` or `finalise.sh <pr>`. Before
+   it, say what the step is based on:
    - fix-ci: the failing job and the last lines of its log (`gh pr checks <pr>`,
      `gh run view <run> --log-failed | tail -n 60`), and how many of the `AGENT_MAX_CI_FIXES`
      attempts (3) are used. First check whether `main` moved under the pull request
      (`git fetch origin`, `gh pr view <pr> --json mergeStateStatus`: `BEHIND`), or the only
      failure is the *Version* job's "is not higher than" (another pull request merged the same
      version). Then the developer agent is the wrong fix: it only commits on top, and the branch
-     stays behind `main`. Offer **Rebase and bump** (step 6's update, run now) as the first,
-     recommended option, and **Run fix-ci** as the second;
+     stays behind `main`. Run step 5's update instead of fix-ci, then go back to 1;
    - review: the round (`R<round>`) out of `AGENT_MAX_ROUNDS` (2), and the review model;
    - fix: the findings of the latest review, by priority, from its summary comment;
    - finalise: that it marks the pull request ready for review and removes the `agent` label.
-
-   Offer one extra option at these gates: **Run the rest without asking**. On that answer, run
-   `scripts/agent/next.sh <pr>` (`mise run agent:next`) in the background to the end of the loop,
-   then continue with step 5.
 4. After the step, report what it did. For a review: the findings with their IDs and priorities,
    or the approval. For a fix: one line per finding, fixed (with the commit) or declined (with the
-   reason). For fix-ci: whether it pushed. A fix-ci that pushed nothing leaves CI red. Say so, and
-   ask: another attempt, fix it by hand, or stop.
-5. **stopping: <reason>** (over `AGENT_MAX_CI_FIXES` or `AGENT_MAX_TOKENS`): no step runs. Explain
-   the reason. Ask whether to hand the pull request back: comment the reason on it and remove the
-   `agent` label (`gh pr edit <pr> --remove-label agent`), as `next.sh` does when it stops. Then
-   stop. **next step: none**: the pull request is not an open draft labelled `agent`. Go to step 5.
+   reason). For fix-ci: whether it pushed. A fix-ci that pushed nothing leaves CI red: go back to
+   1, which runs the next attempt until `AGENT_MAX_CI_FIXES` stops the loop.
+5. **stopping: <reason>** (over `AGENT_MAX_CI_FIXES` or `AGENT_MAX_TOKENS`): no step runs. Hand the
+   pull request back as `next.sh` does when it stops: comment the reason on it and remove the
+   `agent` label (`gh pr edit <pr> --remove-label agent`). Then stop and notify.
+   **next step: none**: the pull request is not an open draft labelled `agent`. Go to step 5.
 
-## 5. The developer's review (Gate)
+## 5. Bring it up to date with `main` (only when needed)
 
-Print the final comment's essentials: whether the review agent approved the latest commit, the
-open and declined findings, and the usage. Point at the pull request and at
-[the walkthrough's step 6](../../../docs/agentic-development.md#6-review-the-pull-request).
-
-Then ask, with the options:
-
-- **Reviewed: continue** to step 6;
-- **Another agent round**: run
-  `gh pr ready <pr> --undo && gh pr edit <pr> --add-label agent`, then go back to step 4 with
-  `AGENT_MAX_ROUNDS` raised by one, exported for every script of the loop. Ask first whether to
-  change the plan on the branch, since the review agent reads the plan, not the developer's own
-  comments;
-- **Stop here**: the developer reviews, tries and changes it by hand. `/develop-issue <n>`
-  continues later.
-
-## 6. Bring it up to date with `main` (Gate, only when needed)
-
-Check (no gate): `git fetch origin` and
-`gh pr view <pr> --json mergeStateStatus,headRefName`. When the branch is behind `main`, gate the
-update. Say that it rewrites the branch (`--force-with-lease`) and starts CI again:
+Check: `git fetch origin` and `gh pr view <pr> --json mergeStateStatus,headRefName`. When the branch
+is behind `main`, update it. It rewrites the branch (`--force-with-lease`) and starts CI again:
 
 ```sh
 git switch plan/<n>-<slug> && git pull --ff-only
@@ -178,20 +161,34 @@ git push --force-with-lease
 
 Conflicts only in the three version files (`gradle.properties`, `artifact/frontend/package.json`,
 `artifact/ta-runner/ta_runner/__init__.py`): take `main`'s side, continue the rebase, then bump in
-a commit of its own. Say so in the gate. A conflict in any other file: stop and show it, never
-resolve it unasked.
+a commit of its own. A conflict in any other file: `git rebase --abort`, show the conflicting
+files, then stop and notify. Never resolve it on your own.
 
 Pick the bump from the plan's "Version bump", and check it with
 `scripts/version.sh check-bump origin/main`. Then wait for **CI passed** on the new head, as in
-step 4.2. Run from step 4 (a fix-ci gate), go back to step 4.1. Run after step 5, a red CI goes
-back to step 4 (fix-ci), after adding the `agent` label again and turning the pull request back
-into a draft.
+step 4.2. Run from step 4 (instead of a fix-ci), go back to step 4.1. Run on a pull request that is
+already ready for review, a red CI goes back to step 4 (fix-ci): first add the `agent` label again
+and turn the pull request back into a draft (`gh pr ready <pr> --undo`).
 
-## 7. Merge (Gate, never by default)
+## 6. Ready for the developer's review
 
-Merging is the developer's decision. Ask with **No, I will merge it myself** as the first option
-and **Merge it now** as the second. Only on **Merge it now**, when **CI passed** is green and the
-branch is up to date, run:
+The pull request is ready for review, up to date with `main`, and **CI passed** is green on its
+head. Print the final comment's essentials: whether the review agent approved the latest commit,
+the open and declined findings, and the usage. Point at the pull request and at
+[the walkthrough's step 6](../../../docs/agentic-development.md#6-review-the-pull-request). Then
+notify (see [Notifications](#notifications)) and end with the summary (step 8).
+
+Say what the developer can ask for next in this session: another agent round, or the merge.
+
+- **Another agent round** (only when asked): ask first whether to change the plan on the branch,
+  since the review agent reads the plan, not the developer's own comments. Then run
+  `gh pr ready <pr> --undo && gh pr edit <pr> --add-label agent` and go back to step 4 with
+  `AGENT_MAX_ROUNDS` raised by one, exported for every script of the loop.
+
+## 7. Merge (only when the developer asks)
+
+Merging is the developer's decision and never part of the run. Only when the developer asks for it
+in this session, and **CI passed** is green and the branch is up to date, run:
 
 ```sh
 gh pr merge <pr> --rebase --delete-branch
@@ -200,10 +197,9 @@ gh pr merge <pr> --rebase --delete-branch
 If GitHub refuses it (no code owner's approval yet, CI not green), show why and stop. Never retry
 with `--admin` and never use `--auto`.
 
-After the merge (no gate): `git switch main && git pull --ff-only` and
-`git branch -D plan/<n>-<slug>`. Say that CI on `main` releases the new version, and whether the
-issue closes (`Closes #<n>`) or stays open for the next plan (`Part of #<n>`). For a split issue,
-continue with the next plan at step 3.
+After the merge: `git switch main && git pull --ff-only` and `git branch -D plan/<n>-<slug>`. Say
+that CI on `main` releases the new version, and whether the issue closes (`Closes #<n>`) or stays
+open for the next plan (`Part of #<n>`). For a split issue, continue with the next plan at step 3.
 
 ## 8. Summary
 
