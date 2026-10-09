@@ -248,6 +248,7 @@ Compose), as for 1.0.0.
 ### WP1: The abstract conventions test
 
 - **Depends on**: none
+- **Status**: done
 - **Files**:
   - `artifact/backend/library/persistence/src/testFixtures/java/…/library/persistence/DomainPersistenceConventionsTest.java`, `EntitySchemaRule.java`, `DomainMigrationIsolationCheck.java`, `DatabaseNamingCheck.java` (new; the last moved from `artifact/backend/src/test`)
   - delete `…/testFixtures/…/TestMigrations.java`
@@ -255,10 +256,10 @@ Compose), as for 1.0.0.
   - `artifact/backend/library/persistence/src/test/resources/tr/girgin/backend/trading/analysis/platform/library/persistence/fixture/…` (fixture migrations, new)
   - `artifact/backend/library/persistence/build.gradle.kts`, `gradle/libs.versions.toml` (if a library alias is missing)
 - **Steps**:
-  - [ ] The three checks and the abstract test as in the design. The fixtures need JUnit, ArchUnit and
+  - [x] The three checks and the abstract test as in the design. The fixtures need JUnit, ArchUnit and
         Flyway as `testFixturesApi`; JDBC (`java.sql`) is fine in test fixtures.
-  - [ ] The proofs and fixtures in the library's own tests.
-  - [ ] Declared dependencies match (`analyzeDependencies` in `mise run check`).
+  - [x] The proofs and fixtures in the library's own tests.
+  - [x] Declared dependencies match (`analyzeDependencies` in `mise run check`).
 - **Tests**: `EntitySchemaRuleTest`, `DomainMigrationIsolationCheckTest`, `DatabaseNamingCheckTest`,
   `SamplePersistenceConventionsTest`.
 
