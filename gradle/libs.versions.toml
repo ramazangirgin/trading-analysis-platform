@@ -102,6 +102,7 @@ testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgr
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 assertj-core = { module = "org.assertj:assertj-core" }
 # The Checkstyle API the custom checks are written against; the same version runs the checks.
 checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle" }
