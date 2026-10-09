@@ -219,6 +219,7 @@
     "already_running": "An analysis for {ticker} on {tradeDate} is already running.",
     "not_found": "Analysis not found.",
     "not_running": "The analysis is not running.",
+    "concurrent_update": "Someone else changed this in the meantime. Reload and try again.",
     "catalog_unavailable": "Could not load the model list.",
     "network_error": "Cannot reach the server.",
     "unexpected_error": "Something unexpected went wrong.",

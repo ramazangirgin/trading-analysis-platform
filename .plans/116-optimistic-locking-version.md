@@ -200,6 +200,7 @@ asks for a changed rule).
 
 ### WP3: BFF, API and frontend
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/…/bff/controller/api/model/PresetDto.java`, `SavePresetRequest.java`
@@ -209,9 +210,9 @@ asks for a changed rule).
   - `artifact/frontend/src/features/settings/api.ts`, `artifact/frontend/src/features/settings/components/PresetManager.vue`
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
 - **Steps**:
-  - [ ] DTO fields, delegate and mappers.
-  - [ ] Regenerate the API types with `mise run api-types` (needs `mise run dev`).
-  - [ ] Frontend: send the version, reload on failure, translate the code.
+  - [x] DTO fields, delegate and mappers.
+  - [x] Regenerate the API types with `mise run api-types` (needs `mise run dev`).
+  - [x] Frontend: send the version, reload on failure, translate the code.
 - **Tests**:
   - A Spring Boot test of the preset API (next to `AnalysesApiIntegrationTest` in `artifact/backend/src/test`,
     e.g. `PresetsApiIntegrationTest`): create a preset (version 0), rename it with version 0 (200,

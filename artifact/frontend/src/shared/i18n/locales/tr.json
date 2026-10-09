@@ -219,6 +219,7 @@
     "already_running": "{ticker} için {tradeDate} tarihli bir analiz zaten çalışıyor.",
     "not_found": "Analiz bulunamadı.",
     "not_running": "Analiz çalışmıyor.",
+    "concurrent_update": "Bu kayıt arada başka biri tarafından değiştirildi. Yenileyip tekrar deneyin.",
     "catalog_unavailable": "Model listesi alınamadı.",
     "network_error": "Sunucuya ulaşılamadı.",
     "unexpected_error": "Beklenmeyen bir hata oluştu.",

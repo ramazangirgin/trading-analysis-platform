@@ -38,11 +38,12 @@ async function rename(preset: Preset) {
   if (!name || name === preset.name) return
   busy.value = preset.id
   try {
-    await settingsApi.updatePreset(preset.id, name, preset.values)
+    await settingsApi.updatePreset(preset.id, name, preset.values, preset.version)
     message.success(t('presets.renamed', { name }))
     await load()
   } catch (e) {
     message.error(errorLabel(e))
+    await load() // the next rename starts from the current version
   } finally {
     busy.value = null
   }
