@@ -390,6 +390,31 @@ class AfterMergeTest(unittest.TestCase):
         status = alerts.after_merge_status(api_alert("open"), True, {"3.1.7"})
         self.assertTrue(status["status"].startswith("open: not in the graph any more"))
 
+    def test_versions_it_cannot_read_are_skipped(self):
+        status = alerts.after_merge_status(api_alert("open"), True, {"7.*.*", "3.1.7"})
+        self.assertNotEqual(status["status"], "open: still in the graph")
+        status = alerts.after_merge_status(api_alert("open"), True, {"7.*.*", "3.1.5"})
+        self.assertEqual(status["versions"], ["3.1.5"])
+
+    def test_real_sbom_names_match_the_alerts(self):
+        # From `gh api repos/{owner}/{repo}/dependency-graph/sbom` on 2026-10-09: the names carry no
+        # ecosystem prefix, so they match the alerts' package names as they are.
+        sbom = {
+            "sbom": {
+                "packages": [
+                    {"name": "cryptography", "versionInfo": "50.0.1"},
+                    {"name": "cryptography", "versionInfo": "48.0.1"},
+                    {"name": DATABIND3, "versionInfo": "3.1.5"},
+                    {"name": DATABIND3, "versionInfo": "3.1.7"},
+                    {"name": "actions/checkout", "versionInfo": "7.*.*"},
+                ]
+            }
+        }
+        graph = alerts.sbom_versions(sbom)
+        status = alerts.after_merge_status(api_alert("open"), True, graph[DATABIND3])
+        self.assertEqual(status["versions"], ["3.1.5"])
+        self.assertEqual(graph["cryptography"], {"48.0.1", "50.0.1"})
+
     def test_sbom_versions(self):
         sbom = {
             "sbom": {
