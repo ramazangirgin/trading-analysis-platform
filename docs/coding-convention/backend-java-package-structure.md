@@ -142,7 +142,7 @@ libraries it uses:
 | Gradle project | Root package | Holds | Used by |
 |---|---|---|---|
 | `:backend:library:mapper` | `….library.mapper` | Generic MapStruct scalar mappers: `DurationToMillisMapper`, `EnumToLowerCaseNameMapper` | `bff:impl`, `domain:analysis:adapter` |
-| `:backend:library:persistence` | `….library.persistence` | The JPA auditing configuration (`JpaAuditingConfiguration`, `ClockDateTimeProvider`), and in its test fixtures the shared test code of the persistence adapters ([persistence](backend-java-persistence.md#shared-persistence-code)) | `domain:settings:adapter`, `domain:identity:adapter`, `:backend` (runtime); the persistence adapters' and `:backend`'s tests |
+| `:backend:library:persistence` | `….library.persistence` | The JPA auditing configuration (`JpaAuditingConfiguration`, `ClockDateTimeProvider`), and in its test fixtures the shared test code of the persistence adapters ([persistence](backend-java-persistence.md#shared-persistence-code)) | `:backend` (runtime: the auditing configuration); the persistence adapters' and `:backend`'s tests (test fixtures) |
 
 - **Technical code only, never domain logic.** A library holds generic building blocks with no
   project type, no domain concept and no business rule, one kind of code per library. It may depend
