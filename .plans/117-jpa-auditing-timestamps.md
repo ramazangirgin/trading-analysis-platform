@@ -61,6 +61,9 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
     `library/persistence/build.gradle.kts`. The settings and identity adapters add
     `implementation(project(":backend:library:persistence"))`, and `:backend` adds
     `runtimeOnly(project(":backend:library:persistence"))` next to `library:mapper`.
+    (Done differently: the adapters use no class of the main source set, only its test fixtures, so
+    they got `testImplementation(testFixtures(...))` and no `implementation` dependency, which the
+    dependency analysis would flag as unused. Only `:backend` uses the main source set, at runtime.)
   - Update the `package-info.java` text, which says "Nothing here yet".
 - **Test fixtures**: `@JpaAdapterTest` also imports `JpaAuditingConfiguration` and a new
   `TestClockConfiguration` that provides a `MutableTestClock` (a `Clock` starting at a fixed instant,
