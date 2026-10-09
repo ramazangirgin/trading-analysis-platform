@@ -119,6 +119,7 @@ recorded JSON.
 
 ### WP2: Helper commands `gradle-scan` and `after-merge`
 
+- **Status**: not done: Edit on .claude/skills/dependabot-fix/ was denied by the permission mode, so alerts.py and test_alerts.py were not changed
 - **Depends on**: none
 - **Files**: `.claude/skills/dependabot-fix/alerts.py`, `.claude/skills/dependabot-fix/test_alerts.py`
 - **Steps**:
