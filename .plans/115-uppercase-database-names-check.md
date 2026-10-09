@@ -139,13 +139,14 @@ reports a library the new tests use but `:backend` does not declare, declare it 
 
 ### WP2: Documentation
 
+- **Status**: done
 - **Depends on**: WP1 (names the classes)
 - **Files**: `docs/coding-convention/backend-database-naming.md`,
   `docs/coding-convention/backend-java-persistence.md`, `docs/coding-convention/README.md`,
   `README.md`
 - **Steps**:
-  - [ ] Change the documents as listed in "Docs to update".
-  - [ ] `mise run version:bump minor` (2.3.0 → 2.4.0), its own commit.
+  - [x] Change the documents as listed in "Docs to update".
+  - [x] `mise run version:bump minor` (2.3.0 → 2.4.0), its own commit.
 - **Tests**: none (documentation); `mise run format-check` stays green.
 
 ## Tests
