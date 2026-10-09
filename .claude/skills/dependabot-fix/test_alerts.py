@@ -274,5 +274,134 @@ class RenovateTest(unittest.TestCase):
         self.assertIsNone(alerts.allowed("latest", "1.0"))
 
 
+# `./gradlew -q dependencies :backend:library:persistence:dependencies` before #128: the test
+# fixtures resolved Jackson 3.1.5, the main classpath 3.1.7.
+GRADLE_REPORT = """
+------------------------------------------------------------
+Root project 'trading-analysis-platform'
+------------------------------------------------------------
+
+No configurations
+
+------------------------------------------------------------
+Project ':backend:library:persistence'
+------------------------------------------------------------
+
+compileClasspath - Compile classpath for source set 'main'.
++--- org.springframework.boot:spring-boot-dependencies:4.1.1
+|    +--- tools.jackson.core:jackson-core:3.1.5 -> 3.1.7 (c)
+|    \\--- tools.jackson.core:jackson-databind:3.1.5 -> 3.1.7 (c)
++--- tools.jackson:jackson-bom:3.1.7
++--- org.springframework.boot:spring-boot-jackson -> 4.1.1
+|    \\--- tools.jackson.core:jackson-databind:3.1.5 -> 3.1.7
+|         \\--- tools.jackson.core:jackson-core:3.1.7
+\\--- project :backend:library:core
+
+implementation - Implementation dependencies for the 'main' feature. (n)
++--- tools.jackson:jackson-bom:3.1.7 (n)
+\\--- tools.jackson.core:jackson-databind:3.1.5 (n)
+
+testFixturesCompileClasspath - Compile classpath for source set 'test fixtures'.
++--- org.springframework.boot:spring-boot-dependencies:4.1.1
+|    \\--- tools.jackson.core:jackson-databind:3.1.5 (c)
++--- org.springframework.boot:spring-boot-jackson -> 4.1.1
+|    \\--- tools.jackson.core:jackson-databind:3.1.5
+|         \\--- tools.jackson.core:jackson-core:3.1.5
++--- org.example:missing:1.0 FAILED
+\\--- org.springframework.boot:spring-boot-jackson -> 4.1.1 (*)
+
+testFixturesRuntimeClasspath - Runtime classpath of source set 'test fixtures'.
+No dependencies
+"""
+
+
+def resolved(records, configuration):
+    return [(r["package"], r["resolved"]) for r in records if r["configuration"] == configuration]
+
+
+class GradleScanTest(unittest.TestCase):
+    def setUp(self):
+        self.records = alerts.parse_gradle_report(GRADLE_REPORT)
+
+    def test_replaced_versions_count_as_their_replacement(self):
+        self.assertEqual(
+            resolved(self.records, "compileClasspath"),
+            [
+                ("org.springframework.boot:spring-boot-dependencies", "4.1.1"),
+                ("tools.jackson:jackson-bom", "3.1.7"),
+                ("org.springframework.boot:spring-boot-jackson", "4.1.1"),
+                (DATABIND3, "3.1.7"),
+                ("tools.jackson.core:jackson-core", "3.1.7"),
+            ],
+        )
+
+    def test_constraints_projects_failed_and_unresolved_configurations_are_left_out(self):
+        self.assertEqual(resolved(self.records, "implementation"), [])
+        self.assertEqual(
+            resolved(self.records, "testFixturesCompileClasspath"),
+            [
+                ("org.springframework.boot:spring-boot-dependencies", "4.1.1"),
+                ("org.springframework.boot:spring-boot-jackson", "4.1.1"),
+                (DATABIND3, "3.1.5"),
+                ("tools.jackson.core:jackson-core", "3.1.5"),
+                ("org.springframework.boot:spring-boot-jackson", "4.1.1"),
+            ],
+        )
+        self.assertEqual(resolved(self.records, "testFixturesRuntimeClasspath"), [])
+
+    def test_project_paths(self):
+        self.assertEqual({r["project"] for r in self.records}, {":backend:library:persistence"})
+        self.assertEqual(alerts.parse_gradle_report("Root project 'x'\n\nclasspath\n\\--- a:b:1.0\n")[0]["project"], ":")
+
+    def test_only_vulnerable_versions_are_reported(self):
+        jackson3 = next(g for g in alerts.group_alerts([alerts.normalise(a) for a in RAW]) if g["id"] == "maven:jackson3")
+        result = alerts.vulnerable_records([jackson3], self.records)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "maven:jackson3")
+        self.assertEqual(
+            [(r["configuration"], r["package"], r["version"], r["alerts"]) for r in result[0]["resolved"]],
+            [("testFixturesCompileClasspath", DATABIND3, "3.1.5", [26, 37])],
+        )
+
+    def test_nothing_vulnerable(self):
+        fixed = [r for r in self.records if r["configuration"] == "compileClasspath"]
+        groups = alerts.group_alerts([alerts.normalise(a) for a in RAW])
+        self.assertEqual(alerts.vulnerable_records(groups, fixed), [])
+
+
+def api_alert(state, vulnerable_range=">= 3.0.0, <= 3.1.6"):
+    return {"number": 37, "state": state, "security_vulnerability": {"vulnerable_version_range": vulnerable_range}}
+
+
+class AfterMergeTest(unittest.TestCase):
+    def test_fixed_or_dismissed(self):
+        self.assertEqual(alerts.after_merge_status(api_alert("fixed"), False, set()), {"number": 37, "status": "fixed"})
+        self.assertEqual(alerts.after_merge_status(api_alert("dismissed"), True, set())["status"], "dismissed")
+
+    def test_submission_not_run_yet(self):
+        status = alerts.after_merge_status(api_alert("open"), False, {"3.1.5"})
+        self.assertEqual(status["status"], "open: submission not run yet")
+
+    def test_still_in_the_graph(self):
+        status = alerts.after_merge_status(api_alert("open"), True, {"3.1.7", "3.1.5", "3.0.1"})
+        self.assertEqual(status, {"number": 37, "status": "open: still in the graph", "versions": ["3.0.1", "3.1.5"]})
+
+    def test_gone_from_the_graph(self):
+        status = alerts.after_merge_status(api_alert("open"), True, {"3.1.7"})
+        self.assertTrue(status["status"].startswith("open: not in the graph any more"))
+
+    def test_sbom_versions(self):
+        sbom = {
+            "sbom": {
+                "packages": [
+                    {"name": DATABIND3, "versionInfo": "3.1.7"},
+                    {"name": DATABIND3, "versionInfo": "3.1.5"},
+                    {"name": "com.github.ramazangirgin/trading-analysis-platform"},
+                ]
+            }
+        }
+        self.assertEqual(alerts.sbom_versions(sbom), {DATABIND3: {"3.1.5", "3.1.7"}})
+
+
 if __name__ == "__main__":
     unittest.main()
