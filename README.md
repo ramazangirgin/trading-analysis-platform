@@ -464,10 +464,11 @@ gh pr merge <pr> --rebase --delete-branch
 ```
 
 To go through the same flow from Claude Code, use the `develop-issue` skill instead:
-`/develop-issue 32` or `/develop-issue <issue link>`. It asks you only to approve the plan, runs
-every later step without asking (plan branch, implementation, every CI fix, review and fix round,
-finalising, updating with `main`), and notifies you when the pull request is ready for your review.
-It never merges unless you ask it to. It continues where the issue stands when started again.
+`/develop-issue 32` or `/develop-issue <issue link>`. It works in a folder of its own (a worktree
+`../<checkout>-32` from `origin/main`) and leaves your checkout alone. It asks you only to approve
+the plan, runs every later step without asking (plan branch, implementation, every CI fix, review
+and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
+for your review. It never merges unless you ask it to. It continues where the issue stands when started again.
 
 Each step, what to check at each decision, how to stop, continue or redo a run, and the settings:
 [docs/agentic-development.md](docs/agentic-development.md).

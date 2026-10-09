@@ -241,8 +241,10 @@ ID and the log. Stopping it releases the lock; started again, the run resumes (s
 
 The `develop-issue` skill
 ([`.claude/skills/develop-issue/SKILL.md`](../.claude/skills/develop-issue/SKILL.md)) goes through
-steps 2 to 8 of this walkthrough in one Claude Code session. It asks the developer only to approve
-the plan. Every later step runs without asking: pushing the plan branch, the implementation, each CI
+steps 2 to 8 of this walkthrough in one Claude Code session. It works in a folder of its own: a
+Git worktree `../<checkout>-<issue>` checked out from `origin/main` (reused when it exists), so it
+never switches branches or writes in the checkout the session started in, and several issues can
+run side by side. It asks the developer only to approve the plan. Every later step runs without asking: pushing the plan branch, the implementation, each CI
 fix, review, fix round and the finalising, and the update with `main`. When the pull request is
 ready for review (up to date with `main`, **CI passed** green), or when the run stops early, it
 sends a notification. It never merges: merging stays the developer's decision, and the skill merges
