@@ -632,10 +632,18 @@ def after_merge_status(alert, submission_current, graph_versions):
     if not submission_current:
         return {"number": number, "status": "open: submission not run yet"}
     vulnerable_range = (alert.get("security_vulnerability") or {}).get("vulnerable_version_range") or ""
-    still = sorted((v for v in graph_versions if in_range(v, vulnerable_range)), key=version_key)
+    still = sorted((v for v in graph_versions if vulnerable(v, vulnerable_range)), key=version_key)
     if still:
         return {"number": number, "status": "open: still in the graph", "versions": still}
     return {"number": number, "status": "open: not in the graph any more, Dependabot not updated yet"}
+
+
+def vulnerable(version, vulnerable_range):
+    """in_range, but False for a version it cannot read (the graph has "7.*.*" for Actions)."""
+    try:
+        return in_range(version, vulnerable_range)
+    except ValueError:
+        return False
 
 
 def sbom_versions(sbom):
