@@ -292,17 +292,18 @@ Compose), as for 1.0.0.
 ### WP3: Application wiring and architecture rules
 
 - **Depends on**: WP2
+- **Status**: done
 - **Files**:
   - `artifact/backend/src/main/resources/application.properties` (drop `spring.flyway.table`, comment where Flyway is configured now)
   - `artifact/backend/src/test/java/…/platform/ArchitectureTest.java`, `PersistenceArchitectureTest.java`
   - `artifact/backend/build.gradle.kts` (the `domainPersistenceTestsCheck` task), `mise.toml` (`check` runs it; its description says so)
   - delete `artifact/backend/src/test/java/…/platform/DatabaseNamingTest.java`, `DatabaseNamingCheckTest.java`, `DatabaseNamingCheck.java` (moved in WP1), `artifact/backend/src/test/resources/db/naming-violations/`
 - **Steps**:
-  - [ ] The exceptions of the design's "Architecture rules that change", each with its reason in the
+  - [x] The exceptions of the design's "Architecture rules that change", each with its reason in the
         `because`, and a rule that a `@Configuration` in a domain adapter is a
         `<Domain>PersistenceConfiguration` in `adapter.persistence`.
-  - [ ] `domainPersistenceTestsCheck` as in the design, a dependency of `:backend:check`, and in `mise run check`.
-  - [ ] Remove `spring.flyway.table`; if `@JpaAdapterTest` needs it, import Boot's Flyway auto-configuration there (design).
+  - [x] `domainPersistenceTestsCheck` as in the design, a dependency of `:backend:check`, and in `mise run check`.
+  - [x] Remove `spring.flyway.table`; if `@JpaAdapterTest` needs it, import Boot's Flyway auto-configuration there (design).
 - **Tests**: `ArchitectureTest`, `PersistenceArchitectureTest` on the real code;
   `TradingPlatformApplicationTests` and `AnalysesApiIntegrationTest` start the application on an empty
   database (all three Flyway beans run before Hibernate validates). Show once, by hand, that each
