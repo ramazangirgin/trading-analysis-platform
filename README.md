@@ -463,10 +463,11 @@ gh pr merge <pr> --rebase --delete-branch
 #    CI on main releases vX.Y.Z; "Closes #32" closes the issue.
 ```
 
-To go through the same flow one step at a time from Claude Code, approving each step before it
-runs (plan, plan branch, implementation, every CI fix, review and fix round, finalising, updating
-with `main`, merging), use the `develop-issue` skill instead: `/develop-issue 32` or
-`/develop-issue <issue link>`. It continues where the issue stands when started again.
+To go through the same flow from Claude Code, use the `develop-issue` skill instead:
+`/develop-issue 32` or `/develop-issue <issue link>`. It asks you only to approve the plan, runs
+every later step without asking (plan branch, implementation, every CI fix, review and fix round,
+finalising, updating with `main`), and notifies you when the pull request is ready for your review.
+It never merges unless you ask it to. It continues where the issue stands when started again.
 
 Each step, what to check at each decision, how to stop, continue or redo a run, and the settings:
 [docs/agentic-development.md](docs/agentic-development.md).

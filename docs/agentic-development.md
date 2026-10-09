@@ -237,14 +237,16 @@ kill -- -<pid>                                       # stop it (the pid printed 
 `detach.sh` starts the script in a new session with its output in `run.log`, and prints the process
 ID and the log. Stopping it releases the lock; started again, the run resumes (see below).
 
-#### Step by step, with an approval for each step
+#### From Claude Code, with one approval: the plan
 
 The `develop-issue` skill
 ([`.claude/skills/develop-issue/SKILL.md`](../.claude/skills/develop-issue/SKILL.md)) goes through
-steps 2 to 9 of this walkthrough in one Claude Code session, and asks before every step that changes
-something: the plan, pushing its branch, the implementation, each CI fix, review, fix round and the
-finalising, the update with `main`, and the merge. It asks for the merge only as an option, and
-merging stays the developer's decision.
+steps 2 to 8 of this walkthrough in one Claude Code session. It asks the developer only to approve
+the plan. Every later step runs without asking: pushing the plan branch, the implementation, each CI
+fix, review, fix round and the finalising, and the update with `main`. When the pull request is
+ready for review (up to date with `main`, **CI passed** green), or when the run stops early, it
+sends a notification. It never merges: merging stays the developer's decision, and the skill merges
+only when asked to in the session.
 
 ```text
 /develop-issue 32
@@ -253,8 +255,8 @@ merging stays the developer's decision.
 
 It plans with the `plan-from-issue` skill, invoked from it, and runs the same scripts one step at a time
 (`implement.sh`, then `next.sh --dry-run` for the next step and that step's script), so the pull
-request and its state comments are the same as with `mise run agent:run`. At any gate it can hand
-the rest of the loop to `mise run agent:next`. Started again, it reads where the issue stands from
+request and its state comments are the same as with `mise run agent:run`, and `mise run agent:next`
+can take over the loop at any point. Started again, it reads where the issue stands from
 its plan branches and pull requests and continues there.
 
 ### 5. When a run stops early
