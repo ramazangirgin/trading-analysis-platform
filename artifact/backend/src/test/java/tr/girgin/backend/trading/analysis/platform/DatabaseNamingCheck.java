@@ -73,10 +73,7 @@ final class DatabaseNamingCheck {
             Set<String> violations = new TreeSet<>();
             for (String[] row : query(connection, TABLES, 1)) {
                 tables.add(row[0]);
-                report(
-                        violations,
-                        "table \"%s\"".formatted(row[0]),
-                        NAME.matcher(row[0]).matches() ? null : NOT_UPPERCASE);
+                report(violations, "table \"%s\"".formatted(row[0]), upperCase(row[0]));
             }
             for (String[] row : query(connection, COLUMNS, 2)) {
                 if (!HISTORY_TABLE.equals(row[0])) {
