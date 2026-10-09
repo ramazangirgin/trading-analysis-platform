@@ -1,7 +1,9 @@
 package tr.girgin.backend.trading.analysis.platform;
 
+import java.time.Clock;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 /**
@@ -14,5 +16,11 @@ public class TradingPlatformApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(TradingPlatformApplication.class, args);
+    }
+
+    /** The one application-wide clock: cores and JPA auditing take their time from it. */
+    @Bean
+    Clock clock() {
+        return Clock.systemUTC();
     }
 }

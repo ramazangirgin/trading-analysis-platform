@@ -6,6 +6,11 @@ plugins {
 description = "Shared library: technical persistence code, and the test fixtures of the persistence adapters"
 
 dependencies {
+    // JPA auditing: the configuration enables it, the date time provider is a Spring Data type.
+    api(libs.spring.data.jpa)
+    api(libs.spring.data.commons)
+    implementation(libs.spring.context)
+
     // Test fixtures are a source set of their own: the platform of the convention plugin does not reach it.
     testFixturesImplementation(platform(libs.spring.boot.bom))
 
@@ -15,6 +20,7 @@ dependencies {
     testFixturesApi(libs.spring.boot.hibernate)
     testFixturesApi(libs.spring.boot.transaction)
     testFixturesApi(libs.spring.test)
+    testFixturesImplementation(libs.spring.context)
     testFixturesApi(libs.flyway.core)
     testFixturesApi(libs.postgresql)
     testFixturesApi(libs.testcontainers.postgresql)
