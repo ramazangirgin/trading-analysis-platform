@@ -190,13 +190,14 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
 
 ### WP4: Analysis core on the Clock
 
+- **Status**: done
 - **Depends on**: WP1 (the `Clock` bean)
 - **Files**:
   - `artifact/backend/domain/analysis/core/src/main/java/…/analysis/core/service/AnalysisService.java`
   - `artifact/backend/domain/analysis/core/src/test/java/…/analysis/core/service/AnalysisServiceTest.java`
   - any other test that constructs `AnalysisService` (`grep -rn "new AnalysisService"`)
 - **Steps**:
-  - [ ] Inject `Clock` into `AnalysisService` and replace every `Instant.now()` in the analysis core
+  - [x] Inject `Clock` into `AnalysisService` and replace every `Instant.now()` in the analysis core
         with `clock.instant()`.
 - **Tests**: `AnalysisServiceTest` builds the service with `Clock.fixed(…)` and asserts that
   `createdAt` of a started analysis, `startedAt` / `endedAt` and the `RUN_FINISHED` event time are

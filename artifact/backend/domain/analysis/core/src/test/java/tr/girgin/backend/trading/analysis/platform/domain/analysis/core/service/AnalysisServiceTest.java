@@ -3,8 +3,10 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 
 class AnalysisServiceTest {
 
+    private static final Instant NOW = Instant.parse("2026-03-04T05:06:07Z");
+    private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
+
     private Fakes.Repository repository;
     private Fakes.Runner runner;
     private Fakes.EventStore eventStore;
@@ -36,7 +41,22 @@ class AnalysisServiceTest {
         runner = new Fakes.Runner();
         eventStore = new Fakes.EventStore();
         hub = new AnalysisEventHub(repository, eventStore);
-        service = new AnalysisService(repository, runner, new Fakes.Credentials(), eventStore, hub, 2);
+        service = new AnalysisService(repository, runner, new Fakes.Credentials(), eventStore, hub, CLOCK, 2);
+    }
+
+    @Test
+    void takesEveryTimeFromTheClock() {
+        Analysis started = service.start(Fakes.spec("NVDA"));
+
+        assertThat(started.createdAt()).isEqualTo(NOW);
+        assertThat(started.startedAt()).isEqualTo(NOW);
+
+        runner.sink(started.id()).onExit(137);
+
+        assertThat(service.get(started.id()).endedAt()).isEqualTo(NOW);
+        assertThat(eventStore.read(started.id(), 0))
+                .singleElement()
+                .satisfies(e -> assertThat(e.timestamp()).isEqualTo(NOW));
     }
 
     @Test
