@@ -79,8 +79,8 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
 
     @Override
     public ResponseEntity<PresetDto> updatePreset(String id, SavePresetRequest request) {
-        return ResponseEntity.ok(presetMapper.map(
-                call(() -> presets.updatePreset(new PresetId(id), request.name(), jsonMapper.map(request.values())))));
+        return ResponseEntity.ok(presetMapper.map(call(
+                () -> presets.updatePreset(new PresetId(id), request.name(), jsonMapper.map(request.values()), null))));
     }
 
     @Override

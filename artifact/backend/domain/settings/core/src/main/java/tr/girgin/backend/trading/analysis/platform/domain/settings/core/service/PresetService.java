@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.core.service
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsError;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsException;
@@ -36,9 +37,17 @@ class PresetService implements ManagePresetsUseCase {
     }
 
     @Override
-    public Preset updatePreset(PresetId id, String name, String payload) {
+    public Preset updatePreset(PresetId id, String name, String payload, Long expectedVersion) {
         Preset stored = repository.findById(id).orElseThrow(() -> notFound(id));
-        return repository.save(new Preset(id, validName(name), validPayload(payload), null, stored.version()));
+        Long version = expectedVersion == null ? stored.version() : expectedVersion;
+        try {
+            return repository.save(new Preset(id, validName(name), validPayload(payload), null, version));
+        } catch (OptimisticLockingFailureException _) {
+            throw new SettingsException(
+                    SettingsError.CONCURRENT_UPDATE,
+                    "Preset was changed concurrently: " + id.value(),
+                    Map.of("id", id.value()));
+        }
     }
 
     @Override

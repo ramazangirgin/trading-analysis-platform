@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -8,6 +9,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -64,6 +68,28 @@ class ExternalAnalysisServiceTest {
         assertThat(repository.findAll(AnalysisFilter.ALL))
                 .singleElement()
                 .satisfies(a -> assertThat(a.status()).isEqualTo(AnalysisStatus.COMPLETED));
+    }
+
+    @Test
+    void carriesTheStoredVersionSoUnchangedFilesStayUnchanged() {
+        ExternalAnalysis files = external("GOOG", Rating.HOLD, "Hold", FINISHED);
+        Analysis stored = Analysis.imported(AnalysisId.newId(), 3L, files);
+        repository.rows.put(stored.id(), stored);
+
+        var registration = service.register(files);
+
+        assertThat(registration.outcome()).isEqualTo(Outcome.UNCHANGED);
+        assertThat(registration.analysis()).isEqualTo(stored);
+    }
+
+    @Test
+    void reportsAStaleReplaceAsConcurrentUpdate() {
+        service.register(external("GOOG", null, null, FINISHED));
+        repository.failOnWrite = new OptimisticLockingFailureException("stale");
+
+        assertThatThrownBy(() -> service.register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60))))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.CONCURRENT_UPDATE));
     }
 
     @Test

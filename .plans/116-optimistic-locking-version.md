@@ -173,6 +173,7 @@ asks for a changed rule).
 
 ### WP2: Domain records, ports and services
 
+- **Status**: done
 - **Depends on**: none (lands with WP1)
 - **Files**:
   - `…/analysis/core/model/Analysis.java`, `…/analysis/core/outbound/persistence/AnalysisRepositoryPort.java`,
@@ -184,10 +185,10 @@ asks for a changed rule).
   - `…/identity/core/model/User.java`, `Role.java`, `…/identity/core/outbound/persistence/UserRepositoryPort.java`, `RoleRepositoryPort.java`
   - every `new Analysis(` / `new Preset(` / `new User(` / `new Role(` in main and test code (about 40 calls in 13 files)
 - **Steps**:
-  - [ ] Add `Long version` (last component) to the four records, with the Javadoc semantics; carry it through every transition.
-  - [ ] `Analysis.queued(...)` gives `null`; `Analysis.imported(id, version, external)`.
-  - [ ] Port Javadoc and return types as in the design.
-  - [ ] The error codes and the translation in `AnalysisService`, `ExternalAnalysisService`, `PresetService`.
+  - [x] Add `Long version` (last component) to the four records, with the Javadoc semantics; carry it through every transition.
+  - [x] `Analysis.queued(...)` gives `null`; `Analysis.imported(id, version, external)`.
+  - [x] Port Javadoc and return types as in the design.
+  - [x] The error codes and the translation in `AnalysisService`, `ExternalAnalysisService`, `PresetService`.
 - **Tests**:
   - `AnalysisServiceTest`: a repository `update` that throws `OptimisticLockingFailureException`
     surfaces as `AnalysisException` with `CONCURRENT_UPDATE`.

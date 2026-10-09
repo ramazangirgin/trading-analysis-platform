@@ -10,6 +10,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
@@ -190,6 +191,18 @@ class AnalysisServiceTest {
         assertThat(done.decision()).isEqualTo("Rating: OVERWEIGHT");
         assertThat(done.endedAt()).isNotNull();
         assertThat(done.errorCode()).isNull();
+    }
+
+    @Test
+    void reportsAStaleWriteAsConcurrentUpdate() {
+        AnalysisId id = service.start(Fakes.spec("NVDA")).id();
+        repository.failOnWrite = new OptimisticLockingFailureException("stale");
+
+        assertThatThrownBy(() -> runner.sink(id).onEvent(Fakes.stats(1, 7)))
+                .isInstanceOfSatisfying(AnalysisException.class, e -> {
+                    assertThat(e.error()).isEqualTo(AnalysisError.CONCURRENT_UPDATE);
+                    assertThat(e.params()).containsEntry("id", id.value());
+                });
     }
 
     @Test

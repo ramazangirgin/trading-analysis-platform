@@ -12,7 +12,13 @@ public interface ManagePresetsUseCase {
 
     Preset createPreset(String name, String payload);
 
-    Preset updatePreset(PresetId id, String name, String payload);
+    /**
+     * Renames a preset and replaces its values.
+     *
+     * @param expectedVersion the version the caller last saw, or {@code null} to update what is stored;
+     *     a different stored version fails with {@code CONCURRENT_UPDATE}
+     */
+    Preset updatePreset(PresetId id, String name, String payload, Long expectedVersion);
 
     void deletePreset(PresetId id);
 }

@@ -97,6 +97,8 @@ final class Fakes {
     static final class Repository implements AnalysisRepositoryPort {
 
         final Map<AnalysisId, Analysis> rows = new ConcurrentHashMap<>();
+        // Thrown by update and replaceImported when set, as a stale write would.
+        RuntimeException failOnWrite;
 
         @Override
         public void insert(Analysis analysis) {
@@ -105,12 +107,18 @@ final class Fakes {
 
         @Override
         public Analysis update(Analysis analysis) {
+            if (failOnWrite != null) {
+                throw failOnWrite;
+            }
             rows.put(analysis.id(), analysis);
             return analysis;
         }
 
         @Override
         public Analysis replaceImported(Analysis analysis) {
+            if (failOnWrite != null) {
+                throw failOnWrite;
+            }
             rows.put(analysis.id(), analysis);
             return analysis;
         }
