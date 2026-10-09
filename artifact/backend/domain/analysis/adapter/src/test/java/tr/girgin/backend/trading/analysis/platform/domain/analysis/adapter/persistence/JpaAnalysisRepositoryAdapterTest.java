@@ -14,6 +14,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.AdapterTestSupport;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
@@ -38,26 +39,101 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     @Test
     void roundTripsAnAnalysisThroughEveryTransition() {
         Instant created = Instant.parse("2026-09-29T10:00:00.123Z");
-        Analysis queued = Analysis.queued(AnalysisId.newId(), spec("NVDA"), created);
-        repository.insert(queued);
+        Analysis queued = inserted(Analysis.queued(AnalysisId.newId(), spec("NVDA"), created));
 
         Analysis done = queued.running(created.plusSeconds(1), "4242@1790000000000")
                 .withStats(new RunStats(12, 10, 77137, 48090, new BigDecimal("0.42"), Duration.ofMillis(260_500)))
                 .withDecision(Rating.OVERWEIGHT, "Rating: Overweight")
                 .finished(AnalysisStatus.COMPLETED, created.plusSeconds(261), null, null);
-        repository.update(done);
+        Analysis updated = repository.update(done);
 
-        assertThat(repository.findById(queued.id())).contains(done);
-        assertThat(repository.findById(queued.id()).orElseThrow().spec()).isEqualTo(queued.spec());
+        assertThat(updated.version()).isEqualTo(1);
+        assertThat(repository.findById(queued.id())).contains(updated);
+        assertThat(updated).usingRecursiveComparison().ignoringFields("version").isEqualTo(done);
+        assertThat(updated.spec()).isEqualTo(queued.spec());
+    }
+
+    @Test
+    void aNewRecordStartsAtVersionZeroAndEveryWriteAddsOne() {
+        Analysis queued = Analysis.queued(AnalysisId.newId(), spec("ZZVER"), Instant.now());
+        assertThat(queued.version()).isNull();
+        repository.insert(queued);
+        Analysis stored = repository.findById(queued.id()).orElseThrow();
+        assertThat(stored.version()).isZero();
+
+        Analysis first = repository.update(stored.running(Instant.now(), "1"));
+        Analysis second = repository.update(first.withDecision(Rating.HOLD, "Rating: Hold"));
+
+        assertThat(first.version()).isEqualTo(1);
+        assertThat(second.version()).isEqualTo(2);
+        assertThat(repository.findById(queued.id()).orElseThrow().version()).isEqualTo(2);
+    }
+
+    @Test
+    void aStaleUpdateFailsAndLeavesTheNewerRowUnchanged() {
+        Analysis stored = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZSTALE"), Instant.now()));
+        Analysis firstCopy = repository.findById(stored.id()).orElseThrow();
+        Analysis staleCopy = repository.findById(stored.id()).orElseThrow();
+        Analysis firstWrite = repository.update(firstCopy.running(Instant.now(), "first"));
+
+        assertThatThrownBy(() -> repository.update(staleCopy.running(Instant.now(), "second")))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+
+        assertThat(repository.findById(stored.id())).contains(firstWrite);
+    }
+
+    @Test
+    void aStaleReplaceImportedFailsAndLeavesTheNewerRowUnchanged() {
+        Instant ended = Instant.parse("2026-09-27T21:34:35.383Z");
+        Analysis stored = inserted(Analysis.imported(
+                AnalysisId.newId(),
+                null,
+                ExternalAnalysis.reportFiles(
+                        "ZZSTALEIMP", LocalDate.of(2026, 9, 27), List.of(), null, null, null, ended)));
+        Analysis staleCopy = repository.findById(stored.id()).orElseThrow();
+        Analysis firstWrite = repository.replaceImported(Analysis.imported(
+                stored.id(),
+                stored.version(),
+                ExternalAnalysis.reportFiles(
+                        "ZZSTALEIMP",
+                        LocalDate.of(2026, 9, 27),
+                        List.of(Analyst.NEWS),
+                        Rating.HOLD,
+                        "Hold",
+                        null,
+                        ended)));
+
+        assertThatThrownBy(() -> repository.replaceImported(Analysis.imported(
+                        staleCopy.id(),
+                        staleCopy.version(),
+                        ExternalAnalysis.reportFiles(
+                                "ZZSTALEIMP",
+                                LocalDate.of(2026, 9, 27),
+                                List.of(Analyst.MARKET),
+                                Rating.SELL,
+                                "Sell",
+                                null,
+                                ended))))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+
+        assertThat(repository.findById(stored.id())).contains(firstWrite);
+    }
+
+    @Test
+    void aRecordWithoutAVersionCannotUpdateAStoredRow() {
+        Analysis queued = Analysis.queued(AnalysisId.newId(), spec("ZZNULLVER"), Instant.now());
+        repository.insert(queued);
+
+        assertThatThrownBy(() -> repository.update(queued.running(Instant.now(), "x")))
+                .isInstanceOf(OptimisticLockingFailureException.class);
     }
 
     @Test
     void keepsTheTradeDateAndAllThreeTimestampsInTheirNativeTypes() {
         Instant created = Instant.parse("2026-09-29T23:59:59.123456Z");
-        Analysis queued = Analysis.queued(AnalysisId.newId(), spec("ZZTYPES"), created);
+        Analysis queued = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZTYPES"), created));
         Analysis done = queued.running(created.plusNanos(1_000), "4244")
                 .finished(AnalysisStatus.COMPLETED, created.plusSeconds(90).plusNanos(2_000), null, null);
-        repository.insert(queued);
         repository.update(done);
 
         Analysis found = repository.findById(queued.id()).orElseThrow();
@@ -71,11 +147,9 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     @Test
     void listsNewestFirstAndFilters() {
         Instant base = Instant.parse("2026-09-29T11:00:00Z");
-        Analysis older = Analysis.queued(AnalysisId.newId(), spec("ZZOLD"), base);
-        Analysis newer = Analysis.queued(AnalysisId.newId(), spec("ZZNEW"), base.plusMillis(1))
-                .running(base, "4243");
-        repository.insert(older);
-        repository.insert(newer);
+        Analysis older = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZOLD"), base));
+        Analysis newer = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZNEW"), base.plusMillis(1)));
+        newer = repository.update(newer.running(base, "4243"));
 
         List<Analysis> all = repository.findAll(AnalysisFilter.ALL);
         assertThat(all.indexOf(newer)).isLessThan(all.indexOf(older));
@@ -93,9 +167,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         Instant base = Instant.parse("2030-01-01T00:00:00Z");
         List<Analysis> inserted = new ArrayList<>();
         for (int i = 0; i <= LIST_LIMIT; i++) {
-            Analysis analysis = Analysis.queued(AnalysisId.newId(), spec("ZZLIMIT"), base.plusSeconds(i));
-            repository.insert(analysis);
-            inserted.add(analysis);
+            inserted.add(inserted(Analysis.queued(AnalysisId.newId(), spec("ZZLIMIT"), base.plusSeconds(i))));
         }
 
         List<Analysis> listed = repository.findAll(AnalysisFilter.ALL);
@@ -120,17 +192,18 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                 new RunStats(10, 0, 68_794, 28_916, BigDecimal.valueOf(0.0277), Duration.ofMillis(1_398_650)),
                 ended.minusSeconds(1398),
                 ended);
-        Analysis imported = Analysis.imported(
+        Analysis imported = inserted(Analysis.imported(
                 AnalysisId.newId(),
-                ExternalAnalysis.reportFiles("ZZIMP", LocalDate.of(2026, 9, 27), List.of(), null, null, null, ended));
-        repository.insert(imported);
+                null,
+                ExternalAnalysis.reportFiles("ZZIMP", LocalDate.of(2026, 9, 27), List.of(), null, null, null, ended)));
 
-        Analysis replaced = Analysis.imported(
+        Analysis replaced = repository.replaceImported(Analysis.imported(
                 imported.id(),
+                imported.version(),
                 ExternalAnalysis.reportFiles(
-                        "ZZIMP", LocalDate.of(2026, 9, 27), List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, ended));
-        repository.replaceImported(replaced);
+                        "ZZIMP", LocalDate.of(2026, 9, 27), List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, ended)));
 
+        assertThat(replaced.version()).isEqualTo(1);
         assertThat(repository.findByExternalRef("report:ZZIMP/2026-09-27")).contains(replaced);
         assertThat(repository.findByExternalRef("run:zz-a2cd")).isEmpty();
     }
@@ -153,8 +226,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     @Test
     void updateKeepsTheSpecAndCreationTime() {
         Instant created = Instant.parse("2026-09-29T10:00:00Z");
-        Analysis queued = Analysis.queued(AnalysisId.newId(), spec("ZZKEEP"), created);
-        repository.insert(queued);
+        Analysis queued = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZKEEP"), created));
         AnalysisSpec otherSpec = new AnalysisSpec(
                 "ZZOTHER",
                 LocalDate.of(2026, 1, 2),
@@ -181,7 +253,8 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                 null,
                 null,
                 null,
-                "4245");
+                "4245",
+                queued.version());
 
         repository.update(changed);
 
@@ -209,7 +282,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     void everyEnumConstantRoundTrips() {
         for (AnalysisStatus status : AnalysisStatus.values()) {
             Analysis analysis = analysis(status, AnalysisSource.PLATFORM, null, AssetType.STOCK, Analyst.MARKET);
-            assertThat(roundTrip(analysis)).isEqualTo(analysis);
+            assertSameButForVersion(roundTrip(analysis), analysis);
         }
         for (AnalysisSource source : AnalysisSource.values()) {
             Analysis analysis = analysis(AnalysisStatus.QUEUED, source, null, AssetType.STOCK, Analyst.MARKET);
@@ -245,7 +318,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                         "English",
                         false),
                 Instant.parse("2026-09-29T10:00:00Z"));
-        assertThat(roundTrip(everyAnalyst)).isEqualTo(everyAnalyst);
+        assertSameButForVersion(roundTrip(everyAnalyst), everyAnalyst);
     }
 
     @Test
@@ -267,6 +340,16 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                 Instant.parse("2026-09-29T10:00:00Z"));
 
         assertThat(roundTrip(none).spec().analysts()).isEmpty();
+    }
+
+    private Analysis inserted(Analysis analysis) {
+        repository.insert(analysis);
+        return repository.findById(analysis.id()).orElseThrow();
+    }
+
+    private static void assertSameButForVersion(Analysis actual, Analysis expected) {
+        assertThat(actual.version()).isZero();
+        assertThat(actual).usingRecursiveComparison().ignoringFields("version").isEqualTo(expected);
     }
 
     private Analysis roundTrip(Analysis analysis) {
@@ -297,6 +380,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                 null,
                 RunStats.EMPTY,
                 Instant.parse("2026-09-29T10:00:00Z"),
+                null,
                 null,
                 null,
                 null,

@@ -9,6 +9,9 @@ import java.util.Objects;
  * {@code externalRef} is where an EXTERNAL record came from in the data dir (see {@link ExternalAnalysis#ref()});
  * {@code runnerRef} is the runner's handle on a started run (a process or container), kept so a
  * restarted platform can find the run again.
+ * {@code version} is the optimistic lock. Owned by persistence: {@code null} on a record the core builds before
+ * its first save, set on every record the repository returns, and carried along unchanged by every transition.
+ * A write of a record whose version differs from the stored one fails.
  */
 public record Analysis(
         AnalysisId id,
@@ -24,7 +27,8 @@ public record Analysis(
         String errorCode,
         String errorMessage,
         String externalRef,
-        String runnerRef) {
+        String runnerRef,
+        Long version) {
 
     /** Upstream's model choices are not in its report files, so a run without run history says "unknown". */
     public static final String UNKNOWN = "unknown";
@@ -56,14 +60,16 @@ public record Analysis(
                 null,
                 null,
                 null,
+                null,
                 null);
     }
 
     /**
      * An EXTERNAL record for what the data dir holds. Times are cut to milliseconds, as stored, so
-     * that importing the same files again yields an equal record.
+     * that importing the same files again yields an equal record. {@code version} is {@code null} for a new
+     * import, and the stored record's version for a refresh.
      */
-    public static Analysis imported(AnalysisId id, ExternalAnalysis external) {
+    public static Analysis imported(AnalysisId id, Long version, ExternalAnalysis external) {
         ExternalRun run = external.run();
         AnalysisSpec spec = run == null
                 ? new AnalysisSpec(
@@ -118,7 +124,8 @@ public record Analysis(
                 errorCode,
                 errorMessage,
                 external.ref(),
-                null);
+                null,
+                version);
     }
 
     private static Instant millis(Instant instant) {
@@ -140,7 +147,8 @@ public record Analysis(
                 errorCode,
                 errorMessage,
                 externalRef,
-                newRunnerRef);
+                newRunnerRef,
+                version);
     }
 
     public Analysis withStats(RunStats newStats) {
@@ -158,7 +166,8 @@ public record Analysis(
                 errorCode,
                 errorMessage,
                 externalRef,
-                runnerRef);
+                runnerRef,
+                version);
     }
 
     public Analysis withDecision(Rating newRating, String newDecision) {
@@ -176,7 +185,8 @@ public record Analysis(
                 errorCode,
                 errorMessage,
                 externalRef,
-                runnerRef);
+                runnerRef,
+                version);
     }
 
     public Analysis finished(AnalysisStatus endStatus, Instant now, String code, String message) {
@@ -197,6 +207,7 @@ public record Analysis(
                 code,
                 message,
                 externalRef,
-                runnerRef);
+                runnerRef,
+                version);
     }
 }

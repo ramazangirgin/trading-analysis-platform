@@ -48,10 +48,14 @@ class JpaRoleRepositoryAdapter implements RoleRepositoryPort {
         return repository.findAllByOrderByNameAsc().stream().map(toRole::map).toList();
     }
 
-    /** An upsert that replaces the permissions (an array on the row) in the same transaction. */
+    /**
+     * An upsert that replaces the permissions (an array on the row) in the same transaction. A role without a
+     * version is persisted (an existing ID fails), any other is merged, and Hibernate rejects a version that
+     * differs from the stored one.
+     */
     @Override
     @Transactional
-    public void save(Role role) {
-        repository.saveAndFlush(toEntity.map(role));
+    public Role save(Role role) {
+        return toRole.map(repository.saveAndFlush(toEntity.map(role)));
     }
 }

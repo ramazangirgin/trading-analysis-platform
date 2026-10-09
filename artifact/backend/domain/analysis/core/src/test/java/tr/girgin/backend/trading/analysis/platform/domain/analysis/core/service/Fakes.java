@@ -104,13 +104,15 @@ final class Fakes {
         }
 
         @Override
-        public void update(Analysis analysis) {
+        public Analysis update(Analysis analysis) {
             rows.put(analysis.id(), analysis);
+            return analysis;
         }
 
         @Override
-        public void replaceImported(Analysis analysis) {
+        public Analysis replaceImported(Analysis analysis) {
             rows.put(analysis.id(), analysis);
+            return analysis;
         }
 
         @Override

@@ -65,7 +65,7 @@ class ImportExistingRunsServiceTest {
                 external -> {
                     registered.add(external);
                     Outcome outcome = external.ticker().equals("GOOG") ? Outcome.CREATED : Outcome.UNCHANGED;
-                    return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), external), outcome);
+                    return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), null, external), outcome);
                 },
                 NO_WATCH,
                 false,
@@ -116,7 +116,8 @@ class ImportExistingRunsServiceTest {
                 () -> history,
                 external -> {
                     registered.add(external);
-                    return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), external), Outcome.CREATED);
+                    return new ExternalRegistration(
+                            Analysis.imported(AnalysisId.newId(), null, external), Outcome.CREATED);
                 },
                 NO_WATCH,
                 false,
@@ -171,7 +172,8 @@ class ImportExistingRunsServiceTest {
                 List::of,
                 external -> {
                     registered.add(external);
-                    return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), external), Outcome.CREATED);
+                    return new ExternalRegistration(
+                            Analysis.imported(AnalysisId.newId(), null, external), Outcome.CREATED);
                 },
                 NO_WATCH,
                 false,

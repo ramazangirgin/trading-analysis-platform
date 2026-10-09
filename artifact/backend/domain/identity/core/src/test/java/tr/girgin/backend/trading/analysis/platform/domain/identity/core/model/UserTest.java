@@ -14,7 +14,8 @@ class UserTest {
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
     private static User user(UserId id, Username username, Set<RoleId> roleIds) {
-        return new User(id, username, new PasswordHash("{noop}x"), true, false, 0, Optional.empty(), NOW, NOW, roleIds);
+        return new User(
+                id, username, new PasswordHash("{noop}x"), true, false, 0, Optional.empty(), NOW, NOW, roleIds, 3L);
     }
 
     @Test
@@ -38,7 +39,8 @@ class UserTest {
                 Optional.empty(),
                 null,
                 null,
-                Set.of());
+                Set.of(),
+                null);
 
         assertThat(user.createdAt()).isNull();
         assertThat(user.updatedAt()).isNull();
@@ -72,6 +74,7 @@ class UserTest {
                         Optional.empty(),
                         NOW,
                         NOW,
-                        roles));
+                        roles,
+                        3L));
     }
 }

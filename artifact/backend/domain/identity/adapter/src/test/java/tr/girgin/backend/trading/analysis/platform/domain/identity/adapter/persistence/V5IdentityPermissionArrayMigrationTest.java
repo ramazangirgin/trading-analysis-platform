@@ -40,7 +40,12 @@ class V5IdentityPermissionArrayMigrationTest {
     void aRoleWithEveryPermissionKeyHasEveryPermission() {
         assertThat(roles.findById(new RoleId("r_seed_all")))
                 .contains(new Role(
-                        new RoleId("r_seed_all"), "seed-all", true, "Every permission", Set.of(Permission.values())));
+                        new RoleId("r_seed_all"),
+                        "seed-all",
+                        true,
+                        "Every permission",
+                        Set.of(Permission.values()),
+                        0L));
         assertThat(roles.findById(new RoleId("r_seed_all")).orElseThrow().permissions())
                 .containsExactlyInAnyOrderElementsOf(Arrays.asList(Permission.values()));
     }
@@ -48,7 +53,7 @@ class V5IdentityPermissionArrayMigrationTest {
     @Test
     void aRoleWithoutPermissionsGetsAnEmptyArray() {
         assertThat(roles.findByName("seed-none"))
-                .contains(new Role(new RoleId("r_seed_none"), "seed-none", false, "No permission", Set.of()));
+                .contains(new Role(new RoleId("r_seed_none"), "seed-none", false, "No permission", Set.of(), 0L));
     }
 
     @Test

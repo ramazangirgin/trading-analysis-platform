@@ -46,6 +46,9 @@ class JpaPresetRepositoryAdapter implements PresetRepositoryPort {
      * An upsert: an entity with an assigned ID is merged, so it is inserted or updated. The incoming entity has
      * {@code updatedAt == null}, so the merge always makes the row dirty and every save sets {@code UPDATED_AT},
      * also when name and payload are unchanged.
+     *
+     * <p>The version is checked by the same call: a {@code null} version is persisted (an existing ID fails), any
+     * other is merged, and Hibernate rejects a version that differs from the stored one.
      */
     @Override
     @Transactional

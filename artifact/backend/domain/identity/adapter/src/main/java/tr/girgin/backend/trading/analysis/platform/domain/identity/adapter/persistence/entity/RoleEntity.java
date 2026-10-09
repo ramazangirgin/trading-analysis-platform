@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.util.HashSet;
 import java.util.Set;
 import org.hibernate.annotations.ColumnTransformer;
@@ -36,6 +37,11 @@ public class RoleEntity {
     @ColumnTransformer(write = "cast(? as \"PERMISSION\"[])")
     @Column(name = "PERMISSIONS", nullable = false, columnDefinition = "\"PERMISSION\"[]")
     private Set<Permission> permissions = new HashSet<>();
+
+    // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.
+    @Version
+    @Column(name = "VERSION", nullable = false)
+    private Long version;
 
     public RoleEntity() {}
 
@@ -77,5 +83,13 @@ public class RoleEntity {
 
     public void setPermissions(Set<Permission> permissions) {
         this.permissions = permissions;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

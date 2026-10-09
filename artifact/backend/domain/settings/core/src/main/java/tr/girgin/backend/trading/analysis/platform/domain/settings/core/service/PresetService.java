@@ -32,13 +32,13 @@ class PresetService implements ManagePresetsUseCase {
 
     @Override
     public Preset createPreset(String name, String payload) {
-        return repository.save(new Preset(PresetId.newId(), validName(name), validPayload(payload), null));
+        return repository.save(new Preset(PresetId.newId(), validName(name), validPayload(payload), null, null));
     }
 
     @Override
     public Preset updatePreset(PresetId id, String name, String payload) {
-        repository.findById(id).orElseThrow(() -> notFound(id));
-        return repository.save(new Preset(id, validName(name), validPayload(payload), null));
+        Preset stored = repository.findById(id).orElseThrow(() -> notFound(id));
+        return repository.save(new Preset(id, validName(name), validPayload(payload), null, stored.version()));
     }
 
     @Override

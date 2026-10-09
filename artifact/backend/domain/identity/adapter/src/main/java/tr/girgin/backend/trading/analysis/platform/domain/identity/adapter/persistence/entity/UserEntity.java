@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,6 +60,11 @@ public class UserEntity {
     @LastModifiedDate
     @Column(name = "UPDATED_AT", nullable = false)
     private Instant updatedAt;
+
+    // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.
+    @Version
+    @Column(name = "VERSION", nullable = false)
+    private Long version;
 
     @ElementCollection
     @CollectionTable(name = "USER_ROLES", joinColumns = @JoinColumn(name = "USER_ID"))
@@ -138,6 +144,14 @@ public class UserEntity {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public Set<RoleId> getRoleIds() {

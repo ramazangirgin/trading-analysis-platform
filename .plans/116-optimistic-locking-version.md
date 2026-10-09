@@ -141,6 +141,7 @@ asks for a changed rule).
 
 ### WP1: Schema, entities and adapters
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/analysis/adapter/src/main/resources/db/migration/V6__analysis_version.sql` (new)
@@ -152,9 +153,9 @@ asks for a changed rule).
   - the persistence mappers only if MapStruct needs an explicit mapping (it should map `version` by name)
   - the records and ports of WP2 (the adapters compile against them; WP1 and WP2 land together)
 - **Steps**:
-  - [ ] Write the three migrations with comments.
-  - [ ] Add `@Version Long version` to the four entities.
-  - [ ] Implement the checks of the adapter table above; `update`, `replaceImported` and `Role save` return the stored record.
+  - [x] Write the three migrations with comments.
+  - [x] Add `@Version Long version` to the four entities.
+  - [x] Implement the checks of the adapter table above; `update`, `replaceImported` and `Role save` return the stored record.
 - **Tests** (all on PostgreSQL, `@JpaAdapterTest`, through the port):
   - `JpaAnalysisRepositoryAdapterTest`, `JpaPresetRepositoryAdapterTest`, `JpaIdentityRepositoryTest`
     (users and roles): per entity, a test that reads a record twice, writes the first copy (succeeds,

@@ -66,7 +66,8 @@ class V4AnalysisEnumTypesMigrationTest {
                 null,
                 null,
                 null,
-                "4242");
+                "4242",
+                0L);
 
         assertThat(repository.findById(new AnalysisId("r_seed_a"))).contains(expected);
     }

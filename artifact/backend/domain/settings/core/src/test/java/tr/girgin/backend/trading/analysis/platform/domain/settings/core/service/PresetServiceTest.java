@@ -62,7 +62,7 @@ class PresetServiceTest {
         @Override
         public Preset save(Preset preset) {
             saved.add(preset);
-            Preset result = new Preset(preset.id(), preset.name(), preset.payload(), STORED_AT);
+            Preset result = new Preset(preset.id(), preset.name(), preset.payload(), STORED_AT, 0L);
             stored.removeIf(p -> p.id().equals(preset.id()));
             stored.add(result);
             return result;

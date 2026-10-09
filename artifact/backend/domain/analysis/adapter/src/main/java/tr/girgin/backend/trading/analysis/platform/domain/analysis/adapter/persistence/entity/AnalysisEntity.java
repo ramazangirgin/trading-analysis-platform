@@ -10,6 +10,7 @@ import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -74,6 +75,11 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     @Column(name = "RUNNER_REF")
     private String runnerRef;
+
+    // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.
+    @Version
+    @Column(name = "VERSION", nullable = false)
+    private Long version;
 
     @Transient
     private boolean newEntity = true;
@@ -230,5 +236,13 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     public void setRunnerRef(String runnerRef) {
         this.runnerRef = runnerRef;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }
