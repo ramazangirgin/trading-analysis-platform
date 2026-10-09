@@ -13,7 +13,11 @@ final class CatalogQueries {
 
     private CatalogQueries() {}
 
-    /** Every row of the query as strings, with {@code parameters} bound to its placeholders. */
+    /**
+     * Every row of the query as strings, with {@code parameters} bound to its placeholders.
+     *
+     * @throws SQLException when the query fails
+     */
     static List<String[]> query(Connection connection, String sql, int columns, String... parameters)
             throws SQLException {
         List<String[]> rows = new ArrayList<>();

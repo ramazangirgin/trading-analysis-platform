@@ -202,7 +202,7 @@ down` stops everything; `up -d` brings it back with all data.
 
 Back up the whole folder; for the database alone, `docker compose -f deploy/docker-compose.yml exec
 postgres pg_dump -U platform platform > platform.sql`. Table and column names are uppercase and
-stored quoted, so a hand query quotes them too: `SELECT * FROM "ANALYSES";`.
+stored quoted, so a hand query quotes them too: `SELECT * FROM "ANALYSIS"."ANALYSES";`.
 
 **How analyses run:** the platform asks the engine, through docker-socket-proxy, for one
 `ta-runner` container per analysis: read-only root filesystem, no Linux capabilities, a non-root
@@ -223,6 +223,25 @@ platform picks it up again.
 - **Exposing it beyond localhost** needs authentication and HTTPS first (not built yet; see the
   [GitHub issues](https://github.com/ramazangirgin/trading-analysis-platform/issues)); the port is published on 127.0.0.1 only.
 - The first start takes about a minute (longer under Podman's VM on macOS).
+
+### Upgrading to 3.0.0
+
+Each domain's tables now live in a database schema of its own (`"ANALYSIS"`, `"SETTINGS"`,
+`"IDENTITY"`), each with its own migrations and history table, so **an existing database is reset,
+not migrated**. Started on an old database, the platform would create the three schemas next to the
+old tables in `public` and ignore them. Runs the platform started, presets and users are lost;
+analyses that TradingAgents' CLI left in the data folder are imported again on startup. For Docker
+Compose, reset as for 1.0.0:
+
+```sh
+docker compose -f deploy/docker-compose.yml down
+# optional, to keep a copy: start only postgres, run the pg_dump above, then down again
+rm -rf "$PLATFORM_DATA/postgres"        # the folder PLATFORM_DATA names in deploy/.env
+docker compose -f deploy/docker-compose.yml up -d
+```
+
+For runs on your machine (`mise run run`), `mise run db:reset` empties the local database; the next
+start is a fresh one. On your own PostgreSQL server, drop and recreate the database.
 
 ### Upgrading to 2.0.0
 
@@ -312,7 +331,7 @@ mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts, dependency check (deptry) and tests only
 mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome, ta-runner replaying a recording
 mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
-mise run check         # quick check before pushing: package structure, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' and skill helpers' Python tests (`agent:test`, `skill:test`; no other tests)
+mise run check         # quick check before pushing: package structure, every domain with persistence has its conventions test, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' and skill helpers' Python tests (`agent:test`, `skill:test`; no other tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
 mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does
 mise run hooks         # install the Git hooks (lefthook.yml)
@@ -335,7 +354,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 
 | Job | What |
 |---|---|
-| Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the database naming check of the stored schema (uppercase names, explicit constraint and index names), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), the dependency analysis (every module declares the libraries it uses and no others), frontend lint, tests and Knip (unused and unlisted packages), the jar |
+| Backend and frontend | `mise run format-check`: formatting of every Java and frontend file; then `mise run build`: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the database naming and schema checks of every domain (uppercase names, explicit constraint and index names, everything in the domain's own schema, a conventions test in every domain with persistence), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), the dependency analysis (every module declares the libraries it uses and no others), frontend lint, tests and Knip (unused and unlisted packages), the jar |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)); then `mise run skill:test`: the Python tests of the Claude Code skills' helpers ([`.claude/skills/`](.claude/skills)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | End-to-end tests | The build job's jar, on a throwaway PostgreSQL container, in Google Chrome ([`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |

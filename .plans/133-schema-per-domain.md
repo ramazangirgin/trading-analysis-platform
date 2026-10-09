@@ -313,12 +313,13 @@ Compose), as for 1.0.0.
 ### WP4: Documentation and version
 
 - **Depends on**: WP1, WP2, WP3
+- **Status**: done
 - **Files**: `docs/coding-convention/backend-database-naming.md`, `docs/coding-convention/backend-java-persistence.md`,
   `docs/coding-convention/backend-java-package-structure.md`, `docs/coding-convention/README.md`, `README.md`,
   `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] The documents as in "Docs to update".
-  - [ ] `mise run version:bump major` (2.7.0 → 3.0.0, or the next major if `main` moved).
+  - [x] The documents as in "Docs to update".
+  - [x] `mise run version:bump major` (2.7.0 → 3.0.0, or the next major if `main` moved).
 - **Tests**: `mise run check`, `mise run build`.
 
 ## Tests

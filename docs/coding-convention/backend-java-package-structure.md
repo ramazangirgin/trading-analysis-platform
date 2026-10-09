@@ -47,6 +47,8 @@ domain/<d>/adapter/
   <port>/                          one package per outbound port, e.g. persistence, runner
     *Adapter                       the adapter(s) implementing the port: the package root only
     *JpaRepository                 Spring Data repositories, next to their adapter (persistence only)
+    <Domain>PersistenceConfiguration   the domain's schema and Flyway bean (persistence only)
+    migration/ (resources)         the domain's Flyway migrations, V<n>__<change>.sql (persistence only)
     entity/    *Entity, *Embeddable, *AttributeConverter   JPA table shapes (backend-java-persistence.md)
     json/      *Json, ...          JSON shapes read or written by the adapter
     spec/      ...                 data handed to an external process (RunnerSpec)
@@ -70,16 +72,16 @@ Today's adapter packages:
 | `domain.analysis.adapter.credentials` | `EnvFileCredentialsAdapter` | |
 | `domain.analysis.adapter.eventline` | `RunnerOutputLineParser` (shared, see below) | `json`, `mapper` |
 | `domain.analysis.adapter.eventstore` | `JsonlEventStoreAdapter` | `mapper` |
-| `domain.analysis.adapter.persistence` | `JpaAnalysisRepositoryAdapter`, `AnalysisJpaRepository` | `entity`, `mapper` |
+| `domain.analysis.adapter.persistence` | `JpaAnalysisRepositoryAdapter`, `AnalysisJpaRepository`, `AnalysisPersistenceConfiguration` | `entity`, `mapper` |
 | `domain.analysis.adapter.runlog` | `RunLogFileAdapter` | |
 | `domain.analysis.adapter.runner` | `ProcessRunnerAdapter`, `DockerRunnerAdapter` | `spec`, `mapper`, `support` |
 | `domain.catalog.adapter.runner` | `TaRunnerEngineInfoAdapter`, `DockerEngineInfoAdapter` | `json`, `mapper`, `support` |
 | `domain.identity.adapter.password` | `DelegatingPasswordHasherAdapter` | |
-| `domain.identity.adapter.persistence` | `JpaRoleRepositoryAdapter`, `JpaUserRepositoryAdapter`, `RoleJpaRepository`, `UserJpaRepository` | `entity`, `mapper` |
+| `domain.identity.adapter.persistence` | `JpaRoleRepositoryAdapter`, `JpaUserRepositoryAdapter`, `RoleJpaRepository`, `UserJpaRepository`, `IdentityPersistenceConfiguration` | `entity`, `mapper` |
 | `domain.report.adapter.datadir` | `FileSystemDataDirAdapter`, `FileSystemDataDirWatchAdapter` | `json` |
 | `domain.report.adapter.history` | `JsonRunHistoryAdapter` | |
 | `domain.report.adapter.prices` | `CsvPriceCacheAdapter` | |
-| `domain.settings.adapter.persistence` | `JpaPresetRepositoryAdapter`, `PresetJpaRepository` | `entity`, `mapper` |
+| `domain.settings.adapter.persistence` | `JpaPresetRepositoryAdapter`, `PresetJpaRepository`, `SettingsPersistenceConfiguration` | `entity`, `mapper` |
 | `domain.settings.adapter.secrets` | `DotenvSecretStoreAdapter` | |
 
 `eventline` is the one adapter package that implements no port: it parses runner output for both
@@ -103,7 +105,8 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | A class in a shared library | depends on other libraries only, never on domain, BFF or orchestration code | `libraries_depend_only_on_libraries` |
 | Two mappers with one simple name | none: a converter two modules need lives once, in `library.mapper` | `mappers_are_not_duplicated_across_modules` |
 | Class implementing an outbound port | the root of its `adapter.<port>` package | `port_adapters_live_at_the_port_package_root` |
-| Root of an `adapter.<port>` package | port implementations only (shared packages aside) | `port_package_roots_hold_only_adapters` |
+| Root of an `adapter.<port>` package | port implementations only (shared packages aside); the one exception is `<Domain>PersistenceConfiguration` in `adapter.persistence` | `port_package_roots_hold_only_adapters` |
+| `@Configuration` in a domain adapter | `<Domain>PersistenceConfiguration`, in `domain.<d>.adapter.persistence`, nowhere else | `adapter_components_implement_an_outbound_port` |
 | `*UseCase` | `…inbound` | `use_cases_live_in_inbound_packages` |
 | `*Service` | `…service` | `services_live_in_service_packages` |
 | Exception (anything `Throwable`) | `domain.<d>.core.exception` or `bff.controller.api.error` | `exceptions_live_in_exception_packages` |
@@ -115,6 +118,9 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 The placement rules sit next to the dependency rules that were there before (BFF uses inbound
 ports only, adapters are used only by themselves, domains are independent, only `adapter.runner`
 starts processes or talks to Docker, mappers are `SourceToTargetMapper` with one `map` method, ...).
+The package boundary has a database side: domains are independent, so each domain's tables live in
+a database schema of its own, and no migration refers to another domain's schema
+([One schema per domain](backend-java-persistence.md#one-schema-per-domain)).
 Services, orchestrators included, are used only from their own `service` package
 (`domain_services_are_only_used_by_themselves`, `orchestration_services_are_only_used_by_themselves`).
 
@@ -142,7 +148,7 @@ libraries it uses:
 | Gradle project | Root package | Holds | Used by |
 |---|---|---|---|
 | `:backend:library:mapper` | `….library.mapper` | Generic MapStruct scalar mappers: `DurationToMillisMapper`, `EnumToLowerCaseNameMapper` | `bff:impl`, `domain:analysis:adapter` |
-| `:backend:library:persistence` | `….library.persistence` | The JPA auditing configuration (`JpaAuditingConfiguration`, `ClockDateTimeProvider`), and in its test fixtures the shared test code of the persistence adapters ([persistence](backend-java-persistence.md#shared-persistence-code)) | `:backend` (runtime: the auditing configuration); the persistence adapters' and `:backend`'s tests (test fixtures) |
+| `:backend:library:persistence` | `….library.persistence` | The JPA auditing configuration (`JpaAuditingConfiguration`, `ClockDateTimeProvider`), and in its test fixtures the shared test code of the persistence adapters, including the `DomainPersistenceConventionsTest` every domain with persistence extends ([persistence](backend-java-persistence.md#shared-persistence-code)) | `:backend` (runtime: the auditing configuration); the persistence adapters' and `:backend`'s tests (test fixtures) |
 
 - **Technical code only, never domain logic.** A library holds generic building blocks with no
   project type, no domain concept and no business rule, one kind of code per library. It may depend
