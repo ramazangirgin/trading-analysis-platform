@@ -1,6 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.domain.settings.core.service;
 
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -33,17 +32,13 @@ class PresetService implements ManagePresetsUseCase {
 
     @Override
     public Preset createPreset(String name, String payload) {
-        Preset preset = new Preset(PresetId.newId(), validName(name), validPayload(payload), Instant.now());
-        repository.save(preset);
-        return preset;
+        return repository.save(new Preset(PresetId.newId(), validName(name), validPayload(payload), null));
     }
 
     @Override
     public Preset updatePreset(PresetId id, String name, String payload) {
         repository.findById(id).orElseThrow(() -> notFound(id));
-        Preset preset = new Preset(id, validName(name), validPayload(payload), Instant.now());
-        repository.save(preset);
-        return preset;
+        return repository.save(new Preset(id, validName(name), validPayload(payload), null));
     }
 
     @Override

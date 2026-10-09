@@ -133,6 +133,7 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
 
 ### WP2: Presets audited
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/domain/settings/core/src/main/java/…/settings/core/model/Preset.java`
@@ -145,11 +146,11 @@ when the row was written, and auditing sets it. `@CreatedBy` / `@LastModifiedBy`
   - `artifact/backend/domain/settings/adapter/src/main/java/…/settings/adapter/persistence/JpaPresetRepositoryAdapter.java`
   - `artifact/backend/domain/settings/adapter/src/test/java/…/settings/adapter/persistence/JpaPresetRepositoryAdapterTest.java`
 - **Steps**:
-  - [ ] Make `Preset.updatedAt` nullable before the first save, and document it.
-  - [ ] Make `PresetRepositoryPort.save` return the stored `Preset`.
-  - [ ] Add the auditing annotations to `PresetEntity`, ignore `updatedAt` in the entity mapper, and
+  - [x] Make `Preset.updatedAt` nullable before the first save, and document it.
+  - [x] Make `PresetRepositoryPort.save` return the stored `Preset`.
+  - [x] Add the auditing annotations to `PresetEntity`, ignore `updatedAt` in the entity mapper, and
         change the adapter's `save` as in the design.
-  - [ ] Change `PresetService` to return the stored preset, with no `Instant.now()`.
+  - [x] Change `PresetService` to return the stored preset, with no `Instant.now()`.
 - **Tests**:
   - `JpaPresetRepositoryAdapterTest`, with `MutableTestClock`: a new preset gets the clock's time,
     in the returned record and on read. An update after `advance` gets the new time. An update with

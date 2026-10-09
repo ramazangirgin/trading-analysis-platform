@@ -42,10 +42,15 @@ class JpaPresetRepositoryAdapter implements PresetRepositoryPort {
         return repository.findById(toEntityId.map(id)).map(toPreset::map);
     }
 
-    /** An upsert: an entity with an assigned ID is merged, so it is inserted or updated. */
+    /**
+     * An upsert: an entity with an assigned ID is merged, so it is inserted or updated. The incoming entity has
+     * {@code updatedAt == null}, so the merge always makes the row dirty and every save sets {@code UPDATED_AT},
+     * also when name and payload are unchanged.
+     */
     @Override
-    public void save(Preset preset) {
-        repository.save(toEntity.map(preset));
+    @Transactional
+    public Preset save(Preset preset) {
+        return toPreset.map(repository.saveAndFlush(toEntity.map(preset)));
     }
 
     @Override
