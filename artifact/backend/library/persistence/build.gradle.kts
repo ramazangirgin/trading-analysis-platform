@@ -21,6 +21,7 @@ dependencies {
     // What every persistence adapter test needs: JPA on PostgreSQL, Flyway, a Testcontainers database.
     testFixturesApi(libs.spring.boot.autoconfigure)
     testFixturesApi(libs.spring.boot.data.jpa)
+    testFixturesApi(libs.spring.boot.flyway)
     testFixturesApi(libs.spring.boot.hibernate)
     testFixturesApi(libs.spring.boot.transaction)
     testFixturesApi(libs.spring.test)

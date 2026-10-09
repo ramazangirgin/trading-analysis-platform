@@ -266,6 +266,7 @@ Compose), as for 1.0.0.
 ### WP2: Each domain's configuration, migrations, entities and tests
 
 - **Depends on**: WP1
+- **Status**: done
 - **Files** (per domain `<d>` in analysis, settings, identity):
   - `domain/<d>/adapter/src/main/java/…/domain/<d>/adapter/persistence/<D>PersistenceConfiguration.java` (new)
   - `domain/<d>/adapter/src/main/resources/tr/girgin/backend/trading/analysis/platform/domain/<d>/adapter/persistence/migration/V1__….sql` (new); delete `domain/<d>/adapter/src/main/resources/db/migration/*`
@@ -275,13 +276,13 @@ Compose), as for 1.0.0.
     delete `V4AnalysisEnumTypesMigrationTest`, `V5IdentityPermissionArrayMigrationTest` and both seed files
   - `domain/<d>/adapter/build.gradle.kts` (`flyway-core`, the library's test fixtures if not yet there)
 - **Steps**:
-  - [ ] The configuration class with `SCHEMA` and the domain's Flyway bean.
-  - [ ] The `V1` migration with every qualifiable name qualified, a header saying it belongs to the
+  - [x] The configuration class with `SCHEMA` and the domain's Flyway bean.
+  - [x] The `V1` migration with every qualifiable name qualified, a header saying it belongs to the
         domain's schema and that versions are per domain, and the comments of the old migrations.
-  - [ ] Entities as in the design table.
-  - [ ] Test configs provide only the data source; drop the `TestMigrations` calls and the
+  - [x] Entities as in the design table.
+  - [x] Test configs provide only the data source; drop the `TestMigrations` calls and the
         "V1 belongs to another module" comments.
-  - [ ] The domain's conventions test.
+  - [x] The domain's conventions test.
 - **Tests**: `<D>PersistenceConventionsTest` per domain; the existing repository tests
   (`JpaAnalysisRepositoryAdapterTest` and the other tests on `AdapterTestSupport`,
   `JpaPresetRepositoryAdapterTest`, `JpaIdentityRepositoryTest`) pass with unchanged assertions on
