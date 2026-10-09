@@ -136,6 +136,7 @@ recorded JSON.
 
 ### WP3: The skill and the README
 
+- **Status**: not done: Edit on .claude/skills/dependabot-fix/SKILL.md was denied by the permission mode, and WP2 (the commands it documents) is not done
 - **Depends on**: WP2
 - **Files**: `.claude/skills/dependabot-fix/SKILL.md`, `README.md`
 - **Steps**:
