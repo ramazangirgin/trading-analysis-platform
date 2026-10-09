@@ -224,13 +224,14 @@ asks for a changed rule).
 
 ### WP4: Architecture rule and documentation
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PersistenceArchitectureTest.java`
   - `docs/coding-convention/backend-java-persistence.md`, `docs/coding-convention/README.md`, `README.md`
 - **Steps**:
-  - [ ] Add `entities_have_a_version`; check it fails with `@Version` removed from one entity, and say so in the PR.
-  - [ ] Update the documents (see "Docs to update").
+  - [x] Add `entities_have_a_version`; check it fails with `@Version` removed from one entity, and say so in the PR.
+  - [x] Update the documents (see "Docs to update").
 - **Tests**: the new ArchUnit rule itself.
 
 ## Tests
