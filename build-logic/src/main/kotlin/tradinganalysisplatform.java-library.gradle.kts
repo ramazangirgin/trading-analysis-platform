@@ -25,27 +25,6 @@ base {
 dependencies {
     implementation(platform(libs.findLibrary("spring-boot-bom").get()))
 
-    // Security pins (Dependabot), versions and removal conditions in gradle/libs.versions.toml.
-    // Jackson 2 (docker-java-core, swagger-core-jakarta): the BOM aligns every Jackson 2 module.
-    implementation(platform(libs.findLibrary("jackson2-bom").get()))
-    // Jackson 3 (Spring Boot's BOM): stays on the 3.1 line of Spring Boot 4.1.
-    implementation(platform(libs.findLibrary("jackson3-bom").get()))
-
-    constraints {
-        // Bouncy Castle 1.82 from docker-java-core.
-        for (alias in listOf("bouncycastle-bcprov", "bouncycastle-bcpkix", "bouncycastle-bcutil")) {
-            implementation(libs.findLibrary(alias).get()) {
-                because("Dependabot alerts on Bouncy Castle (bcprov, bcpkix, bcutil)")
-            }
-        }
-        // Tomcat 11.0.24 from Spring Boot's BOM.
-        for (alias in listOf("tomcat-embed-core", "tomcat-embed-el", "tomcat-embed-websocket")) {
-            implementation(libs.findLibrary(alias).get()) {
-                because("Dependabot alerts on Tomcat (tomcat-embed-core, -el, -websocket)")
-            }
-        }
-    }
-
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
     testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())
 
@@ -54,6 +33,34 @@ dependencies {
     // default one, so Checkstyle itself is declared too (same version as toolVersion below).
     add("checkstyle", libs.findLibrary("checkstyle").get())
     add("checkstyle", "tradinganalysisplatform:checkstyle-rules")
+}
+
+// Security pins (Dependabot), versions and removal conditions in gradle/libs.versions.toml. Applied to
+// every source set, not to `implementation` alone: GitHub's dependency submission records every
+// configuration, test fixtures included, and those do not extend `implementation`.
+sourceSets.configureEach {
+    val bucket = implementationConfigurationName
+    dependencies {
+        // Jackson 2 (docker-java-core, swagger-core-jakarta): the BOM aligns every Jackson 2 module.
+        add(bucket, platform(libs.findLibrary("jackson2-bom").get()))
+        // Jackson 3 (Spring Boot's BOM): stays on the 3.1 line of Spring Boot 4.1.
+        add(bucket, platform(libs.findLibrary("jackson3-bom").get()))
+
+        constraints {
+            // Bouncy Castle 1.82 from docker-java-core.
+            for (alias in listOf("bouncycastle-bcprov", "bouncycastle-bcpkix", "bouncycastle-bcutil")) {
+                add(bucket, libs.findLibrary(alias).get()) {
+                    because("Dependabot alerts on Bouncy Castle (bcprov, bcpkix, bcutil)")
+                }
+            }
+            // Tomcat 11.0.24 from Spring Boot's BOM.
+            for (alias in listOf("tomcat-embed-core", "tomcat-embed-el", "tomcat-embed-websocket")) {
+                add(bucket, libs.findLibrary(alias).get()) {
+                    because("Dependabot alerts on Tomcat (tomcat-embed-core, -el, -websocket)")
+                }
+            }
+        }
+    }
 }
 
 // Dependency analysis (gradle-dependency-analyze): the build fails on a library the code uses but the

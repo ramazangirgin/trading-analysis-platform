@@ -103,15 +103,16 @@ recorded JSON.
 
 ### WP1: Pins on every source set
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `build-logic/src/main/kotlin/tradinganalysisplatform.java-library.gradle.kts`
 - **Steps**:
-  - [ ] Move the Jackson 2 and 3 platforms and the Bouncy Castle and Tomcat constraints into a
+  - [x] Move the Jackson 2 and 3 platforms and the Bouncy Castle and Tomcat constraints into a
     `sourceSets.configureEach` block on each source set's `implementationConfigurationName`
-  - [ ] Comment why (every configuration is submitted to GitHub, test fixtures included)
-  - [ ] `./gradlew -q :backend:library:persistence:dependencies` shows no `tools.jackson.core:*:3.1.5`
+  - [x] Comment why (every configuration is submitted to GitHub, test fixtures included)
+  - [x] `./gradlew -q :backend:library:persistence:dependencies` shows no `tools.jackson.core:*:3.1.5`
     without `-> 3.1.7` in any configuration
-  - [ ] `mise run check` and `mise run build` green (`analyzeDependencies` included)
+  - [x] `mise run check` and `mise run build` green (`analyzeDependencies` included)
 - **Tests**: the build itself; the `gradle-scan` run of WP2 against the repository prints nothing
   for Jackson 2, Jackson 3, Bouncy Castle, Tomcat and commons-lang3 (paste the output in the pull
   request).
