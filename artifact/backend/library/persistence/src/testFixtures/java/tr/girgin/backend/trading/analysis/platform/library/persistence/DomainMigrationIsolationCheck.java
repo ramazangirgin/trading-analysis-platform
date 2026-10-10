@@ -58,7 +58,7 @@ final class DomainMigrationIsolationCheck {
      * the schema the domain owns.
      */
     static List<String> violations(Flyway domainFlyway, String schema) {
-        DataSource dataSource = PostgresTestDatabase.create().dataSource();
+        DataSource dataSource = PostgresTestContainer.dataSource(PostgresTestContainer.newDatabase());
         CatalogQueries.execute(dataSource, "CREATE SCHEMA \"%s\"".formatted(schema));
         Flyway isolated = Flyway.configure()
                 .configuration(domainFlyway.getConfiguration())
