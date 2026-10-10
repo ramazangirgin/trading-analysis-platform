@@ -168,6 +168,10 @@ run = "scripts/agent/next.sh"
 description = "Start an agent script detached from the terminal, its output in the plan branch's run.log: mise run agent:detach <script> plan/<issue>-<slug> (or a PR number)"
 run = "scripts/agent/detach.sh"
 
+[tasks."agent:status"]
+description = "Where an agent run is: active pid, work package, latest milestones and log lines: mise run agent:status plan/<issue>-<slug> (or a PR number)"
+run = "scripts/agent/status.sh"
+
 [tasks."agent:test"]
 description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser and the usage figures"
 run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
