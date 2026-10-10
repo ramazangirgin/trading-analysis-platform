@@ -13,6 +13,9 @@ export default defineConfig({
   retries: 0,
   forbidOnly: false,
   reporter: 'list',
+  // One at a time: list pages (analyses) must show the same rows on every run.
+  workers: 1,
+  fullyParallel: false,
   // On the project, not on `use`: the project's device (Desktop Chrome) would override the size.
   projects: (base.projects ?? []).map((project) => ({
     ...project,

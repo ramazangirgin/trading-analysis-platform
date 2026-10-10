@@ -141,15 +141,16 @@ jar …") is kept.
 
 ### WP1: Parallel end-to-end tests
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `e2e/playwright.config.ts`, `e2e/playwright.screenshots.config.ts`,
   `e2e/start-platform.sh`, `e2e/tests/support.ts` (comment only)
 - **Steps**:
-  - [ ] `fullyParallel: true`, `workers` from `E2E_WORKERS` (default 3), new comment
-  - [ ] `workers: 1`, `fullyParallel: false` in the screenshots config, with the reason
-  - [ ] `--platform.analysis.max-concurrent-runs=4` on the jar's command line in `start-platform.sh`,
+  - [x] `fullyParallel: true`, `workers` from `E2E_WORKERS` (default 3), new comment
+  - [x] `workers: 1`, `fullyParallel: false` in the screenshots config, with the reason
+  - [x] `--platform.analysis.max-concurrent-runs=4` on the jar's command line in `start-platform.sh`,
         with the reason, and the header comment updated
-  - [ ] a comment in `support.ts` at `completedAnalysis`: every test uses a ticker of its own
+  - [x] a comment in `support.ts` at `completedAnalysis`: every test uses a ticker of its own
 - **Tests**: `mise run e2e` passes locally with the default workers, three times in a row (no
   flakes from the order). `E2E_WORKERS=1 mise run e2e` passes too. `mise run screenshots` still
   produces the same screenshots (no diff in `docs/screenshots/`, or only pixel noise, which is not

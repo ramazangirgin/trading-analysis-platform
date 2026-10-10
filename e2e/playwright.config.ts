@@ -9,9 +9,12 @@ export default defineConfig({
   testDir: 'tests',
   testMatch: '**/*.e2e.ts',
   globalSetup: './tests/global-setup.ts',
-  // One platform for every test: tests share its database, so they run one at a time.
-  workers: 1,
-  fullyParallel: false,
+  // One platform for every worker: the tests share it and stay independent (an analysis ticker of
+  // their own, no global state they assume they own), so they run side by side. GitHub's runners
+  // have 4 vCPUs: three Chrome workers, the jar, PostgreSQL and ta-runner fit. E2E_WORKERS=1 runs
+  // them one at a time, for debugging.
+  workers: Number(process.env.E2E_WORKERS ?? 3),
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   timeout: 60_000,
