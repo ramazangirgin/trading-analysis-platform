@@ -12,7 +12,7 @@ The persistence conventions it supports are in
 | Source set | Classes | Used by |
 |---|---|---|
 | `main` | `JpaAuditingConfiguration`, `ClockDateTimeProvider`: JPA auditing fed from the application's `Clock` | `:backend` at runtime |
-| `testFixtures` | `@JpaAdapterTest`, `PostgresTestDatabase`, `MutableTestClock`: the wiring of an adapter test | the persistence adapters' tests |
+| `testFixtures` | `@JpaAdapterTest`, `PostgresTestDatabase`, `MutableTestClock`: the wiring of an adapter test | the persistence adapters' tests; `:backend`'s tests (`PostgresTestDatabase`) |
 | `testFixtures` | `DomainPersistenceConventionsTest` and its checks (`EntitySchemaRule`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheck`): the schema rules of one domain, extended once by each domain with persistence | the persistence adapters' tests |
 | `test` | The proofs that each check fails, against fixtures of made-up domains | this module only |
 
