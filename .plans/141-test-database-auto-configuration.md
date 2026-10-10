@@ -155,6 +155,7 @@ Spring context, so it uses the same container definition without one.
 ### WP1: Shared test database in the persistence test fixtures
 
 - **Depends on**: none
+- **Status**: done
 - **Files**:
   - `gradle/libs.versions.toml`
   - `artifact/backend/library/persistence/build.gradle.kts`
@@ -167,13 +168,13 @@ Spring context, so it uses the same container definition without one.
   - `artifact/backend/library/persistence/src/test/java/…/library/persistence/DatabaseNamingCheckTest.java`
   - `artifact/backend/library/persistence/src/test/java/…/library/persistence/TestDatabaseConfigurationTest.java` (new)
 - **Steps**:
-  - [ ] Catalog entry `spring-boot-jdbc`; `testFixturesApi(libs.spring.boot.jdbc)` and
+  - [x] Catalog entry `spring-boot-jdbc`; `testFixturesApi(libs.spring.boot.jdbc)` and
         `testImplementation(libs.spring.boot.test)` in the library's build.
-  - [ ] `PostgresTestContainer` and `TestDatabaseConfiguration` as in the design, with Javadoc that
+  - [x] `PostgresTestContainer` and `TestDatabaseConfiguration` as in the design, with Javadoc that
         says why it is one container with a database per context, and not `@ServiceConnection`.
-  - [ ] `@JpaAdapterTest`: `DataSourceAutoConfiguration`, `@Import` of `TestDatabaseConfiguration`,
+  - [x] `@JpaAdapterTest`: `DataSourceAutoConfiguration`, `@Import` of `TestDatabaseConfiguration`,
         Javadoc.
-  - [ ] Move `DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck` and
+  - [x] Move `DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck` and
         `DatabaseNamingCheckTest` to `PostgresTestContainer`; delete `PostgresTestDatabase`.
 - **Tests**: `TestDatabaseConfigurationTest` (new, in the library's tests, made-up names only).
   With `ApplicationContextRunner`, `DataSourceAutoConfiguration` and `TestDatabaseConfiguration`:
