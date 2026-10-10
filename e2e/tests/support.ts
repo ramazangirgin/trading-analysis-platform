@@ -6,7 +6,11 @@ export const TRADE_DATE = '2026-09-25'
 /** A line of the recording's final decision, to find it on a page or in an export. */
 export const DECISION_TEXT = 'take a 4% position now'
 
-/** Starts an analysis over the API and waits until ta-runner has replayed it to the end. */
+/**
+ * Starts an analysis over the API and waits until ta-runner has replayed it to the end. The tests
+ * run in parallel against one platform: every test uses a ticker of its own, so a new test that
+ * starts an analysis picks one no other test uses.
+ */
 export async function completedAnalysis(request: APIRequestContext, ticker: string) {
   const started = await request.post('/api/analyses', {
     data: {
