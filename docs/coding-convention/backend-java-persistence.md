@@ -275,10 +275,11 @@ Like every shared library, it holds no domain type and no business rule
   ([Timestamps](#timestamps-domain-facts-and-audit-fields)). A base type that a second adapter needs
   (an insert-only `Persistable` base, a generic `AttributeConverter`, a `@NoRepositoryBean` base
   repository) moves here, never copied. There is no `@MappedSuperclass` for timestamps: `PRESETS`,
-  `ANALYSES` and `USERS` do not share their timestamp columns, and inheritance would only couple them.
+  `ANALYSES` and `USERS` do not share their timestamp columns, and inheritance would only couple
+  them.
 - **Test fixtures** (Gradle's `java-test-fixtures`): the shared test code of the persistence
-  adapters (`@JpaAdapterTest`, `TestDatabaseConfiguration`, `MutableTestClock`, the abstract `DomainPersistenceConventionsTest` and
-  the checks it delegates to, see [Tests](#tests)), used with
+  adapters (`@JpaAdapterTest`, `TestDatabaseConfiguration`, `MutableTestClock`, the abstract
+  `DomainPersistenceConventionsTest` and the checks it delegates to, see [Tests](#tests)), used with
   `testImplementation(testFixtures(project(":backend:library:persistence")))`.
   Gradle keeps test fixtures off every main classpath, and the ArchUnit tests do not import them
   (`DoNotIncludeTestFixtures`).
