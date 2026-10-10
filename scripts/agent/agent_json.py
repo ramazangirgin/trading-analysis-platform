@@ -1,8 +1,13 @@
 """Reads Claude Code's JSON results and the agent-step markers (scripts/agent/lib.sh).
 
-    agent_json.py stream <result.json> <log.jsonl>  Claude Code's stream-json on stdin: progress to
+    agent_json.py stream <result.json> <log.jsonl> [label]
+                                                    Claude Code's stream-json on stdin: progress to
                                                     stderr, the stream to <log.jsonl>, the final
-                                                    result to <result.json>
+                                                    result to <result.json>. With a label, also a
+                                                    milestone line `agent: >> <label>: <phase>` when
+                                                    the agent starts a phase (PHASES: tests,
+                                                    mise run check and its result, commit); without
+                                                    one, none
     agent_json.py get <result.json> <key>           a top-level value (structured_output as JSON)
     agent_json.py usage-line <run>...               tokens and cost, for the log
     agent_json.py usage-marker <run>...             "tokens=... tokens_in=... ..." for a step marker
@@ -43,6 +48,27 @@ TOOL_DETAIL = {
 }
 
 
+CHECK = "mise run check"
+
+# The phases of an agent run that get a milestone line, in the order they are tried: the phase and
+# the pattern of the Bash commands that start it. To recognise more, add a row.
+_END = r"(?=\s|$)"
+PHASES = [
+    (CHECK, re.compile(r"\bmise run check" + _END)),
+    ("commit", re.compile(r"\bgit commit" + _END)),
+    (
+        "tests",
+        re.compile(
+            r"\bmise run (test|runner-test|agent:test|skill:test|e2e)" + _END
+            + r"|\./gradlew\b[^|;&]*\s(\S*:)?(test|\w+Test)" + _END
+            + r"|\buv run\b[^|;&]*\bpytest" + _END
+            + r"|\bpnpm\b[^|;&]*\stest" + _END
+            + r"|\bvitest" + _END
+        ),
+    ),
+]
+
+
 def one_line(text, width=140):
     text = " ".join(str(text).split())
     return text if len(text) <= width else text[: width - 1] + "…"
@@ -68,15 +94,30 @@ def describe(block):
     return f"{name} {one_line(detail)}" if detail else name
 
 
-def stream(out_path, log_path):
-    """Follows a stream-json run: one stderr line per step, so a long run shows it is alive."""
+def phase_of(command):
+    """The phase a Bash command starts (PHASES), or None."""
+    for phase, pattern in PHASES:
+        if pattern.search(command):
+            return phase
+    return None
+
+
+def stream(out_path, log_path, label=""):
+    """Follows a stream-json run: one stderr line per step, so a long run shows it is alive. With a
+    label, a milestone line (`agent: >> <label>: <phase>`) for each change of phase (PHASES)."""
     start = time.monotonic()
     state = {"last": time.monotonic(), "what": "starting", "done": False}
     lock = threading.Lock()
+    phase = None  # the phase of the latest Bash call that started one
+    checks = set()  # tool_use_ids of the `mise run check` calls whose result is still to come
 
     def say(text):
         elapsed = int(time.monotonic() - start)
         print(f"agent:   [{elapsed // 60:02d}:{elapsed % 60:02d}] {text}", file=sys.stderr, flush=True)
+
+    def milestone(text):
+        if label:
+            print(f"agent: >> {label}: {text}", file=sys.stderr, flush=True)
 
     def heartbeat():
         while True:
@@ -101,14 +142,33 @@ def stream(out_path, log_path):
                 continue
             kind = event.get("type")
             lines = []
+            milestones = []
             if kind == "system" and event.get("subtype") == "init":
                 lines.append(f"session {event.get('session_id')}")
             elif kind == "assistant":
                 prefix = "  (subagent) " if event.get("parent_tool_use_id") else ""
-                lines += [prefix + d for d in map(describe, event.get("message", {}).get("content", [])) if d]
+                content = event.get("message", {}).get("content", [])
+                lines += [prefix + d for d in map(describe, content) if d]
+                for block in content:
+                    if block.get("type") != "tool_use" or block.get("name") != "Bash":
+                        continue
+                    started = phase_of((block.get("input") or {}).get("command", ""))
+                    if started is None:
+                        continue
+                    if started != phase:
+                        phase = started
+                        milestones.append(started)
+                    if started == CHECK:
+                        checks.add(block.get("id"))
             elif kind == "user":
                 for block in event.get("message", {}).get("content", []) or []:
-                    if isinstance(block, dict) and block.get("type") == "tool_result" and block.get("is_error"):
+                    if not isinstance(block, dict) or block.get("type") != "tool_result":
+                        continue
+                    if block.get("tool_use_id") in checks:
+                        checks.discard(block.get("tool_use_id"))
+                        milestones.append(f"{CHECK} {'failed' if block.get('is_error') else 'passed'}")
+                        phase = None  # a next check is a new line
+                    if block.get("is_error"):
                         content = block.get("content")
                         if isinstance(content, list):
                             content = " ".join(c.get("text", "") for c in content if isinstance(c, dict))
@@ -120,6 +180,8 @@ def stream(out_path, log_path):
                     say(text)
                     if not text.startswith("  tool error"):
                         state["what"] = text
+                for text in milestones:
+                    milestone(text)
                 if lines:
                     state["last"] = time.monotonic()
     with lock:
@@ -235,7 +297,7 @@ def markers(stream):
 def main(argv):
     command, args = argv[1], argv[2:]
     if command == "stream":
-        stream(args[0], args[1])
+        stream(args[0], args[1], args[2] if len(args) > 2 else "")
     elif command == "get":
         value = load(args[0]).get(args[1])
         print(json.dumps(value) if isinstance(value, (dict, list)) else value)

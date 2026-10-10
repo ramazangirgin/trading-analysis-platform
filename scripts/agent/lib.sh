@@ -16,6 +16,9 @@
 #   AGENT_BASE_BRANCH    the branch plans start from and pull requests go into; default main.
 #                        Steps on an existing pull request use its base instead.
 #
+#   AGENT_STEP_LABEL     set by a step before run_agent: the label of the milestone lines for the
+#                        agent's phases (tests, mise run check, commit); none without it
+#
 # Everything a run leaves behind (prompts, agent results and streams, run.log, the lock run.pid, the
 # package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
 # (use_state), where a later run finds it.
@@ -62,32 +65,52 @@ AGENT_TMP=${AGENT_TMP:-${TMPDIR:-/tmp}/agent-$$}
 mkdir -p "$AGENT_TMP"
 
 log() { echo "agent: $*" >&2; }
+# A milestone: a line of its own in run.log (agent: >> <text>) that says how far a run is. Every
+# line is written as it happens, nothing between the script's stderr and the terminal buffers it.
+milestone() { echo "agent: >> $*" >&2; }
+# The first line of the message is a milestone (failed: …), the rest plain lines.
 die() {
-  echo "agent: $*" >&2
+  local message=$* first rest
+  first=${message%%$'\n'*}
+  rest=${message#"$first"}
+  milestone "failed: $first"
+  if [ -n "$rest" ]; then
+    printf '%s\n' "${rest#$'\n'}" | sed 's/^/agent: /' >&2
+  fi
   exit 1
 }
 
 # --- State per plan branch -----------------------------------------------------------------------
 
-# use_state <plan branch>: AGENT_STATE is .git/agent/<issue>-<slug>/ (the main repository's .git in a
-# linked worktree, so every worktree finds the same state), never committed and never touched by
-# git clean. AGENT_TMP points at it: prompts, results (*.json) and streams (*.jsonl) go there. The
-# outermost script copies its stderr (the "agent:" lines and the agents' progress) into run.log;
-# nested scripts see AGENT_LOGGING and do not copy it again.
+# use_state [--no-log] <plan branch>: AGENT_STATE is .git/agent/<issue>-<slug>/ (the main
+# repository's .git in a linked worktree, so every worktree finds the same state), never committed
+# and never touched by git clean. AGENT_TMP points at it: prompts, results (*.json) and streams
+# (*.jsonl) go there. The outermost script copies its stderr (the "agent:" lines and the agents'
+# progress) into run.log; nested scripts see AGENT_LOGGING and do not copy it again. The first lines
+# of a step name the log and the streams. The lines that say how far a run is start with
+# "agent: >> " (milestone): status.sh lists them. With --no-log (a read-only script, status.sh)
+# nothing is copied into run.log, no header and no path lines are written.
 use_state() {
-  local common name
+  local common name copy=true
+  if [ "${1:-}" = --no-log ]; then
+    copy=false
+    shift
+  fi
   common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
   name=$(plan_name_of_branch "$1")
   AGENT_STATE=$common/agent/${name//\//-}
   mkdir -p "$AGENT_STATE"
   rmdir "$AGENT_TMP" 2>/dev/null || true # the scratch directory made above, if still empty
   AGENT_TMP=$AGENT_STATE
+  $copy || return 0
   if [ -z "${AGENT_LOGGING:-}" ]; then
     export AGENT_LOGGING=1
     log_header
     exec 2> >(tee -a "$AGENT_STATE/run.log" >&2)
   fi
-  log "state: $AGENT_STATE (log: $AGENT_STATE/run.log)"
+  log "log: $AGENT_STATE/run.log   (follow it: tail -f $AGENT_STATE/run.log)"
+  log "streams: $AGENT_STATE/*.jsonl"
+  log "state: $AGENT_STATE"
 }
 
 # A header line in run.log for each start: the date, the script and its arguments.
@@ -246,7 +269,7 @@ run_agent() {
   [ -z "$model" ] || extra+=(--model "$model")
 
   use_claude_login
-  log "running $(model_name "$model") ($(basename "$prompt")); full log: ${out}l"
+  log "running $(model_name "$model") ($(basename "$prompt")); stream: ${out}l"
   if [ -e "$out" ] || [ -e "${out}l" ]; then
     local old
     old="${out%.json}.$(date +%Y%m%d%H%M%S)-$$"
@@ -257,7 +280,7 @@ run_agent() {
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
   env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format stream-json --verbose --permission-mode dontAsk \
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
-    ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" || true
+    ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}" || true
   [ -s "$out" ] || die "the agent wrote no result ($out)"
   if [ "$(py "$AGENT_DIR/agent_json.py" get "$out" is_error)" = True ]; then
     die "the agent failed: $(py "$AGENT_DIR/agent_json.py" get "$out" result)"
@@ -327,6 +350,13 @@ else:
 '
 }
 
+# The names of the jobs that failed on commit $1 (other than the required check itself), comma
+# separated, or nothing.
+ci_failed_jobs() {
+  gh api -X GET "repos/{owner}/{repo}/commits/$1/check-runs" -f per_page=100 \
+    --jq "[.check_runs[] | select(.conclusion == \"failure\" and .name != \"$AGENT_CI_CHECK\") | .name] | unique | join(\", \")"
+}
+
 # --- Git -----------------------------------------------------------------------------------------
 
 # Checks out branch $1 at its remote head, with a clean working tree. With --keep-changes, a dirty
@@ -358,4 +388,5 @@ push_branch() {
   case $branch in main | "$AGENT_BASE_BRANCH") die "refusing to push $branch" ;; esac
   log "pushing $branch"
   git push --quiet origin "HEAD:refs/heads/$branch"
+  milestone "pushed $branch ($(git rev-parse --short HEAD))"
 }
