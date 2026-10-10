@@ -192,8 +192,8 @@ A write based on a stale copy of a row fails instead of overwriting a newer one.
     included, and a missing row with a non-null version: it was deleted meanwhile), because JPA
     forbids changing the version of a managed entity. It then copies the fields and calls
     `saveAndFlush`; the `UPDATE … WHERE VERSION = ?` covers the window between the load and the
-    flush. The compare is a
-    private helper per adapter, moved to `:backend:library:persistence` once a third needs it.
+    flush. The compare is a private helper per adapter, moved to `:backend:library:persistence`
+    once a third needs it.
 - **The services translate it** where they call a write: a domain error code `CONCURRENT_UPDATE`
   (`AnalysisError`, `SettingsError`) with the ID as parameter, and the BFF maps it to HTTP 409
   (`concurrent_update`). A domain whose ports promise the exception but no service writes yet
