@@ -22,8 +22,8 @@ class EntitySchemaRuleTest {
                         "CollectionWithoutSchemaEntity.tags: @CollectionTable has no schema, expected \"SAMPLE\"",
                         "NoSchemaEntity: @Table has no schema, expected \"SAMPLE\"",
                         "NoTableEntity: @Entity without @Table",
-                        "OtherSchemaEntity: @Table has schema \"IDENTITY\", expected \"SAMPLE\"",
-                        "UnqualifiedCastEntity.moods: columnDefinition [\"IDENTITY\".\"SAMPLE_MOOD\"[]]"
+                        "OtherSchemaEntity: @Table has schema \"OTHER\", expected \"SAMPLE\"",
+                        "UnqualifiedCastEntity.moods: columnDefinition [\"OTHER\".\"SAMPLE_MOOD\"[]]"
                                 + " must qualify every quoted name with \"SAMPLE\".",
                         "UnqualifiedCastEntity.moods: write [cast(? as \"SAMPLE_MOOD\"[])]"
                                 + " must qualify every quoted name with \"SAMPLE\".",
