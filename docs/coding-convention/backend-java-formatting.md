@@ -29,7 +29,7 @@ Generated sources (`build/generated/`, MapStruct `*Impl`) are not formatted.
 | Where | Command | Files |
 |---|---|---|
 | Build | `spotlessCheck` in every backend module, part of `./gradlew build` / `mise run build` | all |
-| CI | *Backend and frontend*: a *Formatting* step (`mise run format-check`) before the build, so an unformatted file fails fast, even when the hook was skipped | all |
+| CI | *Backend and frontend*: one Gradle run, `./gradlew spotlessCheck :frontend:pnpmLint build`: the formatting tasks come first and there is no `--continue`, so an unformatted file stops the build early, even when the hook was skipped | all |
 | By hand | `mise run check` (with the other static checks) or `mise run format-check` | all |
 | Git hook | pre-commit, when `.java` files under `artifact/backend/` are staged: `spotlessCheck -PspotlessRatchetFrom=HEAD`, in the same Gradle run as Checkstyle and ArchUnit | changed since `HEAD` |
 

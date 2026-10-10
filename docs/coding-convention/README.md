@@ -41,8 +41,9 @@ Every rule is checked in three places, by the same tool:
 | Frontend | [Knip](repository-dependency-hygiene.md) (unused and unlisted packages) | `artifact/frontend/knip.jsonc` | `pnpm run deps:check` (`:frontend:pnpmDepsCheck`), part of `mise run build` and `mise run check` | none |
 | ta-runner | [deptry](repository-dependency-hygiene.md) (DEP001–DEP004) | `[tool.deptry]` in `artifact/ta-runner/pyproject.toml` | `uv run deptry .`, part of `mise run runner-test` and `mise run check` | none |
 
-- **CI** runs all of them: the *Backend and frontend* job (`mise run format-check` for the formatting
-  of every file, then `mise run build`) and the *ta-runner* job (`mise run runner-test`), see [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). CI is
+- **CI** runs all of them: the *Backend and frontend* job (one Gradle run,
+  `./gradlew spotlessCheck :frontend:pnpmLint build`: the formatting first, then the build), the *End-to-end tests* job (the e2e formatting)
+  and the *ta-runner* job (`mise run runner-test`), see [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). CI is
   the authority: a hook can be skipped, a failing CI check blocks the merge.
 - **`mise run check`** runs every structure check, lint, the dependency checks and the frontend type-check, and the custom Checkstyle checks' own tests, but no other tests:
   the quick check before pushing (seconds when Gradle is warm).
