@@ -8,8 +8,8 @@ its tests ([package structure](../../../../docs/coding-convention/backend-java-p
 
 | Class | Maps | Used by |
 |---|---|---|
-| `DurationToMillisMapper` | `Duration` to its milliseconds (`long`) | `:backend:bff:impl`, `:backend:domain:analysis:adapter` |
-| `EnumToLowerCaseNameMapper` | An enum to its lower-case constant name (`SAMPLE_VALUE` to `sample_value`), only where a mapping asks for it with `qualifiedByName = "lowerCaseName"` | `:backend:bff:impl`, `:backend:domain:analysis:adapter` |
+| `DurationToMillisMapper` | `Duration` to its milliseconds (`long`) | the BFF's and the domain adapters' MapStruct mappers |
+| `EnumToLowerCaseNameMapper` | An enum to its lower-case constant name (`SAMPLE_VALUE` to `sample_value`), only where a mapping asks for it with `qualifiedByName = "lowerCaseName"` | the BFF's and the domain adapters' MapStruct mappers |
 
 Only MapStruct mappers live here (`mapper_packages_hold_only_mappers`). The generated mappers are
 Spring beans.
