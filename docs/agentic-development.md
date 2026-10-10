@@ -267,11 +267,12 @@ only when asked to in the session.
 It plans with the `plan-from-issue` skill, invoked from it, and runs the same scripts one step at a time
 (`implement.sh`, then `next.sh --dry-run` for the next step and that step's script), so the pull
 request and its state comments are the same as with `mise run agent:run`, and `mise run agent:next`
-can take over the loop at any point. The milestone lines of a step are in its `run.log`: follow
-them in a terminal with `tail -f .git/agent/<issue>-<slug>/run.log` or `scripts/agent/status.sh
---follow <branch>`, and ask for the status at any time with `scripts/agent/status.sh <branch>`.
-(The skill does not report the milestones in the session itself yet.) Started again, it reads where the issue stands from
-its plan branches and pull requests and continues there.
+can take over the loop at any point. While a step runs, the session reports one line per milestone
+as it happens (from `run.log`, through `status.sh --follow`) and nothing for the agents' tool calls;
+ask it for the status at any time (`status.sh`). It prints the command to follow a step in a
+terminal first: `tail -f .git/agent/<issue>-<slug>/run.log`. The agents may not edit the skills
+under `.claude/`, so a plan item there comes back "not done" and is done by hand. Started again, it
+reads where the issue stands from its plan branches and pull requests and continues there.
 
 ### 5. When a run stops early
 

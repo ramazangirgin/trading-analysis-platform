@@ -493,9 +493,9 @@ To go through the same flow from Claude Code, use the `develop-issue` skill inst
 `../<checkout>-32` from `origin/main`) and leaves your checkout alone. It asks you only to approve
 the plan, runs every later step without asking (plan branch, implementation, every CI fix, review
 and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
-for your review. It never merges unless you ask it to. It continues where the issue stands when started again.
-The scripts write a milestone line for each part of a long step (package, tests, check, review
-findings) to the run's `run.log`, and `mise run agent:status <branch>` shows where a run is.
+for your review. It never merges unless you ask it to. It continues where the issue stands when
+started again. It reports each milestone of a long step (package, tests, check, review findings,
+CI) as it happens, and `mise run agent:status <branch>` shows where a run is.
 
 Each step, what to check at each decision, how to stop, continue or redo a run, and the settings:
 [docs/agentic-development.md](docs/agentic-development.md).
