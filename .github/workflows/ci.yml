@@ -2,16 +2,20 @@
 # demand. Jobs; add new ones (image publishing, security scans, ...) next to them and list them
 # under ci-passed:
 #
-#   build      backend + frontend: formatting of every file (Spotless, Prettier), Checkstyle, all
-#              Gradle tests (ArchUnit, Docker runner against the runner's Docker, every
-#              repository and Spring Boot test on PostgreSQL in a container through Testcontainers),
-#              dependency analysis (Gradle), frontend lint, tests and Knip, the single jar
+#   build      backend + frontend: formatting first (Spotless, Prettier), in the same Gradle run as
+#              Checkstyle, all Gradle tests (ArchUnit, Docker runner against the runner's Docker,
+#              every repository and Spring Boot test on PostgreSQL in a container through
+#              Testcontainers), dependency analysis (Gradle), frontend lint, tests and Knip, the
+#              single jar
 #   runner     ta-runner: ruff, import-linter (package structure), deptry and pytest, upstream
 #              contract tests included; also the Python tests of the agent scripts (scripts/agent)
-#   images    both Docker images, then the Docker Compose smoke test (deploy/smoke-test.sh)
-#   e2e        end-to-end tests (e2e/, Playwright): the build job's jar in Google Chrome, with
-#              ta-runner replaying a recording instead of calling an LLM, the jar on a throwaway
-#              PostgreSQL container (scripts/postgres.sh)
+#   runner-image  the ta-runner image and its lockdown check, beside the build job
+#   images     the platform image, then the Docker Compose smoke test (deploy/smoke-test.sh);
+#              needs build and runner-image
+#   e2e        end-to-end tests (e2e/, Playwright) in parallel (playwright.config.ts), and the e2e
+#              formatting: the build job's jar in Google Chrome, with ta-runner replaying a
+#              recording instead of calling an LLM, the jar on a throwaway PostgreSQL container
+#              (scripts/postgres.sh)
 #   version    the version is the same in every file; in a pull request into main, it is also
 #              higher than main's and than the latest release tag (scripts/version.sh); Renovate's
 #              update pull requests are exempt from the bump
@@ -67,13 +71,15 @@ jobs:
           key: frontend-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'artifact/frontend/pnpm-lock.yaml') }}
           restore-keys: frontend-${{ runner.os }}-
 
-      # Every file, not only the changed ones: the pre-commit hook checks only what a commit
-      # changes, and can be skipped. Before the build, so an unformatted file fails fast.
-      - name: Formatting (Java and frontend, every file)
-        run: mise run format-check
-
-      - name: Build and test
-        run: mise run build
+      # Formatting of every file, not only the changed ones: the pre-commit hook checks only what a
+      # commit changes, and can be skipped. The formatting tasks come first on the command line and
+      # depend on nothing but pnpmInstall, so Gradle starts them first; without --continue, a
+      # formatting failure stops the build before any later task starts (tasks already running in
+      # parallel finish). `build` includes the other Spotless checks and the frontend's Prettier
+      # check already; the e2e formatting is checked in the e2e job. Locally, `mise run
+      # format-check` checks every file, e2e included.
+      - name: Formatting, build and test
+        run: ./gradlew --console=plain spotlessCheck :frontend:pnpmLint build
 
       - name: Test and Checkstyle reports
         if: failure()
@@ -121,19 +127,14 @@ jobs:
       - name: Skill helpers' Python tests (.claude/skills)
         run: mise run skill:test
 
-  images:
-    name: Docker images and Compose smoke test
-    needs: build
+  # Beside the build job: the image and its lockdown check need nothing from it. The image goes to
+  # the images job as an artifact, so the smoke test runs the very image that passed the check.
+  runner-image:
+    name: ta-runner image
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-
-      - name: Platform jar
-        uses: actions/download-artifact@v8
-        with:
-          name: platform-jar
-          path: artifact/backend/build/libs
 
       - name: Version
         id: version
@@ -153,6 +154,54 @@ jobs:
           cache-from: type=gha,scope=ta-runner
           cache-to: type=gha,scope=ta-runner,mode=max
 
+      - name: ta-runner image under the platform's lockdown
+        run: |
+          flags=(--rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --memory 1g --cpus 1)
+          image=ta-runner:${{ steps.version.outputs.version }}
+          docker run "${flags[@]}" "$image" version | jq -e --arg v "${{ steps.version.outputs.version }}" '.runner_version == $v'
+          docker run "${flags[@]}" "$image" catalog | jq -e '.providers | length > 0'
+          docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep -Fx "${{ steps.version.outputs.version }}"
+
+      - name: Save the image (for the images job)
+        run: docker save "ta-runner:${{ steps.version.outputs.version }}" ta-runner:latest -o "$RUNNER_TEMP/ta-runner-image.tar"
+
+      - name: ta-runner image (for the images job)
+        uses: actions/upload-artifact@v7
+        with:
+          name: ta-runner-image
+          path: ${{ runner.temp }}/ta-runner-image.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  images:
+    name: Platform image and Compose smoke test
+    needs: [build, runner-image]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Platform jar
+        uses: actions/download-artifact@v8
+        with:
+          name: platform-jar
+          path: artifact/backend/build/libs
+
+      - name: ta-runner image
+        uses: actions/download-artifact@v8
+        with:
+          name: ta-runner-image
+          path: ${{ runner.temp }}
+
+      - name: Load the ta-runner image
+        run: docker load -i "$RUNNER_TEMP/ta-runner-image.tar"
+
+      - name: Version
+        id: version
+        run: echo "version=$(scripts/version.sh)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
       - name: Platform image
         uses: docker/build-push-action@v7
         with:
@@ -165,14 +214,6 @@ jobs:
           load: true
           cache-from: type=gha,scope=platform
           cache-to: type=gha,scope=platform,mode=max
-
-      - name: ta-runner image under the platform's lockdown
-        run: |
-          flags=(--rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --memory 1g --cpus 1)
-          image=ta-runner:${{ steps.version.outputs.version }}
-          docker run "${flags[@]}" "$image" version | jq -e --arg v "${{ steps.version.outputs.version }}" '.runner_version == $v'
-          docker run "${flags[@]}" "$image" catalog | jq -e '.providers | length > 0'
-          docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep -Fx "${{ steps.version.outputs.version }}"
 
       - name: Docker Compose smoke test
         run: deploy/smoke-test.sh "$RUNNER_TEMP/platform-data"
@@ -189,21 +230,38 @@ jobs:
       - name: Java and uv (versions from mise.toml)
         uses: jdx/mise-action@v5
 
-      - name: Gradle cache
-        uses: gradle/actions/setup-gradle@v6
-
       # The same Node.js and pnpm as the frontend's build (e2e/with-node.sh uses them).
       - name: Node, pnpm and packages cache
+        id: node
         uses: actions/cache@v6
         with:
           path: |
             artifact/frontend/.gradle/nodejs
             artifact/frontend/.gradle/pnpm
             ~/.local/share/pnpm/store
+            e2e/node_modules
           key: e2e-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'e2e/pnpm-lock.yaml') }}
           restore-keys: e2e-${{ runner.os }}-
 
+      # Only an exact hit lets the setup be skipped: after a partial restore, an older Node.js may
+      # be the only one in .gradle/nodejs, and with-node.sh would pick it.
+      - name: Gradle cache
+        if: steps.node.outputs.cache-hit != 'true'
+        uses: gradle/actions/setup-gradle@v6
+
+      # The venv links to the Python that uv downloaded, so both are cached together. No restore
+      # key: a partial venv is not worth restoring.
+      - name: ta-runner venv cache
+        id: venv
+        uses: actions/cache@v6
+        with:
+          path: |
+            artifact/ta-runner/.venv
+            ~/.local/share/uv/python
+          key: ta-runner-venv-${{ runner.os }}-${{ hashFiles('artifact/ta-runner/uv.lock', 'artifact/ta-runner/pyproject.toml', 'artifact/ta-runner/.python-version', 'mise.toml') }}
+
       - name: uv cache
+        if: steps.venv.outputs.cache-hit != 'true'
         uses: actions/cache@v6
         with:
           path: ~/.cache/uv
@@ -216,18 +274,27 @@ jobs:
           name: platform-jar
           path: artifact/backend/build/libs
 
-      - name: Node.js, pnpm, ta-runner and the e2e packages
-        run: |
-          ./gradlew --console=plain :frontend:nodeSetup :frontend:pnpmSetup
-          (cd artifact/ta-runner && uv sync --frozen)
-          e2e/with-node.sh pnpm install --frozen-lockfile
+      - name: Node.js and pnpm
+        if: steps.node.outputs.cache-hit != 'true'
+        run: ./gradlew --console=plain :frontend:nodeSetup :frontend:pnpmSetup
+
+      # The installs always run: on a cache hit they take about a second, and they prove that the
+      # cached tree matches the lock file.
+      - name: ta-runner packages
+        working-directory: artifact/ta-runner
+        run: uv sync --frozen
+
+      - name: e2e packages
+        run: e2e/with-node.sh pnpm install --frozen-lockfile
 
       # The tests run in Google Chrome, which GitHub's Ubuntu runners have installed.
       - name: Google Chrome
         run: google-chrome --version
 
-      - name: Type-check
-        run: e2e/with-node.sh pnpm run type-check
+      - name: Type-check and formatting
+        run: |
+          e2e/with-node.sh pnpm run type-check
+          e2e/with-node.sh pnpm run format-check
 
       - name: End-to-end tests
         run: e2e/with-node.sh pnpm test
@@ -270,7 +337,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [build, runner, images, version, e2e]
+    needs: [build, runner, runner-image, images, version, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
