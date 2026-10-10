@@ -15,6 +15,9 @@
 # both. The plan file stays in the pull request. Its body closes the issue only when this is the
 # issue's last plan (issue_reference in lib.sh).
 #
+# Milestone lines (agent: >> …, see lib.sh) say how far it is: a package started / done, the final
+# checks, the pushes, the draft pull request; the agent's tests, mise run check and commits too.
+#
 # Interrupted (usage limit, Ctrl+C, a crash), started again, it skips the packages the plan says
 # are done, keeps the uncommitted work on the branch and lets the agent continue it. Its files are
 # in .git/agent/<issue>-<slug>/: run.log, the agents' results and streams (wp-<id>.json), `current`
@@ -128,7 +131,7 @@ while true; do
   previous=$(sed -n 's/^package=//p' "$AGENT_STATE/current" 2>/dev/null || true)
   dirty=$(git status --short)
   echo "package=$package" >"$AGENT_STATE/current"
-  log "$label: started${dirty:+ (on uncommitted work)}"
+  milestone "$label: started${dirty:+ (on uncommitted work)}"
 
   {
     prompt implement.md
@@ -169,13 +172,14 @@ while true; do
   } | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" >"$AGENT_TMP/implement-$package.md"
 
   result=$AGENT_TMP/wp-$package.json
+  export AGENT_STEP_LABEL=$label
   run_agent "$AGENT_MODEL" "$AGENT_TMP/implement-$package.md" "$result" "${AGENT_DEV_TOOLS[@]}" -- --json-schema "$schema"
   session=$(py "$AGENT_DIR/agent_json.py" get "$result" session_id)
 
   # The package must be recorded in the plan and committed. One more try, resuming the session.
   problems=$(package_problems "$package")
   if [ -n "$problems" ]; then
-    log "$label: not finished, resuming the agent"
+    milestone "$label: not finished, resuming the agent"
     printf 'Package %s is not finished. Fix the problems and commit:\n\n%s\n' "$package" "$problems" >"$AGENT_TMP/retry-$package.md"
     run_agent "$AGENT_MODEL" "$AGENT_TMP/retry-$package.md" "$AGENT_TMP/wp-$package-retry.json" "${AGENT_DEV_TOOLS[@]}" -- --resume "$session" --json-schema "$schema"
     session=$(py "$AGENT_DIR/agent_json.py" get "$AGENT_TMP/wp-$package-retry.json" session_id)
@@ -185,17 +189,19 @@ while true; do
 
   push_branch
   if [ "$(package_status "$package")" = done ]; then
-    log "$label: done ($(package_commits "$package") commits)"
+    milestone "$label: done ($(package_commits "$package") commits)"
   else
-    log "$label: not done: $(plan_py not-done "$plan" | sed -n "s/^- $package: //p")"
+    milestone "$label: not done:$(plan_py not-done "$plan" | sed -n "s/^- $package: //p")"
   fi
 done
 rm -f "$AGENT_STATE/current"
 
 # Final checks: what CI would reject fast. Two more tries, each resuming the agent with the failure.
 results=()
+export AGENT_STEP_LABEL="final checks"
 for attempt in 1 2 3; do
-  log "checking the implementation (attempt $attempt): packages, commits, version bump, mise run check"
+  milestone "checking the implementation (attempt $attempt)"
+  log "checking packages, commits, version bump, mise run check"
   problems=""
   [ -z "$(git status --porcelain)" ] || problems+="Uncommitted changes are left:"$'\n'"$(git status --short)"$'\n\n'
   [ "$(git rev-list --count "$plan_commit..HEAD")" -gt 0 ] || problems+="Nothing was committed."$'\n\n'
@@ -209,11 +215,12 @@ for attempt in 1 2 3; do
     problems+="mise run check failed:"$'\n'"$(tail -n 80 <<<"$out")"$'\n\n'
   fi
   if [ -z "$problems" ]; then
-    log "checks passed"
+    milestone "checks passed"
     break
   fi
+  milestone "checks failed (attempt $attempt): $(head -n 1 <<<"$problems")"
   [ "$attempt" -lt 3 ] || die "the implementation still fails its checks:"$'\n'"$problems"
-  log "checks failed (attempt $attempt), resuming the agent"
+  log "resuming the agent with the failed checks"
   {
     # Without a session of this run (every package was done before it), the agent starts fresh.
     if [ -z "$session" ]; then
@@ -286,6 +293,7 @@ gh label create "$AGENT_LABEL" --color 5319E7 --description "Driven by the agent
 url=$(gh pr create --draft --base "$AGENT_BASE_BRANCH" --head "$branch" --title "${title:-$branch}" \
   --body-file "$AGENT_TMP/pr.md" --label "$AGENT_LABEL")
 pr=${url##*/}
+milestone "draft pull request #$pr opened: $url"
 
 # Every run of the implementation counts: the packages' results and the streams of interrupted runs.
 runs=()

@@ -5,7 +5,8 @@
 #   scripts/agent/fix-ci.sh <pr>
 #
 # Gives the agent the failed jobs' log of the latest CI run on the pull request's head, lets it
-# commit a fix and pushes it. next.sh limits the attempts (AGENT_MAX_CI_FIXES). Its files are in
+# commit a fix and pushes it. next.sh limits the attempts (AGENT_MAX_CI_FIXES). Milestone lines
+# (agent: >> …, see lib.sh): the attempt started, and the commits pushed or nothing. Its files are in
 # .git/agent/<issue>-<slug>/ (fix-ci-<attempt>.json is the agent's result).
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -36,6 +37,8 @@ run=$(gh run list --workflow ci.yml --commit "$head" --status failure --limit 1 
 
 schema='{"type":"object","required":["summary"],"properties":{"summary":{"type":"string"}}}'
 result=$AGENT_TMP/fix-ci-$attempt.json
+milestone "CI fix $attempt started (run $run)"
+export AGENT_STEP_LABEL="CI fix $attempt"
 run_agent "$AGENT_MODEL" "$AGENT_TMP/fix-ci.md" "$result" "${AGENT_DEV_TOOLS[@]}" -- --json-schema "$schema"
 summary=$(py "$AGENT_DIR/agent_json.py" get "$result" structured_output | py -c 'import json, sys; print(json.load(sys.stdin)["summary"])')
 git reset --quiet --hard HEAD
@@ -43,5 +46,10 @@ git clean -fdq
 
 commits=$(git rev-list --count "$head..HEAD")
 [ "$commits" -eq 0 ] || push_branch
+if [ "$commits" -eq 0 ]; then
+  milestone "CI fix $attempt: nothing pushed"
+else
+  milestone "CI fix $attempt: $commits commit(s) pushed"
+fi
 printf '### CI fix %s\n\nCI run %s failed. %s\n\n%s commit(s) pushed.\n' "$attempt" "$run" "$summary" "$commits" >"$AGENT_TMP/step.md"
 post_step "$pr" ci-fix "$attempt" "$AGENT_TMP/step.md" "$result"

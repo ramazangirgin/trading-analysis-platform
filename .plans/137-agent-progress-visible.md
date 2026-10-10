@@ -174,16 +174,16 @@ waits with `Monitor`).
 ### WP2: Milestones in the step scripts
 
 - **Depends on**: WP1
-- **Status**: open
+- **Status**: done
 - **Files**: `scripts/agent/implement.sh`, `scripts/agent/next.sh`, `scripts/agent/review.sh`, `scripts/agent/fix.sh`, `scripts/agent/fix-ci.sh`, `scripts/agent/finalise.sh`
 - **Steps**:
-  - [ ] `implement.sh`: the milestones of the table (packages, final checks, draft pull request with its number and link); `AGENT_STEP_LABEL` per package and for the final checks' retries.
-  - [ ] `next.sh`: `next step`, CI waiting (once per head), CI passed / failed with the failed jobs (`ci_failed_jobs`), `stopping` as milestones.
-  - [ ] `review.sh`: started (with the model) and the outcome: approved, or the number of findings per priority (from the agent's `structured_output.findings`).
-  - [ ] `fix.sh`: round started (number of findings), one line per finding with its outcome, round done; `AGENT_STEP_LABEL` per finding.
-  - [ ] `fix-ci.sh`: started (attempt, run), commits pushed or nothing pushed; `AGENT_STEP_LABEL`.
-  - [ ] `finalise.sh`: started, ready for review with the review agent's approval or the number of open findings.
-  - [ ] Keep the texts `next step: <step>` and `stopping: <reason>` (the skill matches them); update each script's header comment where it lists its output.
+  - [x] `implement.sh`: the milestones of the table (packages, final checks, draft pull request with its number and link); `AGENT_STEP_LABEL` per package and for the final checks' retries.
+  - [x] `next.sh`: `next step`, CI waiting (once per head), CI passed / failed with the failed jobs (`ci_failed_jobs`), `stopping` as milestones.
+  - [x] `review.sh`: started (with the model) and the outcome: approved, or the number of findings per priority (from the agent's `structured_output.findings`).
+  - [x] `fix.sh`: round started (number of findings), one line per finding with its outcome, round done; `AGENT_STEP_LABEL` per finding.
+  - [x] `fix-ci.sh`: started (attempt, run), commits pushed or nothing pushed; `AGENT_STEP_LABEL`.
+  - [x] `finalise.sh`: started, ready for review with the review agent's approval or the number of open findings.
+  - [x] Keep the texts `next step: <step>` and `stopping: <reason>` (the skill matches them); update each script's header comment where it lists its output.
 - **Tests**: no shell test harness exists for the step scripts: `bash -n` on every changed script and `mise run check`. The milestone texts are checked against the table in the design.
 
 ### WP3: `status.sh` and its mise task

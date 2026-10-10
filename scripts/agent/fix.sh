@@ -8,6 +8,8 @@
 # "Address R<round>-<n>: <summary>", through the pre-commit hook; a declined one changes nothing.
 # Either way the review thread gets a reply (commit SHA and what changed, or the reason). Threads a
 # developer resolved are skipped. Pushes once at the end, and leaves a step comment with the outcomes.
+# Milestone lines (agent: >> …, see lib.sh): the round started, one line per finding with its
+# outcome (fixed, declined, open, skipped) and the round done.
 # Its files are in .git/agent/<issue>-<slug>/ (fix-R<round>-<n>.json is the result for a finding).
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -59,6 +61,7 @@ reply() {
 
 count=$(py -c 'import json, sys; print(len(json.load(sys.stdin)))' <"$AGENT_TMP/findings.json")
 results=()
+milestone "fix round $round started ($count findings)"
 echo "{}" >"$AGENT_TMP/outcomes.json"
 for ((i = 0; i < count; i++)); do
   id=$(finding_field "$i" id)
@@ -82,6 +85,7 @@ for ((i = 0; i < count; i++)); do
     } >"$AGENT_TMP/fix-$id.md"
     out=$AGENT_TMP/fix-$id.json
     results+=("$out")
+    export AGENT_STEP_LABEL=$id
     run_agent "$AGENT_MODEL" "$AGENT_TMP/fix-$id.md" "$out" "${tools[@]}" -- --json-schema "$schema"
     action=$(result_field "$out" action)
     reason=$(result_field "$out" reply)
@@ -107,7 +111,12 @@ for ((i = 0; i < count; i++)); do
     reply "$id" "$reason"
   fi
   review_py record "$AGENT_TMP/outcomes.json" "$id" "$outcome" "$reason"
-  log "$id: $outcome"
+  case $outcome in
+    fixed) milestone "$id: fixed ($(git rev-parse --short HEAD))" ;;
+    open) milestone "$id: open: $(head -n 1 <<<"$reason")" ;;
+    skipped) milestone "$id: skipped (thread resolved)" ;;
+    *) milestone "$id: $outcome" ;;
+  esac
 done
 
 commits=$(git rev-list --count "$start..HEAD")
@@ -120,4 +129,4 @@ commits=$(git rev-list --count "$start..HEAD")
   review_py outcomes-section "$AGENT_TMP/outcomes.json"
 } >"$AGENT_TMP/step.md"
 post_step "$pr" fix "$round" "$AGENT_TMP/step.md" ${results[@]+"${results[@]}"}
-log "fix round $round done on #$pr ($commits commits)"
+milestone "fix round $round done ($commits commits)"
