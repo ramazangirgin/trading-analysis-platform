@@ -305,4 +305,4 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 | Names follow [database naming](backend-database-naming.md), the schema name included | `namesFollowTheConvention` |
 | Each of those checks fails on a violation | The library's `EntitySchemaRuleTest`, `DomainMigrationIsolationCheckTest`, `DatabaseNamingCheckTest` and `SamplePersistenceConventionsTest`, against fixtures of a made-up domain |
 | A domain with persistence (an `@Entity` or a migration) has a conventions test | `:backend:domainPersistenceTestsCheck` (part of `:backend:check`, `mise run build` and `mise run check`) |
-| Only `<Domain>PersistenceConfiguration` is a `@Configuration` in a domain adapter, in `adapter.persistence` | `ArchitectureTest.adapter_components_implement_an_outbound_port`, `port_package_roots_hold_only_adapters` |
+| Only `<Domain>PersistenceConfiguration` is a `@Configuration` in a domain adapter, in `adapter.persistence` | `ArchitectureTest.domain_adapter_configurations_are_persistence_configurations` (`adapter_components_implement_an_outbound_port` and `port_package_roots_hold_only_adapters` only exempt it) |
