@@ -7,7 +7,8 @@
 # Posts the final comment (what the plan asked for, the commits, the review findings fixed /
 # declined / still open, the tokens used), marks the pull request ready for review and removes the
 # "agent" label. Never merges. Updates the issue reference in the body ("Closes" / "Part of"): the
-# issue's other plans may have merged since the pull request was opened. Its files are in
+# issue's other plans may have merged since the pull request was opened. Milestone lines (agent: >> …,
+# see lib.sh): finalise started, and the pull request ready for review. Its files are in
 # .git/agent/<issue>-<slug>/.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -17,6 +18,7 @@ branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
 use_state "$branch"
 use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
+milestone "finalise #$pr started"
 git fetch --quiet origin "$AGENT_BASE_BRANCH" "$branch"
 comments=$(pr_step_comments "$pr")
 rounds=$(count_steps "$pr" review)
@@ -56,4 +58,9 @@ gh pr view "$pr" --json body --jq .body |
 gh pr edit "$pr" --body-file "$AGENT_TMP/pr.md" >/dev/null
 gh pr ready "$pr"
 gh pr edit "$pr" --remove-label "$AGENT_LABEL" >/dev/null
-log "#$pr is ready for review"
+if [ -n "$approved" ] && [ "$approved" = "$(git rev-parse "origin/$branch")" ]; then
+  milestone "#$pr is ready for review (approved by the review agent)"
+else
+  open_findings=$(py "$AGENT_DIR/review.py" findings-table <<<"$comments" | grep -c '| open |$' || true)
+  milestone "#$pr is ready for review ($open_findings open findings)"
+fi

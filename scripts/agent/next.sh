@@ -19,7 +19,8 @@
 #
 # Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
 # the next step). Over AGENT_MAX_CI_FIXES or AGENT_MAX_TOKENS, it comments, removes the label and
-# stops. Interrupted (Ctrl+C), it continues where it was when started again. Its log, the agents'
+# stops. Milestone lines (agent: >> …, see lib.sh) say how far it is: the next step, CI waited
+# for / passed / failed (with the failed jobs) per head, and why it stopped. Interrupted (Ctrl+C), it continues where it was when started again. Its log, the agents'
 # streams and its lock are in .git/agent/<issue>-<slug>/ (run.log, run.pid); a second run on the
 # same branch is refused.
 # shellcheck source=scripts/agent/lib.sh
@@ -47,7 +48,7 @@ $dry_run || lock_run
 
 # stop <reason>: hand the pull request back to the developer.
 stop() {
-  log "stopping: $1"
+  milestone "stopping: $1"
   if ! $dry_run; then
     printf '### Agent loop stopped\n\n%s\n\nThe pull request stays a draft. Continue by hand, or add the `%s` label and run the agent loop again.\n' \
       "$1" "$AGENT_LABEL" >"$AGENT_TMP/stop.md"
@@ -99,18 +100,39 @@ next_step() {
 }
 
 waited=0
+waiting_head="" # the head a "waiting for CI" milestone was written for
+reported_head="" # the head CI's result was written for
 while true; do
   step=$(next_step)
   if [ "$step" = wait ]; then
     [ "$waited" -lt $((AGENT_CI_TIMEOUT * 60)) ] || stop "CI did not finish within $AGENT_CI_TIMEOUT minutes."
-    [ $((waited % 120)) -ne 0 ] || log "#$pr: waiting for $AGENT_CI_CHECK ($((waited / 60)) of $AGENT_CI_TIMEOUT min)"
+    head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+    if [ "$head" != "$waiting_head" ]; then
+      milestone "#$pr: waiting for $AGENT_CI_CHECK on ${head:0:7}"
+      waiting_head=$head
+    elif [ $((waited % 120)) -eq 0 ]; then
+      log "#$pr: waiting for $AGENT_CI_CHECK ($((waited / 60)) of $AGENT_CI_TIMEOUT min)"
+    fi
     $dry_run && exit 0
     sleep 30
     waited=$((waited + 30))
     continue
   fi
   waited=0
-  log "#$pr: next step: $step"
+  # CI's result on the head, once per head, where the next step depends on it.
+  case $step in review | finalise | fix-ci)
+    head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+    if ! $dry_run && [ "$head" != "$reported_head" ]; then
+      reported_head=$head
+      if [ "$step" = fix-ci ]; then
+        milestone "#$pr: CI failed on ${head:0:7}: $(ci_failed_jobs "$head")"
+      else
+        milestone "#$pr: CI passed on ${head:0:7}"
+      fi
+    fi
+    ;;
+  esac
+  milestone "#$pr: next step: $step"
   $dry_run && exit 0
   before=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
   case $step in
