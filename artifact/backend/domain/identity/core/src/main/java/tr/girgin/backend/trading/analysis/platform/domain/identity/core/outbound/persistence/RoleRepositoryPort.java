@@ -14,6 +14,11 @@ public interface RoleRepositoryPort {
 
     List<Role> findAll();
 
-    /** Inserts or updates the role and replaces its permissions with {@link Role#permissions()}, in one transaction. */
-    void save(Role role);
+    /**
+     * Inserts or updates the role and replaces its permissions with {@link Role#permissions()}, in one
+     * transaction. A role whose {@link Role#version()} differs from the stored one fails with Spring's
+     * {@code OptimisticLockingFailureException} and leaves the row unchanged; a {@code null} version means
+     * "insert", so it fails on an existing ID as well. Returns the stored role, with its new version.
+     */
+    Role save(Role role);
 }

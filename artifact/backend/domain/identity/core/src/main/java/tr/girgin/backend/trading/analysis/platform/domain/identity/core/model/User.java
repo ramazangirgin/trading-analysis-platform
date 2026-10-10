@@ -11,6 +11,9 @@ import java.util.Set;
  * @param createdAt when the user was first saved. An audit field: persistence sets it, so it is {@code null} on a
  *     user the core builds before its first save, and set on every user the repository returns.
  * @param updatedAt when the user was last saved. An audit field like {@code createdAt}.
+ * @param version the optimistic lock. Owned by persistence: {@code null} on a user the core builds before its first
+ *     save, set on every user the repository returns, and carried along unchanged by the core. A save of a user
+ *     whose version differs from the stored one fails.
  */
 public record User(
         UserId id,
@@ -22,7 +25,8 @@ public record User(
         Optional<Instant> lockedUntil,
         Instant createdAt,
         Instant updatedAt,
-        Set<RoleId> roleIds) {
+        Set<RoleId> roleIds,
+        Long version) {
 
     public User {
         Objects.requireNonNull(id, "id");
@@ -44,6 +48,7 @@ public record User(
                 lockedUntil,
                 createdAt,
                 updatedAt,
-                newRoleIds);
+                newRoleIds,
+                version);
     }
 }

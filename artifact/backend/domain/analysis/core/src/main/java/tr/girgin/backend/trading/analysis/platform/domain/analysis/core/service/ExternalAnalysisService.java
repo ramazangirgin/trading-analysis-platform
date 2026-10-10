@@ -1,7 +1,11 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service;
 
+import java.util.Map;
 import java.util.Optional;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RegisterExternalAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
@@ -36,17 +40,23 @@ class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
         }
         Optional<Analysis> existing = repository.findByExternalRef(external.ref());
         if (existing.isEmpty()) {
-            Analysis created = Analysis.imported(AnalysisId.newId(), external);
+            Analysis created = Analysis.imported(AnalysisId.newId(), null, external);
             repository.insert(created);
             return new ExternalRegistration(created, Outcome.CREATED);
         }
         Analysis current = existing.get();
-        Analysis refreshed = Analysis.imported(current.id(), external);
+        Analysis refreshed = Analysis.imported(current.id(), current.version(), external);
         if (refreshed.equals(current)) {
             return new ExternalRegistration(current, Outcome.UNCHANGED);
         }
-        repository.replaceImported(refreshed);
-        return new ExternalRegistration(refreshed, Outcome.UPDATED);
+        try {
+            return new ExternalRegistration(repository.replaceImported(refreshed), Outcome.UPDATED);
+        } catch (OptimisticLockingFailureException _) {
+            throw new AnalysisException(
+                    AnalysisError.CONCURRENT_UPDATE,
+                    "Analysis was changed concurrently: " + current.id(),
+                    Map.of("id", current.id().value()));
+        }
     }
 
     private Optional<Analysis> platformRun(ExternalAnalysis external) {

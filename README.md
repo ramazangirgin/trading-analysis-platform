@@ -84,6 +84,7 @@ Open **New analysis** and fill in:
 
 Press **Start analysis**. **Save as preset** keeps the provider, model and analyst choices for next
 time; **Settings** lists the presets with what each holds, and renames or deletes them.
+Renaming a preset that someone else changed meanwhile fails with a message and the list reloads.
 
 ![New analysis form](docs/screenshots/new-analysis.png)
 

@@ -11,19 +11,20 @@ class RoleTest {
 
     @Test
     void rejectsNullFields() {
-        assertThatThrownBy(() -> new Role(null, "ADMIN", true, "", Set.of())).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new Role(RoleId.newId(), null, true, "", Set.of()))
+        assertThatThrownBy(() -> new Role(null, "ADMIN", true, "", Set.of(), null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new Role(RoleId.newId(), "ADMIN", true, null, Set.of()))
+        assertThatThrownBy(() -> new Role(RoleId.newId(), null, true, "", Set.of(), null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new Role(RoleId.newId(), "ADMIN", true, "", null))
+        assertThatThrownBy(() -> new Role(RoleId.newId(), "ADMIN", true, null, Set.of(), null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new Role(RoleId.newId(), "ADMIN", true, "", null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void copiesThePermissionSetAndKeepsItImmutable() {
         Set<Permission> permissions = new HashSet<>(Set.of(Permission.ANALYSIS_RUN));
-        Role role = new Role(RoleId.newId(), "ANALYST", false, "", permissions);
+        Role role = new Role(RoleId.newId(), "ANALYST", false, "", permissions, null);
 
         permissions.add(Permission.USER_MANAGE);
 
@@ -34,9 +35,9 @@ class RoleTest {
 
     @Test
     void withPermissionsReplacesOnlyThePermissions() {
-        Role role = new Role(RoleId.newId(), "ANALYST", false, "d", Set.of());
+        Role role = new Role(RoleId.newId(), "ANALYST", false, "d", Set.of(), 2L);
 
         assertThat(role.withPermissions(Set.of(Permission.ANALYSIS_READ)))
-                .isEqualTo(new Role(role.id(), "ANALYST", false, "d", Set.of(Permission.ANALYSIS_READ)));
+                .isEqualTo(new Role(role.id(), "ANALYST", false, "d", Set.of(Permission.ANALYSIS_READ), 2L));
     }
 }

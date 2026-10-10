@@ -111,6 +111,7 @@ and JPQL uses the class name
 | A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYSIS\".\"ANALYST\"[]"`. An enum array also needs `@ColumnTransformer(write = "cast(? as \"ANALYSIS\".\"ANALYST\"[])")` (see below) | `List<Analyst> analysts`, `Set<Permission> permissions` |
 | References to another aggregate | An `@ElementCollection` on a join table, so the foreign key stays; never a `@ManyToMany` between aggregates | `Set<RoleId> roleIds` on `USER_ROLES` |
 | A timestamp | `Instant` on a `TIMESTAMPTZ` column; a domain fact or an audit field ([Timestamps](#timestamps-domain-facts-and-audit-fields)) | `Instant createdAt` |
+| The row version | `@Version @Column(name = "VERSION", nullable = false) Long version` on a `BIGINT` column; `Long version` on the domain record, mapped by name in both directions ([Optimistic locking](#optimistic-locking)) | `Long version` |
 
 Why these choices:
 
@@ -143,11 +144,18 @@ do, by `value`, and are `Serializable`, as JPA requires of an `@EmbeddedId`.
 - **Upsert** is `repository.save(entity)`: an entity with an assigned ID is merged (insert or
   update). A column that must keep its first value is `@Column(updatable = false)`. `USERS.CREATED_AT`
   is kept by `@CreatedDate` and the load-and-copy save of `JpaUserRepositoryAdapter`;
-  `updatable = false` stays on it as a guard.
+  `updatable = false` stays on it as a guard. The entity carries a `@Version`, so a `null` version
+  persists (an existing ID fails) and any other version is merged and checked against the stored one
+  ([Optimistic locking](#optimistic-locking)).
 - **Insert only**: an entity whose insert must fail on an existing ID implements `Persistable` with
   a `@Transient` "new" flag, so `save` is a `persist` (`AnalysisEntity`).
-- **Partial updates** load the managed entity in a `@Transactional` adapter method and copy only
-  the fields that may change. Dirty checking writes them (`JpaAnalysisRepositoryAdapter#update`).
+- **Partial updates** load the managed entity in a `@Transactional` adapter method, compare the
+  record's version with the entity's, and copy only the fields that may change. Dirty checking
+  writes them (`JpaAnalysisRepositoryAdapter#update`).
+- **A write that must reach the database in the call** ends with `repository.saveAndFlush(entity)`,
+  never a `save` (or a change to a managed entity) followed by a separate `repository.flush()`: one
+  call, and the returned entity is the one to map. For a managed entity it is a merge onto itself
+  followed by the flush.
 - **A constraint error that the port promises** surfaces in the call: `saveAndFlush` inside
   `@Transactional`. With JPA, Spring's exception translation yields a
   `DataIntegrityViolationException` for unique and foreign-key violations alike. An adapter whose
@@ -199,6 +207,47 @@ written, and Spring Data JPA auditing sets it (`@CreatedDate`, `@LastModifiedDat
   auditing sets the time. If not, it persists the new entity.
 - **`@CreatedBy` / `@LastModifiedBy`** are the way to record who wrote a row. They need
   authentication and new columns, so they are added with the login, not before.
+
+## Optimistic locking
+
+A write based on a stale copy of a row fails instead of overwriting a newer one.
+
+- **A `VERSION BIGINT NOT NULL DEFAULT 0` column** on every table that is updated in place
+  (`ANALYSES`, `PRESETS`, `USERS`, `ROLES`), and `@Version @Column(name = "VERSION", nullable = false)
+  Long version` on its entity. A wrapper type, so Spring Data treats `version == null` as new. A
+  collection table (`USER_ROLES`) has no column: Hibernate increments the owning row's version when
+  the collection changes.
+- **The version is a field of the domain record** (`Long version` on `Analysis`, `Preset`, `User`,
+  `Role`): `null` on a record the core builds before its first save, set on every record a port
+  returns. Persistence owns it: the core copies it through its transitions and never changes it.
+  It travels through the core, not only the adapter, because the races to catch are between a read
+  in one call and a write in a later one; a check inside the adapter's own transaction would cover
+  only the milliseconds between its read and its write. A plain `Long` keeps persistence types out
+  of the core.
+- **The port promises** (Javadoc on each write method): a record whose version differs from the
+  stored row's fails with `org.springframework.dao.OptimisticLockingFailureException` and leaves the
+  row unchanged; a `null` version means insert, so it fails on an existing ID too. Spring's
+  exception translation already yields `ObjectOptimisticLockingFailureException` (a subclass) for
+  Hibernate's stale-state errors.
+- **Writes return the stored record**, with its new version, so a caller never keeps an outdated
+  one. `insert` stays `void`.
+- **How the adapters check it**:
+  - Merged entities (`JpaPresetRepositoryAdapter`, `JpaRoleRepositoryAdapter`): `saveAndFlush`;
+    Hibernate rejects a detached entity whose version differs from the stored one.
+  - Managed entities (`JpaUserRepositoryAdapter#save`, `JpaAnalysisRepositoryAdapter#update` and
+    `#replaceImported`): the adapter loads the entity, compares the incoming version with the
+    entity's and throws `OptimisticLockingFailureException` on a mismatch (a `null` version
+    included, and a missing row with a non-null version: it was deleted meanwhile), because JPA
+    forbids changing the version of a managed entity. It then copies the fields and calls
+    `saveAndFlush`; the `UPDATE … WHERE VERSION = ?` covers the window between the load and the
+    flush. The compare is a private helper per adapter, moved to `:backend:library:persistence`
+    once a third needs it.
+- **The services translate it** where they call a write: a domain error code `CONCURRENT_UPDATE`
+  (`AnalysisError`, `SettingsError`) with the ID as parameter, and the BFF maps it to HTTP 409
+  (`concurrent_update`). A domain whose ports promise the exception but no service writes yet
+  (identity) gets its code with the first service that writes.
+- **Where the API exposes a write**, the request carries the version (`SavePresetRequest.version`,
+  optional: without it the write applies to what is stored), and the frontend sends the one it read.
 
 ## Configuration
 
@@ -263,7 +312,12 @@ Like every shared library, it holds no domain type and no business rule
     with plain JDBC (`java.sql`). `org.springframework.jdbc` stays banned.
   - Column types are covered by `ddl-auto=validate`.
   - A migration test seeds old-form rows with a test-only Flyway migration in an extra location of
-    its own (under `src/test/resources`), between the real versions.
+    its own (under `src/test/resources`), between the real versions. Its own `Flyway` bean lists both locations, and
+    the scan leaves out the domain's `*PersistenceConfiguration` (`V2SettingsVersionMigrationTest`).
+- **A stale write per entity**: each repository test reads a record twice, writes the first copy
+  (the version rises by one), then writes the stale second copy and expects
+  `OptimisticLockingFailureException`; a read afterwards returns the first write unchanged. A new
+  record starts at version 0, and saving a `null`-version record with an existing ID fails.
 - **`DomainPersistenceConventionsTest`** (abstract, test fixtures): each domain with persistence
   extends it once, naming its configuration class, its schema and its Flyway bean method, so it
   checks the domain's real configuration. Its four tests:
@@ -294,11 +348,13 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 | No `org.springframework.jdbc`, `java.sql`, `javax.sql` in production code (`DataSource` allowed in `*PersistenceConfiguration`) | `PersistenceArchitectureTest.production_code_does_not_use_plain_sql` |
 | No `org.springframework.jdbc` in test code | Checkstyle `IllegalImport` (`config/checkstyle/checkstyle.xml`) |
 | No native query | `PersistenceArchitectureTest.no_native_queries` |
+| No separate `repository.flush()`: writes end with `saveAndFlush` | `writes_use_save_and_flush` |
 | Entities, embeddables, converters in `adapter.<port>.entity`, and nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities` |
 | Spring Data repositories next to their adapter | `spring_data_repositories_live_in_persistence_roots`, `port_package_roots_hold_only_adapters` |
 | Suffixes `Entity`, `Embeddable`, `AttributeConverter`, `JpaRepository` | `persistence_classes_are_named_by_kind` |
 | Enums as PostgreSQL enum types or arrays, never text; an enum array carries its `@ColumnTransformer` cast | `enums_are_not_stored_as_text` |
 | An entity with an auditing field has `@EntityListeners(AuditingEntityListener.class)` | `audited_entities_have_the_auditing_listener` |
+| Every entity has a `@Version` field | `entities_have_a_version` |
 | The core has no persistence dependency | `domain_core_does_not_depend_on_infrastructure` |
 | Entities match their migrations | `ddl-auto=validate` in the adapter tests and the Spring Boot tests |
 | Entities mapped to the domain's schema, types qualified | `entitiesAreMappedToTheDomainSchema` of the domain's `<D>PersistenceConventionsTest` |

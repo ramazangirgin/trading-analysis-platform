@@ -261,6 +261,8 @@ export interface components {
       values: {
         [key: string]: unknown
       }
+      /** Format: int64 */
+      version?: number
     }
     PresetDto: {
       id?: string
@@ -270,6 +272,8 @@ export interface components {
       }
       /** Format: date-time */
       updatedAt?: string
+      /** Format: int64 */
+      version?: number
     }
     ImportResultDto: {
       /** Format: int32 */

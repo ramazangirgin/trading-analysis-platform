@@ -5,5 +5,6 @@ public enum AnalysisError {
     INVALID_SPEC,
     NOT_FOUND,
     ALREADY_RUNNING,
-    NOT_RUNNING
+    NOT_RUNNING,
+    CONCURRENT_UPDATE
 }

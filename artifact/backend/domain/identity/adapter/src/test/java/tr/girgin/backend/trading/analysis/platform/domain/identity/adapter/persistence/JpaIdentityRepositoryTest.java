@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.entity.RoleIdEmbeddable;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.entity.UserIdEmbeddable;
@@ -77,11 +78,12 @@ class JpaIdentityRepositoryTest {
                 Optional.of(LOCKED_UNTIL),
                 null,
                 null,
-                Set.of(admin.id(), viewer.id()));
+                Set.of(admin.id(), viewer.id()),
+                null);
 
         User saved = users.save(user);
 
-        assertThat(saved).isEqualTo(audited(user, MutableTestClock.START, MutableTestClock.START));
+        assertThat(saved).isEqualTo(audited(user, MutableTestClock.START, MutableTestClock.START, 0L));
         assertThat(users.findById(user.id())).contains(saved);
     }
 
@@ -112,8 +114,7 @@ class JpaIdentityRepositoryTest {
     void updatingAUserReplacesItsFieldsAndRoleAssignments() {
         Role first = saveRole("first-update", Set.of());
         Role second = saveRole("second-update", Set.of());
-        User user = user("update-me", Set.of(first.id()));
-        users.save(user);
+        User user = users.save(user("update-me", Set.of(first.id())));
         clock.advance(Duration.ofHours(1));
         User changed = new User(
                 user.id(),
@@ -125,12 +126,13 @@ class JpaIdentityRepositoryTest {
                 Optional.of(LOCKED_UNTIL),
                 null,
                 null,
-                Set.of(second.id()));
+                Set.of(second.id()),
+                user.version());
 
         User saved = users.save(changed);
 
         Instant later = MutableTestClock.START.plus(Duration.ofHours(1));
-        assertThat(saved).isEqualTo(audited(changed, MutableTestClock.START, later));
+        assertThat(saved).isEqualTo(audited(changed, MutableTestClock.START, later, 1L));
         assertThat(users.findById(user.id())).contains(saved);
         assertThat(users.findAll())
                 .filteredOn(found -> found.id().equals(user.id()))
@@ -197,8 +199,78 @@ class JpaIdentityRepositoryTest {
                         other.lockedUntil(),
                         null,
                         null,
-                        other.roleIds())))
+                        other.roleIds(),
+                        other.version())))
                 .isInstanceOf(DuplicateKeyException.class);
+    }
+
+    @Test
+    void aNewUserStartsAtVersionZeroAndEveryWriteAddsOne() {
+        User first = users.save(user("version-steps", Set.of()));
+        User second = users.save(first);
+
+        assertThat(first.version()).isZero();
+        assertThat(second.version()).isEqualTo(1);
+        assertThat(users.findById(first.id()).orElseThrow().version()).isEqualTo(1);
+    }
+
+    @Test
+    void aStaleUserWriteFailsAndLeavesTheNewerRowUnchanged() {
+        Role role = saveRole("stale-user-role", Set.of());
+        User saved = users.save(user("stale-user", Set.of()));
+        User firstCopy = users.findById(saved.id()).orElseThrow();
+        User staleCopy = users.findById(saved.id()).orElseThrow();
+        User firstWrite = users.save(firstCopy.withRoleIds(Set.of(role.id())));
+
+        assertThat(firstWrite.version()).isEqualTo(1);
+        assertThatThrownBy(() -> users.save(staleCopy.withRoleIds(Set.of())))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+
+        assertThat(users.findById(saved.id())).contains(firstWrite);
+        assertThat(users.findById(saved.id()).orElseThrow().roleIds()).containsExactly(role.id());
+    }
+
+    @Test
+    void savingAUserWithoutAVersionFailsOnAnExistingId() {
+        User saved = users.save(user("no-version-user", Set.of()));
+
+        assertThatThrownBy(() -> users.save(user(saved, null))).isInstanceOf(OptimisticLockingFailureException.class);
+
+        assertThat(users.findById(saved.id())).contains(saved);
+    }
+
+    @Test
+    void savingAUserVersionForADeletedRowFails() {
+        User saved = users.save(user("deleted-user", Set.of()));
+        userRepository.deleteById(userKey(saved.id()));
+
+        assertThatThrownBy(() -> users.save(saved)).isInstanceOf(OptimisticLockingFailureException.class);
+        assertThat(users.findById(saved.id())).isEmpty();
+    }
+
+    @Test
+    void aStaleRoleWriteFailsAndLeavesTheNewerRowUnchanged() {
+        Role saved = saveRole("stale-role", Set.of(Permission.ANALYSIS_READ));
+        Role firstCopy = roles.findById(saved.id()).orElseThrow();
+        Role staleCopy = roles.findById(saved.id()).orElseThrow();
+        Role firstWrite = roles.save(firstCopy.withPermissions(Set.of(Permission.AUDIT_READ)));
+
+        assertThat(saved.version()).isZero();
+        assertThat(firstWrite.version()).isEqualTo(1);
+        assertThatThrownBy(() -> roles.save(staleCopy.withPermissions(Set.of(Permission.USER_READ))))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+
+        assertThat(roles.findById(saved.id())).contains(firstWrite);
+    }
+
+    @Test
+    void savingARoleWithoutAVersionFailsOnAnExistingId() {
+        Role saved = saveRole("no-version-role", Set.of());
+
+        assertThatThrownBy(() -> roles.save(new Role(saved.id(), "other", false, "", Set.of(), null)))
+                .isInstanceOf(DataAccessException.class);
+
+        assertThat(roles.findById(saved.id())).contains(saved);
     }
 
     @Test
@@ -218,10 +290,15 @@ class JpaIdentityRepositoryTest {
                 Set.of(Permission.ANALYSIS_RUN, Permission.ANALYSIS_READ, Permission.PRESET_READ));
         assertThat(roles.findById(role.id())).contains(role);
 
-        Role changed = new Role(
-                role.id(), role.name(), true, "now built in", Set.of(Permission.ANALYSIS_READ, Permission.AUDIT_READ));
-        roles.save(changed);
+        Role changed = roles.save(new Role(
+                role.id(),
+                role.name(),
+                true,
+                "now built in",
+                Set.of(Permission.ANALYSIS_READ, Permission.AUDIT_READ),
+                role.version()));
 
+        assertThat(changed.version()).isEqualTo(1);
         assertThat(roles.findById(role.id())).contains(changed);
         assertThat(roles.findAll()).contains(changed).doesNotContain(role);
     }
@@ -275,9 +352,7 @@ class JpaIdentityRepositoryTest {
     }
 
     private Role saveRole(String name, Set<Permission> permissions) {
-        Role role = new Role(RoleId.newId(), name, false, "", permissions);
-        roles.save(role);
-        return role;
+        return roles.save(new Role(RoleId.newId(), name, false, "", permissions, null));
     }
 
     private static User user(String username, Set<RoleId> roleIds) {
@@ -291,10 +366,15 @@ class JpaIdentityRepositoryTest {
                 Optional.empty(),
                 null,
                 null,
-                roleIds);
+                roleIds,
+                null);
     }
 
-    private static User audited(User user, Instant createdAt, Instant updatedAt) {
+    private static User user(User user, Long version) {
+        return audited(user, user.createdAt(), user.updatedAt(), version);
+    }
+
+    private static User audited(User user, Instant createdAt, Instant updatedAt, Long version) {
         return new User(
                 user.id(),
                 user.username(),
@@ -305,7 +385,8 @@ class JpaIdentityRepositoryTest {
                 user.lockedUntil(),
                 createdAt,
                 updatedAt,
-                user.roleIds());
+                user.roleIds(),
+                version);
     }
 
     private static RoleIdEmbeddable roleKey(RoleId id) {

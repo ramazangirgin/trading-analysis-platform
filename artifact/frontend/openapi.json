@@ -620,6 +620,10 @@
                     "values": {
                         "type": "object",
                         "additionalProperties": {}
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
                     }
                 },
                 "required": [
@@ -643,6 +647,10 @@
                     "updatedAt": {
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
                     }
                 }
             },

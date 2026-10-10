@@ -20,10 +20,15 @@ export const settingsApi = {
   createPreset(name: string, values: Record<string, unknown>): Promise<Preset> {
     return request('/api/presets', { method: 'POST', body: JSON.stringify({ name, values }) })
   },
-  updatePreset(id: string, name: string, values: Record<string, unknown>): Promise<Preset> {
+  updatePreset(
+    id: string,
+    name: string,
+    values: Record<string, unknown>,
+    version?: number,
+  ): Promise<Preset> {
     return request(`/api/presets/${encodeURIComponent(id)}`, {
       method: 'PUT',
-      body: JSON.stringify({ name, values }),
+      body: JSON.stringify({ name, values, version }),
     })
   },
   deletePreset(id: string): Promise<void> {

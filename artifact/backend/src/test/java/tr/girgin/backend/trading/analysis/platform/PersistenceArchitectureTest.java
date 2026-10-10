@@ -28,6 +28,7 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Version;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
@@ -121,6 +122,17 @@ class PersistenceArchitectureTest {
             .because("a native query is plain SQL: queries are derived, JPQL or Specifications");
 
     @ArchTest
+    static final ArchRule writes_use_save_and_flush = noClasses()
+            .that()
+            .resideInAPackage(ROOT)
+            .should()
+            .callMethodWhere(DescribedPredicate.describe(
+                    "flush() of a Spring Data repository",
+                    call -> call.getName().equals("flush")
+                            && call.getTargetOwner().isAssignableTo(Repository.class)))
+            .because("a write that must reach the database in the call is one saveAndFlush(entity)");
+
+    @ArchTest
     static final ArchRule entities_live_in_entity_packages = classes()
             .that(JPA_MAPPING)
             .should()
@@ -195,6 +207,14 @@ class PersistenceArchitectureTest {
             .should(haveTheAuditingListener())
             .because("without the listener the auditing annotations are silently ignored, and a NOT NULL column"
                     + " fails only on insert");
+
+    @ArchTest
+    static final ArchRule entities_have_a_version = classes()
+            .that()
+            .areAnnotatedWith(Entity.class)
+            .should(haveAVersionField())
+            .because("a write from a stale copy must fail instead of overwriting a newer row: every table that"
+                    + " is updated in place has a VERSION column");
 
     // --- Shared libraries --------------------------------------------------------------------
 
@@ -278,6 +298,18 @@ class PersistenceArchitectureTest {
                             javaClass,
                             javaClass.getName() + " has an auditing field but no"
                                     + " @EntityListeners(AuditingEntityListener.class)"));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> haveAVersionField() {
+        return new ArchCondition<>("have a field annotated with @Version") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                if (javaClass.getFields().stream().noneMatch(field -> field.isAnnotatedWith(Version.class))) {
+                    events.add(SimpleConditionEvent.violated(
+                            javaClass, javaClass.getName() + " has no field annotated with @Version"));
                 }
             }
         };

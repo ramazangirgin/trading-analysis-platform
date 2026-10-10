@@ -22,7 +22,11 @@ public interface UserRepositoryPort {
      * Inserts or updates the user and replaces its role assignments with {@link User#roleIds()}, in
      * one transaction. A username taken by another user, in any case, fails with Spring's
      * {@code DuplicateKeyException}. Returns the stored user, with the audited {@code createdAt} and
-     * {@code updatedAt} set by persistence.
+     * {@code updatedAt} set by persistence and its new {@link User#version()}.
+     *
+     * <p>A user whose version differs from the stored one fails with Spring's
+     * {@code OptimisticLockingFailureException} and leaves the row unchanged; a {@code null} version means
+     * "insert", so it fails on an existing ID as well.
      */
     User save(User user);
 }

@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
@@ -217,6 +218,22 @@ class AnalysisService
                 });
     }
 
+    /**
+     * A record someone else wrote meanwhile is not overwritten.
+     *
+     * @throws AnalysisException with CONCURRENT_UPDATE when the record's version is not the stored one
+     */
+    private void update(Analysis analysis) {
+        try {
+            repository.update(analysis);
+        } catch (OptimisticLockingFailureException _) {
+            throw new AnalysisException(
+                    AnalysisError.CONCURRENT_UPDATE,
+                    "Analysis was changed concurrently: " + analysis.id(),
+                    Map.of("id", analysis.id().value()));
+        }
+    }
+
     /** Starts queued runs while slots are free. Caller holds the lock. */
     @SuppressWarnings("checkstyle:IllegalCatch") // any start failure fails the run, not the queue
     private void dispatch() {
@@ -226,7 +243,7 @@ class AnalysisService
             try {
                 RunHandle handle = runner.start(id, analysis.spec(), credentials.environment(), new Sink(id));
                 running.put(id, handle);
-                repository.update(analysis.running(clock.instant(), handle.ref()));
+                update(analysis.running(clock.instant(), handle.ref()));
                 log.info("Started {} ({})", id, handle.ref());
             } catch (RuntimeException e) {
                 log.error("Could not start {}", id, e);
@@ -241,7 +258,7 @@ class AnalysisService
      * end is recorded and a RUN_FINISHED event appended, so replaying clients see it too.
      */
     private void end(Analysis analysis, RunOutcome outcome, String errorCode, String message) {
-        repository.update(analysis.finished(outcome.toStatus(), clock.instant(), errorCode, message));
+        update(analysis.finished(outcome.toStatus(), clock.instant(), errorCode, message));
         long seq = eventStore.read(analysis.id(), 0).stream()
                         .mapToLong(RunEvent::seq)
                         .max()
@@ -297,7 +314,7 @@ class AnalysisService
                     default -> analysis;
                 };
                 if (updated != analysis) {
-                    repository.update(updated);
+                    update(updated);
                 }
             }
             hub.publish(id, event);

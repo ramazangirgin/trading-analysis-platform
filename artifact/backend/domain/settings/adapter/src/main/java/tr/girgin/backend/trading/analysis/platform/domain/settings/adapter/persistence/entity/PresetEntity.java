@@ -5,6 +5,7 @@ import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -28,6 +29,11 @@ public class PresetEntity {
     @LastModifiedDate
     @Column(name = "UPDATED_AT", nullable = false)
     private Instant updatedAt;
+
+    // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.
+    @Version
+    @Column(name = "VERSION", nullable = false)
+    private Long version;
 
     public PresetEntity() {}
 
@@ -61,5 +67,13 @@ public class PresetEntity {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

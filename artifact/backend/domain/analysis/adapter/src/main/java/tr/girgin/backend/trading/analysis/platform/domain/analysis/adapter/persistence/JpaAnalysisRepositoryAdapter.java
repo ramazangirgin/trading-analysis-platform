@@ -2,7 +2,9 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.pers
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
@@ -45,24 +47,43 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         repository.save(toEntity.map(analysis));
     }
 
-    /** The spec and creation time never change after insert; dirty checking writes the run state. */
+    /**
+     * The spec and creation time never change after insert; dirty checking writes the run state. A managed
+     * entity's version cannot be changed, so the record's version is compared with the loaded one first.
+     */
     @Override
     @Transactional
-    public void update(Analysis analysis) {
+    public Analysis update(Analysis analysis) {
         AnalysisEntity stored = repository
                 .findById(toEntityId.map(analysis.id()))
                 .orElseThrow(() -> new IllegalStateException("No analysis " + analysis.id() + " to update"));
+        requireVersion(stored, analysis);
         stored.applyRunState(toEntity.map(analysis));
+        return toAnalysis.map(repository.saveAndFlush(stored));
     }
 
     /** An imported record follows its files, spec and creation time included. */
     @Override
     @Transactional
-    public void replaceImported(Analysis analysis) {
+    public Analysis replaceImported(Analysis analysis) {
         AnalysisEntity stored = repository
                 .findByIdAndSource(toEntityId.map(analysis.id()), AnalysisSource.EXTERNAL)
                 .orElseThrow(() -> new IllegalStateException("No imported analysis " + analysis.id() + " to replace"));
+        requireVersion(stored, analysis);
         stored.replaceImported(toEntity.map(analysis));
+        return toAnalysis.map(repository.saveAndFlush(stored));
+    }
+
+    /**
+     * The flush's {@code UPDATE ... WHERE VERSION = ?} covers the time between the load and the flush.
+     *
+     * @throws OptimisticLockingFailureException when the record's version is not the stored one
+     */
+    private static void requireVersion(AnalysisEntity stored, Analysis analysis) {
+        if (!Objects.equals(stored.getVersion(), analysis.version())) {
+            throw new OptimisticLockingFailureException(
+                    "Analysis " + analysis.id() + " was changed by someone else since it was read");
+        }
     }
 
     @Override

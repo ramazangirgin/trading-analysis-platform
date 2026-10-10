@@ -13,7 +13,7 @@ public interface AnalysisExceptionToApiExceptionMapper {
         HttpStatus status = switch (source.error()) {
             case INVALID_SPEC -> HttpStatus.BAD_REQUEST;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case ALREADY_RUNNING, NOT_RUNNING -> HttpStatus.CONFLICT;
+            case ALREADY_RUNNING, NOT_RUNNING, CONCURRENT_UPDATE -> HttpStatus.CONFLICT;
         };
         return new ApiException(
                 status, source.error().name().toLowerCase(Locale.ROOT), source.getMessage(), source.params());
