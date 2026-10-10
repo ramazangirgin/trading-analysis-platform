@@ -24,7 +24,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 /**
  * V2 adds the optimistic-lock columns in place: the role, user and role assignment the test-only migration
@@ -93,11 +92,6 @@ class V2IdentityVersionMigrationTest {
             basePackageClasses = JpaUserRepositoryAdapter.class,
             excludeFilters = @ComponentScan.Filter(Configuration.class))
     static class Config {
-
-        @Bean
-        DataSource dataSource() {
-            return PostgresTestDatabase.create().dataSource();
-        }
 
         @Bean(initMethod = "migrate")
         Flyway identityFlyway(DataSource dataSource) {

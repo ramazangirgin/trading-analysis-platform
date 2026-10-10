@@ -27,7 +27,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ra
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.DurationToMillisMapper;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 /**
  * V2 adds the optimistic-lock column in place: the analyses the test-only migration {@code V1_1} (in
@@ -95,11 +94,6 @@ class V2AnalysisVersionMigrationTest {
             basePackageClasses = {JpaAnalysisRepositoryAdapter.class, DurationToMillisMapper.class},
             excludeFilters = @ComponentScan.Filter(Configuration.class))
     static class Config {
-
-        @Bean
-        DataSource dataSource() {
-            return PostgresTestDatabase.create().dataSource();
-        }
 
         @Bean(initMethod = "migrate")
         Flyway analysisFlyway(DataSource dataSource) {

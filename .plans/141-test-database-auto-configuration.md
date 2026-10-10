@@ -189,6 +189,7 @@ Spring context, so it uses the same container definition without one.
 ### WP2: Adapter and application tests off their own data source
 
 - **Depends on**: WP1
+- **Status**: done
 - **Files**:
   - `artifact/backend/domain/analysis/adapter/src/test/java/…/domain/analysis/adapter/AdapterTestSupport.java`
   - `…/domain/analysis/adapter/persistence/V2AnalysisVersionMigrationTest.java`
@@ -201,13 +202,13 @@ Spring context, so it uses the same container definition without one.
     `…/platform/PresetsApiIntegrationTest.java`
   - `…/platform/DoNotIncludeTestFixtures.java` (Javadoc only)
 - **Steps**:
-  - [ ] Remove the `@Bean DataSource` and the now-unused imports from the six adapter tests.
-  - [ ] `TestPlatformHome`: drop the database and the `spring.datasource.*` registration, and fix the
+  - [x] Remove the `@Bean DataSource` and the now-unused imports from the six adapter tests.
+  - [x] `TestPlatformHome`: drop the database and the `spring.datasource.*` registration, and fix the
         Javadoc.
-  - [ ] `@Import(TestDatabaseConfiguration.class)` on the three `@SpringBootTest` classes.
-  - [ ] `DoNotIncludeTestFixtures` Javadoc: name `@JpaAdapterTest` and `TestDatabaseConfiguration`
+  - [x] `@Import(TestDatabaseConfiguration.class)` on the three `@SpringBootTest` classes.
+  - [x] `DoNotIncludeTestFixtures` Javadoc: name `@JpaAdapterTest` and `TestDatabaseConfiguration`
         instead of `PostgresTestDatabase`.
-  - [ ] `git grep PostgresTestDatabase` finds nothing outside `.plans/`.
+  - [x] `git grep PostgresTestDatabase` finds nothing outside `.plans/`.
 - **Tests**: no assertion changes. Every adapter test and application test passes on the
   auto-configured data source, which proves the wiring. `ddl-auto=validate` still validates every
   module's entities against its migrations. The migration tests still read their seeded rows, which

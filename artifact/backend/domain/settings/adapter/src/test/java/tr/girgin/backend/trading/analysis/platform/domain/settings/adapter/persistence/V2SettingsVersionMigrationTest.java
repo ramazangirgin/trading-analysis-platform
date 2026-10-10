@@ -15,7 +15,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 /**
  * V2 adds the optimistic-lock column in place: the presets the test-only migration {@code V1_1} (in
@@ -62,11 +61,6 @@ class V2SettingsVersionMigrationTest {
             basePackageClasses = JpaPresetRepositoryAdapter.class,
             excludeFilters = @ComponentScan.Filter(Configuration.class))
     static class Config {
-
-        @Bean
-        DataSource dataSource() {
-            return PostgresTestDatabase.create().dataSource();
-        }
 
         @Bean(initMethod = "migrate")
         Flyway settingsFlyway(DataSource dataSource) {

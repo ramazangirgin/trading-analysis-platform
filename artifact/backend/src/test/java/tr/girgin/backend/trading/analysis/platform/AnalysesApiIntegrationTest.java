@@ -18,16 +18,19 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
 
 /**
  * The whole stack over HTTP: REST and SSE through the BFF, the analysis domain, a migrated
  * PostgreSQL database, and a shell script standing in for ta-runner.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(TestDatabaseConfiguration.class)
 class AnalysesApiIntegrationTest {
 
     private static final Path HOME = TestPlatformHome.create();

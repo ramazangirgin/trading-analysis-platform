@@ -6,9 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
-import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -19,7 +17,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.DurationToMillisMapper;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 /**
  * All analysis adapters wired as in the application, against a temporary platform home and a
@@ -70,11 +67,5 @@ public abstract class AdapterTestSupport {
     @Configuration
     @AutoConfigurationPackage
     @ComponentScan(basePackageClasses = {AdapterTestSupport.class, DurationToMillisMapper.class})
-    static class Config {
-
-        @Bean
-        DataSource dataSource() {
-            return PostgresTestDatabase.create().dataSource();
-        }
-    }
+    static class Config {}
 }
