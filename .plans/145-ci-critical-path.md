@@ -158,18 +158,19 @@ jar …") is kept.
 
 ### WP2: CI workflow
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `.github/workflows/ci.yml`
 - **Steps**:
-  - [ ] note: CI runs the e2e tests the way WP1 configures them, but neither package's files depend
+  - [x] note: CI runs the e2e tests the way WP1 configures them, but neither package's files depend
         on the other's, so they can be implemented in parallel
-  - [ ] `build`: one step `./gradlew --console=plain spotlessCheck :frontend:pnpmLint build`,
+  - [x] `build`: one step `./gradlew --console=plain spotlessCheck :frontend:pnpmLint build`,
         with the comment from design 4
-  - [ ] new `runner-image` job (design 2), and `images` reduced and renamed, `needs: [build, runner-image]`
-  - [ ] `e2e`: venv cache, conditional uv cache, `setup-gradle` and the Gradle setup only on a miss,
+  - [x] new `runner-image` job (design 2), and `images` reduced and renamed, `needs: [build, runner-image]`
+  - [x] `e2e`: venv cache, conditional uv cache, `setup-gradle` and the Gradle setup only on a miss,
         `e2e/node_modules` in the Node cache, one step per install, e2e format-check (design 3)
-  - [ ] `ci-passed` needs `runner-image`
-  - [ ] header comment (design 5)
+  - [x] `ci-passed` needs `runner-image`
+  - [x] header comment (design 5)
 - **Tests**: the pull request's own CI run is the test.
   - Every job passes, and *CI passed* lists `runner-image` among its results.
   - `runner-image` starts at the same time as `build`.
