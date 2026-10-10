@@ -217,19 +217,20 @@ Spring context, so it uses the same container definition without one.
 ### WP3: Renovate and documentation
 
 - **Depends on**: WP1 (the file name)
+- **Status**: done
 - **Files**:
   - `.github/renovate.json5`
   - `docs/coding-convention/backend-java-persistence.md`
   - `artifact/backend/library/persistence/README.md`
   - `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py` (version bump)
 - **Steps**:
-  - [ ] `renovate.json5`: `managerFilePatterns` matches `/PostgresTestContainer\\.java$/` instead of
+  - [x] `renovate.json5`: `managerFilePatterns` matches `/PostgresTestContainer\\.java$/` instead of
         `PostgresTestDatabase`, and the comment above it names the new class. The `matchStrings`
         regex (`postgres:<tag>`) is unchanged, so the literal stays `"postgres:18.6"` in that file.
         Check with `npx --yes --package renovate -- renovate-config-validator .github/renovate.json5`
         if the repository's checks do not already validate it.
-  - [ ] Docs as in "Docs to update".
-  - [ ] `mise run version:bump minor` (3.1.0 → 3.2.0, or the next minor above `main` at the time).
+  - [x] Docs as in "Docs to update".
+  - [x] `mise run version:bump minor` (3.1.0 → 3.2.0, or the next minor above `main` at the time).
 - **Tests**: `mise run check` (formatting, Checkstyle, the version check). The Renovate config is
   validated as above.
 
