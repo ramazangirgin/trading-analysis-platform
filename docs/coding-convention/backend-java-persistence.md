@@ -184,7 +184,7 @@ A write based on a stale copy of a row fails instead of overwriting a newer one.
     Hibernate rejects a detached entity whose version differs from the stored one.
   - Managed entities (`JpaUserRepositoryAdapter#save`, `JpaAnalysisRepositoryAdapter#update` and
     `#replaceImported`): the adapter loads the entity, compares the incoming version with the
-    entity's and throws `ObjectOptimisticLockingFailureException` on a mismatch (a `null` version
+    entity's and throws `OptimisticLockingFailureException` on a mismatch (a `null` version
     included, and a missing row with a non-null version: it was deleted meanwhile), because JPA
     forbids changing the version of a managed entity. It then copies the fields and flushes; the
     `UPDATE … WHERE VERSION = ?` covers the window between the load and the flush. The compare is a
