@@ -98,8 +98,9 @@ abstract class DomainPersistenceTestsCheck : DefaultTask() {
     @get:Internal
     abstract val adapters: MapProperty<String, Directory>
 
+    // The result depends on where a file is (its adapter, its folder), not only on its content.
     @get:InputFiles
-    @get:PathSensitive(PathSensitivity.NONE)
+    @get:PathSensitive(PathSensitivity.ABSOLUTE)
     abstract val sources: ConfigurableFileCollection
 
     /** Written on success: a task without outputs is never up to date. */
