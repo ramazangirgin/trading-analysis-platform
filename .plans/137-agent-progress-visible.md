@@ -201,13 +201,13 @@ waits with `Monitor`).
 ### WP4: The skill and the docs
 
 - **Depends on**: WP2, WP3
-- **Status**: open
+- **Status**: not done: edits to .claude/skills/develop-issue/SKILL.md are denied in this session; docs, README and version bump done
 - **Files**: `.claude/skills/develop-issue/SKILL.md`, `docs/agentic-development.md`, `README.md`, `scripts/agent/test_agent_json.py` (docstring only, if it names the stream helper's usage), version files (`scripts/version.sh bump minor`)
 - **Steps**:
   - [ ] `SKILL.md`: rewrite "Long-running scripts" as in the design (start as is, no pipes; `run.log` and stream paths; `tail -f` before each long step; `Monitor` on `status.sh --follow`, one line per milestone, stop it at the end; `status.sh` on request; tool lines only on a failure); steps 4 and 5.3 refer to it; steps 5.2 and 6 report CI and the update with `main` as milestones.
-  - [ ] `docs/agentic-development.md`: step 4: the milestone lines (`agent: >> `, what they cover, `grep '^agent: >> ' run.log`), the paths printed first, `mise run agent:status` and `status.sh --follow`; the "state directory" bullet names the milestones in `run.log`; "From Claude Code, with one approval: the plan": how the session reports progress (one line per milestone, from `run.log`, the status on request) and the `tail -f` command.
-  - [ ] `README.md`, "Agentic development": one sentence that `mise run agent:status <branch>` shows where a run is and that `/develop-issue` reports each milestone as it happens.
-  - [ ] Bump the version: `scripts/version.sh bump minor`.
+  - [x] `docs/agentic-development.md`: step 4: the milestone lines (`agent: >> `, what they cover, `grep '^agent: >> ' run.log`), the paths printed first, `mise run agent:status` and `status.sh --follow`; the "state directory" bullet names the milestones in `run.log`; "From Claude Code, with one approval: the plan": how the session reports progress (one line per milestone, from `run.log`, the status on request) and the `tail -f` command.
+  - [x] `README.md`, "Agentic development": one sentence that `mise run agent:status <branch>` shows where a run is and that `/develop-issue` reports each milestone as it happens.
+  - [x] Bump the version: `scripts/version.sh bump minor`.
 - **Tests**: `mise run check`; the docs' commands match the scripts (`status.sh` usage, the milestone prefix).
 
 ## Tests

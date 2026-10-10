@@ -91,7 +91,7 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   `done` or `not done` are skipped.
 - **The state directory is inside `.git`.** Everything a run leaves behind goes to
   `.git/agent/<issue>-<slug>/` of the plan branch: `run.log` (the scripts' and agents' progress
-  lines), every prompt, agent result (`*.json`) and stream (`*.jsonl`), `current` (the package the
+  lines, with the milestone lines `agent: >> …` next to the tool lines), every prompt, agent result (`*.json`) and stream (`*.jsonl`), `current` (the package the
   implementation is on) and `run.pid` (the lock). Inside `.git` it is never committed, survives
   `git clean`, and is shared by the worktrees of the repository. A later run, even of another
   script, finds it. It is not deleted by the scripts; delete it after the merge.
@@ -208,7 +208,16 @@ call, message, to-do) is printed as one line with the time since it started, and
 minutes (a long build) a "still working" line. The same lines go to
 `.git/agent/<issue>-<slug>/run.log` (appended, one header line per start), next to every agent's
 result and full stream (`wp-WP2.json`, `wp-WP2.jsonl`, `review-1.json`, …); the paths are printed
-when the agent starts. A second run on the same branch is refused while one is active (the lock,
+as the first lines of every step.
+
+Between the tool lines, one **milestone line** per event starts with `agent: >> `: a work package
+started or done, tests, `mise run check` and its result, a commit, a push, the draft pull request,
+CI waiting, passed or failed (with the failed jobs), a review round and its findings, a fix round and
+each finding's outcome, finalise, and a stop with its reason. `grep '^agent: >> ' run.log` lists
+them. `mise run agent:status plan/32-compare-runs` (or a pull request number) shows where a run is:
+the active process, the work package, the latest milestones and the end of `run.log`.
+`scripts/agent/status.sh --follow <branch | pr>` prints only the milestones written from now on.
+A second run on the same branch is refused while one is active (the lock,
 `run.pid` in the same directory).
 
 The scripts run from a copy of `scripts/agent/` taken at start, so switching branches does not
@@ -258,7 +267,10 @@ only when asked to in the session.
 It plans with the `plan-from-issue` skill, invoked from it, and runs the same scripts one step at a time
 (`implement.sh`, then `next.sh --dry-run` for the next step and that step's script), so the pull
 request and its state comments are the same as with `mise run agent:run`, and `mise run agent:next`
-can take over the loop at any point. Started again, it reads where the issue stands from
+can take over the loop at any point. While a step runs, the session reports one line per milestone
+as it happens (from `run.log`, through `status.sh --follow`) and nothing for the agents' tool calls;
+ask it for the status at any time (`status.sh`). It prints the command to follow a step in a
+terminal first: `tail -f .git/agent/<issue>-<slug>/run.log`. Started again, it reads where the issue stands from
 its plan branches and pull requests and continues there.
 
 ### 5. When a run stops early
