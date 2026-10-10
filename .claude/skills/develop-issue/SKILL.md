@@ -36,10 +36,40 @@ when:
 Merging is never part of the run. It is the developer's decision; merge only when the developer asks
 for it in this session (step 8).
 
-Long-running scripts (the agents, CI): start them with the Bash tool's `run_in_background`. Do not
-poll. When the completion notification arrives, read the end of the output and report it. Each
-agent prints the path of its full stream (`$TMPDIR/agent-<pid>/<step>.jsonl`). Keep that path for
-when something goes wrong.
+## Long-running steps and their progress
+
+The step scripts (`implement.sh`, `fix-ci.sh`, `review.sh`, `fix.sh`, `finalise.sh`) and the CI
+waits take minutes to tens of minutes. The developer follows them from this session, one line per
+milestone, as they happen:
+
+1. **Start the script as it is**, with the Bash tool's `run_in_background`. Never pipe it through
+   `tail`, `head` or `grep`: `tail` prints nothing until its input ends, so the background output
+   stays empty for the whole step.
+2. **Print where it logs** before the step: every script appends its progress to
+   `.git/agent/<n>-<slug>/run.log` in the main repository's `.git` (shared by the worktrees; the
+   script prints the path as its first line). Say `tail -f <run.log>`, so the developer can follow
+   it in a terminal.
+3. **Watch the milestones**: right after the start, run
+   `cd <dir> && scripts/agent/status.sh --follow <pr | plan branch>` with the `Monitor` tool
+   (`timeout_ms` 1800000; re-arm it if it expires before the step ends). It prints only the
+   milestone lines (`agent: >> …`): a work package started, done or not done, tests,
+   `mise run check` and its result, a commit, a push, the draft pull request, CI, a review round and
+   its findings, a fix round and each finding's outcome, finalise, a failure. Pass each one on as
+   one short line as it arrives (`WP2 (2 of 4): tests`, `review R1: 3 findings (0 CRITICAL, 2 MAJOR,
+   1 MINOR)`). Say nothing about the agents' individual tool calls (`agent:   [mm:ss] …`).
+4. **When the step's completion notification arrives**, stop the monitor (`TaskStop`), read the end
+   of the step's output and report the outcome.
+5. **On a failure** (a non-zero exit, `agent: >> failed: …`), show the end of the step's output and
+   of `run.log`, tool lines included. Each agent's full stream is
+   `.git/agent/<n>-<slug>/<step>.jsonl` (`wp-WP1.jsonl`, `review-1.jsonl`, `fix-R1-2.jsonl`,
+   `fix-ci-1.jsonl`); `run_agent` prints it as `stream: <path>`.
+
+When the developer asks for the status, run `cd <dir> && scripts/agent/status.sh <pr | plan branch>`
+(`mise run agent:status`) and summarise it: the active run, the work package, the latest milestones.
+Do not poll otherwise.
+
+The CI waits (step 5.2) and the update with `main` (step 6) are this session's own steps: report
+them as milestones too (CI started, passed or failed with the failing jobs; updated with `main`).
 
 ## The issue's own folder
 
@@ -144,13 +174,17 @@ report ("plan 2 of 3: plan/<n>-<slug>").
 ## 4. Implement
 
 Command: `scripts/agent/implement.sh plan/<n>-<slug>` (`mise run agent:implement`), in the issue's
-folder, in the background. The developer agent (`AGENT_MODEL`, Sonnet by default) implements the
-plan with tests, runs `mise run check`, bumps the version and commits. The script pushes the branch
-and opens a **draft** pull request labelled `agent`. Expect tens of minutes. Mention the settings
-that apply when the developer has set any (`AGENT_*` in the environment).
+folder, in the background, followed as in
+[Long-running steps](#long-running-steps-and-their-progress). The developer agent (`AGENT_MODEL`,
+Sonnet by default) implements the plan with tests, runs `mise run check`, bumps the version and
+commits. The script pushes the branch and opens a **draft** pull request labelled `agent`. Expect
+tens of minutes. Mention the settings that apply when the developer has set any (`AGENT_*` in the
+environment).
 
 When it finishes, print the pull request link and the "Summary" and "Not done or done differently"
-sections of its body (`gh pr view <pr> --json body`).
+sections of its body (`gh pr view <pr> --json body`). The agents run headless and may not edit
+files under `.claude/` (the skills): a plan item there comes back "not done". Say so; it is the
+developer's to do by hand, never a reason to reword the docs around it.
 
 ## 5. The review → fix loop
 
@@ -158,13 +192,15 @@ Repeat until the pull request is ready for review:
 
 1. Ask the loop for its next step: `scripts/agent/next.sh --dry-run <pr>`. It prints
    `next step: <step>`, a `waiting for` line, or `stopping: <reason>`.
-2. **wait** (CI is still running on the head): in the background, run
-   `sleep 30; gh pr checks <pr> --watch --interval 30` and wait for its notification, then go back
-   to 1. Watch every check, not `--required` only: **CI passed** is reported only once the other
-   jobs are done, so `--required` exits at once with "no required checks reported". The first
-   seconds after a push have no checks at all, hence the `sleep`. After `AGENT_CI_TIMEOUT` minutes
-   (60 by default) without a result, stop and notify.
-3. **fix-ci**, **review**, **fix**, **finalise**: run the step script in the background:
+2. **wait** (CI is still running on the head): say "CI started on <short sha>", then in the
+   background run `sleep 30; gh pr checks <pr> --watch --interval 30` and wait for its
+   notification. Report "CI passed" or "CI failed: <jobs>", then go back to 1. Watch every check,
+   not `--required` only: **CI passed** is reported only once the other jobs are done, so
+   `--required` exits at once with "no required checks reported". The first seconds after a push
+   have no checks at all, hence the `sleep`. After `AGENT_CI_TIMEOUT` minutes (60 by default)
+   without a result, stop and notify.
+3. **fix-ci**, **review**, **fix**, **finalise**: run the step script in the background, followed
+   as in [Long-running steps](#long-running-steps-and-their-progress):
    `scripts/agent/fix-ci.sh <pr>`, `review.sh <pr>`, `fix.sh <pr>` or `finalise.sh <pr>`. Before
    it, say what the step is based on:
    - fix-ci: the failing job and the last lines of its log (`gh pr checks <pr>`,
@@ -179,8 +215,10 @@ Repeat until the pull request is ready for review:
    - finalise: that it marks the pull request ready for review and removes the `agent` label.
 4. After the step, report what it did. For a review: the findings with their IDs and priorities,
    or the approval. For a fix: one line per finding, fixed (with the commit) or declined (with the
-   reason). For fix-ci: whether it pushed. A fix-ci that pushed nothing leaves CI red: go back to
-   1, which runs the next attempt until `AGENT_MAX_CI_FIXES` stops the loop.
+   reason). Look at a "fixed" commit's files: a fix that changes something other than what the
+   finding is about (the docs instead of a skill under `.claude/`) is not a fix; say so. For
+   fix-ci: whether it pushed. A fix-ci that pushed nothing leaves CI red: go back to 1, which runs
+   the next attempt until `AGENT_MAX_CI_FIXES` stops the loop.
 5. **stopping: <reason>** (over `AGENT_MAX_CI_FIXES` or `AGENT_MAX_TOKENS`): no step runs. Hand the
    pull request back as `next.sh` does when it stops: comment the reason on it and remove the
    `agent` label (`gh pr edit <pr> --remove-label agent`). Then stop and notify.
