@@ -290,15 +290,23 @@ Like every shared library, it holds no domain type and no business rule
 - **`@JpaAdapterTest`** (test fixtures) wires Hibernate, Spring Data JPA repositories and
   transactions as in the application, with `jpa-test.properties`.
   - **The database** comes from `TestDatabaseConfiguration`, which `@JpaAdapterTest` imports (so do
-    the application's `@SpringBootTest` classes). It contributes a `JdbcConnectionDetails` bean for a
-    fresh database in the one PostgreSQL container per test JVM (`PostgresTestContainer`), and Spring
-    Boot's `DataSourceAutoConfiguration` builds the Hikari pool from it, as in production. No test
-    declares a `DataSource` or `spring.datasource.*`.
-  - **Why a database per context, and not a plain `@ServiceConnection`.** A `@Bean` container makes
-    a container per context; a static container shares one database, and the migration tests' Flyway
-    histories (with the seed version) would clash with the domain's own Flyway in another context. A
-    database per context keeps test classes apart, and a cached context keeps its database. The
-    reuse flag is not used: a container ends with the JVM.
+    the application's `@SpringBootTest` classes). It holds a `@Bean @ServiceConnection`
+    `PostgreSQLContainer`: Spring Boot turns it into the context's `JdbcConnectionDetails`, and
+    `DataSourceAutoConfiguration` builds the Hikari pool from them, as in production. No test
+    declares a `DataSource` or `spring.datasource.*`. A plain `@SpringJUnitConfig` context does not
+    apply `spring.factories` initializers, so a `ContextCustomizerFactory` of the test fixtures
+    (`TestcontainersLifecycleContextCustomizerFactory`) applies Boot's
+    `TestcontainersLifecycleApplicationContextInitializer` to every `@JpaAdapterTest` class: it
+    starts the container before the pool connects and stops it when the context closes.
+  - **Why a container per context.** Each context has a database of its own with no custom code, so
+    test classes never see each other's rows, and the migration tests' Flyway histories (with the
+    seed version) cannot clash with the domain's own Flyway in another context. It was the
+    developer's choice in review over one container with a database created per context. The cost is
+    a container start per context (a few seconds each). The reuse flag is not used.
+  - **`PostgresTestContainer`** stays for the catalog checks that run outside Spring
+    (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`):
+    they need many empty databases, so it is one container per JVM and a fresh database per check.
+    It also holds the image tag that `TestDatabaseConfiguration` uses.
   - **The migrations** come from the domain's own `<Domain>PersistenceConfiguration`, which the
     component scan picks up: its Flyway bean migrates before Hibernate validates, as in the
     application.

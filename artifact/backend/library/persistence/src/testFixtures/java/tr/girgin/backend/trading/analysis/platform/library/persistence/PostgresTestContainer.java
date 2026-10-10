@@ -6,32 +6,31 @@ import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 import org.postgresql.ds.PGSimpleDataSource;
-import org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * One PostgreSQL container per test JVM (started on first use, stopped with the JVM by Testcontainers) and a fresh
- * database in it for every call of {@link #newDatabase()}, so test classes never see each other's rows. Needs
+ * For the catalog checks that run without a Spring context and need many empty databases: one PostgreSQL container
+ * per test JVM (started on first use, stopped with the JVM by Testcontainers) and a fresh database in it for every
+ * call of {@link #newDataSource()}. Spring tests do not use it: they get a container per context from
+ * {@link TestDatabaseConfiguration}. The image tag lives here, in the one literal that Renovate's manager reads, and
+ * {@link TestDatabaseConfiguration} uses it too. The container is not reused across JVM runs (no reuse flag). Needs
  * Docker or Podman; the image is the Compose file's PostgreSQL.
- *
- * <p>This is not a {@code @ServiceConnection}: a container bean would start one container per Spring context, and
- * a static container would give every context the same database, where the migration tests' seeded Flyway
- * histories clash. The container is not reused across JVM runs either (no reuse flag). The details of a new
- * database are a {@link JdbcConnectionDetails}, the contract that a service connection produces too, so
- * {@code DataSourceAutoConfiguration} builds the pool from it (see {@link TestDatabaseConfiguration}).
  */
 final class PostgresTestContainer {
+
+    static final String IMAGE = "postgres:18.6";
 
     private static final AtomicInteger COUNTER = new AtomicInteger();
 
     private PostgresTestContainer() {}
 
     /**
-     * Creates a fresh database in the container and returns the details to connect to it.
+     * Creates a fresh database in the container and returns a data source for it: one connection per use, no pool to
+     * close.
      *
      * @throws IllegalStateException if the database cannot be created
      */
-    static JdbcConnectionDetails newDatabase() {
+    static DataSource newDataSource() {
         PostgreSQLContainer postgres = Container.INSTANCE;
         String name = "test_" + COUNTER.incrementAndGet();
         try (Connection connection = DriverManager.getConnection(
@@ -41,41 +40,17 @@ final class PostgresTestContainer {
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot create the test database " + name, e);
         }
-        String url = "jdbc:postgresql://" + postgres.getHost() + ":" + postgres.getMappedPort(5432) + "/" + name;
-        return new Details(url, postgres.getUsername(), postgres.getPassword());
-    }
-
-    /** A data source for the database: one connection per use, for the checks that run without a Spring context. */
-    static DataSource dataSource(JdbcConnectionDetails details) {
         PGSimpleDataSource dataSource = new PGSimpleDataSource();
-        dataSource.setUrl(details.getJdbcUrl());
-        dataSource.setUser(details.getUsername());
-        dataSource.setPassword(details.getPassword());
+        dataSource.setUrl("jdbc:postgresql://" + postgres.getHost() + ":" + postgres.getMappedPort(5432) + "/" + name);
+        dataSource.setUser(postgres.getUsername());
+        dataSource.setPassword(postgres.getPassword());
         return dataSource;
-    }
-
-    private record Details(String url, String username, String password) implements JdbcConnectionDetails {
-
-        @Override
-        public String getJdbcUrl() {
-            return url;
-        }
-
-        @Override
-        public String getUsername() {
-            return username;
-        }
-
-        @Override
-        public String getPassword() {
-            return password;
-        }
     }
 
     /** Starts the container the first time it is used. */
     private static final class Container {
 
-        static final PostgreSQLContainer INSTANCE = new PostgreSQLContainer("postgres:18.6");
+        static final PostgreSQLContainer INSTANCE = new PostgreSQLContainer(IMAGE);
 
         static {
             INSTANCE.start();
