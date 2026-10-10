@@ -96,7 +96,8 @@ domain/<d>/adapter/persistence/
 
 The suffix says what a class is, so `Analysis` (domain) and `AnalysisEntity` (table) are never
 confused, in code or in a stack trace. The suffix is on the class only: the table keeps the name its
-migration gives it (`@Table(name = "ANALYSES")`), and JPQL uses the class name
+migration gives it (`@Table(name = "ANALYSES", schema = AnalysisPersistenceConfiguration.SCHEMA)`),
+and JPQL uses the class name
 (`select a from AnalysisEntity a`).
 
 ## Mapping domain types
