@@ -236,6 +236,75 @@ Spring context, so it uses the same container definition without one.
 - **Tests**: `mise run check` (formatting, Checkstyle, the version check). The Renovate config is
   validated as above.
 
+### WP4: A container per context through `@ServiceConnection` (the developer's review)
+
+- **Depends on**: WP1, WP2, WP3
+- **Status**: open
+- **Why**: the developer reviewed the pull request and asked to drop the custom way
+  (`JdbcConnectionDetails` from a database created on a shared container). The Spring tests should use
+  Spring Boot's own Testcontainers support, as in
+  https://www.baeldung.com/spring-boot-testcontainers-integration-test. This package **replaces the
+  decision "one container per JVM, a fresh database per context"** in "Why not a plain
+  `@ServiceConnection`" and the "Design" above: **one container per Spring context**. Isolation
+  between test classes comes for free, because each context has a container of its own and the
+  context's destroy stops it. The price is one container start per context: about 9 contexts in the
+  whole build, spread over 5 test JVMs, a few seconds each. The Testcontainers reuse flag stays off.
+  Where this package and the earlier sections disagree, this package wins, and its last step brings
+  the earlier sections in line.
+- **Files**:
+  - `gradle/libs.versions.toml`, `artifact/backend/library/persistence/build.gradle.kts`
+  - test fixtures of `:backend:library:persistence`: `TestDatabaseConfiguration.java`,
+    `JpaAdapterTest.java`, `PostgresTestContainer.java`
+  - `artifact/backend/library/persistence/src/test/java/…/library/persistence/TestDatabaseConfigurationTest.java`
+  - the three `@SpringBootTest` classes in `artifact/backend/src/test/java/…/platform/`, only if they
+    need a change to get the container started (see the steps)
+  - `docs/coding-convention/backend-java-persistence.md`, `artifact/backend/library/persistence/README.md`,
+    `.github/renovate.json5` (only if the image tag moves to another file)
+  - `.plans/141-test-database-auto-configuration.md` (this plan: "Goal", "Design", "Tests", "Docs to
+    update" and "Out of scope" match the new decision)
+- **Steps**:
+  - [ ] Catalog entry `spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }`
+        (version from the BOM), as `testFixturesApi` of the library. Keep or drop `spring-boot-jdbc`
+        as `analyzeDependencies` says: `@JpaAdapterTest` still names `DataSourceAutoConfiguration`.
+  - [ ] Confirm against Spring Boot 4.1.1 first: the package of `@ServiceConnection`, the
+        auto-configuration that turns a `@ServiceConnection` bean into `JdbcConnectionDetails`
+        (`ServiceConnectionAutoConfiguration`), and what starts a container bean
+        (`TestcontainersLifecycleApplicationContextInitializer` and its bean post-processor).
+  - [ ] `TestDatabaseConfiguration` (still public, still not `@Configuration`, still only imported) holds
+        `@Bean @ServiceConnection PostgreSQLContainer postgres()` returning a new container of the one image
+        (`postgres:18.6`, the constant stays where Renovate's manager looks). It no longer creates a
+        database or returns `JdbcConnectionDetails` itself: the container's default database is the
+        context's own.
+  - [ ] `@JpaAdapterTest`: add the service-connection auto-configuration to `@ImportAutoConfiguration`,
+        next to `DataSourceAutoConfiguration`. Make sure the container is started before the data source
+        connects, in the way Spring Boot provides for a plain `@SpringJUnitConfig` context, which does
+        not apply `spring.factories` initializers the way `SpringApplication` does. Prefer Boot's own
+        mechanism (the lifecycle initializer or bean post-processor, or `@ImportTestcontainers` if it
+        is the documented way) over calling `start()` by hand. Say in the Javadoc which one and why.
+        The `@SpringBootTest` classes keep `@Import(TestDatabaseConfiguration.class)`. Their
+        `SpringApplication` already applies Boot's initializers, so check that they need nothing more.
+  - [ ] `PostgresTestContainer` stays only for the catalog checks without a Spring context
+        (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`):
+        its one lazily started container and a fresh database per check, as now. Simplify its API to
+        what those callers need (a `DataSource` of a fresh database), with no `JdbcConnectionDetails`
+        unless still useful. It and `TestDatabaseConfiguration` share one image constant, so Renovate
+        updates both. Its Javadoc says why it still exists: the checks run outside Spring and need many
+        empty databases.
+  - [ ] `TestDatabaseConfigurationTest`: two contexts get different containers (different mapped
+        ports), the data source is Hikari, a table created in one is absent in the other, and a closed
+        context stops its container.
+  - [ ] Docs: `backend-java-persistence.md` (Tests) describes one container per context through
+        `@ServiceConnection`, why (isolation without custom code, the developer's choice in review),
+        its cost (a container start per context), and why the catalog checks keep `PostgresTestContainer`.
+        Remove the reasoning against a plain `@ServiceConnection`. The library README follows. Change
+        the Renovate pattern only if the image constant moves to another file.
+  - [ ] Bring this plan's earlier sections in line with this package.
+  - [ ] No version bump: the branch is already at 3.3.0, above `main`. Bump only if
+        `scripts/version.sh check-bump origin/main` fails.
+- **Tests**: `TestDatabaseConfigurationTest` as above. Every adapter test, the migration tests with
+  their seeded histories, and the three `@SpringBootTest` classes pass on a container per context. The
+  library's catalog checks pass unchanged. `mise run check` and the backend tests are green.
+
 ## Tests
 
 - Unit and integration: the whole backend suite on Testcontainers (`mise run build`): the library's
