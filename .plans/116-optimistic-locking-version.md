@@ -81,9 +81,16 @@ fields, since the incoming version is what the write is checked against.
 |---|---|
 | `JpaPresetRepositoryAdapter#save` | Unchanged `saveAndFlush`: a `null` version persists (an existing ID fails), any other version merges, and Hibernate rejects a detached entity whose version differs from the stored one |
 | `JpaRoleRepositoryAdapter#save` | The same, and returns `toRole.map(saved)` |
-| `JpaUserRepositoryAdapter#save` | Loads the managed entity as today. Before `copyOnto`, compares `incoming.getVersion()` with `existing.getVersion()`; a mismatch (a `null` incoming version included) throws `ObjectOptimisticLockingFailureException(UserEntity.class, id)`. A missing row with a non-null version throws the same (the user was deleted meanwhile). JPA forbids changing the version of a managed entity, hence the explicit compare; the flush's `UPDATE … WHERE VERSION = ?` covers the window between the load and the flush |
-| `JpaAnalysisRepositoryAdapter#update`, `#replaceImported` | Same as users: load, compare `analysis.version()` with the managed entity's, throw on a mismatch, copy, `flush()`, return the mapped entity |
+| `JpaUserRepositoryAdapter#save` | Loads the managed entity as today. Before `copyOnto`, compares `incoming.getVersion()` with `existing.getVersion()`; a mismatch (a `null` incoming version included) throws `ObjectOptimisticLockingFailureException(UserEntity.class, id)`. A missing row with a non-null version throws the same (the user was deleted meanwhile). JPA forbids changing the version of a managed entity, hence the explicit compare. Ends with `repository.saveAndFlush(entity)` (the managed entity, or the new one) and maps what it returns; the flush's `UPDATE … WHERE VERSION = ?` covers the window between the load and the flush |
+| `JpaAnalysisRepositoryAdapter#update`, `#replaceImported` | Same as users: load, compare `analysis.version()` with the managed entity's, throw on a mismatch, copy, `repository.saveAndFlush(stored)`, return the mapped result |
 | `JpaAnalysisRepositoryAdapter#insert` | Unchanged: the record's version is `null` and the persist sets 0 |
+
+**Every write that must reach the database in the call ends with `saveAndFlush`** (developer's decision
+in review): never a `repository.save(...)`, or a change to a managed entity, followed by a separate
+`repository.flush()`. One call, and the entity it returns is the one mapped back. For a managed entity
+it is a merge onto itself followed by the flush, so the behaviour is unchanged.
+`PersistenceArchitectureTest.writes_use_save_and_flush` forbids calling `flush()` on a Spring Data
+repository in production code.
 
 The compare-and-throw is the same few lines in two modules. It stays local in each adapter (a private
 helper), as the persistence doc says for `isUniqueViolation`; it moves to
@@ -234,6 +241,20 @@ asks for a changed rule).
   - [x] Update the documents (see "Docs to update").
 - **Tests**: the new ArchUnit rule itself.
 
+### WP5: saveAndFlush instead of save/change + flush
+
+- **Status**: done
+- **Depends on**: WP1, WP4
+- **Files**:
+  - `…/identity/adapter/persistence/JpaUserRepositoryAdapter.java`, `…/analysis/adapter/persistence/JpaAnalysisRepositoryAdapter.java`
+  - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PersistenceArchitectureTest.java`
+  - `docs/coding-convention/backend-java-persistence.md`
+- **Steps**:
+  - [x] `JpaUserRepositoryAdapter#save`, `JpaAnalysisRepositoryAdapter#update` and `#replaceImported` end with `repository.saveAndFlush(entity)` and map the returned entity; no `repository.flush()` left.
+  - [x] Add `writes_use_save_and_flush` (no call to `flush()` on a Spring Data repository in production code); check it fails on one, and say so in the PR.
+  - [x] Persistence doc: the rule under "Repositories and adapters", the adapters' description under "Optimistic locking", and a row in "Where it is checked".
+- **Tests**: the existing repository tests (stale writes, versions, returned records) unchanged and green; the new ArchUnit rule.
+
 ## Tests
 
 - Repository tests per entity (analysis, preset, user, role) prove the acceptance criterion: a stale
@@ -243,14 +264,15 @@ asks for a changed rule).
   columns.
 - Service unit tests prove the translation to `CONCURRENT_UPDATE`; the preset API test proves the 409
   end to end.
-- `PersistenceArchitectureTest.entities_have_a_version` keeps every future entity versioned.
+- `PersistenceArchitectureTest.entities_have_a_version` keeps every future entity versioned;
+  `writes_use_save_and_flush` keeps writes to one `saveAndFlush`.
 - `mise run check` and `mise run build` (CI) run all of them.
 
 ## Docs to update
 
 | What | Where | Change |
 |---|---|---|
-| Text | `docs/coding-convention/backend-java-persistence.md` | New section "Optimistic locking": the `VERSION` column per updated-in-place table, `@Version Long` on every entity, the version as a field of the domain record (`null` before the first save, owned by persistence, never changed by the core), why it travels through the core and not only the adapter, the port promise (`OptimisticLockingFailureException`), the adapters' load-compare-flush for managed entities vs the merge check, the translation to `CONCURRENT_UPDATE` in the services and 409 in the BFF, and that writes return the stored record. Update "Mapping domain types" (a row for the version), "Repositories and adapters" (upsert and partial updates now check the version), "Tests" (the stale-write test per entity) and "Where it is checked" (`entities_have_a_version`) |
+| Text | `docs/coding-convention/backend-java-persistence.md` | New section "Optimistic locking": the `VERSION` column per updated-in-place table, `@Version Long` on every entity, the version as a field of the domain record (`null` before the first save, owned by persistence, never changed by the core), why it travels through the core and not only the adapter, the port promise (`OptimisticLockingFailureException`), the adapters' load-compare-flush for managed entities vs the merge check, the translation to `CONCURRENT_UPDATE` in the services and 409 in the BFF, and that writes return the stored record. Update "Mapping domain types" (a row for the version), "Repositories and adapters" (upsert and partial updates now check the version), "Tests" (the stale-write test per entity) and "Where it is checked" (`entities_have_a_version`, `writes_use_save_and_flush`). "Repositories and adapters" also gains the rule that a write ends with `saveAndFlush`, never a separate `flush()` |
 | Text | `docs/coding-convention/backend-database-naming.md` | None: the column follows the existing rules; the migration list there is by example only |
 | Text | `docs/coding-convention/README.md` | The persistence row's "Covers" mentions optimistic locking; the Database naming row's test list gains `V7SettingsVersionMigrationTest` |
 | Text | `README.md`, section around "**Save as preset** … renames or deletes them" | One sentence: a rename of a preset someone else changed meanwhile fails with a message and the list reloads |
