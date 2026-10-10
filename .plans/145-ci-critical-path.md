@@ -184,13 +184,14 @@ jar …") is kept.
 
 ### WP3: Docs and version
 
+- **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**: `README.md`, `docs/coding-convention/backend-java-formatting.md`,
   `docs/coding-convention/README.md`, the three version files (`mise run version:bump minor`)
 - **Steps**:
-  - [ ] docs as listed below
-  - [ ] `mise run version:bump minor` in a commit of its own
-  - [ ] `mise run check`
+  - [x] docs as listed below
+  - [x] `mise run version:bump minor` in a commit of its own
+  - [x] `mise run check`
 - **Tests**: `mise run check`; `scripts/version.sh check-bump origin/main`.
 
 ## Tests
