@@ -8,10 +8,15 @@
 
 No test builds a `DataSource` or registers `spring.datasource.*` itself any more. The adapter tests
 and the application tests import one shared test configuration from the persistence test fixtures.
-It contributes a `JdbcConnectionDetails` bean, and Spring Boot's own `DataSourceAutoConfiguration`
-builds the Hikari pool from it, as in production. There is still one PostgreSQL container per test
-JVM and a fresh database per Spring context, so test classes do not see each other's rows.
-`PostgresTestDatabase` is gone.
+It holds a `@Bean @ServiceConnection PostgreSQLContainer`, and Spring Boot's own
+`DataSourceAutoConfiguration` builds the Hikari pool from the connection details it yields, as in
+production. There is one PostgreSQL container per Spring context (WP4), so test classes do not see
+each other's rows. `PostgresTestDatabase` is gone.
+
+**WP4 supersedes the design below** ("Why not a plain `@ServiceConnection`", the shared definition,
+"Connections", "Build" and the `JdbcConnectionDetails` wording): the developer chose a container per
+context through `@ServiceConnection`. Read those sections as history; the code and
+`backend-java-persistence.md` follow WP4.
 
 ## What changed since the issue was written
 
@@ -239,7 +244,7 @@ Spring context, so it uses the same container definition without one.
 ### WP4: A container per context through `@ServiceConnection` (the developer's review)
 
 - **Depends on**: WP1, WP2, WP3
-- **Status**: open
+- **Status**: done
 - **Why**: the developer reviewed the pull request and asked to drop the custom way
   (`JdbcConnectionDetails` from a database created on a shared container). The Spring tests should use
   Spring Boot's own Testcontainers support, as in
@@ -263,19 +268,24 @@ Spring context, so it uses the same container definition without one.
   - `.plans/141-test-database-auto-configuration.md` (this plan: "Goal", "Design", "Tests", "Docs to
     update" and "Out of scope" match the new decision)
 - **Steps**:
-  - [ ] Catalog entry `spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }`
-        (version from the BOM), as `testFixturesApi` of the library. Keep or drop `spring-boot-jdbc`
-        as `analyzeDependencies` says: `@JpaAdapterTest` still names `DataSourceAutoConfiguration`.
-  - [ ] Confirm against Spring Boot 4.1.1 first: the package of `@ServiceConnection`, the
-        auto-configuration that turns a `@ServiceConnection` bean into `JdbcConnectionDetails`
-        (`ServiceConnectionAutoConfiguration`), and what starts a container bean
-        (`TestcontainersLifecycleApplicationContextInitializer` and its bean post-processor).
-  - [ ] `TestDatabaseConfiguration` (still public, still not `@Configuration`, still only imported) holds
+  - [x] Catalog entry `spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }`
+        (version from the BOM), as `testFixturesApi` of the library. `spring-boot-jdbc` stays:
+        `@JpaAdapterTest` still names `DataSourceAutoConfiguration`.
+  - [x] Confirmed against Spring Boot 4.1.1 by compiling and running: `@ServiceConnection` and
+        `ServiceConnectionAutoConfiguration` in `org.springframework.boot.testcontainers.service.connection`,
+        `TestcontainersLifecycleApplicationContextInitializer` in
+        `org.springframework.boot.testcontainers.lifecycle`.
+  - [x] `TestDatabaseConfiguration` (still public, still not `@Configuration`, still only imported) holds
         `@Bean @ServiceConnection PostgreSQLContainer postgres()` returning a new container of the one image
         (`postgres:18.6`, the constant stays where Renovate's manager looks). It no longer creates a
         database or returns `JdbcConnectionDetails` itself: the container's default database is the
         context's own.
-  - [ ] `@JpaAdapterTest`: add the service-connection auto-configuration to `@ImportAutoConfiguration`,
+  - [x] Done differently: Boot's initializer is applied by a `ContextCustomizerFactory`
+        (`TestcontainersLifecycleContextCustomizerFactory`, registered in the fixtures' `spring.factories`,
+        only for `@JpaAdapterTest` classes), because a `@ContextConfiguration(initializers)` on
+        `@JpaAdapterTest` clashes with the tests' own `@SpringJUnitConfig` and drops their classes.
+        `@SpringBootTest` classes needed nothing more.
+  - [x] `@JpaAdapterTest`: add the service-connection auto-configuration to `@ImportAutoConfiguration`,
         next to `DataSourceAutoConfiguration`. Make sure the container is started before the data source
         connects, in the way Spring Boot provides for a plain `@SpringJUnitConfig` context, which does
         not apply `spring.factories` initializers the way `SpringApplication` does. Prefer Boot's own
@@ -283,23 +293,24 @@ Spring context, so it uses the same container definition without one.
         is the documented way) over calling `start()` by hand. Say in the Javadoc which one and why.
         The `@SpringBootTest` classes keep `@Import(TestDatabaseConfiguration.class)`. Their
         `SpringApplication` already applies Boot's initializers, so check that they need nothing more.
-  - [ ] `PostgresTestContainer` stays only for the catalog checks without a Spring context
+  - [x] `PostgresTestContainer` stays only for the catalog checks without a Spring context
         (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`):
         its one lazily started container and a fresh database per check, as now. Simplify its API to
         what those callers need (a `DataSource` of a fresh database), with no `JdbcConnectionDetails`
         unless still useful. It and `TestDatabaseConfiguration` share one image constant, so Renovate
         updates both. Its Javadoc says why it still exists: the checks run outside Spring and need many
         empty databases.
-  - [ ] `TestDatabaseConfigurationTest`: two contexts get different containers (different mapped
+  - [x] `TestDatabaseConfigurationTest`: two contexts get different containers (different mapped
         ports), the data source is Hikari, a table created in one is absent in the other, and a closed
         context stops its container.
-  - [ ] Docs: `backend-java-persistence.md` (Tests) describes one container per context through
+  - [x] Docs: `backend-java-persistence.md` (Tests) describes one container per context through
         `@ServiceConnection`, why (isolation without custom code, the developer's choice in review),
         its cost (a container start per context), and why the catalog checks keep `PostgresTestContainer`.
         Remove the reasoning against a plain `@ServiceConnection`. The library README follows. Change
         the Renovate pattern only if the image constant moves to another file.
-  - [ ] Bring this plan's earlier sections in line with this package.
-  - [ ] No version bump: the branch is already at 3.3.0, above `main`. Bump only if
+  - [x] Bring this plan's earlier sections in line with this package (the note under "Goal", the
+        "Out of scope" bullet and the "Docs to update" row).
+  - [x] No version bump: the branch is already at 3.3.0, above `main`. Bump only if
         `scripts/version.sh check-bump origin/main` fails.
 - **Tests**: `TestDatabaseConfigurationTest` as above. Every adapter test, the migration tests with
   their seeded histories, and the three `@SpringBootTest` classes pass on a container per context. The
@@ -324,7 +335,7 @@ Spring context, so it uses the same container definition without one.
 
 | What | Where | Change |
 |---|---|---|
-| Text | `docs/coding-convention/backend-java-persistence.md`, "Tests" | The `@JpaAdapterTest` bullet: the test's `Config` no longer provides the data source. `TestDatabaseConfiguration` (imported by `@JpaAdapterTest` and by the application tests) contributes a `JdbcConnectionDetails` bean for a fresh database in the one container per JVM (`PostgresTestContainer`), and `DataSourceAutoConfiguration` builds the Hikari pool from it, as in production. Why: a database per context keeps test classes apart, and the migration tests' seeded Flyway histories need it; why not a plain `@ServiceConnection` (a container per context, or one shared database); why not the reuse flag. The catalog checks without a Spring context take a `PGSimpleDataSource` from the same container. |
+| Text | `docs/coding-convention/backend-java-persistence.md`, "Tests" | As written in WP4 (a `@ServiceConnection` container per context; the older wording that follows is superseded). The `@JpaAdapterTest` bullet: the test's `Config` no longer provides the data source. `TestDatabaseConfiguration` (imported by `@JpaAdapterTest` and by the application tests) contributes a `JdbcConnectionDetails` bean for a fresh database in the one container per JVM (`PostgresTestContainer`), and `DataSourceAutoConfiguration` builds the Hikari pool from it, as in production. Why: a database per context keeps test classes apart, and the migration tests' seeded Flyway histories need it; why not a plain `@ServiceConnection` (a container per context, or one shared database); why not the reuse flag. The catalog checks without a Spring context take a `PGSimpleDataSource` from the same container. |
 | Text | `docs/coding-convention/backend-java-persistence.md`, "Rules" and "Shared persistence code" | "the test fixtures may create the database and a `DataSource` to run the migrations": still true, so reword only if it names `PostgresTestDatabase` (it does not). "Shared persistence code": list `TestDatabaseConfiguration` among the fixtures. |
 | Text | `artifact/backend/library/persistence/README.md`, "What it holds" | `PostgresTestDatabase` → `TestDatabaseConfiguration` (used by the adapter tests through `@JpaAdapterTest` and by `:backend`'s tests); `PostgresTestContainer` named as the one container, used by the catalog checks. |
 | Text | `@JpaAdapterTest`, `DoNotIncludeTestFixtures`, `TestPlatformHome` Javadoc | As in the design. |
@@ -334,10 +345,8 @@ Spring context, so it uses the same container definition without one.
 
 ## Out of scope
 
-- `spring-boot-testcontainers`, `@ServiceConnection` and `@ImportTestcontainers`: not needed for this
-  design (see "Why not a plain `@ServiceConnection`"). Testcontainers at development time
-  (`TestApplication`, `spring-boot:test-run`) stays out of scope as the issue says, and would be
-  the place to add them.
+- Testcontainers at development time (`TestApplication`, `spring-boot:test-run`) stays out of scope
+  as the issue says. (`spring-boot-testcontainers` and `@ServiceConnection` are in scope since WP4.)
 - Changing what the tests assert, the no-test-managed-transaction rule, `@DataJpaTest`.
 - The migrations per test: they already come from each domain's Flyway bean (since #133).
 - Hikari pool tuning for tests, the PostgreSQL version, the Testcontainers reuse flag.

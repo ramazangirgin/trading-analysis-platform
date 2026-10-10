@@ -9,37 +9,41 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.testcontainers.lifecycle.TestcontainersLifecycleApplicationContextInitializer;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnectionAutoConfiguration;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * Proves {@link TestDatabaseConfiguration}: the auto-configured Hikari pool, one container for the JVM, and a
- * database of its own for every context.
+ * Proves {@link TestDatabaseConfiguration}: the auto-configured Hikari pool, a container of its own for every
+ * context, and a container that stops with its context.
  */
 class TestDatabaseConfigurationTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class))
+            .withInitializer(new TestcontainersLifecycleApplicationContextInitializer())
+            .withConfiguration(
+                    AutoConfigurations.of(DataSourceAutoConfiguration.class, ServiceConnectionAutoConfiguration.class))
             .withUserConfiguration(TestDatabaseConfiguration.class);
 
     @Test
-    void autoConfigurationBuildsAHikariPoolFromTheDetails() {
+    void autoConfigurationBuildsAHikariPoolFromTheServiceConnection() {
         runner.run(context -> assertEquals(
                 "HikariDataSource", context.getBean(DataSource.class).getClass().getSimpleName()));
     }
 
     @Test
-    void contextsShareTheContainerButNotTheDatabase() {
+    void everyContextHasAContainerOfItsOwn() {
         runner.run(first -> runner.run(second -> {
             URI one = jdbcUri(first.getBean(DataSource.class));
             URI other = jdbcUri(second.getBean(DataSource.class));
 
-            assertEquals(one.getHost(), other.getHost());
-            assertEquals(one.getPort(), other.getPort());
-            assertNotEquals(one.getPath(), other.getPath());
+            assertNotEquals(one.getPort(), other.getPort());
         }));
     }
 
@@ -51,6 +55,17 @@ class TestDatabaseConfigurationTest {
             assertTrue(tableExists(first.getBean(DataSource.class)));
             assertFalse(tableExists(second.getBean(DataSource.class)));
         }));
+    }
+
+    @Test
+    void closingTheContextStopsItsContainer() {
+        AtomicReference<PostgreSQLContainer> container = new AtomicReference<>();
+        runner.run(context -> {
+            container.set(context.getBean(PostgreSQLContainer.class));
+            assertTrue(container.get().isRunning());
+        });
+
+        assertFalse(container.get().isRunning());
     }
 
     private static URI jdbcUri(DataSource dataSource) throws SQLException {

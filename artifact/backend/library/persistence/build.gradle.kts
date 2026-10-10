@@ -24,9 +24,11 @@ dependencies {
     testFixturesApi(libs.spring.boot.flyway)
     testFixturesApi(libs.spring.boot.hibernate)
     testFixturesApi(libs.spring.boot.jdbc)
+    testFixturesApi(libs.spring.boot.testcontainers)
     testFixturesApi(libs.spring.boot.transaction)
     testFixturesApi(libs.spring.test)
     testFixturesImplementation(libs.spring.context)
+    testFixturesImplementation(libs.spring.core)
     testFixturesApi(libs.flyway.core)
     // The conventions test of a domain: a JUnit class, and the entity rule that reads the domain's classes.
     testFixturesApi(libs.junit.jupiter.api)
