@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,12 +72,14 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
 
     @Test
     void aStaleUpdateFailsAndLeavesTheNewerRowUnchanged() {
-        Analysis stored = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZSTALE"), Instant.now()));
+        // Millisecond instants: the column keeps microseconds, a Linux clock has nanoseconds.
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        Analysis stored = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZSTALE"), now));
         Analysis firstCopy = repository.findById(stored.id()).orElseThrow();
         Analysis staleCopy = repository.findById(stored.id()).orElseThrow();
-        Analysis firstWrite = repository.update(firstCopy.running(Instant.now(), "first"));
+        Analysis firstWrite = repository.update(firstCopy.running(now, "first"));
 
-        assertThatThrownBy(() -> repository.update(staleCopy.running(Instant.now(), "second")))
+        assertThatThrownBy(() -> repository.update(staleCopy.running(now, "second")))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(repository.findById(stored.id())).contains(firstWrite);
