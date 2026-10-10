@@ -162,13 +162,13 @@ waits with `Monitor`).
 ### WP1: Milestone lines, paths and phases in the shared helpers
 
 - **Depends on**: none
-- **Status**: open
+- **Status**: done
 - **Files**: `scripts/agent/lib.sh`, `scripts/agent/agent_json.py`, `scripts/agent/test_agent_json.py`
 - **Steps**:
-  - [ ] `lib.sh`: add `milestone`; `die` writes its first line as `agent: >> failed: …`; `push_branch` writes `pushed <branch> (<short sha>)` after the push; add `ci_failed_jobs <sha>`.
-  - [ ] `lib.sh`: `use_state` prints the `log:` and `streams:` lines first; `use_state --no-log <branch>` (no `tee`, header or path lines); update the header comment (milestone lines, the option).
-  - [ ] `lib.sh`: `run_agent` prints `stream: <path>` and passes `${AGENT_STEP_LABEL:-}` to `agent_json.py stream`.
-  - [ ] `agent_json.py`: optional label argument of `stream`; the phase table and the phase milestones (one line per phase change; `mise run check passed|failed` from the tool result's `is_error`); update the module docstring.
+  - [x] `lib.sh`: add `milestone`; `die` writes its first line as `agent: >> failed: …`; `push_branch` writes `pushed <branch> (<short sha>)` after the push; add `ci_failed_jobs <sha>`.
+  - [x] `lib.sh`: `use_state` prints the `log:` and `streams:` lines first; `use_state --no-log <branch>` (no `tee`, header or path lines); update the header comment (milestone lines, the option).
+  - [x] `lib.sh`: `run_agent` prints `stream: <path>` and passes `${AGENT_STEP_LABEL:-}` to `agent_json.py stream`.
+  - [x] `agent_json.py`: optional label argument of `stream`; the phase table and the phase milestones (one line per phase change; `mise run check passed|failed` from the tool result's `is_error`); update the module docstring.
 - **Tests**: `test_agent_json.py`: a stream of tool calls with a label writes `agent: >> WP1: tests` once for consecutive test calls, then `… mise run check`, `… mise run check failed` for an `is_error` result (and `passed` for a successful one), then `… commit`; without a label no `>>` line is written; the per-tool lines and the result file stay as before. Each phase pattern of the table has a matching and a non-matching command (`./gradlew :backend:test` vs `./gradlew build`).
 
 ### WP2: Milestones in the step scripts
