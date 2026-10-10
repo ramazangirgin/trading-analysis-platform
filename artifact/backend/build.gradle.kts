@@ -102,6 +102,10 @@ abstract class DomainPersistenceTestsCheck : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val sources: ConfigurableFileCollection
 
+    /** Written on success: a task without outputs is never up to date. */
+    @get:OutputFile
+    abstract val marker: RegularFileProperty
+
     @TaskAction
     fun check() {
         val problems = mutableListOf<String>()
@@ -127,12 +131,14 @@ abstract class DomainPersistenceTestsCheck : DefaultTask() {
         if (problems.isNotEmpty()) {
             throw GradleException(problems.joinToString("\n"))
         }
+        marker.get().asFile.writeText("ok\n")
     }
 }
 
 val domainPersistenceTestsCheck = tasks.register<DomainPersistenceTestsCheck>("domainPersistenceTestsCheck") {
     group = "verification"
     description = "Fails a domain adapter with persistence but no test extending DomainPersistenceConventionsTest"
+    marker = layout.buildDirectory.file("domainPersistenceTestsCheck/ok")
     rootProject.subprojects
         .filter { it.path.matches(Regex(":backend:domain:[^:]+:adapter")) }
         .forEach { adapter ->
