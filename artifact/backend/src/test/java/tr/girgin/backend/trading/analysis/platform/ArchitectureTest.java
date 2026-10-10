@@ -77,6 +77,13 @@ class ArchitectureTest {
     private static final DescribedPredicate<JavaClass> MAPSTRUCT_MAPPER =
             annotatedWith(Mapper.class).forSubtype();
 
+    /** A domain's schema and Flyway bean: only a {@code @Configuration} in {@code adapter.persistence} qualifies. */
+    private static final DescribedPredicate<JavaClass> PERSISTENCE_CONFIGURATION =
+            JavaClass.Predicates.simpleNameEndingWith("PersistenceConfiguration")
+                    .and(annotatedWith(Configuration.class))
+                    .and(resideInAPackage(BASE + ".domain.*.adapter.persistence"))
+                    .as("a <Domain>PersistenceConfiguration @Configuration in adapter.persistence");
+
     // --- BFF -------------------------------------------------------------------------------
 
     @ArchTest
@@ -170,8 +177,7 @@ class ArchitectureTest {
             .and()
             .areMetaAnnotatedWith(Component.class)
             .and(not(assignableTo(MAPSTRUCT_MAPPER)))
-            .and()
-            .haveSimpleNameNotEndingWith("PersistenceConfiguration")
+            .and(not(PERSISTENCE_CONFIGURATION))
             .should()
             .implement(resideInAPackage(DOMAIN_OUTBOUND))
             .because("a domain's <Domain>PersistenceConfiguration (its schema and Flyway bean) is no adapter");
@@ -316,8 +322,7 @@ class ArchitectureTest {
             .resideInAPackage(DOMAIN_ADAPTER_PORT)
             .and()
             .resideOutsideOfPackages(SHARED_ADAPTER_PACKAGES)
-            .and()
-            .haveSimpleNameNotEndingWith("PersistenceConfiguration")
+            .and(not(PERSISTENCE_CONFIGURATION))
             .should()
             .implement(resideInAPackage(DOMAIN_OUTBOUND))
             .orShould()
