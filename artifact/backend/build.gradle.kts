@@ -108,7 +108,7 @@ abstract class DomainPersistenceTestsCheck : DefaultTask() {
         adapters.get().toSortedMap().forEach { (name, directory) ->
             val root = directory.asFile
             val entity = root.resolve("src/main/java").walk()
-                .firstOrNull { it.isFile && it.extension == "java" && Regex("^@Entity\\b", RegexOption.MULTILINE).containsMatchIn(it.readText()) }
+                .firstOrNull { it.isFile && it.extension == "java" && Regex("^\\s*@(jakarta\\.persistence\\.)?Entity\\b", RegexOption.MULTILINE).containsMatchIn(it.readText()) }
             val migration = root.resolve("src/main/resources").walk()
                 .firstOrNull { it.isFile && it.extension == "sql" && it.parentFile.path.endsWith("adapter/persistence/migration") }
             val reason = when {
