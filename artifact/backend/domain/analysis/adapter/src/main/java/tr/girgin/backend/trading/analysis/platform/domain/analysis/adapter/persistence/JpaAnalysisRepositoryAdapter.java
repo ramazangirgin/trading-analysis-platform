@@ -59,8 +59,7 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
                 .orElseThrow(() -> new IllegalStateException("No analysis " + analysis.id() + " to update"));
         requireVersion(stored, analysis);
         stored.applyRunState(toEntity.map(analysis));
-        repository.flush();
-        return toAnalysis.map(stored);
+        return toAnalysis.map(repository.saveAndFlush(stored));
     }
 
     /** An imported record follows its files, spec and creation time included. */
@@ -72,8 +71,7 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
                 .orElseThrow(() -> new IllegalStateException("No imported analysis " + analysis.id() + " to replace"));
         requireVersion(stored, analysis);
         stored.replaceImported(toEntity.map(analysis));
-        repository.flush();
-        return toAnalysis.map(stored);
+        return toAnalysis.map(repository.saveAndFlush(stored));
     }
 
     /**

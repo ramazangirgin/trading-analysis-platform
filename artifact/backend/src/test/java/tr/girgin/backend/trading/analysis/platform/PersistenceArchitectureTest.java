@@ -104,6 +104,17 @@ class PersistenceArchitectureTest {
             .because("a native query is plain SQL: queries are derived, JPQL or Specifications");
 
     @ArchTest
+    static final ArchRule writes_use_save_and_flush = noClasses()
+            .that()
+            .resideInAPackage(ROOT)
+            .should()
+            .callMethodWhere(DescribedPredicate.describe(
+                    "flush() of a Spring Data repository",
+                    call -> call.getName().equals("flush")
+                            && call.getTargetOwner().isAssignableTo(Repository.class)))
+            .because("a write that must reach the database in the call is one saveAndFlush(entity)");
+
+    @ArchTest
     static final ArchRule entities_live_in_entity_packages = classes()
             .that(JPA_MAPPING)
             .should()

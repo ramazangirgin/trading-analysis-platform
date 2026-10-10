@@ -104,6 +104,10 @@ do, by `value`, and are `Serializable`, as JPA requires of an `@EmbeddedId`.
 - **Partial updates** load the managed entity in a `@Transactional` adapter method, compare the
   record's version with the entity's, and copy only the fields that may change. Dirty checking
   writes them (`JpaAnalysisRepositoryAdapter#update`).
+- **A write that must reach the database in the call** ends with `repository.saveAndFlush(entity)`,
+  never a `save` (or a change to a managed entity) followed by a separate `repository.flush()`: one
+  call, and the returned entity is the one to map. For a managed entity it is a merge onto itself
+  followed by the flush.
 - **A constraint error that the port promises** surfaces in the call: `saveAndFlush` inside
   `@Transactional`. With JPA, Spring's exception translation yields a
   `DataIntegrityViolationException` for unique and foreign-key violations alike. An adapter whose
@@ -186,8 +190,9 @@ A write based on a stale copy of a row fails instead of overwriting a newer one.
     `#replaceImported`): the adapter loads the entity, compares the incoming version with the
     entity's and throws `OptimisticLockingFailureException` on a mismatch (a `null` version
     included, and a missing row with a non-null version: it was deleted meanwhile), because JPA
-    forbids changing the version of a managed entity. It then copies the fields and flushes; the
-    `UPDATE … WHERE VERSION = ?` covers the window between the load and the flush. The compare is a
+    forbids changing the version of a managed entity. It then copies the fields and calls
+    `saveAndFlush`; the `UPDATE … WHERE VERSION = ?` covers the window between the load and the
+    flush. The compare is a
     private helper per adapter, moved to `:backend:library:persistence` once a third needs it.
 - **The services translate it** where they call a write: a domain error code `CONCURRENT_UPDATE`
   (`AnalysisError`, `SettingsError`) with the ID as parameter, and the BFF maps it to HTTP 409
@@ -279,6 +284,7 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 | No `org.springframework.jdbc`, `java.sql`, `javax.sql` in production code | `PersistenceArchitectureTest.production_code_does_not_use_plain_sql` |
 | No `org.springframework.jdbc` in test code | Checkstyle `IllegalImport` (`config/checkstyle/checkstyle.xml`) |
 | No native query | `PersistenceArchitectureTest.no_native_queries` |
+| No separate `repository.flush()`: writes end with `saveAndFlush` | `writes_use_save_and_flush` |
 | Entities, embeddables, converters in `adapter.<port>.entity`, and nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities` |
 | Spring Data repositories next to their adapter | `spring_data_repositories_live_in_persistence_roots`, `port_package_roots_hold_only_adapters` |
 | Suffixes `Entity`, `Embeddable`, `AttributeConverter`, `JpaRepository` | `persistence_classes_are_named_by_kind` |

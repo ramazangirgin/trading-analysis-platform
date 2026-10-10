@@ -81,12 +81,11 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
     public User save(User user) {
         try {
             UserEntity incoming = toEntity.map(user);
-            UserEntity stored = repository
+            UserEntity entity = repository
                     .findById(incoming.getId())
                     .map(existing -> copyOnto(existing, incoming))
-                    .orElseGet(() -> insert(incoming));
-            repository.flush();
-            return toUser.map(stored);
+                    .orElseGet(() -> requireNew(incoming));
+            return toUser.map(repository.saveAndFlush(entity));
         } catch (DataIntegrityViolationException e) {
             if (isUniqueViolation(e)) {
                 throw new DuplicateKeyException("The username is taken by another user", e);
@@ -95,12 +94,12 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
         }
     }
 
-    private UserEntity insert(UserEntity incoming) {
+    private static UserEntity requireNew(UserEntity incoming) {
         if (incoming.getVersion() != null) {
             throw new OptimisticLockingFailureException(
                     "User " + incoming.getId().getValue() + " was deleted since it was read");
         }
-        return repository.save(incoming);
+        return incoming;
     }
 
     private static UserEntity copyOnto(UserEntity existing, UserEntity incoming) {
