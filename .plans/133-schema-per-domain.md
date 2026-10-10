@@ -234,6 +234,25 @@ it, and `mise run check` names it too. It is proved by hand once (remove a domai
 run the task, see it fail) and that run goes in the pull request's description, like the changed
 ArchUnit rules
 
+### Shared libraries know no domain (developer review on #138)
+
+Two decisions of the developer's review, which apply to every shared library, not only to
+`:backend:library:persistence`:
+
+- **A library names no domain**, anywhere: no domain package or class, no schema, table, column or
+  type of a domain, not in its main code, test fixtures, tests, comments or Javadoc examples. Each
+  domain brings its details to the library's code (the conventions test's constructor), never the
+  other way round. The library's own tests use made-up domains: `SAMPLE`, a second domain `OTHER`
+  that a broken fixture reaches into, and `SAMPLE_NAMING` for the naming rules, with neutral table
+  and column names (`ORDERS`, `PARENT_ID`, `LABEL`). Javadoc examples show the library's own
+  `SamplePersistenceConventionsTest`. `:backend:library:mapper`'s example enum value is
+  `SAMPLE_VALUE`, not the run event type `AGENT_STATUS`. No automated check: a word search would hit
+  plain English ("settings"), and `libraries_depend_only_on_libraries` covers code dependencies, so
+  names in SQL, strings and comments are kept by review.
+- **Each library documents itself in its own `README.md`** (`artifact/backend/library/<library>/`):
+  what it holds, who uses it, its decisions. `backend-java-package-structure.md` keeps the rules
+  that hold for every library and no list of the libraries; "Adding a library" asks for the README.
+
 ### Local database, Compose, deployment
 
 Nothing in the setup changes: one database `platform`, one user. `scripts/postgres.sh`, the Compose
@@ -322,6 +341,24 @@ Compose), as for 1.0.0.
   - [x] `mise run version:bump major` (2.7.0 → 3.0.0, or the next major if `main` moved).
 - **Tests**: `mise run check`, `mise run build`.
 
+### WP5: Shared libraries know no domain, one README per library
+
+- **Depends on**: WP4
+- **Status**: done
+- **Files**:
+  - `artifact/backend/library/persistence/src/test/…/fixture/**` (entities and migrations), `EntitySchemaRuleTest`, `DomainMigrationIsolationCheckTest`, `DatabaseNamingCheckTest`
+  - `artifact/backend/library/persistence/src/testFixtures/…/DomainPersistenceConventionsTest.java` (Javadoc example)
+  - `artifact/backend/library/mapper/src/**` (`EnumToLowerCaseNameMapper` Javadoc and test)
+  - `artifact/backend/library/persistence/README.md`, `artifact/backend/library/mapper/README.md` (new)
+  - `docs/coding-convention/backend-java-package-structure.md`
+- **Steps**:
+  - [x] Made-up domains and neutral names in the library fixtures, tests and examples, as in the design.
+  - [x] A README per library; the persistence one records the decision "the library knows no domain".
+  - [x] The package structure document without the list of libraries, with the no-domain rule for
+        every library.
+- **Tests**: the libraries' own tests (`:backend:library:persistence:test`,
+  `:backend:library:mapper:test`) with the renamed fixtures; `mise run check`.
+
 ## Tests
 
 - Library (`:backend:library:persistence`): the proofs that each check fails
@@ -352,9 +389,10 @@ How the issue's acceptance is proved:
 |---|---|---|
 | Text | `docs/coding-convention/backend-database-naming.md` | Schemas: one per domain, the uppercase domain name, quoted; nothing in `public`. "Not renamed" keeps the database and the user only. Migrations: in the persistence adapter's package (`…/adapter/persistence/migration/`), `V<n>__<change>.sql`, versions per domain from `V1`, Flyway creates the schema, every qualifiable name qualified (indexes and constraints cannot be). History table: one per schema, set by the domain's Flyway bean. Examples with qualified names and the entity's `schema = …SCHEMA`; `SELECT * FROM "ANALYSIS"."ANALYSES"`; links to the new files. "Where it is checked": the naming check runs per domain, in the domain's conventions test, and checks the schema name |
 | Text | `docs/coding-convention/backend-java-persistence.md` | New section "One schema per domain": the boundary; no foreign key, view, type or function across schemas; other domains referenced by plain ID; cross-domain logic in `orchestration`; the `<Domain>PersistenceConfiguration` (schema constant, the domain's own Flyway bean, why Boot's auto-configuration backs off and Hibernate still waits for it); why `schema =` stays on entities (the rejected alternatives); why the migrations live under the package. Update the mapping table and the enum-array paragraph (qualified types). Rules: the `DataSource` exception. "Shared persistence code": the conventions test and its checks in the fixtures, `TestMigrations` gone. "Tests": adapter tests migrate through the domain's own Flyway bean; a migration test seeds with an extra location of its own (generic, no named example). "Where it is checked": the abstract test and its four checks, the proofs in the library, and `domainPersistenceTestsCheck`, which fails a domain with persistence but no conventions test. A checklist "Giving a domain persistence": configuration class, migration folder, conventions test |
-| Text | `docs/coding-convention/backend-java-package-structure.md` | Next to "domains are independent": each domain's tables live in its own database schema, the database side of the package boundary, link to the persistence document. The package layout and placement table: `<Domain>PersistenceConfiguration` in `adapter.persistence`, the migrations under it. The shared-libraries row of `:backend:library:persistence`: the conventions test in the fixtures |
+| Text | `docs/coding-convention/backend-java-package-structure.md` | Next to "domains are independent": each domain's tables live in its own database schema, the database side of the package boundary, link to the persistence document. The package layout and placement table: `<Domain>PersistenceConfiguration` in `adapter.persistence`, the migrations under it. Shared libraries: no list of the libraries (each has its README), a library names no domain, "Adding a library" asks for a README |
 | Text | `docs/coding-convention/README.md` | The "Database naming" row of the enforcement table becomes "Database naming and schemas": the per-domain conventions tests, the library's proofs and `domainPersistenceTestsCheck` (also in `mise run check`); the removed tests no longer listed |
 | Text | `README.md` | New "Upgrading to 3.0.0" above "Upgrading to 2.0.0": each domain's tables move into a schema of their own, so the database is reset, not migrated (same reset steps as 1.0.0 for Compose; `mise run db:reset` for local runs; runs the platform started, presets and users are lost, data-folder analyses are imported again). The backup paragraph's hand query becomes `SELECT * FROM "ANALYSIS"."ANALYSES";`. The CI table's *Backend and frontend* row: "the database naming and schema checks of every domain (uppercase names, explicit constraint and index names, everything in the domain's own schema, a conventions test in every domain with persistence)". The task list's `mise run check` line, if it lists what the check runs |
+| Text | `artifact/backend/library/persistence/README.md`, `artifact/backend/library/mapper/README.md` (new) | What each library holds and who uses it; the persistence one records "the library knows no domain" and how to name fixtures |
 | Screenshot | none | No page changes |
 
 ## Out of scope
