@@ -157,10 +157,11 @@ jar …") is kept.
 
 ### WP2: CI workflow
 
-- **Depends on**: none (it runs the e2e tests the way WP1 configures them, but neither file
-  depends on the other)
+- **Depends on**: none
 - **Files**: `.github/workflows/ci.yml`
 - **Steps**:
+  - [ ] note: CI runs the e2e tests the way WP1 configures them, but neither package's files depend
+        on the other's, so they can be implemented in parallel
   - [ ] `build`: one step `./gradlew --console=plain spotlessCheck :frontend:pnpmLint build`,
         with the comment from design 4
   - [ ] new `runner-image` job (design 2), and `images` reduced and renamed, `needs: [build, runner-image]`
