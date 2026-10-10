@@ -33,28 +33,28 @@ class DatabaseNamingCheckTest {
         assertEquals(
                 List.of(
                         "column \"id\" of table \"SAMPLE_NAMING\".\"orders\": not uppercase",
-                        "column \"ticker\" of table \"SAMPLE_NAMING\".\"NAMING_LOWER_COLUMN\": not uppercase",
-                        "constraint \"NAMING_GENERATED_ANALYSIS_ID_fkey\""
-                                + " on table \"SAMPLE_NAMING\".\"NAMING_GENERATED\": not uppercase",
+                        "column \"label\" of table \"SAMPLE_NAMING\".\"NAMING_LOWER_COLUMN\": not uppercase",
                         "constraint \"NAMING_GENERATED_CODE_key\" on table \"SAMPLE_NAMING\".\"NAMING_GENERATED\""
                                 + ": not uppercase",
+                        "constraint \"NAMING_GENERATED_PARENT_ID_fkey\""
+                                + " on table \"SAMPLE_NAMING\".\"NAMING_GENERATED\": not uppercase",
                         "constraint \"NAMING_GENERATED_pkey\" on table \"SAMPLE_NAMING\".\"NAMING_GENERATED\""
                                 + ": not uppercase",
                         "constraint \"NAMING_WRONG_CODE_FK\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
-                                + ": expected NAMING_WRONG_ANALYSIS_ID_FK",
+                                + ": expected NAMING_WRONG_PARENT_ID_FK",
                         "constraint \"NAMING_WRONG_CODE_UQ\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
                                 + ": expected NAMING_WRONG_<COLUMNS>_UK",
                         "constraint \"NAMING_WRONG_KEY\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
                                 + ": expected NAMING_WRONG_PK",
-                        "constraint \"NAMING_WRONG_TICKER_CHECK\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
+                        "constraint \"NAMING_WRONG_LABEL_CHECK\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
                                 + ": no naming rule for this kind of constraint yet,"
                                 + " start with backend-database-naming.md",
                         "enum type \"SAMPLE_NAMING\".\"mood\": not uppercase",
                         "index \"NAMING_GENERATED_KIND_IDX\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
                                 + ": expected NAMING_WRONG_<COLUMNS>_IDX",
-                        "index \"NAMING_GENERATED_TICKER_idx\" on table \"SAMPLE_NAMING\".\"NAMING_GENERATED\""
+                        "index \"NAMING_GENERATED_LABEL_idx\" on table \"SAMPLE_NAMING\".\"NAMING_GENERATED\""
                                 + ": not uppercase",
-                        "index \"NAMING_WRONG_TICKER_IDX\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
+                        "index \"NAMING_WRONG_LABEL_IDX\" on table \"SAMPLE_NAMING\".\"NAMING_WRONG\""
                                 + ": expected NAMING_WRONG_<COLUMNS>_UK",
                         "table \"SAMPLE_NAMING\".\"orders\": not uppercase"),
                 result.violations());

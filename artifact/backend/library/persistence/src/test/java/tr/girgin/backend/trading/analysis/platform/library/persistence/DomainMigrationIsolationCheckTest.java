@@ -45,7 +45,7 @@ class DomainMigrationIsolationCheckTest {
         List<String> violations = violationsOf("cross");
 
         assertThat(violations).hasSize(1);
-        assertThat(violations.get(0)).startsWith("migration failed: ").contains("IDENTITY");
+        assertThat(violations.get(0)).startsWith("migration failed: ").contains("OTHER");
     }
 
     @Test
@@ -53,7 +53,7 @@ class DomainMigrationIsolationCheckTest {
         List<String> violations = violationsOf("crosstype");
 
         assertThat(violations).hasSize(1);
-        assertThat(violations.get(0)).startsWith("migration failed: ").contains("ANALYSIS");
+        assertThat(violations.get(0)).startsWith("migration failed: ").contains("OTHER");
     }
 
     @Test

@@ -17,13 +17,14 @@ import org.junit.jupiter.api.Test;
 /**
  * The schema rules of one domain's persistence adapter, see docs/coding-convention/backend-java-persistence.md
  * ("One schema per domain"). The adapter extends this class once, in a test in its persistence package, and
- * names its configuration class, its schema and the method of its configuration that builds its Flyway:
+ * names its configuration class, its schema and the method of its configuration that builds its Flyway, as
+ * the library's own made-up domain does ({@code SamplePersistenceConventionsTest} in this module's tests):
  *
  * <pre>{@code
- * class AnalysisPersistenceConventionsTest extends DomainPersistenceConventionsTest {
- *     AnalysisPersistenceConventionsTest() {
- *         super(AnalysisPersistenceConfiguration.class, AnalysisPersistenceConfiguration.SCHEMA,
- *                 dataSource -> new AnalysisPersistenceConfiguration().analysisFlyway(dataSource));
+ * class SamplePersistenceConventionsTest extends DomainPersistenceConventionsTest {
+ *     SamplePersistenceConventionsTest() {
+ *         super(SamplePersistenceConfiguration.class, SamplePersistenceConfiguration.SCHEMA,
+ *                 dataSource -> new SamplePersistenceConfiguration().sampleFlyway(dataSource));
  *     }
  * }
  * }</pre>
