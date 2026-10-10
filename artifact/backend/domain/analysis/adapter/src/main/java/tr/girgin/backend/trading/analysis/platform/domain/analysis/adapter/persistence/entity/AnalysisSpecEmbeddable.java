@@ -24,14 +24,14 @@ public class AnalysisSpecEmbeddable {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "ASSET_TYPE", nullable = false, columnDefinition = "\"ASSET_TYPE\"")
+    @Column(name = "ASSET_TYPE", nullable = false, columnDefinition = "\"ANALYSIS\".\"ASSET_TYPE\"")
     private AssetType assetType;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.ARRAY)
     // Hibernate binds the array of an enum as varchar[], which PostgreSQL rejects for an enum array column.
-    @ColumnTransformer(write = "cast(? as \"ANALYST\"[])")
-    @Column(name = "ANALYSTS", nullable = false, columnDefinition = "\"ANALYST\"[]")
+    @ColumnTransformer(write = "cast(? as \"ANALYSIS\".\"ANALYST\"[])")
+    @Column(name = "ANALYSTS", nullable = false, columnDefinition = "\"ANALYSIS\".\"ANALYST\"[]")
     private List<Analyst> analysts;
 
     @Column(name = "LLM_PROVIDER", nullable = false)

@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.spring.data.jpa)
     implementation(libs.jakarta.persistence.api)
     implementation(libs.hibernate.core)
+    implementation(libs.flyway.core)
     implementation(libs.spring.security.crypto)
 
     testImplementation(testFixtures(project(":backend:library:persistence")))

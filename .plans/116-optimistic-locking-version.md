@@ -54,12 +54,12 @@ persistence types.
 
 ### Schema: one migration per domain
 
-`VERSION BIGINT NOT NULL DEFAULT 0` on each table, in a new migration per domain, global versions in
-order of creation, with a comment saying what the column is for:
+`VERSION BIGINT NOT NULL DEFAULT 0` on each table, in a new migration per domain (`V2__add_version.sql`; after #133, versions are per domain
+and names schema-qualified), with a comment saying what the column is for:
 
-- `artifact/backend/domain/analysis/adapter/src/main/resources/db/migration/V6__analysis_version.sql`: `"ANALYSES"`
-- `artifact/backend/domain/settings/adapter/src/main/resources/db/migration/V7__settings_version.sql`: `"PRESETS"`
-- `artifact/backend/domain/identity/adapter/src/main/resources/db/migration/V8__identity_version.sql`: `"USERS"`, `"ROLES"`
+- `artifact/backend/domain/analysis/adapter/src/main/resources/…/domain/analysis/adapter/persistence/migration/V2__add_version.sql`: `"ANALYSES"`
+- `artifact/backend/domain/settings/adapter/src/main/resources/…/domain/settings/adapter/persistence/migration/V2__add_version.sql`: `"PRESETS"`
+- `artifact/backend/domain/identity/adapter/src/main/resources/…/domain/identity/adapter/persistence/migration/V2__add_version.sql`: `"USERS"`, `"ROLES"`
 
 Existing rows get version 0, nothing else changes. `USER_ROLES` gets no column: it is a collection of
 the user aggregate, and Hibernate increments the owning `USERS` row's version when the collection
@@ -151,9 +151,9 @@ asks for a changed rule).
 - **Status**: done
 - **Depends on**: none
 - **Files**:
-  - `artifact/backend/domain/analysis/adapter/src/main/resources/db/migration/V6__analysis_version.sql` (new)
-  - `artifact/backend/domain/settings/adapter/src/main/resources/db/migration/V7__settings_version.sql` (new)
-  - `artifact/backend/domain/identity/adapter/src/main/resources/db/migration/V8__identity_version.sql` (new)
+  - `artifact/backend/domain/analysis/adapter/src/main/resources/…/domain/analysis/adapter/persistence/migration/V2__add_version.sql` (new)
+  - `artifact/backend/domain/settings/adapter/src/main/resources/…/domain/settings/adapter/persistence/migration/V2__add_version.sql` (new)
+  - `artifact/backend/domain/identity/adapter/src/main/resources/…/domain/identity/adapter/persistence/migration/V2__add_version.sql` (new)
   - `…/analysis/adapter/persistence/entity/AnalysisEntity.java`, `…/analysis/adapter/persistence/JpaAnalysisRepositoryAdapter.java`
   - `…/settings/adapter/persistence/entity/PresetEntity.java`, `…/settings/adapter/persistence/JpaPresetRepositoryAdapter.java`
   - `…/identity/adapter/persistence/entity/UserEntity.java`, `RoleEntity.java`, `JpaUserRepositoryAdapter.java`, `JpaRoleRepositoryAdapter.java`
@@ -171,11 +171,10 @@ asks for a changed rule).
     `replaceImported`. Plus: a new record starts at version 0; each successful write increments it and
     the returned record carries it; saving a `null`-version record with an existing ID fails.
   - Existing expectations gain the version (e.g. `savesUpdatesAndDeletes` asserts 0, then 1).
-  - Migration without loss: `V4AnalysisEnumTypesMigrationTest` and
-    `V5IdentityPermissionArrayMigrationTest` already run every migration over seeded old rows and
-    compare whole records; their expected records now have `version 0`. Settings has no migration
-    test: add `V7SettingsVersionMigrationTest` with a seed `src/test/resources/db/seed/settings/V2_1__settings_seed_old_rows.sql`
-    that inserts a preset under V2 and reads it back unchanged with version 0.
+  - Migration without loss (after #133): `V2AnalysisVersionMigrationTest`, `V2SettingsVersionMigrationTest`
+    and `V2IdentityVersionMigrationTest`, each with its own Flyway over the real migrations plus a
+    test-only seed `persistence/seed/V1_1__seed_rows_before_version.sql`, read the V1 rows back
+    unchanged at version 0.
   - `DatabaseNamingTest` covers the new column names unchanged.
 
 ### WP2: Domain records, ports and services
@@ -274,7 +273,7 @@ asks for a changed rule).
 |---|---|---|
 | Text | `docs/coding-convention/backend-java-persistence.md` | New section "Optimistic locking": the `VERSION` column per updated-in-place table, `@Version Long` on every entity, the version as a field of the domain record (`null` before the first save, owned by persistence, never changed by the core), why it travels through the core and not only the adapter, the port promise (`OptimisticLockingFailureException`), the adapters' load-compare-flush for managed entities vs the merge check, the translation to `CONCURRENT_UPDATE` in the services and 409 in the BFF, and that writes return the stored record. Update "Mapping domain types" (a row for the version), "Repositories and adapters" (upsert and partial updates now check the version), "Tests" (the stale-write test per entity) and "Where it is checked" (`entities_have_a_version`, `writes_use_save_and_flush`). "Repositories and adapters" also gains the rule that a write ends with `saveAndFlush`, never a separate `flush()` |
 | Text | `docs/coding-convention/backend-database-naming.md` | None: the column follows the existing rules; the migration list there is by example only |
-| Text | `docs/coding-convention/README.md` | The persistence row's "Covers" mentions optimistic locking; the Database naming row's test list gains `V7SettingsVersionMigrationTest` |
+| Text | `docs/coding-convention/README.md` | The persistence row's "Covers" mentions optimistic locking; the Database naming row's test list gains the three `V2*VersionMigrationTest`s |
 | Text | `README.md`, section around "**Save as preset** … renames or deletes them" | One sentence: a rename of a preset someone else changed meanwhile fails with a message and the list reloads |
 | API | `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` | Regenerated: `PresetDto.version`, `SavePresetRequest.version` |
 | Screenshot | none | The Settings page looks the same: the version is not shown |

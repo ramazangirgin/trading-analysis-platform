@@ -1,7 +1,9 @@
 package tr.girgin.backend.trading.analysis.platform;
 
 import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.equivalentTo;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -31,6 +33,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
+import javax.sql.DataSource;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -62,6 +65,7 @@ class PersistenceArchitectureTest {
     private static final String DOMAIN_ADAPTER_PERSISTENCE = BASE + ".domain.*.adapter.persistence";
     private static final String DOMAIN_ADAPTER_ENTITY = BASE + ".domain.*.adapter.*.entity..";
     private static final String LIBRARY = BASE + ".library..";
+    private static final String PERSISTENCE_CONFIGURATION = "PersistenceConfiguration";
 
     /** JPA mapping classes: entities, embeddables, mapped superclasses and attribute converters. */
     // One explicit predicate: a chain of DescribedPredicate.or(...) over these matched no class at all.
@@ -91,10 +95,24 @@ class PersistenceArchitectureTest {
     static final ArchRule production_code_does_not_use_plain_sql = noClasses()
             .that()
             .resideInAPackage(ROOT)
+            .and()
+            .haveSimpleNameNotEndingWith(PERSISTENCE_CONFIGURATION)
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage("org.springframework.jdbc..", "java.sql..", "javax.sql..")
             .because("persistence goes through Spring Data JPA (docs/coding-convention/backend-java-persistence.md)");
+
+    @ArchTest
+    static final ArchRule persistence_configurations_only_hand_the_data_source_to_flyway = noClasses()
+            .that()
+            .resideInAPackage(ROOT)
+            .and()
+            .haveSimpleNameEndingWith(PERSISTENCE_CONFIGURATION)
+            .should()
+            .dependOnClassesThat(resideInAnyPackage("org.springframework.jdbc..", "java.sql..", "javax.sql..")
+                    .and(not(equivalentTo(DataSource.class))))
+            .because("a domain's persistence configuration takes the DataSource only to hand it to its Flyway bean;"
+                    + " all other plain SQL stays banned (docs/coding-convention/backend-java-persistence.md)");
 
     @ArchTest
     static final ArchRule no_native_queries = classes()

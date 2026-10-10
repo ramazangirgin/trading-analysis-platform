@@ -89,6 +89,71 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
     workingDir = rootDir
 }
 
+// Every domain with persistence must prove its schema rules: a test class extending
+// DomainPersistenceConventionsTest (docs/coding-convention/backend-java-persistence.md). A domain has
+// persistence when its adapter holds an @Entity or a migration under adapter/persistence/migration.
+abstract class DomainPersistenceTestsCheck : DefaultTask() {
+
+    /** The adapter project's name (e.g. :backend:domain:analysis:adapter) and its directory. */
+    @get:Internal
+    abstract val adapters: MapProperty<String, Directory>
+
+    // The result depends on where a file is (its adapter, its folder), not only on its content.
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.ABSOLUTE)
+    abstract val sources: ConfigurableFileCollection
+
+    /** Written on success: a task without outputs is never up to date. */
+    @get:OutputFile
+    abstract val marker: RegularFileProperty
+
+    @TaskAction
+    fun check() {
+        val problems = mutableListOf<String>()
+        adapters.get().toSortedMap().forEach { (name, directory) ->
+            val root = directory.asFile
+            val entity = root.resolve("src/main/java").walk()
+                .firstOrNull { it.isFile && it.extension == "java" && Regex("^\\s*@(jakarta\\.persistence\\.)?Entity\\b", RegexOption.MULTILINE).containsMatchIn(it.readText()) }
+            val migration = root.resolve("src/main/resources").walk()
+                .firstOrNull { it.isFile && it.extension == "sql" && it.parentFile.path.endsWith("adapter/persistence/migration") }
+            val reason = when {
+                entity != null -> "@Entity in ${entity.name}"
+                migration != null -> "migration ${migration.name}"
+                else -> null
+            }
+            if (reason != null) {
+                val hasTest = root.resolve("src/test/java").walk()
+                    .any { it.isFile && it.extension == "java" && Regex("extends\\s+DomainPersistenceConventionsTest\\b").containsMatchIn(it.readText()) }
+                if (!hasTest) {
+                    problems += "$name has persistence ($reason) but no test extending DomainPersistenceConventionsTest"
+                }
+            }
+        }
+        if (problems.isNotEmpty()) {
+            throw GradleException(problems.joinToString("\n"))
+        }
+        marker.get().asFile.writeText("ok\n")
+    }
+}
+
+val domainPersistenceTestsCheck = tasks.register<DomainPersistenceTestsCheck>("domainPersistenceTestsCheck") {
+    group = "verification"
+    description = "Fails a domain adapter with persistence but no test extending DomainPersistenceConventionsTest"
+    marker = layout.buildDirectory.file("domainPersistenceTestsCheck/ok")
+    rootProject.subprojects
+        .filter { it.path.matches(Regex(":backend:domain:[^:]+:adapter")) }
+        .forEach { adapter ->
+            adapters.put(adapter.path, adapter.layout.projectDirectory)
+            sources.from(adapter.layout.projectDirectory.dir("src/main/java"))
+            sources.from(adapter.layout.projectDirectory.dir("src/main/resources"))
+            sources.from(adapter.layout.projectDirectory.dir("src/test/java"))
+        }
+}
+
+tasks.named("check") {
+    dependsOn(domainPersistenceTestsCheck)
+}
+
 tasks.processResources {
     from(frontend) {
         into("static")

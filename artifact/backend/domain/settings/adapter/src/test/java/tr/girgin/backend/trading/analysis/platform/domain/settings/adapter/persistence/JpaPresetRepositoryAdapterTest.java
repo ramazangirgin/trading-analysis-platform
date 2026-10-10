@@ -21,7 +21,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Pr
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.MutableTestClock;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.TestMigrations;
 
 @JpaAdapterTest
 @SpringJUnitConfig(JpaPresetRepositoryAdapterTest.Config.class)
@@ -115,10 +114,7 @@ class JpaPresetRepositoryAdapterTest {
 
         @Bean
         DataSource dataSource() {
-            DataSource dataSource = PostgresTestDatabase.create().dataSource();
-            // Only this domain's migration: V1 belongs to another module.
-            TestMigrations.migrate(dataSource, "1");
-            return dataSource;
+            return PostgresTestDatabase.create().dataSource();
         }
     }
 }

@@ -12,11 +12,12 @@ import java.util.Set;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.IdentityPersistenceConfiguration;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 
 /** One row of the {@code ROLES} table; its permissions are an array of the {@code PERMISSION} type on the row. */
 @Entity
-@Table(name = "ROLES")
+@Table(name = "ROLES", schema = IdentityPersistenceConfiguration.SCHEMA)
 public class RoleEntity {
 
     @EmbeddedId
@@ -34,8 +35,8 @@ public class RoleEntity {
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.ARRAY)
     // Hibernate binds the array of an enum as varchar[], which PostgreSQL rejects for an enum array column.
-    @ColumnTransformer(write = "cast(? as \"PERMISSION\"[])")
-    @Column(name = "PERMISSIONS", nullable = false, columnDefinition = "\"PERMISSION\"[]")
+    @ColumnTransformer(write = "cast(? as \"IDENTITY\".\"PERMISSION\"[])")
+    @Column(name = "PERMISSIONS", nullable = false, columnDefinition = "\"IDENTITY\".\"PERMISSION\"[]")
     private Set<Permission> permissions = new HashSet<>();
 
     // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.

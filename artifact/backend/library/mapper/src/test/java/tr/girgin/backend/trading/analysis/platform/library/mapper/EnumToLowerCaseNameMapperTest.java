@@ -15,11 +15,11 @@ class EnumToLowerCaseNameMapperTest {
 
     @Test
     void keepsTheUnderscoresOfAMultiWordConstant() {
-        assertThat(mapper.map(Sample.AGENT_STATUS)).isEqualTo("agent_status");
+        assertThat(mapper.map(Sample.SAMPLE_VALUE)).isEqualTo("sample_value");
     }
 
     private enum Sample {
         STATUS,
-        AGENT_STATUS
+        SAMPLE_VALUE
     }
 }

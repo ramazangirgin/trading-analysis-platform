@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.spring.data.jpa)
     implementation(libs.jakarta.persistence.api)
     implementation(libs.hibernate.core)
+    implementation(libs.flyway.core)
     implementation(libs.jackson.core)
     implementation(libs.jackson.databind)
     implementation(libs.slf4j.api)

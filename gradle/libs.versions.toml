@@ -74,6 +74,7 @@ spring-boot-test = { module = "org.springframework.boot:spring-boot-test" }
 spring-boot = { module = "org.springframework.boot:spring-boot" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }
 spring-boot-data-jpa = { module = "org.springframework.boot:spring-boot-data-jpa" }
+spring-boot-flyway = { module = "org.springframework.boot:spring-boot-flyway" }
 spring-boot-hibernate = { module = "org.springframework.boot:spring-boot-hibernate" }
 spring-boot-transaction = { module = "org.springframework.boot:spring-boot-transaction" }
 spring-context = { module = "org.springframework:spring-context" }
@@ -102,6 +103,7 @@ testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgr
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 assertj-core = { module = "org.assertj:assertj-core" }
 # The Checkstyle API the custom checks are written against; the same version runs the checks.
 checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle" }

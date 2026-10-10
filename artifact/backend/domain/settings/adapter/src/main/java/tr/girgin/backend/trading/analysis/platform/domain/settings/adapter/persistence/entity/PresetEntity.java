@@ -9,10 +9,11 @@ import jakarta.persistence.Version;
 import java.time.Instant;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.SettingsPersistenceConfiguration;
 
 /** One row of the {@code PRESETS} table. */
 @Entity
-@Table(name = "PRESETS")
+@Table(name = "PRESETS", schema = SettingsPersistenceConfiguration.SCHEMA)
 @EntityListeners(AuditingEntityListener.class)
 public class PresetEntity {
 

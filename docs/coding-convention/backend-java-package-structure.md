@@ -47,6 +47,8 @@ domain/<d>/adapter/
   <port>/                          one package per outbound port, e.g. persistence, runner
     *Adapter                       the adapter(s) implementing the port: the package root only
     *JpaRepository                 Spring Data repositories, next to their adapter (persistence only)
+    <Domain>PersistenceConfiguration   the domain's schema and Flyway bean (persistence only)
+    migration/ (resources)         the domain's Flyway migrations, V<n>__<change>.sql (persistence only)
     entity/    *Entity, *Embeddable, *AttributeConverter   JPA table shapes (backend-java-persistence.md)
     json/      *Json, ...          JSON shapes read or written by the adapter
     spec/      ...                 data handed to an external process (RunnerSpec)
@@ -54,8 +56,8 @@ domain/<d>/adapter/
     support/   ...                 helpers: clients, file tails, Spring conditions
 orchestration/<feature>/           same shape as a domain core
   inbound/ service/ model/
-library/<library>/                 a shared library, one kind of technical code (library/mapper:
-                                   MapStruct mappers only)
+library/<library>/                 a shared library, one kind of technical code; its README.md says
+                                   what it holds
 ```
 
 A module's root package (`….bff`, `….domain.<d>`, `….domain.<d>.core`, `….domain.<d>.adapter`,
@@ -70,16 +72,16 @@ Today's adapter packages:
 | `domain.analysis.adapter.credentials` | `EnvFileCredentialsAdapter` | |
 | `domain.analysis.adapter.eventline` | `RunnerOutputLineParser` (shared, see below) | `json`, `mapper` |
 | `domain.analysis.adapter.eventstore` | `JsonlEventStoreAdapter` | `mapper` |
-| `domain.analysis.adapter.persistence` | `JpaAnalysisRepositoryAdapter`, `AnalysisJpaRepository` | `entity`, `mapper` |
+| `domain.analysis.adapter.persistence` | `JpaAnalysisRepositoryAdapter`, `AnalysisJpaRepository`, `AnalysisPersistenceConfiguration` | `entity`, `mapper` |
 | `domain.analysis.adapter.runlog` | `RunLogFileAdapter` | |
 | `domain.analysis.adapter.runner` | `ProcessRunnerAdapter`, `DockerRunnerAdapter` | `spec`, `mapper`, `support` |
 | `domain.catalog.adapter.runner` | `TaRunnerEngineInfoAdapter`, `DockerEngineInfoAdapter` | `json`, `mapper`, `support` |
 | `domain.identity.adapter.password` | `DelegatingPasswordHasherAdapter` | |
-| `domain.identity.adapter.persistence` | `JpaRoleRepositoryAdapter`, `JpaUserRepositoryAdapter`, `RoleJpaRepository`, `UserJpaRepository` | `entity`, `mapper` |
+| `domain.identity.adapter.persistence` | `JpaRoleRepositoryAdapter`, `JpaUserRepositoryAdapter`, `RoleJpaRepository`, `UserJpaRepository`, `IdentityPersistenceConfiguration` | `entity`, `mapper` |
 | `domain.report.adapter.datadir` | `FileSystemDataDirAdapter`, `FileSystemDataDirWatchAdapter` | `json` |
 | `domain.report.adapter.history` | `JsonRunHistoryAdapter` | |
 | `domain.report.adapter.prices` | `CsvPriceCacheAdapter` | |
-| `domain.settings.adapter.persistence` | `JpaPresetRepositoryAdapter`, `PresetJpaRepository` | `entity`, `mapper` |
+| `domain.settings.adapter.persistence` | `JpaPresetRepositoryAdapter`, `PresetJpaRepository`, `SettingsPersistenceConfiguration` | `entity`, `mapper` |
 | `domain.settings.adapter.secrets` | `DotenvSecretStoreAdapter` | |
 
 `eventline` is the one adapter package that implements no port: it parses runner output for both
@@ -103,7 +105,8 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | A class in a shared library | depends on other libraries only, never on domain, BFF or orchestration code | `libraries_depend_only_on_libraries` |
 | Two mappers with one simple name | none: a converter two modules need lives once, in `library.mapper` | `mappers_are_not_duplicated_across_modules` |
 | Class implementing an outbound port | the root of its `adapter.<port>` package | `port_adapters_live_at_the_port_package_root` |
-| Root of an `adapter.<port>` package | port implementations only (shared packages aside) | `port_package_roots_hold_only_adapters` |
+| Root of an `adapter.<port>` package | port implementations only (shared packages aside); the one exception is `<Domain>PersistenceConfiguration` in `adapter.persistence` | `port_package_roots_hold_only_adapters` |
+| `@Configuration` in a domain adapter | `<Domain>PersistenceConfiguration`, in `domain.<d>.adapter.persistence`, nowhere else | `domain_adapter_configurations_are_persistence_configurations` (`adapter_components_implement_an_outbound_port` only exempts it) |
 | `*UseCase` | `…inbound` | `use_cases_live_in_inbound_packages` |
 | `*Service` | `…service` | `services_live_in_service_packages` |
 | Exception (anything `Throwable`) | `domain.<d>.core.exception` or `bff.controller.api.error` | `exceptions_live_in_exception_packages` |
@@ -115,6 +118,9 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 The placement rules sit next to the dependency rules that were there before (BFF uses inbound
 ports only, adapters are used only by themselves, domains are independent, only `adapter.runner`
 starts processes or talks to Docker, mappers are `SourceToTargetMapper` with one `map` method, ...).
+The package boundary has a database side: domains are independent, so each domain's tables live in
+a database schema of its own, and no migration refers to another domain's schema
+([One schema per domain](backend-java-persistence.md#one-schema-per-domain)).
 Services, orchestrators included, are used only from their own `service` package
 (`domain_services_are_only_used_by_themselves`, `orchestration_services_are_only_used_by_themselves`).
 
@@ -137,18 +143,18 @@ module (`:backend` only has them on its runtime classpath), and ArchUnit's
 Code that several modules need goes into a shared library, `:backend:library:<library>`, never into
 a copy. `:backend:library` is a parent folder with no code of its own, like `:backend:domain`. Each
 library is its own Gradle module with its own root package, so a module depends only on the
-libraries it uses:
-
-| Gradle project | Root package | Holds | Used by |
-|---|---|---|---|
-| `:backend:library:mapper` | `….library.mapper` | Generic MapStruct scalar mappers: `DurationToMillisMapper`, `EnumToLowerCaseNameMapper` | `bff:impl`, `domain:analysis:adapter` |
-| `:backend:library:persistence` | `….library.persistence` | The JPA auditing configuration (`JpaAuditingConfiguration`, `ClockDateTimeProvider`), and in its test fixtures the shared test code of the persistence adapters ([persistence](backend-java-persistence.md#shared-persistence-code)) | `:backend` (runtime: the auditing configuration); the persistence adapters' and `:backend`'s tests (test fixtures) |
+libraries it uses. Each library describes itself in a `README.md` in its folder
+(`artifact/backend/library/<library>/README.md`): what it holds, who uses it, and the decisions
+behind it. This document keeps the rules that hold for every library, not a list of them.
 
 - **Technical code only, never domain logic.** A library holds generic building blocks with no
   project type, no domain concept and no business rule, one kind of code per library. It may depend
   on another library, never on anything else of the project: the classpath enforces it, and so does
   `libraries_depend_only_on_libraries`. Anything that knows about an analysis, a user, a preset or
-  another domain term stays in its domain, even when two modules end up with similar code.
+  another domain term stays in its domain, even when two modules end up with similar code. A library
+  does not name a domain anywhere, not even in its tests, fixtures, comments or Javadoc examples: its
+  own tests use made-up names (see the
+  [persistence library's README](../../artifact/backend/library/persistence/README.md#decision-the-library-knows-no-domain)).
   `EnumToLowerCaseNameMapper` is shared because it knows nothing about run events: the mappings that
   apply it to `RunEventType` (`qualifiedByName = "lowerCaseName"`) stay in the analysis adapter and
   the BFF.
@@ -159,9 +165,9 @@ libraries it uses:
 - **Shared test code lives in test fixtures** (Gradle's `java-test-fixtures`) of the library or module
   whose code it supports. It is never copied and never put in a test-only main module. Gradle keeps
   test fixtures off every main classpath; the ArchUnit tests do not import them.
-- **Adding a library**: a new module under `artifact/backend/library/<library>`, a row in the table
-  above, and a placement rule for its kind of class in `ArchitectureTest` (`library.mapper` is
-  covered by `mapper_packages_hold_only_mappers`).
+- **Adding a library**: a new module under `artifact/backend/library/<library>`, with a `README.md`
+  that says what it holds and who uses it, and a placement rule for its kind of class in
+  `ArchitectureTest` (`library.mapper` is covered by `mapper_packages_hold_only_mappers`).
 
 Alternatives considered for sharing code across modules:
 - a `mapper.common` package per module only shares within that module;

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.mapstruct.Mapper;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -75,6 +76,13 @@ class ArchitectureTest {
 
     private static final DescribedPredicate<JavaClass> MAPSTRUCT_MAPPER =
             annotatedWith(Mapper.class).forSubtype();
+
+    /** A domain's schema and Flyway bean: only a {@code @Configuration} in {@code adapter.persistence} qualifies. */
+    private static final DescribedPredicate<JavaClass> PERSISTENCE_CONFIGURATION =
+            JavaClass.Predicates.simpleNameEndingWith("PersistenceConfiguration")
+                    .and(annotatedWith(Configuration.class))
+                    .and(resideInAPackage(BASE + ".domain.*.adapter.persistence"))
+                    .as("a <Domain>PersistenceConfiguration @Configuration in adapter.persistence");
 
     // --- BFF -------------------------------------------------------------------------------
 
@@ -169,8 +177,10 @@ class ArchitectureTest {
             .and()
             .areMetaAnnotatedWith(Component.class)
             .and(not(assignableTo(MAPSTRUCT_MAPPER)))
+            .and(not(PERSISTENCE_CONFIGURATION))
             .should()
-            .implement(resideInAPackage(DOMAIN_OUTBOUND));
+            .implement(resideInAPackage(DOMAIN_OUTBOUND))
+            .because("a domain's <Domain>PersistenceConfiguration (its schema and Flyway bean) is no adapter");
 
     @ArchTest
     static final ArchRule domain_core_does_not_depend_on_infrastructure = noClasses()
@@ -312,12 +322,26 @@ class ArchitectureTest {
             .resideInAPackage(DOMAIN_ADAPTER_PORT)
             .and()
             .resideOutsideOfPackages(SHARED_ADAPTER_PACKAGES)
+            .and(not(PERSISTENCE_CONFIGURATION))
             .should()
             .implement(resideInAPackage(DOMAIN_OUTBOUND))
             .orShould()
             .beAssignableTo(Repository.class)
             .because("entities, JSON shapes, mappers and helpers go into the port's sub-packages;"
-                    + " next to its adapter a persistence package holds the adapter's Spring Data repositories");
+                    + " next to its adapter a persistence package holds the adapter's Spring Data repositories"
+                    + " and the domain's <Domain>PersistenceConfiguration (its schema and Flyway bean)");
+
+    @ArchTest
+    static final ArchRule domain_adapter_configurations_are_persistence_configurations = classes()
+            .that()
+            .resideInAPackage(DOMAIN_ADAPTER)
+            .and()
+            .areAnnotatedWith(Configuration.class)
+            .should()
+            .haveNameMatching(BASE.replace(".", "\\.")
+                    + "\\.domain\\.([a-z]+)\\.adapter\\.persistence\\.[A-Z][a-z]+PersistenceConfiguration")
+            .because("the only configuration class of a domain adapter is its <Domain>PersistenceConfiguration"
+                    + " (schema and Flyway bean) in adapter.persistence; adapters are plain components");
 
     @ArchTest
     static final ArchRule domain_core_sub_packages_are_known_kinds = topLevelClasses()

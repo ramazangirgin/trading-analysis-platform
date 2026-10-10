@@ -9,7 +9,9 @@ enforces each rule. Table, column and type names follow
 ## Rules
 
 - **Only Spring Data JPA / Hibernate.** Production code uses no `JdbcClient`, `JdbcTemplate`,
-  `NamedParameterJdbcTemplate`, raw `DataSource` or `Connection` (`java.sql`, `javax.sql`). Test code
+  `NamedParameterJdbcTemplate`, raw `DataSource` or `Connection` (`java.sql`, `javax.sql`). The one
+  exception is `javax.sql.DataSource` in a `<Domain>PersistenceConfiguration`, which only hands it to
+  the domain's Flyway bean. Test code
   uses no `org.springframework.jdbc`; the test fixtures may create the database and a `DataSource`
   to run the migrations. Neither uses a native query (`@Query(nativeQuery = true)`, `@NativeQuery`,
   `EntityManager.createNativeQuery`, Hibernate's `createNativeMutationQuery`, stored procedure
@@ -29,10 +31,55 @@ enforces each rule. Table, column and type names follow
   live in the adapter, and MapStruct maps entity ↔ domain model at the adapter boundary. The
   `*RepositoryPort` interfaces stay persistence-agnostic.
 
+## One schema per domain
+
+Each domain keeps its tables, enum types, constraints and indexes in a PostgreSQL schema of its own
+(`"ANALYSIS"`, `"SETTINGS"`, `"IDENTITY"`), the database side of the package boundary
+([package structure](backend-java-package-structure.md)). Nothing of the application is in `public`.
+
+- **No object crosses a schema**: no foreign key, view, type or function refers to another domain's
+  schema. A domain refers to another one's data by plain ID, and logic that needs both lives in
+  `orchestration`.
+- **`<Domain>PersistenceConfiguration`** (`AnalysisPersistenceConfiguration`, …) sits in the root of
+  the domain's `adapter.persistence` package and is the one place that names the schema:
+  - `public static final String SCHEMA = "ANALYSIS";`, used by the entities and the Flyway bean;
+  - the domain's own `@Bean(initMethod = "migrate") Flyway analysisFlyway(DataSource)`: the schema
+    is Flyway's default schema (so the history table is `"ANALYSIS"."FLYWAY_SCHEMA_HISTORY"`),
+    Flyway creates it (`createSchemas(true)`, no `CREATE SCHEMA` in a migration), and the location
+    is derived from the configuration class's own package, never written by hand.
+- **Why Boot's Flyway auto-configuration backs off, and Hibernate still waits.** Boot creates its
+  `Flyway` bean only when there is none; there are three, so it backs off, and each bean migrates
+  its domain when created (`initMethod`). `flyway-core` stays on the classpath: Boot treats every
+  `Flyway` bean as a database initializer and makes the `EntityManagerFactory` depend on all of
+  them, so Hibernate validates only after every domain is migrated.
+- **Migrations live under the configuration's package** (`…/adapter/persistence/migration/`), not in
+  `db/migration`: every adapter jar is on one classpath, so `classpath:db/migration` would return
+  every domain's files to every domain's Flyway. Versions are per domain, from `V1`.
+- **Why `schema =` stays on every entity**, written as the domain's constant
+  (`@Table(name = "ANALYSES", schema = AnalysisPersistenceConfiguration.SCHEMA)`; likewise
+  `@CollectionTable`). JPA and Hibernate have no per-package default schema. Rejected:
+  `hibernate.default_schema` is one value per persistence unit (a persistence unit, entity manager
+  factory and transaction manager per domain); an `orm.xml` per domain lists every entity;
+  a naming strategy does not see the entity's package. The entity rule below fails an entity
+  without it.
+- **Qualified types in mappings**: `columnDefinition = "\"ANALYSIS\".\"ANALYST\"[]"` and the
+  `@ColumnTransformer` cast are written qualified. At run time the search path is `"$user", public`,
+  where an unqualified type does not exist, so the first insert would fail.
+
+Giving a domain persistence:
+
+1. `<Domain>PersistenceConfiguration` with `SCHEMA` and the Flyway bean; `flyway-core` as
+   `implementation` of the adapter module.
+2. The migration folder `…/adapter/persistence/migration/` with `V1__<change>.sql`, every name
+   qualified.
+3. A `<Domain>PersistenceConventionsTest` extending `DomainPersistenceConventionsTest`
+   ([Tests](#tests)). Without it `domainPersistenceTestsCheck` fails.
+
 ## Where each class lives
 
 ```
 domain/<d>/adapter/persistence/
+  <Domain>PersistenceConfiguration   the domain's schema constant and Flyway bean
   Jpa<X>RepositoryAdapter     implements the port (@Component, package-private)
   <X>JpaRepository            Spring Data repository (package-private, used by its adapter only)
   entity/                     @Entity, @Embeddable, AttributeConverter: public, the root uses them
@@ -49,7 +96,8 @@ domain/<d>/adapter/persistence/
 
 The suffix says what a class is, so `Analysis` (domain) and `AnalysisEntity` (table) are never
 confused, in code or in a stack trace. The suffix is on the class only: the table keeps the name its
-migration gives it (`@Table(name = "ANALYSES")`), and JPQL uses the class name
+migration gives it (`@Table(name = "ANALYSES", schema = AnalysisPersistenceConfiguration.SCHEMA)`),
+and JPQL uses the class name
 (`select a from AnalysisEntity a`).
 
 ## Mapping domain types
@@ -59,8 +107,8 @@ migration gives it (`@Table(name = "ANALYSES")`), and JPQL uses the class name
 | An ID wrapper (`PresetId`, `AnalysisId`, `UserId`, `RoleId`) | `@EmbeddedId` with an adapter-side `@Embeddable` holding one `value` on column `ID` | `@EmbeddedId PresetIdEmbeddable id` |
 | Any other single-value wrapper (`Username`, `PasswordHash`, a `RoleId` in a collection) | The core type on the entity, with an `AttributeConverter` applied by `@Convert` (never `autoApply`) | `@Convert(converter = UsernameAttributeConverter.class) Username username` |
 | A group of columns that is one domain value | `@Embeddable` | `AnalysisSpecEmbeddable`, `RunStatsEmbeddable` |
-| An enum | A PostgreSQL enum type whose labels are the Java constant names: `@Enumerated(EnumType.STRING)`, `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS_STATUS\""` | `AnalysisStatus status` |
-| A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYST\"[]"`. An enum array also needs `@ColumnTransformer(write = "cast(? as \"ANALYST\"[])")` (see below) | `List<Analyst> analysts`, `Set<Permission> permissions` |
+| An enum | A PostgreSQL enum type whose labels are the Java constant names: `@Enumerated(EnumType.STRING)`, `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS\".\"ANALYSIS_STATUS\""` | `AnalysisStatus status` |
+| A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYSIS\".\"ANALYST\"[]"`. An enum array also needs `@ColumnTransformer(write = "cast(? as \"ANALYSIS\".\"ANALYST\"[])")` (see below) | `List<Analyst> analysts`, `Set<Permission> permissions` |
 | References to another aggregate | An `@ElementCollection` on a join table, so the foreign key stays; never a `@ManyToMany` between aggregates | `Set<RoleId> roleIds` on `USER_ROLES` |
 | A timestamp | `Instant` on a `TIMESTAMPTZ` column; a domain fact or an audit field ([Timestamps](#timestamps-domain-facts-and-audit-fields)) | `Instant createdAt` |
 | The row version | `@Version @Column(name = "VERSION", nullable = false) Long version` on a `BIGINT` column; `Long version` on the domain record, mapped by name in both directions ([Optimistic locking](#optimistic-locking)) | `Long version` |
@@ -76,8 +124,8 @@ Why these choices:
   needed.
 - **An enum array carries a SQL cast.** Hibernate binds the array of an enum as `varchar[]`, which
   PostgreSQL rejects for a column of an enum-array type, so the first insert would fail even though
-  `ddl-auto=validate` passes. `@ColumnTransformer(write = "cast(? as \"<ENUM_TYPE>\"[])")` on the
-  field casts the bound value. It is the one SQL fragment allowed in production code: it is a column
+  `ddl-auto=validate` passes. `@ColumnTransformer(write = "cast(? as \"<DOMAIN>\".\"<ENUM_TYPE>\"[])")` on the
+  field casts the bound value, with the type qualified by the domain's schema. It is the one SQL fragment allowed in production code: it is a column
   write expression inside the mapping, not a query, so the plain-SQL rule above does not cover it.
   `enums_are_not_stored_as_text` fails an enum array without it.
 - **Arrays for value sets, join tables for references.** An array is read with its row, with no
@@ -229,7 +277,8 @@ Like every shared library, it holds no domain type and no business rule
   repository) moves here, never copied. There is no `@MappedSuperclass` for timestamps: `PRESETS`,
   `ANALYSES` and `USERS` do not share their timestamp columns, and inheritance would only couple them.
 - **Test fixtures** (Gradle's `java-test-fixtures`): the shared test code of the persistence
-  adapters (`@JpaAdapterTest`, `MutableTestClock`), used with
+  adapters (`@JpaAdapterTest`, `MutableTestClock`, the abstract `DomainPersistenceConventionsTest` and
+  the checks it delegates to, see [Tests](#tests)), used with
   `testImplementation(testFixtures(project(":backend:library:persistence")))`.
   Gradle keeps test fixtures off every main classpath, and the ArchUnit tests do not import them
   (`DoNotIncludeTestFixtures`).
@@ -240,9 +289,9 @@ Like every shared library, it holds no domain type and no business rule
 - **`@JpaAdapterTest`** (test fixtures) wires Hibernate, Spring Data JPA repositories and
   transactions as in the application, with `jpa-test.properties`. The test's own `Config` provides:
   - the data source, from `PostgresTestDatabase`: one container per test JVM, a fresh database per
-    context;
-  - the migrations, through `TestMigrations` (only the module's own migrations, plus test-only seed
-    migrations for migration tests);
+    context. The migrations come from the domain's own `<Domain>PersistenceConfiguration`, which the
+    component scan picks up: its Flyway bean migrates before Hibernate validates, as in the
+    application;
   - `@AutoConfigurationPackage`, which keeps the entity and repository scan in the module;
   - a `@ComponentScan` of its adapter and mappers.
 
@@ -257,17 +306,32 @@ Like every shared library, it holds no domain type and no business rule
   to the database, not to the persistence context. Otherwise "creation time kept" or "duplicate
   username fails" could pass without the database ever seeing the statement.
 - **No `JdbcClient` in tests either.**
-  - Checks go through the ports and the package-private repositories. The one exception is
-    `DatabaseNamingCheck` ([database naming](backend-database-naming.md)): the catalog has no
-    entities, so it reads it with plain JDBC (`java.sql`). `org.springframework.jdbc` stays banned.
+  - Checks go through the ports and the package-private repositories. The exception is the catalog
+    checks of the conventions test (`DatabaseNamingCheck`, `DomainMigrationIsolationCheck`; see
+    [database naming](backend-database-naming.md)): the catalog has no entities, so they read it
+    with plain JDBC (`java.sql`). `org.springframework.jdbc` stays banned.
   - Column types are covered by `ddl-auto=validate`.
-  - Migration tests seed old-form rows with a test-only Flyway migration
-    (`src/test/resources/db/seed/<domain>`, e.g. `V1_1__analysis_seed_old_rows.sql`) between the
-    real versions.
+  - A migration test seeds old-form rows with a test-only Flyway migration in an extra location of
+    its own (under `src/test/resources`), between the real versions. Its own `Flyway` bean lists both locations, and
+    the scan leaves out the domain's `*PersistenceConfiguration` (`V2SettingsVersionMigrationTest`).
 - **A stale write per entity**: each repository test reads a record twice, writes the first copy
   (the version rises by one), then writes the stale second copy and expects
   `OptimisticLockingFailureException`; a read afterwards returns the first write unchanged. A new
   record starts at version 0, and saving a `null`-version record with an existing ID fails.
+- **`DomainPersistenceConventionsTest`** (abstract, test fixtures): each domain with persistence
+  extends it once, naming its configuration class, its schema and its Flyway bean method, so it
+  checks the domain's real configuration. Its four tests:
+  - `entitiesAreMappedToTheDomainSchema` (ArchUnit, `EntitySchemaRule`): every `@Entity` has
+    `@Table(schema = …)` of the domain, every `@CollectionTable` / `@JoinTable` too, and every
+    quoted name in a `columnDefinition` or `@ColumnTransformer` is qualified with the domain's
+    schema. It fails when the package holds no entity;
+  - `migrationsStayInTheDomainSchema` (`DomainMigrationIsolationCheck`): migrates the domain alone in
+    a fresh database, with a decoy default schema, so an unqualified `CREATE` lands in the decoy and
+    is reported, and a reference to another domain fails because that schema does not exist; the
+    catalog must then hold every object in the domain's schema and no other schema;
+  - `theDomainFlywayCreatesTheSchemaWithItsHistory`: the domain's Flyway bean creates the schema
+    with its `FLYWAY_SCHEMA_HISTORY` and at least one table, and `public` holds no history table;
+  - `namesFollowTheConvention` (`DatabaseNamingCheck`): the naming rules, on the domain's schema.
 - On a Podman machine (macOS, Windows), the build points Testcontainers' Ryuk at the socket inside
   the machine's VM (`build-logic`, `tradinganalysisplatform.java-library`), so the tests run on
   Docker and Podman alike without local settings.
@@ -281,7 +345,7 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 
 | Rule | Check |
 |---|---|
-| No `org.springframework.jdbc`, `java.sql`, `javax.sql` in production code | `PersistenceArchitectureTest.production_code_does_not_use_plain_sql` |
+| No `org.springframework.jdbc`, `java.sql`, `javax.sql` in production code (`DataSource` allowed in `*PersistenceConfiguration`) | `PersistenceArchitectureTest.production_code_does_not_use_plain_sql` |
 | No `org.springframework.jdbc` in test code | Checkstyle `IllegalImport` (`config/checkstyle/checkstyle.xml`) |
 | No native query | `PersistenceArchitectureTest.no_native_queries` |
 | No separate `repository.flush()`: writes end with `saveAndFlush` | `writes_use_save_and_flush` |
@@ -293,3 +357,9 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 | Every entity has a `@Version` field | `entities_have_a_version` |
 | The core has no persistence dependency | `domain_core_does_not_depend_on_infrastructure` |
 | Entities match their migrations | `ddl-auto=validate` in the adapter tests and the Spring Boot tests |
+| Entities mapped to the domain's schema, types qualified | `entitiesAreMappedToTheDomainSchema` of the domain's `<D>PersistenceConventionsTest` |
+| Migrations create everything in the domain's schema, qualify every name, reference no other domain | `migrationsStayInTheDomainSchema`, `theDomainFlywayCreatesTheSchemaWithItsHistory` |
+| Names follow [database naming](backend-database-naming.md), the schema name included | `namesFollowTheConvention` |
+| Each of those checks fails on a violation | The library's `EntitySchemaRuleTest`, `DomainMigrationIsolationCheckTest`, `DatabaseNamingCheckTest` and `SamplePersistenceConventionsTest`, against fixtures of a made-up domain |
+| A domain with persistence (an `@Entity` or a migration) has a conventions test | `:backend:domainPersistenceTestsCheck` (part of `:backend:check`, `mise run build` and `mise run check`) |
+| Only `<Domain>PersistenceConfiguration` is a `@Configuration` in a domain adapter, in `adapter.persistence` | `ArchitectureTest.domain_adapter_configurations_are_persistence_configurations` (`adapter_components_implement_an_outbound_port` and `port_package_roots_hold_only_adapters` only exempt it) |
