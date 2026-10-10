@@ -56,8 +56,8 @@ domain/<d>/adapter/
     support/   ...                 helpers: clients, file tails, Spring conditions
 orchestration/<feature>/           same shape as a domain core
   inbound/ service/ model/
-library/<library>/                 a shared library, one kind of technical code (library/mapper:
-                                   MapStruct mappers only)
+library/<library>/                 a shared library, one kind of technical code; its README.md says
+                                   what it holds
 ```
 
 A module's root package (`….bff`, `….domain.<d>`, `….domain.<d>.core`, `….domain.<d>.adapter`,
@@ -143,18 +143,18 @@ module (`:backend` only has them on its runtime classpath), and ArchUnit's
 Code that several modules need goes into a shared library, `:backend:library:<library>`, never into
 a copy. `:backend:library` is a parent folder with no code of its own, like `:backend:domain`. Each
 library is its own Gradle module with its own root package, so a module depends only on the
-libraries it uses:
-
-| Gradle project | Root package | Holds | Used by |
-|---|---|---|---|
-| `:backend:library:mapper` | `….library.mapper` | Generic MapStruct scalar mappers: `DurationToMillisMapper`, `EnumToLowerCaseNameMapper` | `bff:impl`, `domain:analysis:adapter` |
-| `:backend:library:persistence` | `….library.persistence` | The JPA auditing configuration (`JpaAuditingConfiguration`, `ClockDateTimeProvider`), and in its test fixtures the shared test code of the persistence adapters, including the `DomainPersistenceConventionsTest` every domain with persistence extends ([persistence](backend-java-persistence.md#shared-persistence-code)) | `:backend` (runtime: the auditing configuration); the persistence adapters' and `:backend`'s tests (test fixtures) |
+libraries it uses. Each library describes itself in a `README.md` in its folder
+(`artifact/backend/library/<library>/README.md`): what it holds, who uses it, and the decisions
+behind it. This document keeps the rules that hold for every library, not a list of them.
 
 - **Technical code only, never domain logic.** A library holds generic building blocks with no
   project type, no domain concept and no business rule, one kind of code per library. It may depend
   on another library, never on anything else of the project: the classpath enforces it, and so does
   `libraries_depend_only_on_libraries`. Anything that knows about an analysis, a user, a preset or
-  another domain term stays in its domain, even when two modules end up with similar code.
+  another domain term stays in its domain, even when two modules end up with similar code. A library
+  does not name a domain anywhere, not even in its tests, fixtures, comments or Javadoc examples: its
+  own tests use made-up names (see the
+  [persistence library's README](../../artifact/backend/library/persistence/README.md#decision-the-library-knows-no-domain)).
   `EnumToLowerCaseNameMapper` is shared because it knows nothing about run events: the mappings that
   apply it to `RunEventType` (`qualifiedByName = "lowerCaseName"`) stay in the analysis adapter and
   the BFF.
@@ -165,9 +165,9 @@ libraries it uses:
 - **Shared test code lives in test fixtures** (Gradle's `java-test-fixtures`) of the library or module
   whose code it supports. It is never copied and never put in a test-only main module. Gradle keeps
   test fixtures off every main classpath; the ArchUnit tests do not import them.
-- **Adding a library**: a new module under `artifact/backend/library/<library>`, a row in the table
-  above, and a placement rule for its kind of class in `ArchitectureTest` (`library.mapper` is
-  covered by `mapper_packages_hold_only_mappers`).
+- **Adding a library**: a new module under `artifact/backend/library/<library>`, with a `README.md`
+  that says what it holds and who uses it, and a placement rule for its kind of class in
+  `ArchitectureTest` (`library.mapper` is covered by `mapper_packages_hold_only_mappers`).
 
 Alternatives considered for sharing code across modules:
 - a `mapper.common` package per module only shares within that module;

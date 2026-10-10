@@ -5,7 +5,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
 /**
- * The lower-case constant name of an enum, e.g. {@code AGENT_STATUS} as {@code agent_status}. Only
+ * The lower-case constant name of an enum, e.g. {@code SAMPLE_VALUE} as {@code sample_value}. Only
  * applied where a mapping asks for it with {@code qualifiedByName = "lowerCaseName"}, so no other
  * enum to String mapping changes.
  */
