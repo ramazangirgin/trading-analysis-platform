@@ -191,7 +191,7 @@ while true; do
   if [ "$(package_status "$package")" = done ]; then
     milestone "$label: done ($(package_commits "$package") commits)"
   else
-    milestone "$label: not done:$(plan_py not-done "$plan" | sed -n "s/^- $package: //p")"
+    milestone "$label: not done: $(plan_py not-done "$plan" | sed -n "s/^- $package: //p")"
   fi
 done
 rm -f "$AGENT_STATE/current"
