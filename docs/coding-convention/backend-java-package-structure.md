@@ -106,7 +106,7 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Two mappers with one simple name | none: a converter two modules need lives once, in `library.mapper` | `mappers_are_not_duplicated_across_modules` |
 | Class implementing an outbound port | the root of its `adapter.<port>` package | `port_adapters_live_at_the_port_package_root` |
 | Root of an `adapter.<port>` package | port implementations only (shared packages aside); the one exception is `<Domain>PersistenceConfiguration` in `adapter.persistence` | `port_package_roots_hold_only_adapters` |
-| `@Configuration` in a domain adapter | `<Domain>PersistenceConfiguration`, in `domain.<d>.adapter.persistence`, nowhere else | `adapter_components_implement_an_outbound_port` |
+| `@Configuration` in a domain adapter | `<Domain>PersistenceConfiguration`, in `domain.<d>.adapter.persistence`, nowhere else | `domain_adapter_configurations_are_persistence_configurations` (`adapter_components_implement_an_outbound_port` only exempts it) |
 | `*UseCase` | `…inbound` | `use_cases_live_in_inbound_packages` |
 | `*Service` | `…service` | `services_live_in_service_packages` |
 | Exception (anything `Throwable`) | `domain.<d>.core.exception` or `bff.controller.api.error` | `exceptions_live_in_exception_packages` |
