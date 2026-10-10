@@ -14,6 +14,7 @@ dependencies {
     // The fixture entities and configuration that prove the conventions test (src/test, never shipped).
     testImplementation(libs.jakarta.persistence.api)
     testImplementation(libs.hibernate.core)
+
     // Test fixtures are a source set of their own: the platform of the convention plugin does not reach it.
     testFixturesImplementation(platform(libs.spring.boot.bom))
 

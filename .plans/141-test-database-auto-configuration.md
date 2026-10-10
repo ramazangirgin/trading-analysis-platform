@@ -169,7 +169,9 @@ Spring context, so it uses the same container definition without one.
   - `artifact/backend/library/persistence/src/test/java/…/library/persistence/TestDatabaseConfigurationTest.java` (new)
 - **Steps**:
   - [x] Catalog entry `spring-boot-jdbc`; `testFixturesApi(libs.spring.boot.jdbc)` and
-        `testImplementation(libs.spring.boot.test)` in the library's build.
+        `testImplementation(libs.spring.boot.test)` in the library's build. Done differently: no direct
+        `spring-boot-test` declaration, because the `java-library` convention plugin already adds
+        `spring-boot-starter-test` as the one permitted test aggregator, which brings `ApplicationContextRunner`.
   - [x] `PostgresTestContainer` and `TestDatabaseConfiguration` as in the design, with Javadoc that
         says why it is one container with a database per context, and not `@ServiceConnection`.
   - [x] `@JpaAdapterTest`: `DataSourceAutoConfiguration`, `@Import` of `TestDatabaseConfiguration`,
