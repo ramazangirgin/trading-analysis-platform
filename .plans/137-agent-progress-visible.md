@@ -189,13 +189,13 @@ waits with `Monitor`).
 ### WP3: `status.sh` and its mise task
 
 - **Depends on**: WP1
-- **Status**: open
+- **Status**: done
 - **Files**: `scripts/agent/status.sh` (new, executable), `mise.toml`
 - **Steps**:
-  - [ ] `status.sh <branch | pr> [lines]`: active run (pid), current package, the last 10 milestones, the last `lines` (default 20) lines of `run.log`; "no run log yet" when there is none. Uses `use_state --no-log`, never `lock_run`.
-  - [ ] `status.sh --follow <branch | pr>`: `tail -n 0 -F <run.log> | grep --line-buffered '^agent: >> '`.
-  - [ ] Header comment in the style of the other scripts.
-  - [ ] `mise.toml`: `[tasks."agent:status"]`, description "Where an agent run is: active pid, work package, latest milestones and log lines: mise run agent:status plan/<issue>-<slug> (or a PR number)".
+  - [x] `status.sh <branch | pr> [lines]`: active run (pid), current package, the last 10 milestones, the last `lines` (default 20) lines of `run.log`; "no run log yet" when there is none. Uses `use_state --no-log`, never `lock_run`.
+  - [x] `status.sh --follow <branch | pr>`: `tail -n 0 -F <run.log> | grep --line-buffered '^agent: >> '`.
+  - [x] Header comment in the style of the other scripts.
+  - [x] `mise.toml`: `[tasks."agent:status"]`, description "Where an agent run is: active pid, work package, latest milestones and log lines: mise run agent:status plan/<issue>-<slug> (or a PR number)".
 - **Tests**: `bash -n`; run `status.sh` against a plan branch with and without a `run.log` (a state directory made in the test run: `.git/agent/<name>/run.log` with a few lines) and check its output by hand; `mise run check`.
 
 ### WP4: The skill and the docs
