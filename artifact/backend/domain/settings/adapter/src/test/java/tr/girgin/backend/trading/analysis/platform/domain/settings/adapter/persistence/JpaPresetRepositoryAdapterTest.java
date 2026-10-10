@@ -5,12 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.time.Instant;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataAccessException;
@@ -20,7 +18,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Pr
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.MutableTestClock;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 @JpaAdapterTest
 @SpringJUnitConfig(JpaPresetRepositoryAdapterTest.Config.class)
@@ -110,11 +107,5 @@ class JpaPresetRepositoryAdapterTest {
     @Configuration
     @AutoConfigurationPackage
     @ComponentScan(basePackageClasses = JpaPresetRepositoryAdapterTest.class)
-    static class Config {
-
-        @Bean
-        DataSource dataSource() {
-            return PostgresTestDatabase.create().dataSource();
-        }
-    }
+    static class Config {}
 }

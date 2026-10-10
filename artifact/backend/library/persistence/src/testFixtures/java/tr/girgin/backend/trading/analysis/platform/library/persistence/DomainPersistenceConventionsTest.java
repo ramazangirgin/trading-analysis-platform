@@ -59,7 +59,7 @@ public abstract class DomainPersistenceConventionsTest {
 
     @Test
     void migrationsStayInTheDomainSchema() {
-        Flyway flyway = flywayBean.apply(PostgresTestDatabase.create().dataSource());
+        Flyway flyway = flywayBean.apply(PostgresTestContainer.newDataSource());
 
         assertEquals(
                 List.of(),
@@ -69,7 +69,7 @@ public abstract class DomainPersistenceConventionsTest {
 
     @Test
     void theDomainFlywayCreatesTheSchemaWithItsHistory() throws SQLException {
-        DataSource dataSource = PostgresTestDatabase.create().dataSource();
+        DataSource dataSource = PostgresTestContainer.newDataSource();
 
         flywayBean.apply(dataSource).migrate();
 
@@ -83,7 +83,7 @@ public abstract class DomainPersistenceConventionsTest {
 
     @Test
     void namesFollowTheConvention() {
-        DataSource dataSource = PostgresTestDatabase.create().dataSource();
+        DataSource dataSource = PostgresTestContainer.newDataSource();
 
         flywayBean.apply(dataSource).migrate();
 

@@ -9,12 +9,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataAccessException;
@@ -35,7 +33,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.MutableTestClock;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 /** The repositories against a PostgreSQL database migrated by this domain's own Flyway bean. */
 @JpaAdapterTest
@@ -404,11 +401,5 @@ class JpaIdentityRepositoryTest {
     @Configuration
     @AutoConfigurationPackage
     @ComponentScan(basePackageClasses = JpaIdentityRepositoryTest.class)
-    static class Config {
-
-        @Bean
-        DataSource dataSource() {
-            return PostgresTestDatabase.create().dataSource();
-        }
-    }
+    static class Config {}
 }

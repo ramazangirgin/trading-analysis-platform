@@ -17,7 +17,7 @@ class DatabaseNamingCheckTest {
 
     @Test
     void reportsExactlyTheFixturesViolations() {
-        DataSource dataSource = PostgresTestDatabase.create().dataSource();
+        DataSource dataSource = PostgresTestContainer.newDataSource();
         Flyway.configure()
                 .dataSource(dataSource)
                 .schemas(SCHEMA)
@@ -62,7 +62,7 @@ class DatabaseNamingCheckTest {
 
     @Test
     void reportsASchemaNameThatIsNotUppercase() {
-        DataSource dataSource = PostgresTestDatabase.create().dataSource();
+        DataSource dataSource = PostgresTestContainer.newDataSource();
         CatalogQueries.execute(dataSource, "CREATE SCHEMA lower_case");
 
         DatabaseNamingCheck.Result result = DatabaseNamingCheck.run(dataSource, "lower_case");

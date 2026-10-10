@@ -5,11 +5,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.test.context.DynamicPropertyRegistry;
-import tr.girgin.backend.trading.analysis.platform.library.persistence.PostgresTestDatabase;
 
 /**
  * A throwaway platform home per test class, also used as the data dir, so tests never touch
- * ~/.tradingagents-platform or ~/.tradingagents, and a fresh PostgreSQL database for it.
+ * ~/.tradingagents-platform or ~/.tradingagents.
  */
 final class TestPlatformHome {
 
@@ -24,10 +23,6 @@ final class TestPlatformHome {
     }
 
     static void register(DynamicPropertyRegistry registry, Path home, Path runnerScript) {
-        PostgresTestDatabase.Database database = PostgresTestDatabase.create();
-        registry.add("spring.datasource.url", database::url);
-        registry.add("spring.datasource.username", database::username);
-        registry.add("spring.datasource.password", database::password);
         registry.add("platform.home", home::toString);
         registry.add("platform.runner.process.command", () -> "/bin/sh," + runnerScript);
         registry.add("platform.runner.process.working-dir", home::toString);

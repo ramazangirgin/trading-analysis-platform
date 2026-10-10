@@ -275,10 +275,11 @@ Like every shared library, it holds no domain type and no business rule
   ([Timestamps](#timestamps-domain-facts-and-audit-fields)). A base type that a second adapter needs
   (an insert-only `Persistable` base, a generic `AttributeConverter`, a `@NoRepositoryBean` base
   repository) moves here, never copied. There is no `@MappedSuperclass` for timestamps: `PRESETS`,
-  `ANALYSES` and `USERS` do not share their timestamp columns, and inheritance would only couple them.
+  `ANALYSES` and `USERS` do not share their timestamp columns, and inheritance would only couple
+  them.
 - **Test fixtures** (Gradle's `java-test-fixtures`): the shared test code of the persistence
-  adapters (`@JpaAdapterTest`, `MutableTestClock`, the abstract `DomainPersistenceConventionsTest` and
-  the checks it delegates to, see [Tests](#tests)), used with
+  adapters (`@JpaAdapterTest`, `TestDatabaseConfiguration`, `MutableTestClock`, the abstract
+  `DomainPersistenceConventionsTest` and the checks it delegates to, see [Tests](#tests)), used with
   `testImplementation(testFixtures(project(":backend:library:persistence")))`.
   Gradle keeps test fixtures off every main classpath, and the ArchUnit tests do not import them
   (`DoNotIncludeTestFixtures`).
@@ -287,13 +288,32 @@ Like every shared library, it holds no domain type and no business rule
 
 - Every repository is tested against PostgreSQL (Testcontainers), through its port.
 - **`@JpaAdapterTest`** (test fixtures) wires Hibernate, Spring Data JPA repositories and
-  transactions as in the application, with `jpa-test.properties`. The test's own `Config` provides:
-  - the data source, from `PostgresTestDatabase`: one container per test JVM, a fresh database per
-    context. The migrations come from the domain's own `<Domain>PersistenceConfiguration`, which the
+  transactions as in the application, with `jpa-test.properties`.
+  - **The database** comes from `TestDatabaseConfiguration`, which `@JpaAdapterTest` imports (so do
+    the application's `@SpringBootTest` classes). It holds a `@Bean @ServiceConnection`
+    `PostgreSQLContainer`: Spring Boot turns it into the context's `JdbcConnectionDetails`, and
+    `DataSourceAutoConfiguration` builds the Hikari pool from them, as in production. No test
+    declares a `DataSource` or `spring.datasource.*`. A plain `@SpringJUnitConfig` context does not
+    apply `spring.factories` initializers, so a `ContextCustomizerFactory` of the test fixtures
+    (`TestcontainersLifecycleContextCustomizerFactory`) applies Boot's
+    `TestcontainersLifecycleApplicationContextInitializer` to every `@JpaAdapterTest` class: it
+    starts the container before the pool connects and stops it when the context closes.
+  - **Why a container per context.** Each context has a database of its own with no custom code, so
+    test classes never see each other's rows, and the migration tests' Flyway histories (with the
+    seed version) cannot clash with the domain's own Flyway in another context. It was the
+    developer's choice in review over one container with a database created per context. The cost is
+    a container start per context (a few seconds each). The reuse flag is not used.
+  - **`PostgresTestContainer`** stays for the catalog checks that run outside Spring
+    (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`):
+    they need many empty databases, so it is one container per JVM and a fresh database per check.
+    It also holds the image tag that `TestDatabaseConfiguration` uses.
+  - **The migrations** come from the domain's own `<Domain>PersistenceConfiguration`, which the
     component scan picks up: its Flyway bean migrates before Hibernate validates, as in the
-    application;
-  - `@AutoConfigurationPackage`, which keeps the entity and repository scan in the module;
-  - a `@ComponentScan` of its adapter and mappers.
+    application.
+  - The test's own `Config` provides `@AutoConfigurationPackage`, which keeps the entity and
+    repository scan in the module, and a `@ComponentScan` of its adapter and mappers.
+  - The catalog checks that run without a Spring context take a `PGSimpleDataSource` on a fresh
+    database of the same container.
 
   It also imports `JpaAuditingConfiguration` and a `MutableTestClock` as the `Clock` bean (a fixed
   start instant, `set(Instant)` and `advance(Duration)`), so every adapter test is wired as the
