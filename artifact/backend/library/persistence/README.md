@@ -19,9 +19,8 @@ The persistence conventions it supports are in
 ## Decision: the library knows no domain
 
 Nothing in this module names a domain of the platform: no domain package or class, no schema, table,
-column or type of a domain (`ANALYSIS`, `"USERS"`, `"ANALYSIS_STATUS"`, a ticker), not even in a
-test fixture, a Javadoc example or a comment. Each domain brings its own details to the library's
-code, never the other way round:
+column or type of a domain, not even in a test fixture, a Javadoc example, a comment or this README.
+Each domain brings its own details to the library's code, never the other way round:
 
 - **The domain passes them in.** A domain's `<Domain>PersistenceConventionsTest`, in its own
   persistence adapter, hands `DomainPersistenceConventionsTest` its configuration class, its schema
@@ -39,9 +38,9 @@ Why:
 - A library with domain names in it is coupled to those domains, even if only through a test: renaming
   or removing a domain would mean changing the library, and the library could not be reused for a
   new domain without reading around another domain's details.
-- A check proved against a real domain's names proves less: a fixture that reaches into `"IDENTITY"`
-  passes for a reason that depends on which domains exist. A made-up `"OTHER"` schema makes the case
-  explicit, whatever domains the platform has.
+- A check proved against a real domain's names proves less: a fixture that reaches into a real
+  domain's schema passes for a reason that depends on which domains exist. A made-up `"OTHER"` schema
+  makes the case explicit, whatever domains the platform has.
 - It keeps one direction of knowledge: domains depend on the library, the library on no domain.
   `libraries_depend_only_on_libraries` (ArchUnit) enforces that for code; names in SQL, strings and
   comments are outside its reach, so this rule is kept by review.
