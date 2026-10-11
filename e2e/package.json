@@ -2,7 +2,7 @@
   "name": "trading-analysis-platform-e2e",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.7.0",
   "engines": {
     "node": ">=24"
   },

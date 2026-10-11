@@ -5,7 +5,7 @@ java = "25"
 springBoot = "4.1.1"
 # springdoc 3.x is the line built for Spring Boot 4.
 springdoc = "3.1.1"
-archunit = "1.5.0"
+archunit = "1.5.1"
 # Static checks on backend sources (config/checkstyle/). 11+ parses Java 25 syntax.
 checkstyle = "14.3.0"
 # Java formatting (Spotless with Palantir Java Format: 120 columns, matching Checkstyle's LineLength).
@@ -19,7 +19,7 @@ dockerJava = "3.7.1"
 # Frontend toolchain, downloaded by the node-gradle plugin: no global Node needed for a build.
 nodeGradle = "7.1.0"
 node = "24.21.0"
-pnpm = "12.6.0"
+pnpm = "12.7.0"
 # Fails the build on used-but-undeclared and declared-but-unused dependencies of the backend modules.
 dependencyAnalyze = "2.0.0"
 
@@ -40,7 +40,7 @@ jackson2 = "2.22.3"
 # Spring Boot > 4.1.1 brings >= 3.1.7.
 # Advisories: GHSA-7hhh-6rmp-j9qf GHSA-cxp5-3px4-pw24 GHSA-gx83-3vf8-gh7j GHSA-p6pp-m3f8-5c89
 # GHSA-q4xh-88c3-wmh7 GHSA-wjgm-6hv5-3cvf GHSA-wv8q-qhhj-9h54.
-jackson3 = "3.1.7"
+jackson3 = "3.2.3"
 # Bouncy Castle, alerts on bcprov, bcpkix and bcutil: 1.82 from docker-java-core 3.7.1. Remove when
 # docker-java > 3.7.1 brings >= 1.86.
 # Advisories: GHSA-574f-3g2m-x479 GHSA-9pwp-9qqc-pr26 GHSA-c3fc-8qff-9hwx GHSA-p93r-85wp-75v3
@@ -53,7 +53,7 @@ tomcat = "11.0.26"
 # commons-lang3, alert on the build script classpath: 3.16.0 via the Spring Boot Gradle plugin's
 # commons-compress. Remove when the Spring Boot Gradle plugin brings >= 3.20.0.
 # Advisories: GHSA-j288-q9x7-2f5v.
-commonsLang3 = "3.20.0"
+commonsLang3 = "3.21.0"
 
 [libraries]
 # BOM. The Spring Boot Gradle plugin does NOT apply dependency management on its own,
