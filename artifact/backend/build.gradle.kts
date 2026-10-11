@@ -25,6 +25,7 @@ dependencies {
     runtimeOnly(libs.spring.boot.starter.validation)
     runtimeOnly(libs.spring.boot.starter.data.jpa)
     runtimeOnly(libs.spring.boot.starter.flyway)
+    runtimeOnly(libs.spring.boot.starter.security)
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.flyway.database.postgresql)
 
