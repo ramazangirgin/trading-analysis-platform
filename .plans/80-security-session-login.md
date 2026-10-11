@@ -198,6 +198,7 @@ cannot log in.
 
 ### WP2: BFF: auth endpoints and the security filter chain
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `gradle/libs.versions.toml`, `artifact/backend/build.gradle.kts`,
@@ -210,10 +211,10 @@ cannot log in.
   - `…/bff/delegate/impl/mapper/error/IdentityExceptionToApiExceptionMapper.java` (new) and its test
   - `artifact/backend/src/main/resources/application.properties`
 - **Steps**:
-  - [ ] Dependencies as in "Build"
-  - [ ] The controller, delegate, DTOs and delegate implementation
-  - [ ] `SecurityConfig` with both modes of the switch, the 401/403 JSON handlers, the shared beans
-  - [ ] Exclude `UserDetailsServiceAutoConfiguration`; the properties block
+  - [x] Dependencies as in "Build"
+  - [x] The controller, delegate, DTOs and delegate implementation
+  - [x] `SecurityConfig` with both modes of the switch, the 401/403 JSON handlers, the shared beans
+  - [x] Exclude `UserDetailsServiceAutoConfiguration`; the properties block
 - **Tests**: `IdentityExceptionToApiExceptionMapperTest` (next to the other two mapper tests): each
   error code's status and `errorCode`. The HTTP behaviour is tested in WP3.
 
