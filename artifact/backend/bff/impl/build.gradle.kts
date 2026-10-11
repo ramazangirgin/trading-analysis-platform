@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.spring.webmvc)
     implementation(libs.jakarta.servlet.api)
     implementation(libs.spring.security.core)
+    implementation(libs.spring.security.config)
     implementation(libs.spring.security.web)
     implementation(libs.jackson.core)
     implementation(libs.jackson.databind)

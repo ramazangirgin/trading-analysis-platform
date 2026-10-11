@@ -24,7 +24,7 @@ for good and removes the switch (see "Out of scope").
 | Part | Conventions that apply |
 |---|---|
 | Backend: identity domain (`artifact/backend/domain/identity/core`) | `backend-java-package-structure.md`: the use case in `core.inbound`, its service package-private in `core.service`, the login result in `core.model`, the new error code in `core.exception` (`IdentityError`). `backend-java-persistence.md`: writes go through `UserRepositoryPort`, whose `save` may throw `OptimisticLockingFailureException`. The core has no Spring Security or web dependency (`domain_core_does_not_depend_on_infrastructure`) |
-| Backend: BFF (`artifact/backend/bff/api`, `bff/impl`) | `backend-java-package-structure.md`: `AuthApiController` and `AuthApiDelegate` in the `bff.controller.api` root; DTOs (`*Dto`, `*Request`) in `…api.model`; web configuration in `…api.config` (next to `SpaWebConfig`); `AuthApiDelegateImpl` at the `bff.delegate.impl` root (nothing else may go there: `delegate_root_holds_only_delegate_impls`); `IdentityExceptionToApiExceptionMapper` in `…impl.mapper.error`. The BFF reaches the identity domain through its inbound port only (`bff_does_not_use_outbound_ports`), and `bff.api` uses no domain type (`bff_api_does_not_use_domain_models`) |
+| Backend: BFF (`artifact/backend/bff/api`, `bff/impl`) | `backend-java-package-structure.md`: `AuthApiController` and `AuthApiDelegate` in the `bff.controller.api` root; DTOs (`*Dto`, `*Request`) in `…api.model`; the API holds only the endpoints and their DTOs, no logic: the security configuration, its filters and its 401/403 handlers go in `…impl.config` (`bff_api_holds_no_security_code`); `AuthApiDelegateImpl` at the `bff.delegate.impl` root (nothing else may go there: `delegate_root_holds_only_delegate_impls`); `IdentityExceptionToApiExceptionMapper` in `…impl.mapper.error`. The BFF reaches the identity domain through its inbound port only (`bff_does_not_use_outbound_ports`), and `bff.api` uses no domain type (`bff_api_does_not_use_domain_models`) |
 | Backend: application (`artifact/backend`) | `application.properties`: new `platform.auth.*` and `server.servlet.session.*` properties with a comment each, like the existing blocks. The starters go into `:backend` as `runtimeOnly`; the library modules declare libraries only (the comment in `artifact/backend/build.gradle.kts`) |
 | Build | `repository-dependency-hygiene.md`: declare what you use. New entries in `gradle/libs.versions.toml` (versions from Spring Boot's BOM, as the other Spring entries), and `analyzeDependencies` must stay green |
 | Frontend | API types only: `openapi.json` and `src/shared/api/schema.d.ts` are regenerated (`mise run api-types`), never edited by hand. No component changes: the login page and the CSRF header in `client.ts` are #81 |
@@ -97,7 +97,7 @@ for good and removes the switch (see "Out of scope").
 
 ### BFF: the security filter chain
 
-`bff/controller/api/config/SecurityConfig` (`@Configuration`, `@EnableWebSecurity`) declares one
+`bff/delegate/impl/config/SecurityConfig` (`@Configuration`, `@EnableWebSecurity`) declares one
 `SecurityFilterChain`, plus the `SecurityContextRepository`, `CsrfTokenRepository` and
 `SessionAuthenticationStrategy` beans that both the chain and `AuthApiDelegateImpl` use, so a login
 through the endpoint is stored and protected exactly as the chain expects. It reads
@@ -157,8 +157,9 @@ proxy that needs forwarded headers, which belongs with exposing the platform (#7
   the `exclude`, as it splits `spring-boot-data-jpa` and others out.
 - `:backend`: `runtimeOnly(libs.spring.boot.starter.security)`; `testImplementation` of
   `spring-security-test` and `:backend:domain:identity:core` (for the test helper below).
-- `:backend:bff:api`: `spring-security-config`, `-web`, `-core`, and the servlet API if it is not on
-  its compile classpath already.
+- `:backend:bff:api`: the servlet API (`AuthApiDelegate` passes the request and response on), no
+  Spring Security.
+- `:backend:bff:impl`: `spring-security-config`, `-web`, `-core` and the servlet API.
 
 ### Deviation from the issue
 
@@ -205,8 +206,8 @@ cannot log in.
     `artifact/backend/bff/api/build.gradle.kts`, `artifact/backend/bff/impl/build.gradle.kts`
   - `…/bff/controller/api/AuthApiController.java`, `AuthApiDelegate.java` (new)
   - `…/bff/controller/api/model/LoginRequest.java`, `CurrentUserDto.java` (new)
-  - `…/bff/controller/api/config/SecurityConfig.java` and the entry point and access-denied handler
-    classes (new)
+  - `…/bff/delegate/impl/config/SecurityConfig.java`, the CSRF cookie filter, and the entry point
+    and access-denied handler classes (new)
   - `…/bff/delegate/impl/AuthApiDelegateImpl.java` (new)
   - `…/bff/delegate/impl/mapper/error/IdentityExceptionToApiExceptionMapper.java` (new) and its test
   - `artifact/backend/src/main/resources/application.properties`
@@ -284,7 +285,7 @@ cannot log in.
 |---|---|---|
 | Text | `README.md`, "Run with Docker Compose" → "Notes", "Exposing it beyond localhost" | Still true while login is off by default. Say that login is being built (#78), with a link, instead of only "not built yet" |
 | Text | `README.md`, "Development" → "Dev servers" (or a short "Login (in progress)" paragraph next to it) | `PLATFORM_AUTH_ENABLED=true` turns on the session login for the API: the endpoints, the 401/403 behaviour, the `XSRF-TOKEN` cookie and `X-XSRF-TOKEN` header, `PLATFORM_SESSION_TIMEOUT`. Until #81 and #82, the UI cannot log in and no user exists, so it is for developing those |
-| Text | `docs/coding-convention/backend-java-package-structure.md`, "Package layout" | `config/` holds the web and security configuration (`SpaWebConfig`, `SecurityConfig`) |
+| Text | `docs/coding-convention/backend-java-package-structure.md`, "Package layout" | `bff.api` holds no logic; `bff.delegate.impl.config` holds the security configuration (`SecurityConfig`), with its ArchUnit rule |
 | Text | `artifact/frontend/openapi.json`, `src/shared/api/schema.d.ts` | Regenerated with `mise run api-types` |
 | Screenshot | none | No page changes: the login page comes with #81 |
 

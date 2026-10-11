@@ -15,8 +15,8 @@ All packages start with `tr.girgin.backend.trading.analysis.platform` (written `
 
 | Gradle project | Root package | Holds |
 |---|---|---|
-| `:backend:bff:api` | `….bff.controller.api` | REST/SSE controllers, delegate interfaces, web DTOs |
-| `:backend:bff:impl` | `….bff.delegate.impl` | Delegate implementations and their mappers |
+| `:backend:bff:api` | `….bff.controller.api` | REST/SSE controllers, delegate interfaces, web DTOs: the endpoints' shape, no logic |
+| `:backend:bff:impl` | `….bff.delegate.impl` | Delegate implementations, their mappers and the security configuration |
 | `:backend:orchestration` | `….orchestration` | Use cases spanning several domains, one sub-package per feature |
 | `:backend:domain:<d>:core` | `….domain.<d>.core` | The domain: model, ports, services |
 | `:backend:domain:<d>:adapter` | `….domain.<d>.adapter` | Outbound adapters, one sub-package per port |
@@ -31,12 +31,14 @@ Domains: `analysis`, `report`, `catalog`, `settings`, `identity`.
 bff/controller/api/
   *ApiController, *ApiDelegate     controllers and the delegate interfaces they call
   error/                           ApiException, ApiExceptionHandler
-  config/                          web and security configuration (SpaWebConfig, SecurityConfig)
+  config/                          web configuration (SpaWebConfig)
   model/                           web DTOs (*Dto, *Request)
 bff/delegate/impl/
   *ApiDelegateImpl                 delegate implementations: call inbound ports, map
   mapper/                          DTO <-> domain mappers and their scalar converters
   mapper/error/                    *ExceptionToApiExceptionMapper
+  config/                          security configuration: SecurityConfig, its filters and its
+                                   401/403 handlers
 domain/<d>/core/
   model/                           value types, records, enums
   exception/                       *Exception and their error-code enums (*Error)
@@ -94,6 +96,7 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 |---|---|---|
 | Controller, delegate interface | `bff.controller.api` (root) | `controller_root_holds_only_controllers_and_delegates` |
 | `ApiException`, `@RestControllerAdvice` | `bff.controller.api.error` | `exceptions_live_in_exception_packages`, `exception_packages_hold_only_exceptions_and_error_codes` |
+| Spring Security code (filter chain, filters, entry point, access-denied handler) | `bff.delegate.impl.config`, never `bff.controller.api` | `bff_api_holds_no_security_code` |
 | Delegate implementation `*ApiDelegateImpl` | `bff.delegate.impl` (root), nothing else there | `delegate_impls_live_at_the_delegate_root`, `delegate_root_holds_only_delegate_impls` |
 | MapStruct mapper | an adapter's `…mapper` package, `bff.delegate.impl.mapper` or `library.mapper` (the shared mapper library) | `mappers_live_at_layer_boundaries` |
 | Anything in a `mapper` package | is a MapStruct mapper (or its generated `*Impl`) | `mapper_packages_hold_only_mappers` |

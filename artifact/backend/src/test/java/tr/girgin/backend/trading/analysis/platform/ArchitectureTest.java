@@ -103,6 +103,16 @@ class ArchitectureTest {
             .dependOnClassesThat(resideInAPackage(ROOT).and(not(resideInAPackage(BFF_API))));
 
     @ArchTest
+    static final ArchRule bff_api_holds_no_security_code = noClasses()
+            .that()
+            .resideInAPackage(BFF_API)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("org.springframework.security..")
+            .because("the API holds the endpoints and their DTOs; the security configuration is logic and lives in"
+                    + " bff.delegate.impl.config");
+
+    @ArchTest
     static final ArchRule bff_api_is_only_used_by_bff_controllers = classes()
             .that()
             .resideInAPackage(BFF_API)

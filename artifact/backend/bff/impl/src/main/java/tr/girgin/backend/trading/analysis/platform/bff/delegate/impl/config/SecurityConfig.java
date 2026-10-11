@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.bff.controller.api.config;
+package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;

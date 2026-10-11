@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.bff.controller.api.config;
+package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
