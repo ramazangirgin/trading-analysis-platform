@@ -3,3 +3,9 @@ plugins {
 }
 
 description = "Identity domain: users, roles, permissions and ports"
+
+dependencies {
+    implementation(libs.slf4j.api)
+    implementation(libs.spring.context)
+    implementation(libs.spring.tx)
+}
