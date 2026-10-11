@@ -174,6 +174,7 @@ cannot log in.
 
 ### WP1: Identity core: authenticate a user
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/core/build.gradle.kts`
@@ -183,8 +184,8 @@ cannot log in.
   - `…/domain/identity/core/exception/IdentityError.java`
   - `…/domain/identity/core/src/test/…/service/AuthenticationServiceTest.java` (new)
 - **Steps**:
-  - [ ] The use case, model, service and error code as in "Identity core" above
-  - [ ] Javadoc on the use case: what each failure gives, and that it is the same for all of them
+  - [x] The use case, model, service and error code as in "Identity core" above
+  - [x] Javadoc on the use case: what each failure gives, and that it is the same for all of them
 - **Tests**: `AuthenticationServiceTest`, with in-memory fakes of the two ports (as `PresetServiceTest`
   does for its ports):
   - a valid login returns the user, their role names and the union of the roles' permissions;
