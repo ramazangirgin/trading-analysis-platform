@@ -76,12 +76,7 @@ final class TestSession {
 
     HttpResponse<String> login(String username, String password) throws IOException, InterruptedException {
         String body = "{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, password);
-        HttpResponse<String> response = send(build("POST", "/api/auth/login", body));
-        if (response.statusCode() == 200) {
-            // The login renews the CSRF token and expires the old cookie; the next response sets the new one.
-            send("GET", "/api/auth/me", null);
-        }
-        return response;
+        return send(build("POST", "/api/auth/login", body));
     }
 
     String cookie(String name) {

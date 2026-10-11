@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.logout.CookieClearingLogo
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.AuthApiDelegate;
@@ -79,6 +80,10 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         Authentication token =
                 UsernamePasswordAuthenticationToken.authenticated(user.id().value(), null, authorities(user));
         sessionStrategy.onAuthentication(token, http, response);
+        // The strategy expires the old CSRF cookie and only defers the new token: read it so this response sets it.
+        if (http.getAttribute(CsrfToken.class.getName()) instanceof CsrfToken csrf) {
+            csrf.getToken();
+        }
         SecurityContext context = holderStrategy.createEmptyContext();
         context.setAuthentication(token);
         holderStrategy.setContext(context);

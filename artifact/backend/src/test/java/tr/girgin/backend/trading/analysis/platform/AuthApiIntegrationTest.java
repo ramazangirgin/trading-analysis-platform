@@ -121,6 +121,10 @@ class AuthApiIntegrationTest {
                 .orElseThrow();
         assertThat(sessionCookie).contains("HttpOnly").containsIgnoringCase("SameSite=Lax");
 
+        // The login response alone gives the client a CSRF token that an unsafe request accepts.
+        assertThat(client.cookie(TestSession.CSRF_COOKIE)).isNotBlank();
+        assertThat(client.send("POST", "/api/presets", PRESET).statusCode()).isEqualTo(201);
+
         HttpResponse<String> me = client.send("GET", "/api/auth/me", null);
         assertThat(me.statusCode()).isEqualTo(200);
         assertThat(JSON.readTree(me.body())).isEqualTo(user);
