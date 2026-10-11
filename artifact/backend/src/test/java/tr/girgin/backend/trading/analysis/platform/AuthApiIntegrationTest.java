@@ -15,6 +15,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
@@ -161,6 +163,42 @@ class AuthApiIntegrationTest {
         replay.setCookie(TestSession.SESSION_COOKIE, sessionId);
         assertThat(replay.send("GET", "/api/analyses", null).statusCode()).isEqualTo(401);
         assertThat(client.send("GET", "/api/analyses", null).statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void meEndsTheSessionOfAUserDisabledSinceTheLogin() throws Exception {
+        TestSession client = TestSession.loggedIn(port, users, hasher);
+        String sessionId = client.cookie(TestSession.SESSION_COOKIE);
+        HttpResponse<String> before = client.send("GET", "/api/auth/me", null);
+        assertThat(before.statusCode()).isEqualTo(200);
+        User stored = users.findByUsername(new Username(
+                        JSON.readTree(before.body()).get("username").asString()))
+                .orElseThrow();
+        users.save(new User(
+                stored.id(),
+                stored.username(),
+                stored.passwordHash(),
+                false,
+                stored.mustChangePassword(),
+                stored.failedLoginCount(),
+                stored.lockedUntil(),
+                stored.createdAt(),
+                stored.updatedAt(),
+                stored.roleIds(),
+                stored.version()));
+
+        HttpResponse<String> me = client.send("GET", "/api/auth/me", null);
+
+        assertThat(me.statusCode()).isEqualTo(401);
+        assertThat(JSON.readTree(me.body()).get("errorCode").asString()).isEqualTo("unauthorized");
+        assertThat(client.cookie(TestSession.SESSION_COOKIE)).isNull();
+        // The session is gone on the server, not only in the client: the old cookie no longer works.
+        TestSession replay = TestSession.anonymous(port);
+        replay.setCookie(TestSession.SESSION_COOKIE, sessionId);
+        HttpResponse<String> replayed = replay.send("GET", "/api/auth/me", null);
+        assertThat(replayed.statusCode()).isEqualTo(401);
+        assertThat(JSON.readTree(replayed.body()).get("errorCode").asString()).isEqualTo("unauthorized");
+        assertThat(replay.send("GET", "/api/analyses", null).statusCode()).isEqualTo(401);
     }
 
     @Test
