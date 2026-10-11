@@ -107,7 +107,6 @@ spring-security-core = { module = "org.springframework.security:spring-security-
 spring-security-config = { module = "org.springframework.security:spring-security-config" }
 spring-security-web = { module = "org.springframework.security:spring-security-web" }
 jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api" }
-spring-security-test = { module = "org.springframework.security:spring-security-test" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
