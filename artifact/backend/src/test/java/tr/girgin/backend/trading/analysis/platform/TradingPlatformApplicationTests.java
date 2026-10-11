@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -52,6 +53,16 @@ class TradingPlatformApplicationTests {
     void keepsUnknownApiPathsAndMissingAssetsAsNotFound() throws Exception {
         mockMvc.perform(get("/api/does-not-exist")).andExpect(status().isNotFound());
         mockMvc.perform(get("/assets/missing.js")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void keepsTodaysBehaviourWithLoginOff() throws Exception {
+        // platform.auth.enabled is off by default: no session needed, and no CSRF token for an unsafe request.
+        mockMvc.perform(get("/api/analyses")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/presets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Off\",\"values\":{}}"))
+                .andExpect(status().isCreated());
     }
 
     @Test

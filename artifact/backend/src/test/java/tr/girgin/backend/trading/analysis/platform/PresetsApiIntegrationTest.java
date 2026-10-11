@@ -2,12 +2,11 @@ package tr.girgin.backend.trading.analysis.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
@@ -15,6 +14,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
 
 /** The preset API over HTTP, on a migrated PostgreSQL database: a stale rename is a 409. */
@@ -28,10 +29,22 @@ class PresetsApiIntegrationTest {
     @LocalServerPort
     private int port;
 
-    private final HttpClient http = HttpClient.newHttpClient();
+    @Autowired
+    private UserRepositoryPort users;
+
+    @Autowired
+    private PasswordHasherPort hasher;
+
+    private TestSession session;
+
+    @BeforeEach
+    void logIn() throws Exception {
+        session = TestSession.loggedIn(port, users, hasher);
+    }
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
+        registry.add("platform.auth.enabled", () -> "true");
         TestPlatformHome.register(registry, HOME, HOME.resolve("runner.sh"));
     }
 
@@ -82,13 +95,6 @@ class PresetsApiIntegrationTest {
     }
 
     private HttpResponse<String> send(String method, String path, String body) throws Exception {
-        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
-        if (body == null) {
-            request.method(method, HttpRequest.BodyPublishers.noBody());
-        } else {
-            request.header("Content-Type", "application/json")
-                    .method(method, HttpRequest.BodyPublishers.ofString(body));
-        }
-        return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
+        return session.send(method, path, body);
     }
 }

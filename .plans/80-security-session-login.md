@@ -220,6 +220,7 @@ cannot log in.
 
 ### WP3: Backend integration tests with login on
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**:
   - `artifact/backend/src/test/java/…/TestSession.java` (new)
@@ -227,12 +228,12 @@ cannot log in.
   - `AnalysesApiIntegrationTest.java`, `PresetsApiIntegrationTest.java`,
     `TradingPlatformApplicationTests.java`
 - **Steps**:
-  - [ ] `TestSession`: creates a user through the `UserRepositoryPort` and `PasswordHasherPort` beans
+  - [x] `TestSession`: creates a user through the `UserRepositoryPort` and `PasswordHasherPort` beans
     (a unique username per call), reads `GET /api/auth/me` for the `XSRF-TOKEN` cookie, logs in
     over HTTP, and gives the session cookie and CSRF header to put on a `java.net.http` request
-  - [ ] `AnalysesApiIntegrationTest` and `PresetsApiIntegrationTest`: run with
+  - [x] `AnalysesApiIntegrationTest` and `PresetsApiIntegrationTest`: run with
     `platform.auth.enabled=true` and send every request through a `TestSession`
-  - [ ] `TradingPlatformApplicationTests` (MockMvc): keep the default (switch off) and add a test that
+  - [x] `TradingPlatformApplicationTests` (MockMvc): keep the default (switch off) and add a test that
     `/api/analyses` answers 200 without a session and a `POST` works without a CSRF token, which
     proves the switch keeps today's behaviour
 - **Tests**: `AuthApiIntegrationTest` (`@SpringBootTest(RANDOM_PORT)`, real PostgreSQL through
