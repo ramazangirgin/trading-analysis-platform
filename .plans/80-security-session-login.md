@@ -253,14 +253,15 @@ cannot log in.
 
 ### WP4: API types, docs and version
 
+- **Status**: done
 - **Depends on**: WP2 (the API), WP3 (the final behaviour)
 - **Files**: `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts`,
   `README.md`, `docs/coding-convention/backend-java-package-structure.md`, the three version files
 - **Steps**:
-  - [ ] `mise run api-types` against the backend with this change (the three `/api/auth` operations,
+  - [x] `mise run api-types` against the backend with this change (the three `/api/auth` operations,
     `LoginRequest`, `CurrentUserDto`); the frontend type-check stays green
-  - [ ] The docs in "Docs to update"
-  - [ ] `mise run version:bump minor`
+  - [x] The docs in "Docs to update"
+  - [x] `mise run version:bump minor`
 - **Tests**: `mise run check` (frontend type-check included).
 
 ## Tests

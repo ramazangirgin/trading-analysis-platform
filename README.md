@@ -221,8 +221,10 @@ platform picks it up again.
   `/var/home/core/trading-analysis-platform`) or recreate it with `podman machine init --volume
   $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
   rootful one).
-- **Exposing it beyond localhost** needs authentication and HTTPS first (not built yet; see the
-  [GitHub issues](https://github.com/ramazangirgin/trading-analysis-platform/issues)); the port is published on 127.0.0.1 only.
+- **Exposing it beyond localhost** needs authentication and HTTPS first. Login is being built
+  ([#78](https://github.com/ramazangirgin/trading-analysis-platform/issues/78)) and is off by
+  default for now (see [Login (in progress)](#login-in-progress)); HTTPS is not built yet. The port is
+  published on 127.0.0.1 only.
 - The first start takes about a minute (longer under Podman's VM on macOS).
 
 ### Upgrading to 3.0.0
@@ -317,6 +319,23 @@ This starts two processes, and keeps them running until Ctrl+C:
 Open **http://localhost:5173** (not :8080) while developing. UI changes show up immediately; backend
 changes need a restart of `mise run dev`. Nothing listens on 5173 unless `mise run dev` is running —
 to just use the app, `mise run run` is enough.
+
+### Login (in progress)
+
+The backend has a server-side session login ([#78](https://github.com/ramazangirgin/trading-analysis-platform/issues/78)),
+behind a temporary switch that is off by default: `PLATFORM_AUTH_ENABLED=true` turns it on. Until the
+login page (#81) and the first admin (#82) exist, the UI cannot log in and no user exists, so the
+switch is for developing those. Off, the platform behaves as before. On:
+
+- `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
+  permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401
+  `unauthorized`; `POST /api/auth/logout` ends the session (204).
+- Every other `/api/**` route answers 401 (`unauthorized`) without a session. The static UI,
+  `/actuator/**` and `/api/openapi/**` stay open.
+- Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
+  `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.
+- Sessions live in the server's memory, so a restart logs everyone out. The idle timeout is
+  `PLATFORM_SESSION_TIMEOUT` (default `30m`).
 
 ### Tasks
 
