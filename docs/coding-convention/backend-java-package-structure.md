@@ -31,7 +31,7 @@ Domains: `analysis`, `report`, `catalog`, `settings`, `identity`.
 bff/controller/api/
   *ApiController, *ApiDelegate     controllers and the delegate interfaces they call
   error/                           ApiException, ApiExceptionHandler
-  config/                          web configuration (SpaWebConfig)
+  config/                          web and security configuration (SpaWebConfig, SecurityConfig)
   model/                           web DTOs (*Dto, *Request)
 bff/delegate/impl/
   *ApiDelegateImpl                 delegate implementations: call inbound ports, map
