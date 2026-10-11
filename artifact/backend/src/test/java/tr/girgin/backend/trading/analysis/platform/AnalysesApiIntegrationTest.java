@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +13,9 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
@@ -23,6 +23,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
 
 /**
@@ -58,10 +60,22 @@ class AnalysesApiIntegrationTest {
     @LocalServerPort
     private int port;
 
-    private final HttpClient http = HttpClient.newHttpClient();
+    @Autowired
+    private UserRepositoryPort users;
+
+    @Autowired
+    private PasswordHasherPort hasher;
+
+    private TestSession session;
+
+    @BeforeEach
+    void logIn() throws Exception {
+        session = TestSession.loggedIn(port, users, hasher);
+    }
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) throws IOException {
+        registry.add("platform.auth.enabled", () -> "true");
         Files.writeString(RUNNER, SCRIPT);
         Files.writeString(HOME.resolve("secrets.env"), "SLOW_TICKER=SLOW\n");
         // A run TradingAgents' CLI left in the data dir, to be imported.
@@ -256,12 +270,7 @@ class AnalysesApiIntegrationTest {
         String listed = get("/api/secrets").body();
         assertThat(listed).contains("OPENAI_API_KEY").doesNotContain("sk-test-secret");
         assertThat(Files.readString(HOME.resolve("secrets.env"))).contains("OPENAI_API_KEY=\"sk-test-secret-9876\"");
-        assertThat(http.send(
-                                HttpRequest.newBuilder(uri("/api/secrets/OPENAI_API_KEY"))
-                                        .DELETE()
-                                        .build(),
-                                HttpResponse.BodyHandlers.ofString())
-                        .statusCode())
+        assertThat(session.send("DELETE", "/api/secrets/OPENAI_API_KEY", null).statusCode())
                 .isEqualTo(204);
     }
 
@@ -286,12 +295,7 @@ class AnalysesApiIntegrationTest {
     }
 
     private HttpResponse<String> put(String path, String body) throws Exception {
-        return http.send(
-                HttpRequest.newBuilder(uri(path))
-                        .header("Content-Type", "application/json")
-                        .PUT(HttpRequest.BodyPublishers.ofString(body))
-                        .build(),
-                HttpResponse.BodyHandlers.ofString());
+        return session.send("PUT", path, body);
     }
 
     private static String request(String ticker) {
@@ -314,14 +318,13 @@ class AnalysesApiIntegrationTest {
     }
 
     private List<SseEvent> readStream(String id, String lastEventId) throws Exception {
-        HttpRequest.Builder request = HttpRequest.newBuilder(uri("/api/analyses/" + id + "/events"))
+        HttpRequest.Builder request = session.builder("/api/analyses/" + id + "/events")
                 .timeout(Duration.ofSeconds(20))
                 .header("Accept", "text/event-stream");
         if (lastEventId != null) {
             request.header("Last-Event-ID", lastEventId);
         }
-        HttpResponse<java.io.InputStream> response =
-                http.send(request.build(), HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<java.io.InputStream> response = session.send(request, HttpResponse.BodyHandlers.ofInputStream());
         assertThat(response.statusCode()).isEqualTo(200);
         List<SseEvent> events = new ArrayList<>();
         try (BufferedReader reader =
@@ -351,20 +354,11 @@ class AnalysesApiIntegrationTest {
     }
 
     private HttpResponse<String> post(String path, String body) throws Exception {
-        return http.send(
-                HttpRequest.newBuilder(uri(path))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(body))
-                        .build(),
-                HttpResponse.BodyHandlers.ofString());
+        return session.send("POST", path, body);
     }
 
     private HttpResponse<String> get(String path) throws Exception {
-        return http.send(HttpRequest.newBuilder(uri(path)).GET().build(), HttpResponse.BodyHandlers.ofString());
-    }
-
-    private URI uri(String path) {
-        return URI.create("http://localhost:" + port + path);
+        return session.send("GET", path, null);
     }
 
     private record SseEvent(String id, String name, String data) {}
