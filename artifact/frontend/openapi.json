@@ -247,6 +247,36 @@
                 }
             }
         },
+        "/api/auth/password": {
+            "post": {
+                "tags": [
+                    "auth-api-controller"
+                ],
+                "operationId": "changePassword",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentUserDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/analyses": {
             "get": {
                 "tags": [
@@ -753,6 +783,23 @@
                 "required": [
                     "password",
                     "username"
+                ]
+            },
+            "ChangePasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "currentPassword": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "newPassword": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "currentPassword",
+                    "newPassword"
                 ]
             },
             "CurrentUserDto": {

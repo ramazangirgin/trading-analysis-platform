@@ -17,6 +17,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
@@ -26,11 +28,15 @@ import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.AuthApiDelegate;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ChangePasswordRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.CurrentUserDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.PasswordChangeRequiredFilter;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.IdentityExceptionToApiExceptionMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ChangePasswordUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.AuthenticatedUser;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
@@ -47,6 +53,8 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     private static final String ROLE_PREFIX = "ROLE_";
 
     private final AuthenticateUseCase authentication;
+    private final ChangePasswordUseCase changePassword;
+    private final SessionRegistry sessionRegistry;
     private final IdentityExceptionToApiExceptionMapper errorMapper;
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SecurityContextRepository contextRepository;
@@ -57,11 +65,15 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     AuthApiDelegateImpl(
             AuthenticateUseCase authentication,
+            ChangePasswordUseCase changePassword,
+            SessionRegistry sessionRegistry,
             IdentityExceptionToApiExceptionMapper errorMapper,
             SessionAuthenticationStrategy sessionStrategy,
             SecurityContextRepository contextRepository,
             CsrfTokenRepository csrfTokenRepository) {
         this.authentication = authentication;
+        this.changePassword = changePassword;
+        this.sessionRegistry = sessionRegistry;
         this.errorMapper = errorMapper;
         this.sessionStrategy = sessionStrategy;
         this.contextRepository = contextRepository;
@@ -77,6 +89,38 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         } catch (IdentityException e) {
             throw errorMapper.map(e);
         }
+        startSession(user, http, response);
+        return ResponseEntity.ok(toDto(user));
+    }
+
+    @Override
+    public ResponseEntity<CurrentUserDto> changePassword(
+            ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response) {
+        Optional<UserId> id = currentUserId();
+        if (id.isEmpty()) {
+            throw unauthorized();
+        }
+        AuthenticatedUser user;
+        try {
+            user = changePassword.changePassword(id.get(), request.currentPassword(), request.newPassword());
+        } catch (IdentityException e) {
+            if (e.error() == IdentityError.BAD_CREDENTIALS) {
+                // The user was disabled or deleted since the login, as in me.
+                endSession(http, response);
+                throw unauthorized();
+            }
+            throw errorMapper.map(e);
+        }
+        String currentSessionId = http.getSession().getId();
+        sessionRegistry.getAllSessions(id.get().value(), false).stream()
+                .filter(session -> !session.getSessionId().equals(currentSessionId))
+                .forEach(SessionInformation::expireNow);
+        // The same steps as a login: a new session ID and CSRF token, and the authorities without the mark.
+        startSession(user, http, response);
+        return ResponseEntity.ok(toDto(user));
+    }
+
+    private void startSession(AuthenticatedUser user, HttpServletRequest http, HttpServletResponse response) {
         Authentication token =
                 UsernamePasswordAuthenticationToken.authenticated(user.id().value(), null, authorities(user));
         sessionStrategy.onAuthentication(token, http, response);
@@ -88,7 +132,6 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         context.setAuthentication(token);
         holderStrategy.setContext(context);
         contextRepository.saveContext(context, http, response);
-        return ResponseEntity.ok(toDto(user));
     }
 
     @Override
@@ -140,6 +183,9 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         List<GrantedAuthority> authorities = new ArrayList<>();
         user.roleNames().forEach(name -> authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + name)));
         user.permissions().forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission.key())));
+        if (user.mustChangePassword()) {
+            authorities.add(new SimpleGrantedAuthority(PasswordChangeRequiredFilter.AUTHORITY));
+        }
         return authorities;
     }
 

@@ -58,13 +58,23 @@ final class TestSession {
 
     /** Stores a user with a unique username and {@link #PASSWORD}; returns the username. */
     static String createUser(UserRepositoryPort users, PasswordHasherPort hasher, boolean enabled) {
+        return storeUser(users, hasher, enabled, false);
+    }
+
+    /** Stores an enabled user with a unique username and {@link #PASSWORD} who must change it; returns the username. */
+    static String createUserWhoMustChangePassword(UserRepositoryPort users, PasswordHasherPort hasher) {
+        return storeUser(users, hasher, true, true);
+    }
+
+    private static String storeUser(
+            UserRepositoryPort users, PasswordHasherPort hasher, boolean enabled, boolean mustChangePassword) {
         String username = "user-" + UUID.randomUUID();
         users.save(new User(
                 UserId.newId(),
                 new Username(username),
                 hasher.hash(PASSWORD),
                 enabled,
-                false,
+                mustChangePassword,
                 0,
                 Optional.empty(),
                 null,
@@ -77,6 +87,12 @@ final class TestSession {
     HttpResponse<String> login(String username, String password) throws IOException, InterruptedException {
         String body = "{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, password);
         return send(build("POST", "/api/auth/login", body));
+    }
+
+    HttpResponse<String> changePassword(String currentPassword, String newPassword)
+            throws IOException, InterruptedException {
+        String body = "{\"currentPassword\":\"%s\",\"newPassword\":\"%s\"}".formatted(currentPassword, newPassword);
+        return send(build("POST", "/api/auth/password", body));
     }
 
     String cookie(String name) {

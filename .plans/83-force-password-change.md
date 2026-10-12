@@ -141,6 +141,7 @@ menu. After a change, the flag is cleared and the user's other sessions are logg
 
 ### WP2: BFF: endpoint, gate and session invalidation
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `bff/api/.../AuthApiController.java`, `AuthApiDelegate.java`,
   `model/ChangePasswordRequest.java` (new); `bff/impl/.../AuthApiDelegateImpl.java`,
@@ -153,11 +154,11 @@ menu. After a change, the flag is cleared and the user's other sessions are logg
   `mustChangePassword` and a `changePassword` helper); `artifact/frontend/openapi.json`,
   `src/shared/api/schema.d.ts` (`mise run api-types`)
 - **Steps**:
-  - [ ] endpoint, DTO, delegate method
-  - [ ] the marker authority at login, the filter and its place in the chain
-  - [ ] session registry, event publisher, registering strategy, expired-session strategy; expire the other sessions on a change
-  - [ ] error mapping
-  - [ ] regenerate the API types
+  - [x] endpoint, DTO, delegate method
+  - [x] the marker authority at login, the filter and its place in the chain
+  - [x] session registry, event publisher, registering strategy, expired-session strategy; expire the other sessions on a change
+  - [x] error mapping
+  - [x] regenerate the API types
 - **Tests** (integration, over HTTP like `AuthApiIntegrationTest`):
   - a flagged user gets 403 `password_change_required` on `GET /api/analyses`, `GET /api/presets` and
     an unsafe call (`POST /api/presets`), while `me` (200, `mustChangePassword: true`), `logout` and
