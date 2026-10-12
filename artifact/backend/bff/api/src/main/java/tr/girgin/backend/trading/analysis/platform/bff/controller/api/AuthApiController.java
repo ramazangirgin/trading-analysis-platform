@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ChangePasswordRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.CurrentUserDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
 
@@ -35,6 +36,15 @@ public class AuthApiController {
     @GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CurrentUserDto> me(HttpServletRequest http, HttpServletResponse response) {
         return delegate.me(http, response);
+    }
+
+    @PostMapping(
+            path = "/password",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CurrentUserDto> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response) {
+        return delegate.changePassword(request, http, response);
     }
 
     @PostMapping("/logout")
