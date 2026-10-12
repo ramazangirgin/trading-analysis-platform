@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { NDropdown, useMessage } from 'naive-ui'
 import { useLabels } from '@/shared/composables/useLabels'
 import { useSessionStore } from '../store'
@@ -7,11 +8,21 @@ import { useSessionStore } from '../store'
 const { t, error: errorText } = useLabels()
 const session = useSessionStore()
 const message = useMessage()
+const router = useRouter()
 
-// One action for now; the change-password entry fits in beside it later.
-const options = computed(() => [{ label: t('nav.logout'), key: 'logout' }])
+// While the password change is forced, logging out is the only other way.
+const options = computed(() => [
+  ...(session.mustChangePassword
+    ? []
+    : [{ label: t('nav.changePassword'), key: 'change-password' }]),
+  { label: t('nav.logout'), key: 'logout' },
+])
 
 async function onSelect(key: string) {
+  if (key === 'change-password') {
+    void router.push({ name: 'change-password' })
+    return
+  }
   if (key !== 'logout') return
   try {
     await session.logout()

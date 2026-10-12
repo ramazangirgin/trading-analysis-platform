@@ -12,6 +12,7 @@ export const useSessionStore = defineStore('session', () => {
 
   const username = computed(() => user.value?.username ?? null)
   const permissions = computed(() => new Set(user.value?.permissions ?? []))
+  const mustChangePassword = computed(() => user.value?.mustChangePassword ?? false)
 
   function can(permission: string): boolean {
     return permissions.value.has(permission)
@@ -45,6 +46,16 @@ export const useSessionStore = defineStore('session', () => {
     loaded.value = true
   }
 
+  /** The backend answers with the user, whose flag is cleared now. */
+  async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    user.value = await authApi.changePassword(currentPassword, newPassword)
+  }
+
+  /** The backend refused a request until the password is changed: the user's flag was out of date. */
+  function requirePasswordChange(): void {
+    if (user.value) user.value = { ...user.value, mustChangePassword: true }
+  }
+
   /** A full page load drops every in-memory store, so nothing protected survives the logout. */
   async function logout(): Promise<void> {
     await authApi.logout()
@@ -55,5 +66,18 @@ export const useSessionStore = defineStore('session', () => {
     user.value = null
   }
 
-  return { user, loaded, username, permissions, can, load, login, logout, clear }
+  return {
+    user,
+    loaded,
+    username,
+    permissions,
+    mustChangePassword,
+    can,
+    load,
+    login,
+    changePassword,
+    requirePasswordChange,
+    logout,
+    clear,
+  }
 })

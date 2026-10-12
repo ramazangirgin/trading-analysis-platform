@@ -10,7 +10,18 @@
     "newAnalysis": "Yeni analiz",
     "reports": "Raporlar",
     "settings": "Ayarlar",
+    "changePassword": "Parolayı değiştir",
     "logout": "Çıkış yap"
+  },
+  "password": {
+    "title": "Parolayı değiştir",
+    "forced": "Parolanız tek kullanımlıktır. Devam etmek için yeni bir parola belirleyin.",
+    "current": "Mevcut parola",
+    "new": "Yeni parola",
+    "repeat": "Yeni parolayı tekrarlayın",
+    "mismatch": "Parolalar eşleşmiyor.",
+    "submit": "Parolayı değiştir",
+    "changed": "Parola değiştirildi."
   },
   "login": {
     "title": "Giriş yap",
@@ -229,6 +240,9 @@
     "concurrent_update": "Bu kayıt arada başka biri tarafından değiştirildi. Yenileyip tekrar deneyin.",
     "catalog_unavailable": "Model listesi alınamadı.",
     "bad_credentials": "Kullanıcı adı veya parola hatalı.",
+    "wrong_current_password": "Mevcut parola hatalı.",
+    "password_unchanged": "Yeni parola mevcut paroladan farklı olmalı.",
+    "password_change_required": "Devam etmeden önce parolanızı değiştirin.",
     "unauthorized": "Oturumunuz sona erdi. Tekrar giriş yapın.",
     "network_error": "Sunucuya ulaşılamadı.",
     "unexpected_error": "Beklenmeyen bir hata oluştu.",

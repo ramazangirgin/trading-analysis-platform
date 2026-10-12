@@ -3,7 +3,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ApiError } from '@/shared/api/error'
 import type { CurrentUser } from '@/shared/api/types'
 
-vi.mock('./api', () => ({ authApi: { me: vi.fn(), login: vi.fn(), logout: vi.fn() } }))
+vi.mock('./api', () => ({
+  authApi: { me: vi.fn(), login: vi.fn(), logout: vi.fn(), changePassword: vi.fn() },
+}))
 
 import { authApi } from './api'
 import { useSessionStore } from './store'
@@ -59,6 +61,30 @@ describe('useSessionStore', () => {
     expect(authApi.login).toHaveBeenCalledWith('ada', 'secret')
     expect(store.can('runs.start')).toBe(true)
     expect(store.can('users.manage')).toBe(false)
+  })
+
+  it('stores the user returned by a password change and clears the flag', async () => {
+    vi.mocked(authApi.login).mockResolvedValue({ ...user, mustChangePassword: true })
+    vi.mocked(authApi.changePassword).mockResolvedValue(user)
+    const store = useSessionStore()
+    await store.login('ada', 'one-time')
+    expect(store.mustChangePassword).toBe(true)
+    await store.changePassword('one-time', 'new-secret')
+    expect(authApi.changePassword).toHaveBeenCalledWith('one-time', 'new-secret')
+    expect(store.user).toEqual(user)
+    expect(store.mustChangePassword).toBe(false)
+  })
+
+  it('marks the user as having to change the password', async () => {
+    vi.mocked(authApi.login).mockResolvedValue(user)
+    const store = useSessionStore()
+    await store.login('ada', 'secret')
+    store.requirePasswordChange()
+    expect(store.mustChangePassword).toBe(true)
+  })
+
+  it('has no pending password change without a user', () => {
+    expect(useSessionStore().mustChangePassword).toBe(false)
   })
 
   it('clears the user', async () => {

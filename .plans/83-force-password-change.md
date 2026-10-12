@@ -176,6 +176,7 @@ menu. After a change, the flag is cleared and the user's other sessions are logg
 
 ### WP3: Frontend: change-password page, forced redirect, user menu
 
+- **Status**: done
 - **Depends on**: WP2 (the generated types)
 - **Files**: `artifact/frontend/src/shared/api/client.ts`, `client.spec.ts`,
   `src/shared/api/types.ts`, `src/features/auth/{api,store,index}.ts`, `store.spec.ts`,
@@ -186,9 +187,9 @@ menu. After a change, the flag is cleared and the user's other sessions are logg
   a `features/auth/model/` helper with its spec if the guard's decision is worth testing on its own
   (e.g. `passwordGate.ts`: which route a user may see)
 - **Steps**:
-  - [ ] client hook, api and store
-  - [ ] form, page, route, guard, login redirect, user menu entry
-  - [ ] translations
+  - [x] client hook, api and store
+  - [x] form, page, route, guard, login redirect, user menu entry
+  - [x] translations
 - **Tests** (Vitest): `client.spec.ts`: a 403 `password_change_required` calls the hook, another
   403 does not, a 401 still calls only the session-ended handler; `store.spec.ts`:
   `changePassword` stores the returned user and clears `mustChangePassword`; the guard helper's

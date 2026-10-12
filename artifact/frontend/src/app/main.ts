@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import { onSessionEnded, useSessionStore } from '@/features/auth'
+import { onPasswordChangeRequired, onSessionEnded, useSessionStore } from '@/features/auth'
 import { i18n } from '@/shared/i18n'
 import { router } from './router'
 
@@ -13,6 +13,14 @@ onSessionEnded(() => {
   const current = router.currentRoute.value
   if (current.name === 'login') return
   void router.replace({ name: 'login', query: { redirect: current.fullPath } })
+})
+
+// A request refused until the password is changed (the stored flag was not known yet): to the page.
+onPasswordChangeRequired(() => {
+  useSessionStore().requirePasswordChange()
+  const current = router.currentRoute.value
+  if (current.name === 'change-password') return
+  void router.replace({ name: 'change-password', query: { redirect: current.fullPath } })
 })
 
 app.mount('#app')

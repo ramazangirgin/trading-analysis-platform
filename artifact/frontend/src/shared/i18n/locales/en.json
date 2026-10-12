@@ -10,7 +10,18 @@
     "newAnalysis": "New analysis",
     "reports": "Reports",
     "settings": "Settings",
+    "changePassword": "Change password",
     "logout": "Log out"
+  },
+  "password": {
+    "title": "Change password",
+    "forced": "Your password is a one-time password. Set a new one to continue.",
+    "current": "Current password",
+    "new": "New password",
+    "repeat": "Repeat new password",
+    "mismatch": "The passwords do not match.",
+    "submit": "Change password",
+    "changed": "Password changed."
   },
   "login": {
     "title": "Log in",
@@ -229,6 +240,9 @@
     "concurrent_update": "Someone else changed this in the meantime. Reload and try again.",
     "catalog_unavailable": "Could not load the model list.",
     "bad_credentials": "Wrong username or password.",
+    "wrong_current_password": "The current password is wrong.",
+    "password_unchanged": "The new password must differ from the current one.",
+    "password_change_required": "Change your password before you continue.",
     "unauthorized": "Your session has ended. Log in again.",
     "network_error": "Cannot reach the server.",
     "unexpected_error": "Something unexpected went wrong.",

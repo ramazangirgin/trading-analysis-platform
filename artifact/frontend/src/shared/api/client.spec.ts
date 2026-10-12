@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { onUnauthorized, request } from './client'
+import { onPasswordChangeRequired, onUnauthorized, request } from './client'
 import { ApiError } from './error'
 
 const fetchMock = vi.fn()
@@ -18,6 +18,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   vi.stubGlobal('document', { cookie: 'XSRF-TOKEN=tok%3D' })
   onUnauthorized(() => {})
+  onPasswordChangeRequired(() => {})
 })
 
 afterEach(() => {
@@ -74,10 +75,42 @@ describe('request 401', () => {
     expect(handler).not.toHaveBeenCalled()
   })
 
-  it('does not call the handler on other errors', async () => {
+  it('does not call the session-ended handler on a 403', async () => {
     const handler = vi.fn()
     onUnauthorized(handler)
     fetchMock.mockResolvedValue(respond(403, { errorCode: 'forbidden' }))
+    await expect(request('/api/x')).rejects.toBeInstanceOf(ApiError)
+    expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('request 403 password_change_required', () => {
+  it('calls the handler and still throws the ApiError', async () => {
+    const handler = vi.fn()
+    const unauthorized = vi.fn()
+    onPasswordChangeRequired(handler)
+    onUnauthorized(unauthorized)
+    fetchMock.mockResolvedValue(respond(403, { errorCode: 'password_change_required' }))
+    const error = (await request('/api/x').catch((e: unknown) => e)) as ApiError
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(403)
+    expect(error.errorCode).toBe('password_change_required')
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(unauthorized).not.toHaveBeenCalled()
+  })
+
+  it('is not called for another 403', async () => {
+    const handler = vi.fn()
+    onPasswordChangeRequired(handler)
+    fetchMock.mockResolvedValue(respond(403, { errorCode: 'forbidden' }))
+    await expect(request('/api/x')).rejects.toBeInstanceOf(ApiError)
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('is not called for a 401', async () => {
+    const handler = vi.fn()
+    onPasswordChangeRequired(handler)
+    fetchMock.mockResolvedValue(respond(401, { errorCode: 'unauthorized' }))
     await expect(request('/api/x')).rejects.toBeInstanceOf(ApiError)
     expect(handler).not.toHaveBeenCalled()
   })
