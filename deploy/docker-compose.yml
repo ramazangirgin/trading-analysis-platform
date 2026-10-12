@@ -70,6 +70,9 @@ services:
     environment:
       PLATFORM_DB_HOST: postgres
       PLATFORM_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # The first admin, created on the first start only; empty password: one is generated and logged.
+      PLATFORM_ADMIN_USERNAME: ${PLATFORM_ADMIN_USERNAME:-admin}
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-}
       DOCKER_HOST: tcp://docker-socket-proxy:2375
       TA_RUNNER_IMAGE: ${TA_RUNNER_IMAGE:-ta-runner:latest}
       # Runner containers are created by the engine itself, so this is a path on this machine.

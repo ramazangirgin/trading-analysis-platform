@@ -233,11 +233,12 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
 
 ### WP4: Docker Compose and the smoke test
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `deploy/docker-compose.yml`, `deploy/.env.example`, `deploy/smoke-test.sh`
 - **Steps**:
-  - [ ] The Compose, `.env.example` and smoke-test changes listed in the design
-  - [ ] Run `deploy/smoke-test.sh` locally if Docker is available (`mise run docker-build` first);
+  - [x] The Compose, `.env.example` and smoke-test changes listed in the design
+  - [x] Run `deploy/smoke-test.sh` locally if Docker is available (`mise run docker-build` first);
         otherwise CI's *images* job runs it
 - **Tests**: `deploy/smoke-test.sh` (CI *images* job): the configured admin logs in after the first
   start, after a database restart and after down/up; the analysis, health and data checks run in
