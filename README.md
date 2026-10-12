@@ -61,7 +61,22 @@ queued analyses again. Ctrl+C in the terminal stops the running analyses too.
 
 Changing the code instead? See [Development](#development) — it runs the UI with hot reload.
 
-### 3. Add an API key
+### 3. Log in
+
+The first start creates the user `admin` and prints a generated password once in the terminal:
+
+```
+First start: created the admin user "admin" with the generated password <password>. It is shown only this once; change it after the first login.
+```
+
+Log in at **http://127.0.0.1:8080** with it. To choose the name and password instead, set
+`PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start. Later starts change
+nothing. A generated password is flagged to be changed (the change-password screen comes with
+[#83](https://github.com/ramazangirgin/trading-analysis-platform/issues/83)). If you lost it while
+`admin` is still the only user, delete the user (`DELETE FROM "IDENTITY"."USERS";` in the database)
+and restart to get a new one.
+
+### 4. Add an API key
 
 Open **Settings**, paste the key next to its provider and press **Save**. Keys are stored in
 `~/.tradingagents-platform/secrets.env` (owner-only) and are never shown back. A key already in
@@ -69,7 +84,7 @@ Open **Settings**, paste the key next to its provider and press **Save**. Keys a
 
 ![Settings: provider API keys](docs/screenshots/settings.png)
 
-### 4. Start an analysis
+### 5. Start an analysis
 
 Open **New analysis** and fill in:
 
@@ -90,7 +105,7 @@ Renaming a preset that someone else changed meanwhile fails with a message and t
 
 ![Presets in Settings](docs/screenshots/presets.png)
 
-### 5. Watch it and read the results
+### 6. Watch it and read the results
 
 The analysis page updates live: the agent pipeline (analysts → research debate → trader → risk
 debate → portfolio manager), a feed of agent messages and tool calls, the runner log, and token
@@ -118,7 +133,7 @@ and report tables that are series over periods (quarterly or yearly figures) get
 
 ![A fundamentals table with its chart](docs/screenshots/run-table-chart.png)
 
-### 6. Past analyses
+### 7. Past analyses
 
 **Analyses** lists every run with its analysis date and start time, decision, model and duration,
 filterable by ticker and status.
@@ -148,7 +163,7 @@ The **Dashboard** shows the running analyses and the latest decisions at a glanc
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
-### 7. Reports and export
+### 8. Reports and export
 
 **Reports** gathers every finished report in one place: the list of tickers and dates on the left,
 the report's contents in the middle (each section with its headings, then the debates), and the
@@ -189,9 +204,11 @@ mise run docker-build                   # builds trading-analysis-platform and t
 docker compose -f deploy/docker-compose.yml up -d
 ```
 
-Open **http://127.0.0.1:8080** (or the `PLATFORM_PORT` you set) and add an API key under
-**Settings**, as in the [Quick start](#3-add-an-api-key). `docker compose -f deploy/docker-compose.yml
-down` stops everything; `up -d` brings it back with all data.
+Open **http://127.0.0.1:8080** (or the `PLATFORM_PORT` you set), log in and add an API key under
+**Settings**, as in the [Quick start](#4-add-an-api-key). `.env` may set `PLATFORM_ADMIN_USERNAME` and
+`PLATFORM_ADMIN_PASSWORD` for the first admin; without them the generated password is in
+`docker compose -f deploy/docker-compose.yml logs platform`. `docker compose -f
+deploy/docker-compose.yml down` stops everything; `up -d` brings it back with all data.
 
 **Data** stays on the machine, in the folder named by `PLATFORM_DATA` (an absolute path):
 
@@ -221,11 +238,16 @@ platform picks it up again.
   `/var/home/core/trading-analysis-platform`) or recreate it with `podman machine init --volume
   $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
   rootful one).
-- **Exposing it beyond localhost** needs authentication and HTTPS first. Login is being built
-  ([#78](https://github.com/ramazangirgin/trading-analysis-platform/issues/78)) and is off by
-  default for now (see [Login (in progress)](#login-in-progress)); HTTPS is not built yet. The port is
-  published on 127.0.0.1 only.
+- **Exposing it beyond localhost** needs HTTPS first. Login is always on (see [Login](#login)); HTTPS
+  is not built yet. The port is published on 127.0.0.1 only.
 - The first start takes about a minute (longer under Podman's VM on macOS).
+
+### Upgrading to 4.0.0
+
+Login is always on and `PLATFORM_AUTH_ENABLED` is gone. An installation without users gets the first
+admin on its next start (see [Quick start](#3-log-in)). Scripts that call the API need a session and
+the CSRF header: `GET /api/auth/me` sets the `XSRF-TOKEN` cookie, `POST /api/auth/login` takes it
+back in `X-XSRF-TOKEN`, and every later unsafe request sends the header too.
 
 ### Upgrading to 3.0.0
 
@@ -318,14 +340,14 @@ This starts two processes, and keeps them running until Ctrl+C:
 
 Open **http://localhost:5173** (not :8080) while developing. UI changes show up immediately; backend
 changes need a restart of `mise run dev`. Nothing listens on 5173 unless `mise run dev` is running —
-to just use the app, `mise run run` is enough.
+to just use the app, `mise run run` is enough. `mise run dev` needs a login too, with the same first
+admin ([Quick start](#3-log-in)).
 
-### Login (in progress)
+### Login
 
 The backend has a server-side session login ([#78](https://github.com/ramazangirgin/trading-analysis-platform/issues/78)),
-behind a temporary switch that is off by default: `PLATFORM_AUTH_ENABLED=true` turns it on. Until the
-first admin (#82) exists, no user exists, so the switch is for development. Off, the platform behaves
-as before: no login page, no user menu. On, the UI has a login page (`/login`):
+always on. The first start creates the first admin ([Quick start](#3-log-in)). The UI has a login
+page (`/login`):
 
 ![The login page](docs/screenshots/login.png)
 
@@ -333,11 +355,10 @@ as before: no login page, no user menu. On, the UI has a login page (`/login`):
   to the requested page. The header shows the username with a logout action, which ends the session
   and loads `/login` afresh. When the session ends (any 401), the UI goes back to the login page.
 - The UI sends the CSRF header `X-XSRF-TOKEN` itself on every unsafe request.
-- The end-to-end tests run with login on: `e2e/start-platform.sh` seeds a user `e2e`
-  (`e2e/seed-user.sql`) in their throwaway database, and the tests log in as that user. The
-  screenshots run with login off.
+- The end-to-end tests log in as the first admin that `e2e/start-platform.sh` configures
+  (`admin` / `e2e-test-password`), and so do the screenshots.
 
-The backend, with the switch on:
+The backend:
 
 - `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
   permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401

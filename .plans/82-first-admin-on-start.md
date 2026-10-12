@@ -246,13 +246,14 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
 
 ### WP5: Docs and version
 
+- **Status**: done
 - **Depends on**: WP1–WP4
 - **Files**: `README.md`, `gradle.properties`, `artifact/frontend/package.json`,
   `artifact/ta-runner/ta_runner/__init__.py` (through `mise run version:bump major`)
 - **Steps**:
-  - [ ] The README changes in "Docs to update"
-  - [ ] `mise run version:bump major` (3.9.0 → 4.0.0)
-  - [ ] `mise run check`
+  - [x] The README changes in "Docs to update"
+  - [x] `mise run version:bump major` (3.9.0 → 4.0.0)
+  - [x] `mise run check`
 - **Tests**: none of its own; `mise run check`.
 
 ## Tests
