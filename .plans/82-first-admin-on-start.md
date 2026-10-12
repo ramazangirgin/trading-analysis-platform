@@ -217,7 +217,11 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
 
 ### WP3: e2e and screenshots log in as the first admin
 
-- **Status**: done
+- **Status**: done, with two deviations. `run-decision.png`, `run-live.png` and `reports.png` were
+  kept from main, not retaken: their content needs a real recording, which the replay fixture does
+  not give, so their header shows no `admin` menu and the footer shows the 3.x version (retake them
+  from a real recording in a follow-up). A new shot script, `e2e/screenshots/pages.shot.ts`, takes
+  `settings`, `new-analysis` and `dashboard`.
 - **Depends on**: WP2
 - **Files**: `e2e/start-platform.sh`, `e2e/seed-user.sql` (deleted), `scripts/postgres.sh`,
   `e2e/tests/support.ts`, `e2e/tests/global-setup.ts`, `e2e/tests/warm-up.ts`,
