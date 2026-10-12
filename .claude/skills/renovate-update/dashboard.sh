@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Helper of the renovate-update skill (SKILL.md next to it): drives the hosted Renovate app through
-# its dependency dashboard issue and waits for the results, with the user's own gh login.
+# Helper of the renovate-update skill (SKILL.md next to it) and of the renovate-fix skill: drives the
+# hosted Renovate app through its dependency dashboard issue and waits for the results, with the
+# user's own gh login.
 #
 #   dashboard.sh show                 the dashboard's checkboxes, by section
 #   dashboard.sh request [--dry-run]  tick every checkbox that brings mature updates in, then start
