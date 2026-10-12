@@ -207,10 +207,11 @@ screenshots stay valid.
 
 ### WP4: Docs
 
+- **Status**: done
 - **Depends on**: WP2, WP3
 - **Files**: `README.md`
 - **Steps**:
-  - [ ] update "Login (in progress)" (see Docs to update)
+  - [x] update "Login (in progress)" (see Docs to update)
 - **Tests**: none (docs)
 
 ## Tests

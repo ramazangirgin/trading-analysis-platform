@@ -324,8 +324,20 @@ to just use the app, `mise run run` is enough.
 
 The backend has a server-side session login ([#78](https://github.com/ramazangirgin/trading-analysis-platform/issues/78)),
 behind a temporary switch that is off by default: `PLATFORM_AUTH_ENABLED=true` turns it on. Until the
-login page (#81) and the first admin (#82) exist, the UI cannot log in and no user exists, so the
-switch is for developing those. Off, the platform behaves as before. On:
+first admin (#82) exists, no user exists, so the switch is for development. Off, the platform behaves
+as before: no login page, no user menu. On, the UI has a login page (`/login`):
+
+![The login page](docs/screenshots/login.png)
+
+- Opening any page without a session leads to `/login?redirect=<page>`; after login the UI returns
+  to the requested page. The header shows the username with a logout action, which ends the session
+  and loads `/login` afresh. When the session ends (any 401), the UI goes back to the login page.
+- The UI sends the CSRF header `X-XSRF-TOKEN` itself on every unsafe request.
+- The end-to-end tests run with login on: `e2e/start-platform.sh` seeds a user `e2e`
+  (`e2e/seed-user.sql`) in their throwaway database, and the tests log in as that user. The
+  screenshots run with login off.
+
+The backend, with the switch on:
 
 - `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
   permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401
@@ -349,7 +361,7 @@ mise run db:stop       # stop it; the data stays in the volume
 mise run db:reset      # remove the container and its volume: the next start is an empty database
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts, dependency check (deptry) and tests only
-mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome, ta-runner replaying a recording
+mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome with login on (a seeded user), ta-runner replaying a recording
 mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
 mise run check         # quick check before pushing: package structure, every domain with persistence has its conventions test, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' and skill helpers' Python tests (`agent:test`, `skill:test`; no other tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
