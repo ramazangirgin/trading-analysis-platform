@@ -16,6 +16,7 @@ import {
   enUS,
   trTR,
 } from 'naive-ui'
+import { UserMenu } from '@/features/auth'
 import LocaleSwitcher from '@/shared/ui/LocaleSwitcher.vue'
 
 const { t, locale } = useI18n()
@@ -41,7 +42,7 @@ watchEffect(() => {
       <NLayout class="app">
         <NLayoutHeader bordered class="app__header">
           <RouterLink to="/" class="app__brand">{{ t('app.title') }}</RouterLink>
-          <nav class="app__nav">
+          <nav v-if="!route.meta.bare" class="app__nav">
             <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
             <RouterLink :to="{ name: 'analyses' }">{{ t('nav.analyses') }}</RouterLink>
             <RouterLink :to="{ name: 'new-analysis' }">{{ t('nav.newAnalysis') }}</RouterLink>
@@ -52,6 +53,8 @@ watchEffect(() => {
             >
             <RouterLink :to="{ name: 'settings' }">{{ t('nav.settings') }}</RouterLink>
           </nav>
+          <span v-else class="app__nav" />
+          <UserMenu v-if="!route.meta.bare" />
           <LocaleSwitcher />
         </NLayoutHeader>
         <NLayoutContent :class="['app__content', { 'app__content--wide': route.meta.wide }]">

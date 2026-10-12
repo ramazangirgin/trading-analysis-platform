@@ -1,7 +1,18 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
+import { onSessionEnded, useSessionStore } from '@/features/auth'
 import { i18n } from '@/shared/i18n'
 import { router } from './router'
 
-createApp(App).use(createPinia()).use(router).use(i18n).mount('#app')
+const app = createApp(App).use(createPinia()).use(router).use(i18n)
+
+// An ended session (any 401 but login's own): back to the login page, which returns here afterwards.
+onSessionEnded(() => {
+  useSessionStore().clear()
+  const current = router.currentRoute.value
+  if (current.name === 'login') return
+  void router.replace({ name: 'login', query: { redirect: current.fullPath } })
+})
+
+app.mount('#app')
