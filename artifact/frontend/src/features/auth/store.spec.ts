@@ -9,12 +9,12 @@ import { authApi } from './api'
 import { useSessionStore } from './store'
 
 const user: CurrentUser = {
-  id: 1,
+  id: 'u_1',
   username: 'ada',
   roles: ['ADMIN'],
   permissions: ['runs.start', 'settings.edit'],
   mustChangePassword: false,
-} as unknown as CurrentUser
+}
 
 describe('useSessionStore', () => {
   beforeEach(() => {
