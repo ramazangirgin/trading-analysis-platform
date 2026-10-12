@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
@@ -113,8 +117,22 @@ class FirstAdminServiceTest {
     void aDuplicateKeyOnSaveIsNotAnError() {
         users.failWithDuplicate = true;
 
-        assertThatCode(() -> service("admin", null).createFirstAdminIfNoUser()).doesNotThrowAnyException();
+        Logger logger = (Logger) LoggerFactory.getLogger(FirstAdminService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            assertThatCode(() -> service("admin", null).createFirstAdminIfNoUser())
+                    .doesNotThrowAnyException();
+        } finally {
+            logger.detachAppender(appender);
+        }
+
         assertThat(users.users).isEmpty();
+        assertThat(generator.last).isNotNull();
+        assertThat(appender.list)
+                .extracting(ILoggingEvent::getFormattedMessage)
+                .noneMatch(message -> message.contains(generator.last));
     }
 
     @Test
