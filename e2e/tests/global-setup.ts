@@ -3,7 +3,7 @@ import { csrfHeaders, E2E_PASSWORD, E2E_USER } from './support'
 import { warmUpApi } from './warm-up'
 
 /**
- * Logs the seeded user in over the API, warms the backend up with that session, and saves the
+ * Logs the first admin in over the API, warms the backend up with that session, and saves the
  * session (cookies with the CSRF token) as the storage state every test starts with.
  */
 export default async function globalSetup(config: FullConfig) {
@@ -12,7 +12,7 @@ export default async function globalSetup(config: FullConfig) {
   try {
     // The CSRF cookie comes with any answer of /api/auth/me, a 401 included.
     await api.get('/api/auth/me')
-    // The seed runs right after the health check that Playwright waits for: retry until it is there.
+    // The first admin is created during the start, which the health check can outrun: retry.
     await expect(async () => {
       const response = await api.post('/api/auth/login', {
         data: { username: E2E_USER, password: E2E_PASSWORD },

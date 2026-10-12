@@ -1,6 +1,9 @@
 import { test } from '@playwright/test'
 import { shot } from './support'
 
+// Logged out, whatever the base config stores.
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test('login page', async ({ page }) => {
   await page.goto('/login')
   await page.getByPlaceholder('Username').waitFor()

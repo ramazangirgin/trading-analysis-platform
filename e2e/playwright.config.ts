@@ -29,7 +29,7 @@ export default defineConfig({
     locale: 'en-US',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    // The session of the seeded user, saved by the global setup.
+    // The session of the first admin, saved by the global setup.
     storageState: authFile,
   },
   projects: [
@@ -46,8 +46,7 @@ export default defineConfig({
   webServer: {
     command: 'sh start-platform.sh',
     url: `http://127.0.0.1:${port}/actuator/health`,
-    // Login on: start-platform.sh seeds the user the tests log in as (seed-user.sql).
-    env: { E2E_PORT: String(port), PLATFORM_AUTH_ENABLED: 'true' },
+    env: { E2E_PORT: String(port) },
     timeout: 120_000,
     stdout: 'pipe',
     reuseExistingServer: false,

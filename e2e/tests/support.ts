@@ -1,7 +1,7 @@
 import { expect, type APIRequestContext } from '@playwright/test'
 
-/** The user start-platform.sh seeds with e2e/seed-user.sql. */
-export const E2E_USER = 'e2e'
+/** The first admin that start-platform.sh configures (PLATFORM_ADMIN_USERNAME / _PASSWORD). */
+export const E2E_USER = 'admin'
 export const E2E_PASSWORD = 'e2e-test-password'
 
 /**
