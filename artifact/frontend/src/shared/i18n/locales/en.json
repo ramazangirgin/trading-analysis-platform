@@ -9,7 +9,14 @@
     "analyses": "Analyses",
     "newAnalysis": "New analysis",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "login": {
+    "title": "Log in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Log in"
   },
   "common": {
     "refresh": "Refresh",
@@ -221,6 +228,8 @@
     "not_running": "The analysis is not running.",
     "concurrent_update": "Someone else changed this in the meantime. Reload and try again.",
     "catalog_unavailable": "Could not load the model list.",
+    "bad_credentials": "Wrong username or password.",
+    "unauthorized": "Your session has ended. Log in again.",
     "network_error": "Cannot reach the server.",
     "unexpected_error": "Something unexpected went wrong.",
     "runner_error": "Error during the analysis",

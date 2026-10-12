@@ -324,8 +324,20 @@ to just use the app, `mise run run` is enough.
 
 The backend has a server-side session login ([#78](https://github.com/ramazangirgin/trading-analysis-platform/issues/78)),
 behind a temporary switch that is off by default: `PLATFORM_AUTH_ENABLED=true` turns it on. Until the
-login page (#81) and the first admin (#82) exist, the UI cannot log in and no user exists, so the
-switch is for developing those. Off, the platform behaves as before. On:
+first admin (#82) exists, no user exists, so the switch is for development. Off, the platform behaves
+as before: no login page, no user menu. On, the UI has a login page (`/login`):
+
+![The login page](docs/screenshots/login.png)
+
+- Opening any page without a session leads to `/login?redirect=<page>`; after login the UI returns
+  to the requested page. The header shows the username with a logout action, which ends the session
+  and loads `/login` afresh. When the session ends (any 401), the UI goes back to the login page.
+- The UI sends the CSRF header `X-XSRF-TOKEN` itself on every unsafe request.
+- The end-to-end tests run with login on: `e2e/start-platform.sh` seeds a user `e2e`
+  (`e2e/seed-user.sql`) in their throwaway database, and the tests log in as that user. The
+  screenshots run with login off.
+
+The backend, with the switch on:
 
 - `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
   permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401
@@ -349,7 +361,7 @@ mise run db:stop       # stop it; the data stays in the volume
 mise run db:reset      # remove the container and its volume: the next start is an empty database
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts, dependency check (deptry) and tests only
-mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome, ta-runner replaying a recording
+mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome with login on (a seeded user), ta-runner replaying a recording
 mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
 mise run check         # quick check before pushing: package structure, every domain with persistence has its conventions test, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' and skill helpers' Python tests (`agent:test`, `skill:test`; no other tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
@@ -378,7 +390,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)); then `mise run skill:test`: the Python tests of the Claude Code skills' helpers ([`.claude/skills/`](.claude/skills)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
-| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright): new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
+| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so

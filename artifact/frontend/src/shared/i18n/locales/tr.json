@@ -9,7 +9,14 @@
     "analyses": "Analizler",
     "newAnalysis": "Yeni analiz",
     "reports": "Raporlar",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "logout": "Çıkış yap"
+  },
+  "login": {
+    "title": "Giriş yap",
+    "username": "Kullanıcı adı",
+    "password": "Parola",
+    "submit": "Giriş yap"
   },
   "common": {
     "refresh": "Yenile",
@@ -221,6 +228,8 @@
     "not_running": "Analiz çalışmıyor.",
     "concurrent_update": "Bu kayıt arada başka biri tarafından değiştirildi. Yenileyip tekrar deneyin.",
     "catalog_unavailable": "Model listesi alınamadı.",
+    "bad_credentials": "Kullanıcı adı veya parola hatalı.",
+    "unauthorized": "Oturumunuz sona erdi. Tekrar giriş yapın.",
     "network_error": "Sunucuya ulaşılamadı.",
     "unexpected_error": "Beklenmeyen bir hata oluştu.",
     "runner_error": "Analiz sırasında hata",
