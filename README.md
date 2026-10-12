@@ -426,7 +426,10 @@ pending ones) and requests a run, waits for the pull requests and their CI, and 
 update branch: it adapts the code to the new release and moves the tools around it along. When that
 is not possible yet, it shows you why and asks whether to hold the dependency back (an
 `allowedVersions` rule) and open a follow-up issue, which the rule links. It stops at a green pull
-request and merges only when you say so. `/renovate-update <pr>` fixes one open update pull request.
+request and merges only when you say so. The fixing is a skill of its own, `renovate-fix`
+([`.claude/skills/renovate-fix/SKILL.md`](.claude/skills/renovate-fix/SKILL.md)), which
+`renovate-update` uses: `/renovate-fix` takes every open Renovate pull request one by one
+(`renovate/all` first), and `/renovate-fix <pr>` only the given ones, without a new Renovate run.
 
 Renovate only moves direct and pinned dependencies, so Dependabot alerts on transitive ones stay
 open. The Claude Code skill `dependabot-fix`
