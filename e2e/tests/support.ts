@@ -1,5 +1,19 @@
 import { expect, type APIRequestContext } from '@playwright/test'
 
+/** The user start-platform.sh seeds with e2e/seed-user.sql. */
+export const E2E_USER = 'e2e'
+export const E2E_PASSWORD = 'e2e-test-password'
+
+/**
+ * The CSRF header of an API call that changes something: the token is the XSRF-TOKEN cookie of the
+ * request context's session.
+ */
+export async function csrfHeaders(request: APIRequestContext): Promise<Record<string, string>> {
+  const { cookies } = await request.storageState()
+  const token = cookies.find((cookie) => cookie.name === 'XSRF-TOKEN')?.value
+  return token ? { 'X-XSRF-TOKEN': decodeURIComponent(token) } : {}
+}
+
 /** The trade date of the replayed recording (artifact/ta-runner/tests/fixtures/replay-run). */
 export const TRADE_DATE = '2026-09-25'
 
@@ -13,6 +27,7 @@ export const DECISION_TEXT = 'take a 4% position now'
  */
 export async function completedAnalysis(request: APIRequestContext, ticker: string) {
   const started = await request.post('/api/analyses', {
+    headers: await csrfHeaders(request),
     data: {
       ticker,
       tradeDate: TRADE_DATE,

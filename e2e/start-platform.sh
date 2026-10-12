@@ -3,7 +3,8 @@
 # TradingAgents data dir, and the real ta-runner replaying a recording instead of calling an LLM
 # (artifact/ta-runner/tests/fixtures/replay-run), on a throwaway PostgreSQL container
 # (scripts/postgres.sh throwaway) that is removed when the platform stops. It allows four analyses at
-# once, for the tests that run in parallel. Needs the jar
+# once, for the tests that run in parallel. With PLATFORM_AUTH_ENABLED=true it seeds the test user
+# (seed-user.sql) after the start. Needs the jar
 # (./gradlew :backend:bootJar), ta-runner's venv (uv sync in artifact/ta-runner), and Docker or Podman.
 set -eu
 
@@ -54,4 +55,24 @@ cd "$root"
 java -jar "$jar" --server.port="${E2E_PORT:-8090}" --platform.secrets.external-env-files= \
   --platform.analysis.max-concurrent-runs=4 &
 jar_pid=$!
+
+# With login on, the tests need a user: once the jar is healthy (Flyway has created the tables) the
+# seed inserts it. Playwright waits for the same health check, so its global setup retries the login.
+if [ "${PLATFORM_AUTH_ENABLED:-false}" = true ]; then
+  ready=
+  for _ in $(seq 1 120); do
+    if curl -fs "http://127.0.0.1:${E2E_PORT:-8090}/actuator/health" >/dev/null; then
+      ready=true
+      break
+    fi
+    kill -0 "$jar_pid" 2>/dev/null || break
+    sleep 1
+  done
+  if [ -z "$ready" ]; then
+    echo "The platform is not healthy after 120 s: the test user is not seeded." >&2
+    exit 1
+  fi
+  "$postgres" throwaway-sql "$container" "$root/e2e/seed-user.sql"
+fi
+
 wait "$jar_pid"

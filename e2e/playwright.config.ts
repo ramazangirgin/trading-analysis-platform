@@ -1,9 +1,12 @@
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
 
 // End-to-end tests of the whole platform: the main flows in a real browser against the built jar,
 // which start-platform.sh starts with a throwaway home and ta-runner replaying a recording.
 // `mise run e2e` builds what they need and runs them.
 const port = Number(process.env.E2E_PORT ?? 8090)
+const authFile = join(dirname(fileURLToPath(import.meta.url)), '.auth', 'user.json')
 
 export default defineConfig({
   testDir: 'tests',
@@ -26,6 +29,8 @@ export default defineConfig({
     locale: 'en-US',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // The session of the seeded user, saved by the global setup.
+    storageState: authFile,
   },
   projects: [
     {
@@ -41,7 +46,8 @@ export default defineConfig({
   webServer: {
     command: 'sh start-platform.sh',
     url: `http://127.0.0.1:${port}/actuator/health`,
-    env: { E2E_PORT: String(port) },
+    // Login on: start-platform.sh seeds the user the tests log in as (seed-user.sql).
+    env: { E2E_PORT: String(port), PLATFORM_AUTH_ENABLED: 'true' },
     timeout: 120_000,
     stdout: 'pipe',
     reuseExistingServer: false,

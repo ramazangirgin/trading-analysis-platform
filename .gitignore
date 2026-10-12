@@ -21,6 +21,7 @@ dist/
 # Playwright (mise run e2e)
 test-results/
 playwright-report/
+e2e/.auth/
 
 ### Python (ta-runner) ###
 .venv/
