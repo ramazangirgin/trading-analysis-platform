@@ -21,6 +21,7 @@ use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 round=$(($(count_steps "$pr" fix) + 1))
 [ "$(count_steps "$pr" review)" -ge "$round" ] || die "review round $round has not run yet"
+step_begin "fix R$round"
 
 checkout_branch "$branch"
 start=$(git rev-parse HEAD)

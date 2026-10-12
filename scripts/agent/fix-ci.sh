@@ -17,6 +17,7 @@ use_state "$branch"
 use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
 attempt=$(($(count_steps "$pr" ci-fix) + 1))
+step_begin "CI fix $attempt"
 
 checkout_branch "$branch"
 head=$(git rev-parse HEAD)

@@ -15,12 +15,14 @@
 #   AGENT_CI_TIMEOUT     minutes to wait for CI on a push; default 60
 #   AGENT_BASE_BRANCH    the branch plans start from and pull requests go into; default main.
 #                        Steps on an existing pull request use its base instead.
+#   AGENT_ISSUE_PROGRESS 1 (default): keep the progress comment on the issue up to date
+#                        (progress.sh); 0: record the progress in progress.tsv only
 #
 #   AGENT_STEP_LABEL     set by a step before run_agent: the label of the milestone lines for the
 #                        agent's phases (tests, mise run check, commit); none without it
 #
-# Everything a run leaves behind (prompts, agent results and streams, run.log, the lock run.pid, the
-# package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
+# Everything a run leaves behind (prompts, agent results and streams, run.log, progress.tsv, the lock
+# run.pid, the package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
 # (use_state), where a later run finds it.
 
 set -euo pipefail
@@ -56,6 +58,7 @@ AGENT_MAX_TOKENS=${AGENT_MAX_TOKENS:-50000000}
 AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
 AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
+AGENT_ISSUE_PROGRESS=${AGENT_ISSUE_PROGRESS:-1}
 # Label on an agent's pull request; removing it stops the loop.
 AGENT_LABEL=agent
 
@@ -67,7 +70,12 @@ mkdir -p "$AGENT_TMP"
 log() { echo "agent: $*" >&2; }
 # A milestone: a line of its own in run.log (agent: >> <text>) that says how far a run is. Every
 # line is written as it happens, nothing between the script's stderr and the terminal buffers it.
-milestone() { echo "agent: >> $*" >&2; }
+# It goes into progress.tsv too, under the step it happened in, and on to the issue.
+milestone() {
+  echo "agent: >> $*" >&2
+  progress_event milestone "${AGENT_STEP:-}" "${AGENT_SUBSTEP:-}" "$*"
+  progress_publish
+}
 # The first line of the message is a milestone (failed: …), the rest plain lines.
 die() {
   local message=$* first rest
@@ -103,6 +111,8 @@ use_state() {
   rmdir "$AGENT_TMP" 2>/dev/null || true # the scratch directory made above, if still empty
   AGENT_TMP=$AGENT_STATE
   $copy || return 0
+  AGENT_BRANCH=$1
+  [ -n "${AGENT_NO_PROGRESS:-}" ] || AGENT_PROGRESS=$AGENT_STATE/progress.tsv
   if [ -z "${AGENT_LOGGING:-}" ]; then
     export AGENT_LOGGING=1
     log_header
@@ -140,10 +150,76 @@ lock_run() {
     echo $$ >"$AGENT_STATE/run.pid"
   ) 2>/dev/null || die "a run is already active (log $AGENT_STATE/run.log)"
   export AGENT_LOCKED=1
-  trap 'rm -f "$AGENT_STATE/run.pid"' EXIT
-  trap 'exit 130' INT
-  trap 'exit 143' TERM HUP
+  AGENT_LOCK_HELD=1 # released by agent_exit
 }
+
+# --- Progress ------------------------------------------------------------------------------------
+#
+# What a run did and when, for the developer to look into later (the slow, repeated or failed
+# steps, the time and the tokens): progress.tsv in the state directory, one event per line,
+# rendered by progress.py into one comment on the issue per plan branch, edited in place
+# (progress.sh). Only steps, milestones and agent usage go in, never the agents' tool calls.
+# A step is one script run (implement, a review round, ...: step_begin); a sub-step is a part of
+# it (a work package: substep_begin). Both end by themselves when the script exits.
+
+# progress_event <kind> <parent> <name> [text]: one line of progress.tsv (progress.py's format).
+progress_event() {
+  [ -n "${AGENT_PROGRESS:-}" ] || return 0
+  local field fields=()
+  for field in "$@"; do fields+=("$(printf '%s' "$field" | tr '\t\n' '  ')"); done
+  printf '%s\t%s\t%s\t%s\t%s\n' "$(date +%s)" "${fields[0]}" "${fields[1]}" "${fields[2]}" "${fields[3]:-}" >>"$AGENT_PROGRESS"
+}
+
+# progress_publish [--wait]: brings the issue comment up to date, in the background (a milestone
+# never waits for GitHub), or with --wait before going on (the end of a step). Never fails a step.
+progress_publish() {
+  [ -n "${AGENT_PROGRESS:-}" ] && [ "$AGENT_ISSUE_PROGRESS" = 1 ] || return 0
+  if [ "${1:-}" = --wait ]; then
+    "$AGENT_DIR/progress.sh" post "$AGENT_BRANCH" >/dev/null || log "the progress comment on the issue was not updated"
+  else
+    ("$AGENT_DIR/progress.sh" post --async "$AGENT_BRANCH" >/dev/null 2>&1 || true) &
+  fi
+}
+
+# step_begin <name>: this script is step <name> (implement, review R1, CI fix 2, ...) until it ends.
+step_begin() {
+  AGENT_STEP=$1
+  AGENT_STEP_OWNED=1
+  progress_event begin "" "$1"
+  progress_publish
+}
+
+# step_end [result]: the step ends before the script does (next.sh's CI waits).
+step_end() {
+  [ -n "${AGENT_STEP_OWNED:-}" ] || return 0
+  [ -z "${AGENT_SUBSTEP:-}" ] || substep_end "${1:-}"
+  progress_event end "" "$AGENT_STEP" "${1:-}"
+  unset AGENT_STEP AGENT_STEP_OWNED
+  progress_publish --wait
+}
+
+# substep_begin <name> / substep_end [result]: a part of the current step (a work package).
+substep_begin() {
+  AGENT_SUBSTEP=$1
+  progress_event begin "${AGENT_STEP:-}" "$1"
+}
+substep_end() {
+  [ -n "${AGENT_SUBSTEP:-}" ] || return 0
+  progress_event end "${AGENT_STEP:-}" "$AGENT_SUBSTEP" "${1:-}"
+  unset AGENT_SUBSTEP
+  progress_publish
+}
+
+# On every exit: the open step ends (well, failed or interrupted) and the lock is released.
+agent_exit() {
+  local status=$? result=""
+  case $status in 0) ;; 130 | 143) result=interrupted ;; *) result=failed ;; esac
+  step_end "$result"
+  if [ -n "${AGENT_LOCK_HELD:-}" ]; then rm -f "$AGENT_STATE/run.pid"; fi
+}
+trap agent_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
 
 # Python for the JSON / diff helpers (standard library only): uv's, as elsewhere in the repository
 # (mise run api-types), or the system's when the script runs outside mise.
@@ -282,6 +358,7 @@ run_agent() {
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
     ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}" || true
   [ -s "$out" ] || die "the agent wrote no result ($out)"
+  progress_event usage "${AGENT_STEP:-}" "${AGENT_SUBSTEP:-}" "$(py "$AGENT_DIR/agent_json.py" progress-usage "$out")"
   if [ "$(py "$AGENT_DIR/agent_json.py" get "$out" is_error)" = True ]; then
     die "the agent failed: $(py "$AGENT_DIR/agent_json.py" get "$out" result)"
   fi
