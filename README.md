@@ -71,8 +71,8 @@ First start: created the admin user "admin" with the generated password <passwor
 
 Log in at **http://127.0.0.1:8080** with it. To choose the name and password instead, set
 `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start. Later starts change
-nothing. A generated password is flagged to be changed (the change-password screen comes with
-[#83](https://github.com/ramazangirgin/trading-analysis-platform/issues/83)). If you lost it while
+nothing. A generated password is flagged to be changed: after logging in with it, the UI asks for a
+new password before anything else. If you lost it while
 `admin` is still the only user, delete the user (`DELETE FROM "IDENTITY"."USERS";` in the database)
 and restart to get a new one.
 
@@ -358,11 +358,22 @@ page (`/login`):
 - The end-to-end tests log in as the first admin that `e2e/start-platform.sh` configures
   (`admin` / `e2e-test-password`), and so do the screenshots.
 
+Changing the password: the user menu → **Change password** opens `/password`. A user whose
+password is flagged to be changed (a generated or one-time password) is sent there right after
+login and can do nothing else until they set a new one. A change clears the flag and logs the
+user's other sessions out; the current session continues.
+
+![The change-password page](docs/screenshots/change-password.png)
+
 The backend:
 
 - `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
   permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401
   `unauthorized`; `POST /api/auth/logout` ends the session (204).
+- `POST /api/auth/password` (`currentPassword`, `newPassword`) answers 200 with the user (flag
+  cleared), or 400 `wrong_current_password` / `password_unchanged`. A session whose password must
+  be changed gets 403 `password_change_required` on every `/api/**` route but `me`, `password` and
+  `logout`.
 - Every other `/api/**` route answers 401 (`unauthorized`) without a session. The static UI,
   `/actuator/**` and `/api/openapi/**` stay open.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
@@ -411,7 +422,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)); then `mise run skill:test`: the Python tests of the Claude Code skills' helpers ([`.claude/skills/`](.claude/skills)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
-| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
+| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so

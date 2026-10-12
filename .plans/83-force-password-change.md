@@ -198,13 +198,14 @@ menu. After a change, the flag is cleared and the user's other sessions are logg
 
 ### WP4: e2e, screenshot and docs
 
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: `e2e/tests/password.e2e.ts` (new), `e2e/screenshots/password.shot.ts` (new),
   `docs/screenshots/change-password.png` (new), `README.md`
 - **Steps**:
-  - [ ] e2e tests
-  - [ ] screenshot
-  - [ ] README
+  - [x] e2e tests
+  - [x] screenshot
+  - [x] README
 - **Tests**: e2e, as the shared admin (whose password must not change: the tests run in parallel on
   that one session, and a change would log the others out): the user menu opens the change-password
   page; a wrong current password shows the field message and stays on the page; a mismatched repeat
