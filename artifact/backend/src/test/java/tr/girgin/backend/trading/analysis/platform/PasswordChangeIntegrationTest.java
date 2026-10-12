@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +49,7 @@ class PasswordChangeIntegrationTest {
         TestPlatformHome.register(registry, HOME, HOME.resolve("runner.sh"));
     }
 
-    private TestSession flaggedSession(String username) throws Exception {
+    private TestSession loggedInAs(String username) throws Exception {
         TestSession session = TestSession.anonymous(port);
         assertThat(session.login(username, TestSession.PASSWORD).statusCode()).isEqualTo(200);
         return session;
@@ -61,7 +62,7 @@ class PasswordChangeIntegrationTest {
     @Test
     void aFlaggedUserReachesNothingButMePasswordAndLogout() throws Exception {
         String username = TestSession.createUserWhoMustChangePassword(users, hasher);
-        TestSession client = flaggedSession(username);
+        TestSession client = loggedInAs(username);
 
         for (String path : new String[] {"/api/analyses", "/api/presets"}) {
             HttpResponse<String> response = client.send("GET", path, null);
@@ -79,7 +80,7 @@ class PasswordChangeIntegrationTest {
         assertThat(client.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
                 .isEqualTo(200);
 
-        TestSession other = flaggedSession(TestSession.createUserWhoMustChangePassword(users, hasher));
+        TestSession other = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher));
         assertThat(other.send("POST", "/api/auth/logout", null).statusCode()).isEqualTo(204);
     }
 
@@ -94,7 +95,7 @@ class PasswordChangeIntegrationTest {
     @Test
     void aWrongCurrentPasswordIs400AndChangesNothing() throws Exception {
         String username = TestSession.createUserWhoMustChangePassword(users, hasher);
-        TestSession client = flaggedSession(username);
+        TestSession client = loggedInAs(username);
 
         HttpResponse<String> response = client.changePassword("not the password", NEW_PASSWORD);
 
@@ -114,7 +115,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void theSamePasswordIs400() throws Exception {
-        TestSession client = flaggedSession(TestSession.createUserWhoMustChangePassword(users, hasher));
+        TestSession client = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher));
 
         HttpResponse<String> response = client.changePassword(TestSession.PASSWORD, TestSession.PASSWORD);
 
@@ -126,8 +127,8 @@ class PasswordChangeIntegrationTest {
     void anEmptyFieldIs400() throws Exception {
         TestSession client = TestSession.loggedIn(port, users, hasher);
 
-        for (HttpResponse<String> response : java.util.List.of(
-                client.changePassword("", NEW_PASSWORD), client.changePassword(TestSession.PASSWORD, ""))) {
+        for (HttpResponse<String> response :
+                List.of(client.changePassword("", NEW_PASSWORD), client.changePassword(TestSession.PASSWORD, ""))) {
             assertThat(response.statusCode()).isEqualTo(400);
             assertThat(errorCode(response)).isEqualTo("invalid_request");
         }
@@ -152,7 +153,7 @@ class PasswordChangeIntegrationTest {
     @Test
     void aChangeClearsTheFlagAndKeepsTheSessionWorkingUnderNewIds() throws Exception {
         String username = TestSession.createUserWhoMustChangePassword(users, hasher);
-        TestSession client = flaggedSession(username);
+        TestSession client = loggedInAs(username);
         String sessionBefore = client.cookie(TestSession.SESSION_COOKIE);
         String csrfBefore = client.cookie(TestSession.CSRF_COOKIE);
 
@@ -178,8 +179,8 @@ class PasswordChangeIntegrationTest {
     @Test
     void aChangeEndsTheOtherSessionsOfTheUserOnly() throws Exception {
         String username = TestSession.createUser(users, hasher, true);
-        TestSession first = flaggedSession(username);
-        TestSession second = flaggedSession(username);
+        TestSession first = loggedInAs(username);
+        TestSession second = loggedInAs(username);
         TestSession stranger = TestSession.loggedIn(port, users, hasher);
         assertThat(second.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
 
@@ -197,7 +198,7 @@ class PasswordChangeIntegrationTest {
     void theRegistryFollowsTheSessionIdOfALoginAndOfAChange() throws Exception {
         String username = TestSession.createUser(users, hasher, true);
         User stored = users.findByUsername(new Username(username)).orElseThrow();
-        TestSession client = flaggedSession(username);
+        TestSession client = loggedInAs(username);
         // A second login in the same session changes its ID again.
         assertThat(client.login(username, TestSession.PASSWORD).statusCode()).isEqualTo(200);
         assertThat(sessionIds(stored)).containsExactly(client.cookie(TestSession.SESSION_COOKIE));
@@ -211,7 +212,7 @@ class PasswordChangeIntegrationTest {
         assertThat(client.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
     }
 
-    private java.util.List<String> sessionIds(User user) {
+    private List<String> sessionIds(User user) {
         return sessionRegistry.getAllSessions(user.id().value(), false).stream()
                 .map(SessionInformation::getSessionId)
                 .toList();
