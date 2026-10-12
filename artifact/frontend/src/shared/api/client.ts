@@ -1,23 +1,48 @@
+import { csrfToken } from './csrf'
 import { ApiError } from './error'
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+
+let unauthorizedHandler: (() => void) | null = null
+
+/**
+ * Registers the one handler called on a 401 (an ended session). `shared` knows no router or
+ * feature, so the app wires this up.
+ */
+export function onUnauthorized(handler: () => void): void {
+  unauthorizedHandler = handler
+}
+
+export interface RequestOptions {
+  /** A 401 is an answer of this request (login, current user), not an ended session. */
+  skipUnauthorized?: boolean
+}
 
 /**
  * The HTTP client. Only the features' `api.ts` modules call it
  * (docs/coding-convention/frontend-folder-structure.md).
  */
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(
+  path: string,
+  init?: RequestInit,
+  options: RequestOptions = {},
+): Promise<T> {
+  const headers = new Headers(init?.headers)
+  headers.set('Accept', 'application/json')
+  if (init?.body) headers.set('Content-Type', 'application/json')
+  const method = (init?.method ?? 'GET').toUpperCase()
+  if (!SAFE_METHODS.has(method)) {
+    const token = csrfToken()
+    if (token) headers.set('X-XSRF-TOKEN', token)
+  }
   let response: Response
   try {
-    response = await fetch(path, {
-      ...init,
-      headers: {
-        Accept: 'application/json',
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-      },
-    })
+    response = await fetch(path, { ...init, headers })
   } catch (e) {
     throw new ApiError(0, 'network_error', {}, String(e))
   }
   if (!response.ok) {
+    if (response.status === 401 && !options.skipUnauthorized) unauthorizedHandler?.()
     const body = await response.json().catch(() => ({}))
     throw new ApiError(
       response.status,

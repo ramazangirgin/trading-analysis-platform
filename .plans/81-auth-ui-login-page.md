@@ -152,14 +152,15 @@ screenshots stay valid.
 
 ### WP1: HTTP client: CSRF header and 401 hook
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/frontend/src/shared/api/csrf.ts`, `csrf.spec.ts`, `client.ts`,
   `client.spec.ts` (new), `types.ts`
 - **Steps**:
-  - [ ] `csrfToken()` reading and decoding the `XSRF-TOKEN` cookie
-  - [ ] `request` merges `init.headers`, adds `X-XSRF-TOKEN` on unsafe methods, takes the
+  - [x] `csrfToken()` reading and decoding the `XSRF-TOKEN` cookie
+  - [x] `request` merges `init.headers`, adds `X-XSRF-TOKEN` on unsafe methods, takes the
         `skipUnauthorized` option, calls the `onUnauthorized` handler on a 401
-  - [ ] `CurrentUser` type
+  - [x] `CurrentUser` type
 - **Tests**: `csrf.spec.ts` (no cookie, other cookies only, encoded value); `client.spec.ts` with a
   stubbed `fetch` (`vi.stubGlobal`): header on POST/PUT/DELETE and not on GET, merged caller
   headers, the handler called on 401 and not with `skipUnauthorized`, the `ApiError` still thrown
