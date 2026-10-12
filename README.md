@@ -476,6 +476,16 @@ or updates the pull request, brings it up to date with `main` and fixes a red CI
 is green. It merges only when you say so. `dependabot-fix`, `renovate-fix` and `develop-issue` use it
 for their pull requests.
 
+A branch that fell behind `main` with conflicts is brought up to date by the Claude Code skill
+`merge-main-into-branch` ([`.claude/skills/merge-main-into-branch/SKILL.md`](.claude/skills/merge-main-into-branch/SKILL.md)):
+`/merge-main-into-branch` merges `origin/main` into the current branch (no rebase, no force push),
+commits the merge as it is, conflict markers included, and resolves the conflicts in a second
+commit of its own, from the branch's commits, `main`'s commits on the same lines and the branch's
+plan; the reviewer sees each resolution with `git show`. It bumps the version again when `main`
+caught up, and stops and asks when a conflict cannot be resolved with confidence. `develop-issue`
+uses it to update its pull requests. A branch with such a merge commit is merged with
+`gh pr merge <pr> --merge`: GitHub cannot rebase-merge it.
+
 Every version raised on `main` is a release. After **CI passed** on `main`,
 [`.github/workflows/release.yml`](.github/workflows/release.yml) tags the commit `vX.Y.Z` and
 publishes a [GitHub Release](https://github.com/ramazangirgin/trading-analysis-platform/releases)
@@ -511,9 +521,9 @@ mise run agent:run plan/32-compare-runs
 #    a second review → fix round, then a final comment and the PR is marked ready for review
 
 # 4. Review the PR (start with the final comment: open and declined findings), then
-git fetch origin && git switch plan/32-compare-runs && git rebase origin/main   # if main moved
-git push --force-with-lease                                                        # CI again
-gh pr merge <pr> --rebase --delete-branch
+git fetch origin && git switch plan/32-compare-runs && git pull
+/merge-main-into-branch            # in Claude Code, if main moved: merge, resolve, push; CI again
+gh pr merge <pr> --merge --delete-branch     # --rebase when main was not merged in
 #    CI on main releases vX.Y.Z; "Closes #32" closes the issue.
 ```
 
