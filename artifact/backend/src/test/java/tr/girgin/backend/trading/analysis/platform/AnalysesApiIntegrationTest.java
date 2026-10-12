@@ -75,7 +75,6 @@ class AnalysesApiIntegrationTest {
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) throws IOException {
-        registry.add("platform.auth.enabled", () -> "true");
         Files.writeString(RUNNER, SCRIPT);
         Files.writeString(HOME.resolve("secrets.env"), "SLOW_TICKER=SLOW\n");
         // A run TradingAgents' CLI left in the data dir, to be imported.

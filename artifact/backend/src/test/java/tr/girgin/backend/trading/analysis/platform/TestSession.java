@@ -17,8 +17,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
 /**
- * A client of a running platform with {@code platform.auth.enabled=true}, as the SPA behaves: it keeps the cookies
- * the server sets and echoes the {@code XSRF-TOKEN} cookie in the {@code X-XSRF-TOKEN} header of every request.
+ * A client of a running platform, as the SPA behaves: it keeps the cookies the server sets and echoes the
+ * {@code XSRF-TOKEN} cookie in the {@code X-XSRF-TOKEN} header of every request.
  */
 final class TestSession {
 
