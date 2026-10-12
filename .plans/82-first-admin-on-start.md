@@ -226,7 +226,7 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
 - **Steps**:
   - [x] The e2e changes listed in the design
   - [x] `mise run e2e` passes
-  - [ ] `mise run screenshots` retakes every screenshot; check each one shows the `admin` user menu in
+  - [x] `mise run screenshots` retakes every screenshot; check each one shows the `admin` user menu in
         the header and otherwise the same page as before, and `login.png` the empty login form
 - **Tests**: the whole e2e suite (`mise run e2e`), `auth.e2e.ts` in particular (login, wrong password,
   logout, redirect) as the configured admin.
