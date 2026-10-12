@@ -16,11 +16,14 @@ import {
   enUS,
   trTR,
 } from 'naive-ui'
-import { UserMenu } from '@/features/auth'
+import { UserMenu, useSessionStore } from '@/features/auth'
 import LocaleSwitcher from '@/shared/ui/LocaleSwitcher.vue'
 
 const { t, locale } = useI18n()
 const route = useRoute()
+const session = useSessionStore()
+// Bare pages show no navigation; so does everything while a password change is forced.
+const bare = computed(() => Boolean(route.meta.bare) || session.mustChangePassword)
 // /reports/:id is still the Reports page.
 const reportsActive = computed(() => route.name === 'report')
 const preferredDark = usePreferredDark()
@@ -42,7 +45,7 @@ watchEffect(() => {
       <NLayout class="app">
         <NLayoutHeader bordered class="app__header">
           <RouterLink to="/" class="app__brand">{{ t('app.title') }}</RouterLink>
-          <nav v-if="!route.meta.bare" class="app__nav">
+          <nav v-if="!bare" class="app__nav">
             <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
             <RouterLink :to="{ name: 'analyses' }">{{ t('nav.analyses') }}</RouterLink>
             <RouterLink :to="{ name: 'new-analysis' }">{{ t('nav.newAnalysis') }}</RouterLink>
