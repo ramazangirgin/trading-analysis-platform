@@ -91,7 +91,9 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   `done` or `not done` are skipped.
 - **The state directory is inside `.git`.** Everything a run leaves behind goes to
   `.git/agent/<issue>-<slug>/` of the plan branch: `run.log` (the scripts' and agents' progress
-  lines, with the milestone lines `agent: >> …` next to the tool lines), every prompt, agent result (`*.json`) and stream (`*.jsonl`), `current` (the package the
+  lines, with the milestone lines `agent: >> …` next to the tool lines), `progress.tsv` (the steps,
+  milestones and agent usage behind the [progress comment on the issue](#progress-on-the-issue)),
+  every prompt, agent result (`*.json`) and stream (`*.jsonl`), `current` (the package the
   implementation is on) and `run.pid` (the lock). Inside `.git` it is never committed, survives
   `git clean`, and is shared by the worktrees of the repository. A later run, even of another
   script, finds it. It is not deleted by the scripts; delete it after the merge.
@@ -220,6 +222,36 @@ the active process, the work package, the latest milestones and the end of `run.
 A second run on the same branch is refused while one is active (the lock,
 `run.pid` in the same directory).
 
+##### Progress on the issue
+
+The issue gets one **progress comment** per plan branch, posted by the first step and edited in
+place as the run goes on, so it says at any time, and after the run, what was done, when and at
+what cost. It is meant for looking into a run afterwards: which steps completed the issue, which
+ran long, where it was blocked or slow, what ran more than once, and the total time and tokens.
+It holds no tool calls and no file-level detail, only:
+
+- **status**: running (the step and work package), ready for review, stopped, failed or
+  interrupted; the pull request, the start, the last update, the elapsed time, the agents' runs and
+  time, the tokens and the cost at API prices;
+- **steps**: every step (plan, implement with each work package and the final checks, each CI wait,
+  CI fix, review round, fix round, finalise, update with `main`) with its start, end, duration,
+  tokens, cost and result (its last milestone, or why it failed);
+- **iterations**: per kind of step, the runs (out of `AGENT_MAX_ROUNDS` and `AGENT_MAX_CI_FIXES`),
+  the time, the tokens and the outcomes (work packages done / not done, CI passed / failed, the
+  findings per review round);
+- **worth a look**: the slowest steps, the time spent waiting for CI, steps that ran more than once,
+  the agents' retries, failed or interrupted steps, and the CI fixes and updates with `main` the
+  run needed;
+- a collapsed **timeline** of the milestones with their times.
+
+Each step script records its own steps in `progress.tsv` ([`lib.sh`](../scripts/agent/lib.sh),
+`step_begin`) and updates the comment in the background at every milestone, and once more when it
+ends. A failing or interrupted script still records its end. The steps a Claude Code session runs
+on its own (the plan and its approval, the CI waits, the update with `main`) are recorded with
+`progress.sh begin|end`. `mise run agent:progress <branch | pr>` prints the comment without posting
+it, `scripts/agent/progress.sh post <branch | pr>` posts it again. With `AGENT_ISSUE_PROGRESS=0` the
+progress stays in `progress.tsv` and nothing is posted.
+
 The scripts run from a copy of `scripts/agent/` taken at start, so switching branches does not
 change the running scripts or prompts. Each step can also be run on its own:
 
@@ -264,6 +296,8 @@ only when asked to in the session.
 /develop-issue https://github.com/<owner>/<repo>/issues/32
 ```
 
+It records its own steps (the plan with the time the approval took, the CI waits, the update with
+`main`) in the [progress comment on the issue](#progress-on-the-issue) next to the scripts' steps.
 It plans with the `plan-from-issue` skill, invoked from it, and runs the same scripts one step at a time
 (`implement.sh`, then `next.sh --dry-run` for the next step and that step's script), so the pull
 request and its state comments are the same as with `mise run agent:run`, and `mise run agent:next`
@@ -406,6 +440,7 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_MAX_BUDGET_USD` | none | Per agent call (`claude --max-budget-usd`) |
 | `AGENT_CI_TIMEOUT` | 60 | Minutes to wait for CI after a push |
 | `AGENT_BASE_BRANCH` | `main` | Where plan branches start and pull requests go |
+| `AGENT_ISSUE_PROGRESS` | 1 | 1: keep the [progress comment](#progress-on-the-issue) on the issue up to date; 0: `progress.tsv` only |
 
 Costs in the final comment are Claude Code's own figures at API prices; with a subscription login
 they show the usage, not a bill. The usage of runs from before the state directory existed, or of

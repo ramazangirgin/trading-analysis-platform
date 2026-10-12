@@ -524,7 +524,9 @@ the plan, runs every later step without asking (plan branch, implementation, eve
 and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
 for your review. It never merges unless you ask it to. It continues where the issue stands when
 started again. It reports each milestone of a long step (package, tests, check, review findings,
-CI) as it happens, and `mise run agent:status <branch>` shows where a run is.
+CI) as it happens, and `mise run agent:status <branch>` shows where a run is. The issue keeps one
+progress comment per plan, updated as the run goes: every step with its start, end, duration,
+tokens and result, the iterations per kind of step, and the slow, repeated or failed steps.
 
 Each step, what to check at each decision, how to stop, continue or redo a run, and the settings:
 [docs/agentic-development.md](docs/agentic-development.md).
