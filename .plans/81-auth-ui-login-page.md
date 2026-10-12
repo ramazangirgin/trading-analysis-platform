@@ -187,6 +187,7 @@ screenshots stay valid.
 
 ### WP3: End-to-end tests with login on, and the login screenshot
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `scripts/postgres.sh`, `e2e/seed-user.sql`, `e2e/start-platform.sh`,
   `e2e/playwright.config.ts`, `e2e/playwright.screenshots.config.ts`, `e2e/tests/global-setup.ts`
@@ -195,11 +196,11 @@ screenshots stay valid.
   `e2e/screenshots/*.ts` where they make unsafe API calls, `.gitignore` (`e2e/.auth/`),
   `docs/screenshots/login.png`
 - **Steps**:
-  - [ ] `throwaway-sql` in `postgres.sh` and the seed file
-  - [ ] the seed step in `start-platform.sh`, only with login on
-  - [ ] login in the global setup, the storage state in the config, the CSRF header helper
-  - [ ] `auth.e2e.ts`
-  - [ ] the screenshot config with login off; `login.shot.ts`; take `login.png` with
+  - [x] `throwaway-sql` in `postgres.sh` and the seed file
+  - [x] the seed step in `start-platform.sh`, only with login on
+  - [x] login in the global setup, the storage state in the config, the CSRF header helper
+  - [x] `auth.e2e.ts`
+  - [x] the screenshot config with login off; `login.shot.ts`; take `login.png` with
         `mise run screenshots login`
 - **Tests**: `mise run e2e` passes with login on: the existing tests (logged in through the stored
   state) and `auth.e2e.ts` (login, wrong password, redirect after login, logout, back button)
