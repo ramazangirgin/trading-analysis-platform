@@ -16,8 +16,7 @@
     "title": "Log in",
     "username": "Username",
     "password": "Password",
-    "submit": "Log in",
-    "badCredentials": "Wrong username or password."
+    "submit": "Log in"
   },
   "common": {
     "refresh": "Refresh",
