@@ -18,17 +18,25 @@ test('a logged-out visitor is sent to the login page and back after logging in',
   await expect(page).toHaveURL(/\/login\?redirect=(%2F|\/)reports$/)
 
   await logIn(page, E2E_USER, 'not-the-password')
-  const alert = page.getByText('Wrong username or password.')
-  await expect(alert).toBeVisible()
-
-  // An unknown user gets the same answer, so the message never tells which part was wrong.
-  await page.getByPlaceholder('Username').fill('nobody')
-  await page.getByRole('button', { name: 'Log in' }).click()
-  await expect(alert).toBeVisible()
+  await expect(page.getByText('Wrong username or password.')).toBeVisible()
 
   await logIn(page, E2E_USER, E2E_PASSWORD)
   await expect(page).toHaveURL('/reports')
   await expect(page.getByRole('button', { name: E2E_USER })).toBeVisible()
+})
+
+// An unknown user gets the same answer as a wrong password, so the message never tells which part
+// was wrong. Starts from a fresh page, so no earlier alert can satisfy the check.
+test('an unknown user gets the same message as a wrong password', async ({ page }) => {
+  await page.goto('/login')
+  await expect(page.getByText('Wrong username or password.')).toHaveCount(0)
+
+  const answered = page.waitForResponse('**/api/auth/login')
+  await logIn(page, 'nobody', 'not-the-password')
+  await answered
+
+  await expect(page.getByText('Wrong username or password.')).toBeVisible()
+  await expect(page).toHaveURL(/\/login/)
 })
 
 test('logging out returns to the login page and the back button shows no data', async ({
