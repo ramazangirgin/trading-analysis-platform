@@ -145,6 +145,7 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
 
 ### WP1: ADMIN role and the first admin (backend core and migration)
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/adapter/src/main/resources/tr/girgin/backend/trading/analysis/platform/domain/identity/adapter/persistence/migration/V3__seed_admin_role.sql` (new)
@@ -157,10 +158,10 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
     `…/service/OneTimePasswordGeneratorTest.java` (new),
     `…/identity/adapter/src/test/…/persistence/JpaIdentityRepositoryTest.java`
 - **Steps**:
-  - [ ] Migration `V3__seed_admin_role.sql` with the ADMIN row and its comment
-  - [ ] `RoleId.ADMIN`
-  - [ ] `CreateFirstAdminUseCase`, `FirstAdminService`, `OneTimePasswordGenerator` as designed
-  - [ ] The `platform.admin.*` properties
+  - [x] Migration `V3__seed_admin_role.sql` with the ADMIN row and its comment
+  - [x] `RoleId.ADMIN`
+  - [x] `CreateFirstAdminUseCase`, `FirstAdminService`, `OneTimePasswordGenerator` as designed
+  - [x] The `platform.admin.*` properties
 - **Tests**:
   - `FirstAdminServiceTest` (fakes as in `AuthenticationServiceTest`): no user + configured password
     → one enabled user `admin`, role `ADMIN`, the hash matches the password, not flagged; no user +
