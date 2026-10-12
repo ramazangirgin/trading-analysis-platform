@@ -348,6 +348,24 @@ class JpaIdentityRepositoryTest {
         assertThat(users.findById(user.id())).isEmpty();
     }
 
+    @Test
+    void theMigrationsSeedTheBuiltInAdminRoleWithEveryPermission() {
+        assertThat(roles.findById(RoleId.ADMIN)).hasValueSatisfying(admin -> {
+            assertThat(admin.name()).isEqualTo("ADMIN");
+            assertThat(admin.builtIn()).isTrue();
+            assertThat(admin.permissions()).containsExactlyInAnyOrder(Permission.values());
+            assertThat(admin.version()).isZero();
+        });
+    }
+
+    @Test
+    void aUserWithTheAdminRoleRoundTrips() {
+        User saved = users.save(user("seeded-admin-user", Set.of(RoleId.ADMIN)));
+
+        assertThat(users.findById(saved.id())).contains(saved);
+        assertThat(saved.roleIds()).containsExactly(RoleId.ADMIN);
+    }
+
     private Role saveRole(String name, Set<Permission> permissions) {
         return roles.save(new Role(RoleId.newId(), name, false, "", permissions, null));
     }

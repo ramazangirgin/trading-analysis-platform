@@ -5,6 +5,9 @@ import java.util.UUID;
 
 public record RoleId(String value) {
 
+    /** The built-in ADMIN role, seeded with this ID by the identity migration {@code V3__seed_admin_role.sql}. */
+    public static final RoleId ADMIN = new RoleId("ADMIN");
+
     public RoleId {
         Objects.requireNonNull(value, "value");
     }
