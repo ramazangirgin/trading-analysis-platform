@@ -1,9 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,13 +12,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.AuthenticatedUser;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
 @Service
@@ -29,14 +24,15 @@ class AuthenticationService implements AuthenticateUseCase {
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
 
     private final UserRepositoryPort users;
-    private final RoleRepositoryPort roles;
+    private final AuthenticatedUserFactory authenticatedUsers;
     private final PasswordHasherPort hasher;
     /** Checked when the user is unknown, so that case takes as long as a wrong password. */
     private final PasswordHash decoyHash;
 
-    AuthenticationService(UserRepositoryPort users, RoleRepositoryPort roles, PasswordHasherPort hasher) {
+    AuthenticationService(
+            UserRepositoryPort users, AuthenticatedUserFactory authenticatedUsers, PasswordHasherPort hasher) {
         this.users = users;
-        this.roles = roles;
+        this.authenticatedUsers = authenticatedUsers;
         this.hasher = hasher;
         this.decoyHash = hasher.hash(UUID.randomUUID().toString());
     }
@@ -56,12 +52,12 @@ class AuthenticationService implements AuthenticateUseCase {
         if (hasher.needsRehash(user.passwordHash())) {
             current = rehash(user, password);
         }
-        return toAuthenticated(current);
+        return authenticatedUsers.create(current);
     }
 
     @Override
     public Optional<AuthenticatedUser> findActiveUser(UserId id) {
-        return users.findById(id).filter(User::enabled).map(this::toAuthenticated);
+        return users.findById(id).filter(User::enabled).map(authenticatedUsers::create);
     }
 
     private Optional<User> findByUsername(String username) {
@@ -75,18 +71,7 @@ class AuthenticationService implements AuthenticateUseCase {
     }
 
     private User rehash(User user, CharSequence password) {
-        User updated = new User(
-                user.id(),
-                user.username(),
-                hasher.hash(password),
-                user.enabled(),
-                user.mustChangePassword(),
-                user.failedLoginCount(),
-                user.lockedUntil(),
-                user.createdAt(),
-                user.updatedAt(),
-                user.roleIds(),
-                user.version());
+        User updated = user.withPassword(hasher.hash(password), user.mustChangePassword());
         try {
             return users.save(updated);
         } catch (OptimisticLockingFailureException e) {
@@ -96,19 +81,6 @@ class AuthenticationService implements AuthenticateUseCase {
                     e);
             return user;
         }
-    }
-
-    private AuthenticatedUser toAuthenticated(User user) {
-        Set<String> roleNames = new HashSet<>();
-        Set<Permission> permissions = new HashSet<>();
-        user.roleIds()
-                .forEach(roleId -> roles.findById(roleId).ifPresent(role -> addRole(role, roleNames, permissions)));
-        return new AuthenticatedUser(user.id(), user.username(), roleNames, permissions, user.mustChangePassword());
-    }
-
-    private static void addRole(Role role, Set<String> roleNames, Set<Permission> permissions) {
-        roleNames.add(role.name());
-        permissions.addAll(role.permissions());
     }
 
     private static IdentityException badCredentials() {

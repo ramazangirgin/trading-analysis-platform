@@ -14,6 +14,7 @@ public interface IdentityExceptionToApiExceptionMapper {
         // invalid username into BAD_CREDENTIALS. Reaching them is a bug, so 500.
         HttpStatus status = switch (source.error()) {
             case BAD_CREDENTIALS -> HttpStatus.UNAUTHORIZED;
+            case WRONG_CURRENT_PASSWORD, PASSWORD_UNCHANGED -> HttpStatus.BAD_REQUEST;
             case INVALID_USERNAME, UNKNOWN_PERMISSION -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
         return new ApiException(

@@ -3,5 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.excepti
 public enum IdentityError {
     INVALID_USERNAME,
     UNKNOWN_PERMISSION,
-    BAD_CREDENTIALS
+    BAD_CREDENTIALS,
+    WRONG_CURRENT_PASSWORD,
+    PASSWORD_UNCHANGED
 }

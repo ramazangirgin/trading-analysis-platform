@@ -31,7 +31,8 @@ class AuthenticationServiceTest {
     private final FakeUserRepository users = new FakeUserRepository();
     private final FakeRoleRepository roles = new FakeRoleRepository();
     private final FakeHasher hasher = new FakeHasher();
-    private final AuthenticationService service = new AuthenticationService(users, roles, hasher);
+    private final AuthenticationService service =
+            new AuthenticationService(users, new AuthenticatedUserFactory(roles), hasher);
 
     @Test
     void validLoginReturnsTheUserWithRoleNamesAndTheUnionOfPermissions() {
