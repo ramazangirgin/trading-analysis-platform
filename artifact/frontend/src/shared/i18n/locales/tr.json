@@ -16,8 +16,7 @@
     "title": "Giriş yap",
     "username": "Kullanıcı adı",
     "password": "Parola",
-    "submit": "Giriş yap",
-    "badCredentials": "Kullanıcı adı veya parola hatalı."
+    "submit": "Giriş yap"
   },
   "common": {
     "refresh": "Yenile",
