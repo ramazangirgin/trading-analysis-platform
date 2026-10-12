@@ -106,7 +106,10 @@ git push --force-with-lease
 Conflicts only in the version files (`gradle.properties`, `artifact/frontend/package.json`,
 `artifact/ta-runner/ta_runner/__init__.py`): take `main`'s side, continue the rebase, then bump
 again in its own commit. Any other conflict: `git rebase --abort`, show the conflicting files and
-stop; never resolve someone else's change on your own.
+stop; never resolve someone else's change during a rebase. Say that
+[`/merge-main-into-branch`](../merge-main-into-branch/SKILL.md) merges `main` instead, resolves
+the conflicts in a commit of its own that the reviewer sees, and pushes without force; run it only
+when the user asks for it.
 
 ## 5. CI
 
@@ -141,6 +144,10 @@ Merge only when the user asks in this session, with **CI passed** green and the 
 ```sh
 gh pr merge <pr> --rebase --delete-branch
 ```
+
+A branch that `main` was merged into (`git rev-list --merges origin/main..HEAD` is not empty, see
+[`merge-main-into-branch`](../merge-main-into-branch/SKILL.md)) is merged with `--merge` instead:
+GitHub cannot rebase-merge it.
 
 If GitHub refuses (no approval, CI not green), show why and stop. Never `--admin`, never `--auto`.
 A worktree made for the change can go after the merge: `git worktree remove <dir>` (it refuses one

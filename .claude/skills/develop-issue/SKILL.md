@@ -30,7 +30,7 @@ when:
 
 - a step fails: show the error and the end of its output. Never retry on your own;
 - the loop stops (`stopping: <reason>`, step 5.5);
-- the rebase on `main` conflicts in a file other than the version files (step 6);
+- the merge of `main` has a conflict that cannot be resolved with confidence (step 6);
 - the pull request is ready for review (step 7).
 
 Merging is never part of the run. It is the developer's decision; merge only when the developer asks
@@ -84,7 +84,7 @@ comment and prints its link:
 |---|---|---|
 | 2. Plan, until approved | `plan_start=$(date +%s)`; keep the number | after step 3, per plan: `progress.sh begin plan/<n>-<slug> plan --at <plan_start>`, then `progress.sh end plan/<n>-<slug> plan "approved (<k> change rounds)"` |
 | 5.2 a CI wait | `progress.sh begin <pr> "CI <short sha>"` | `progress.sh end <pr> "CI <short sha>" "passed"`, `"failed: <jobs>"` or `"timed out"` |
-| 6. Update with `main` | `progress.sh begin <pr> "update with main"` | `progress.sh end <pr> "update with main" "<rebased, bumped to X.Y.Z \| conflict in <file>>"` |
+| 6. Update with `main` | `progress.sh begin <pr> "update with main"` | `progress.sh end <pr> "update with main" "<merged, N conflicts resolved, bumped to X.Y.Z \| unresolved conflict in <file>>"` |
 | 5.5 a stop | | `progress.sh note <pr> "stopping: <reason>"` |
 
 Steps are named as the scripts name theirs, so the comment counts them with the scripts' own
@@ -253,16 +253,20 @@ Repeat until the pull request is ready for review:
 
 Check: `git fetch origin` and `gh pr view <pr> --json mergeStateStatus,headRefName`. When the branch
 is behind `main`, update it in the issue's folder, recorded as the step `update with main`
-([Progress on the issue](#progress-on-the-issue)), with the [`pr-ready`](../pr-ready/SKILL.md) skill
-(`Skill`, `pr-ready`, arguments `<pr> --bump <minor|major|patch> --no-fix`): it rebases on `main`,
-bumps the version again in a commit of its own when `main`'s has caught up, runs `mise run check`,
-pushes with `--force-with-lease` and waits for CI. A conflict outside the version files makes it
-abort the rebase and stop: then stop and notify.
+([Progress on the issue](#progress-on-the-issue)). Switch the folder to the pull request's branch
+(`git switch <branch> && git merge --ff-only origin/<branch>`), then merge `main` into it with the
+[`merge-main-into-branch`](../merge-main-into-branch/SKILL.md) skill (`Skill`,
+`merge-main-into-branch`, arguments `--bump <minor|major|patch> --no-questions`): it merges
+`origin/main` (never a rebase), commits the merge with its conflict markers, resolves the conflicts
+with the plan in mind in a commit of its own, bumps the version again when `main`'s has caught up,
+runs `mise run check` and pushes (a plain push, no force). A conflict it cannot resolve with
+confidence makes it stop without pushing: then stop and notify, with the files and the reason it
+gives.
 
-Pick the bump from the plan's "Version bump". `--no-fix` stops it at a red CI, since the agents
-fix CI here. Run from step 5 (instead of a fix-ci), go back to step 5.1. Run on a pull request that
-is already ready for review, a red CI goes back to step 5 (fix-ci): first add the `agent` label
-again and turn the pull request back into a draft (`gh pr ready <pr> --undo`).
+Pick the bump from the plan's "Version bump". Run from step 5 (instead of a fix-ci), go back to
+step 5.1, which waits for CI. Run on a pull request that is already ready for review, wait for CI
+as in step 5.2; a red CI goes back to step 5 (fix-ci): first add the `agent` label again and turn
+the pull request back into a draft (`gh pr ready <pr> --undo`).
 
 ## 7. Ready for the developer's review
 
@@ -286,8 +290,14 @@ Merging is the developer's decision and never part of the run. Only when the dev
 in this session, and **CI passed** is green and the branch is up to date, run:
 
 ```sh
+git fetch origin
+git rev-list --merges origin/main..origin/<branch>   # empty: --rebase; else --merge
 gh pr merge <pr> --rebase --delete-branch
 ```
+
+A branch that `main` was merged into (step 6) is merged with `--merge` instead of `--rebase`:
+GitHub cannot rebase-merge it, since replaying the branch's own commits on `main` runs into the
+conflicts the merge commit resolved.
 
 If GitHub refuses it (no code owner's approval yet, CI not green), show why and stop. Never retry
 with `--admin` and never use `--auto`.
