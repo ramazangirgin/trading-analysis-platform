@@ -469,6 +469,13 @@ mise run version:bump patch   # hotfixes only
 Renovate's dependency update pull requests are the one exception: they skip the bump (the hosted
 app cannot run the script) and ship with the next pull request that raises the version.
 
+The Claude Code skill `pr-ready` ([`.claude/skills/pr-ready/SKILL.md`](.claude/skills/pr-ready/SKILL.md))
+takes a branch to a pull request ready for review: `/pr-ready` (the current branch) or
+`/pr-ready <pr>` raises the version when the branch does not, runs `mise run check`, pushes, opens
+or updates the pull request, brings it up to date with `main` and fixes a red CI until **CI passed**
+is green. It merges only when you say so. `dependabot-fix`, `renovate-fix` and `develop-issue` use it
+for their pull requests.
+
 Every version raised on `main` is a release. After **CI passed** on `main`,
 [`.github/workflows/release.yml`](.github/workflows/release.yml) tags the commit `vX.Y.Z` and
 publishes a [GitHub Release](https://github.com/ramazangirgin/trading-analysis-platform/releases)

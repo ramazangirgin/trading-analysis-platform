@@ -171,14 +171,13 @@ Per group, the least invasive fix that holds:
    the body. Then `~/.local/bin/mise run check`, and the task that runs the affected tests:
    `mise run build` (Gradle), `mise run runner-test` (uv), the frontend's tests and `mise run e2e`
    (pnpm). The Git hooks run on commit; fix what they report.
-5. **Version bump** in its own commit (`mise run version:bump minor`, see
-   [the versioning convention](../../../docs/coding-convention/repository-versioning-and-releases.md)),
-   unless the branch already raises it.
-6. **Push and open a pull request** (`gh pr create`, label `dependencies` and `security`): the table
-   of 5 with the alerts it closes, the before/after versions from 3, what was not applied and why,
-   the `prBodyNotes`. Never merge it: the ruleset needs a code owner's review, and merging is the
-   developer's decision. Wait for CI (`gh pr checks <pr> --watch --interval 30`) and fix a red run
-   like any change.
+5. **Pull request, ready for review**: write the body to `$TMPDIR/dependabot-pr.md` (the table of
+   5 with the alerts it closes, the before/after versions from 3, what was not applied and why, the
+   `prBodyNotes`), then invoke the [`pr-ready`](../pr-ready/SKILL.md) skill (`Skill`, `pr-ready`,
+   arguments `--label dependencies --label security --body-file "$TMPDIR/dependabot-pr.md"`) and
+   follow it: it raises the version unless the branch already does, pushes, opens the pull request,
+   keeps it up to date with `main` and fixes a red CI like any change. Never merge it: the ruleset
+   needs a code owner's review, and merging is the developer's decision.
 
 ## 7. Report
 

@@ -227,28 +227,16 @@ Repeat until the pull request is ready for review:
 ## 6. Bring it up to date with `main` (only when needed)
 
 Check: `git fetch origin` and `gh pr view <pr> --json mergeStateStatus,headRefName`. When the branch
-is behind `main`, update it in the issue's folder. It rewrites the branch (`--force-with-lease`)
-and starts CI again:
+is behind `main`, update it in the issue's folder with the [`pr-ready`](../pr-ready/SKILL.md) skill
+(`Skill`, `pr-ready`, arguments `<pr> --bump <minor|major|patch> --no-fix`): it rebases on `main`,
+bumps the version again in a commit of its own when `main`'s has caught up, runs `mise run check`,
+pushes with `--force-with-lease` and waits for CI. A conflict outside the version files makes it
+abort the rebase and stop: then stop and notify.
 
-```sh
-git switch plan/<n>-<slug> && git pull --ff-only
-git rebase origin/main            # conflicts: see below
-mise run version:bump <minor|major|patch>   # only if main's version has caught up with the branch's
-git commit -am "Bump version to <version>"  # its own commit
-mise run check
-git push --force-with-lease
-```
-
-Conflicts only in the three version files (`gradle.properties`, `artifact/frontend/package.json`,
-`artifact/ta-runner/ta_runner/__init__.py`): take `main`'s side, continue the rebase, then bump in
-a commit of its own. A conflict in any other file: `git rebase --abort`, show the conflicting
-files, then stop and notify. Never resolve it on your own.
-
-Pick the bump from the plan's "Version bump", and check it with
-`scripts/version.sh check-bump origin/main`. Then wait for **CI passed** on the new head, as in
-step 5.2. Run from step 5 (instead of a fix-ci), go back to step 5.1. Run on a pull request that is
-already ready for review, a red CI goes back to step 5 (fix-ci): first add the `agent` label again
-and turn the pull request back into a draft (`gh pr ready <pr> --undo`).
+Pick the bump from the plan's "Version bump". `--no-fix` stops it at a red CI, since the agents
+fix CI here. Run from step 5 (instead of a fix-ci), go back to step 5.1. Run on a pull request that
+is already ready for review, a red CI goes back to step 5 (fix-ci): first add the `agent` label
+again and turn the pull request back into a draft (`gh pr ready <pr> --undo`).
 
 ## 7. Ready for the developer's review
 
