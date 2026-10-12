@@ -121,6 +121,7 @@ menu. After a change, the flag is cleared and the user's other sessions are logg
 
 ### WP1: Identity domain: change the password
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/identity/core/.../exception/IdentityError.java`,
   `.../inbound/ChangePasswordUseCase.java` (new), `.../service/PasswordChangeService.java` (new),
@@ -128,9 +129,9 @@ menu. After a change, the flag is cleared and the user's other sessions are logg
   `.../model/User.java`; tests `.../service/PasswordChangeServiceTest.java` (new),
   `AuthenticationServiceTest.java`, `UserTest.java`
 - **Steps**:
-  - [ ] error codes, use case with Javadoc, `User.withPassword`
-  - [ ] extract the `AuthenticatedUser` building into a shared helper; `AuthenticationService` uses it and `withPassword`
-  - [ ] `PasswordChangeService`
+  - [x] error codes, use case with Javadoc, `User.withPassword`
+  - [x] extract the `AuthenticatedUser` building into a shared helper; `AuthenticationService` uses it and `withPassword`
+  - [x] `PasswordChangeService`
 - **Tests**: `PasswordChangeServiceTest`: a correct change stores the new hash, clears the flag,
   keeps roles, version and the other fields, and returns the user with roles and permissions; a
   wrong current password → `WRONG_CURRENT_PASSWORD` and nothing saved; the same password →

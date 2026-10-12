@@ -51,4 +51,20 @@ public record User(
                 newRoleIds,
                 version);
     }
+
+    /** The same user with another password hash and change-password flag. */
+    public User withPassword(PasswordHash newPasswordHash, boolean newMustChangePassword) {
+        return new User(
+                id,
+                username,
+                newPasswordHash,
+                enabled,
+                newMustChangePassword,
+                failedLoginCount,
+                lockedUntil,
+                createdAt,
+                updatedAt,
+                roleIds,
+                version);
+    }
 }

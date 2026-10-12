@@ -59,6 +59,17 @@ class UserTest {
     }
 
     @Test
+    void withPasswordReplacesOnlyTheHashAndTheFlag() {
+        Set<RoleId> roles = Set.of(RoleId.newId());
+        User user = user(UserId.newId(), new Username("alice"), roles);
+        PasswordHash hash = new PasswordHash("{noop}y");
+
+        assertThat(user.withPassword(hash, true))
+                .isEqualTo(new User(
+                        user.id(), user.username(), hash, true, true, 0, Optional.empty(), NOW, NOW, roles, 3L));
+    }
+
+    @Test
     void withRoleIdsReplacesOnlyTheRoles() {
         User user = user(UserId.newId(), new Username("alice"), Set.of());
         Set<RoleId> roles = Set.of(RoleId.newId());
