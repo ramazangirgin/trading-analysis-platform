@@ -184,32 +184,22 @@ The ruleset needs the branch up to date with `main`.
   branch's "rebase" checkbox and starts the Renovate run), then `dashboard.sh wait` with `Monitor`,
   and go back to 1. On a timeout, print `wait`'s message and stop; the user continues with
   `/renovate-fix <pr>` once Renovate is done.
-- **Other commits too** (fixes from 2):
-
-  ```sh
-  git fetch origin && git switch <branch> && git merge --ff-only origin/<branch>
-  git rebase origin/main
-  mise run check
-  git push --force-with-lease origin HEAD:<branch>
-  ```
-
-  A conflict in `.github/renovate.json5`, a lock file or a version file of a dependency: resolve it
-  by keeping `main`'s change and redoing this branch's on top (regenerate lock files). Any other
-  conflict: stop and show it. Then wait for CI again (1).
+- **Other commits too** (fixes from 2): bring it up to date with the
+  [`pr-ready`](../pr-ready/SKILL.md) skill (`Skill`, `pr-ready`, arguments `<pr> --no-fix`): it
+  rebases on `main`, pushes with `--force-with-lease` and waits for CI; no version bump, since
+  Renovate's pull requests are exempt. During its rebase, a conflict in `.github/renovate.json5`, a
+  lock file or a version file of a dependency is resolved here (an exception to its "any other
+  conflict: stop"): keep `main`'s change and redo this branch's on top (regenerate lock files). Any
+  other conflict: stop and show it. A red CI comes back here: go to 2.
 
 ## 4. Hand it over
 
 For a pull request that is green, print what it updates, the fixes made (commits), what was held
-back (with the issues). Then ask with `AskUserQuestion`: header `Merge #<pr>`, options
-**No, I will merge it myself** (first) and **Merge it now**. Only on **Merge it now**, with
-**CI passed** green and the branch up to date:
-
-```sh
-gh pr merge <pr> --rebase --delete-branch
-```
-
-If GitHub refuses (no code owner's approval yet, CI not green), show why and go on. Never retry
-with `--admin`, never `--auto`. Then take the next pull request of the queue (1).
+back (with the issues). Then hand it over as the [`pr-ready`](../pr-ready/SKILL.md) skill's step 6
+does: its merge state, what it waits for (a code owner's review; the user can approve a Renovate pull
+request, since they did not open it), and a merge only on the user's word. Ask with
+`AskUserQuestion`: header `Merge #<pr>`, options **No, I will merge it myself** (first) and
+**Merge it now**. Then take the next pull request of the queue (1).
 
 ## 5. Summary
 
