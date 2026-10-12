@@ -24,6 +24,8 @@ base {
 
 dependencies {
     implementation(platform(libs.findLibrary("spring-boot-bom").get()))
+    // One SLF4J version on the main and test classpaths (see the version in gradle/libs.versions.toml).
+    implementation(platform(libs.findLibrary("slf4j-bom").get()))
 
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
     testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())

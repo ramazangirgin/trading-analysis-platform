@@ -6,6 +6,11 @@ springBoot = "4.1.1"
 # springdoc 3.x is the line built for Spring Boot 4.
 springdoc = "3.1.1"
 archunit = "1.5.1"
+# SLF4J's BOM on every module, above Spring Boot's: ArchUnit (the persistence test fixtures) brings a
+# newer slf4j-api, and the main and test classpaths must resolve the same one, or the dependency
+# analysis takes the test classpath's for a declared but unused dependency. Remove when Spring Boot's
+# BOM brings the version ArchUnit needs.
+slf4j = "2.0.19"
 # Static checks on backend sources (config/checkstyle/). 11+ parses Java 25 syntax.
 checkstyle = "14.3.0"
 # Java formatting (Spotless with Palantir Java Format: 120 columns, matching Checkstyle's LineLength).
@@ -108,6 +113,7 @@ spring-security-config = { module = "org.springframework.security:spring-securit
 spring-security-web = { module = "org.springframework.security:spring-security-web" }
 jakarta-servlet-api = { module = "jakarta.servlet:jakarta.servlet-api" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+slf4j-bom = { module = "org.slf4j:slf4j-bom", version.ref = "slf4j" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
