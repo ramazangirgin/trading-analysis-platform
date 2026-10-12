@@ -304,7 +304,9 @@ request and its state comments are the same as with `mise run agent:run`, and `m
 can take over the loop at any point. While a step runs, the session reports one line per milestone
 as it happens (from `run.log`, through `status.sh --follow`) and nothing for the agents' tool calls;
 ask it for the status at any time (`status.sh`). It prints the command to follow a step in a
-terminal first: `tail -f .git/agent/<issue>-<slug>/run.log`. The agents may not edit the skills
+terminal first: `tail -f .git/agent/<issue>-<slug>/run.log`. It updates the pull request with
+`main` with the `merge-main-into-branch` skill (step 8), which resolves the conflicts itself, so
+the run stops there only on a conflict that cannot be resolved with confidence. The agents may not edit the skills
 under `.claude/`, so a plan item there comes back "not done" and is done by hand. Started again, it
 reads where the issue stands from its plan branches and pull requests and continues there.
 
@@ -365,11 +367,26 @@ finding with its outcome, and the usage. Then:
 
 The `main` ruleset merges only a pull request whose branch is up to date with `main`, whose
 **CI passed** is green, and that a code owner approved (see the root README). If `main` moved while
-the agents worked:
+the agents worked, merge `main` into the branch with the Claude Code skill
+[`merge-main-into-branch`](../.claude/skills/merge-main-into-branch/SKILL.md), in a checkout of the
+branch:
+
+```text
+/merge-main-into-branch
+```
+
+It merges `origin/main` in, commits the merge as it is (conflict markers included, the only commit
+that skips the pre-commit hook), and resolves the conflicts in a second commit of its own from the
+branch's commits, `main`'s commits on the same lines and the plan; its body says how each file was
+resolved and why, and `git show <commit>` shows the resolution alone. It bumps the version again
+when `main`'s caught up (`Bump version to X.Y.Z`), runs `mise run check` and pushes all of it at
+once, without force, so CI runs on the resolved head only. A conflict it cannot resolve with
+confidence (the two sides change the same behaviour and the plan does not decide it) makes it stop
+and ask, with nothing pushed. A rebase still works for a branch without conflicts:
 
 ```sh
 git fetch origin && git switch plan/<issue>-<slug> && git pull
-git rebase origin/main            # resolve conflicts, if any; mise run check
+git rebase origin/main
 mise run version:bump minor       # only if main's version caught up with this branch's
 git push --force-with-lease
 ```
@@ -386,6 +403,9 @@ merge:
 ```sh
 gh pr merge <pr> --rebase --delete-branch
 ```
+
+A branch that `main` was merged into (step 8) is merged with `--merge` instead: GitHub cannot
+rebase-merge it, since the branch's own commits would run into the conflicts again.
 
 A pull request into another branch than `main` (`AGENT_BASE_BRANCH`) is retargeted to `main` once
 the branch it stacks on has merged: `gh pr edit <pr> --base main`, then step 8.
