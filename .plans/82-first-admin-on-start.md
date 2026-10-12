@@ -217,14 +217,15 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
 
 ### WP3: e2e and screenshots log in as the first admin
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `e2e/start-platform.sh`, `e2e/seed-user.sql` (deleted), `scripts/postgres.sh`,
   `e2e/tests/support.ts`, `e2e/tests/global-setup.ts`, `e2e/tests/warm-up.ts`,
   `e2e/playwright.config.ts`, `e2e/playwright.screenshots.config.ts`,
   `e2e/screenshots/login.shot.ts`, `docs/screenshots/*.png` (all retaken)
 - **Steps**:
-  - [ ] The e2e changes listed in the design
-  - [ ] `mise run e2e` passes
+  - [x] The e2e changes listed in the design
+  - [x] `mise run e2e` passes
   - [ ] `mise run screenshots` retakes every screenshot; check each one shows the `admin` user menu in
         the header and otherwise the same page as before, and `login.png` the empty login form
 - **Tests**: the whole e2e suite (`mise run e2e`), `auth.e2e.ts` in particular (login, wrong password,

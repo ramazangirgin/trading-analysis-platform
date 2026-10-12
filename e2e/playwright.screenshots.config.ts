@@ -1,4 +1,4 @@
-import { defineConfig, type PlaywrightTestConfig } from '@playwright/test'
+import { defineConfig } from '@playwright/test'
 import base from './playwright.config'
 
 // The README's screenshots (docs/screenshots/), taken the way the end-to-end tests run: the built
@@ -6,17 +6,12 @@ import base from './playwright.config'
 // the installed Google Chrome. Each screenshots/*.shot.ts sets up what a page needs (over the API)
 // and saves it with shot(). `mise run screenshots` builds what they need and takes them all;
 // `mise run screenshots compare` only those whose file or title matches.
-const server = base.webServer as Exclude<PlaywrightTestConfig['webServer'], unknown[] | undefined>
-
 export default defineConfig({
   ...base,
   testDir: 'screenshots',
   testMatch: '**/*.shot.ts',
-  // Login stays off, as in the app's default: the README's pages show no user menu. Only the warm-up
-  // runs before the shots, and no session is stored.
-  globalSetup: './tests/warm-up.ts',
-  use: { ...base.use, storageState: undefined },
-  webServer: { ...server, env: { ...server?.env, PLATFORM_AUTH_ENABLED: 'false' } },
+  // The base global setup logs in and warms up, and the base storage state keeps the session: the
+  // pages show the user menu of `admin`. login.shot.ts uses an empty storage state of its own.
   retries: 0,
   forbidOnly: false,
   reporter: 'list',

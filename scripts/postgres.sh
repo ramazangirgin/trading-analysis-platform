@@ -13,8 +13,6 @@
 #                          "<container id> <host port>" and removes leftovers of earlier runs first.
 #   postgres.sh throwaway-stop <container id>
 #                          Remove that disposable container.
-#   postgres.sh throwaway-sql <container id> <file>
-#                          Run an SQL file in that container's database (psql, stops at the first error).
 #
 # The container publishes its port on 127.0.0.1 only and trusts every connection on it, so the
 # application's default (user platform, empty password) works. The image is the Compose file's.
@@ -118,19 +116,14 @@ throwaway() {
   echo "$id ${port##*:}"
 }
 
-throwaway_sql() {
-  "$engine" exec -i "$1" psql -v ON_ERROR_STOP=1 -U platform -d platform <"$2"
-}
-
 case "${1:-}" in
   start) start ;;
   stop) stop ;;
   reset) reset ;;
   throwaway) throwaway ;;
   throwaway-stop) "$engine" rm -f "${2:?usage: postgres.sh throwaway-stop <container id>}" >/dev/null 2>&1 || true ;;
-  throwaway-sql) throwaway_sql "${2:?usage: postgres.sh throwaway-sql <container id> <file>}" "${3:?usage: postgres.sh throwaway-sql <container id> <file>}" ;;
   *)
-    echo "usage: postgres.sh start|stop|reset|throwaway|throwaway-stop <id>|throwaway-sql <id> <file>" >&2
+    echo "usage: postgres.sh start|stop|reset|throwaway|throwaway-stop <id>" >&2
     exit 2
     ;;
 esac
