@@ -45,7 +45,7 @@ sourceSets.configureEach {
     dependencies {
         // Jackson 2 (docker-java-core, swagger-core-jakarta): the BOM aligns every Jackson 2 module.
         add(bucket, platform(libs.findLibrary("jackson2-bom").get()))
-        // Jackson 3 (Spring Boot's BOM): stays on the 3.1 line of Spring Boot 4.1.
+        // Jackson 3 (Spring Boot's BOM): the version in gradle/libs.versions.toml, above Spring Boot's.
         add(bucket, platform(libs.findLibrary("jackson3-bom").get()))
 
         constraints {
