@@ -180,6 +180,7 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
 
 ### WP2: Login always on (BFF and Spring Boot tests)
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/…/bff/delegate/impl/config/SecurityConfig.java`
@@ -190,10 +191,10 @@ platform.admin.password=${PLATFORM_ADMIN_PASSWORD:}
     `PresetsApiIntegrationTest.java`, `TestSession.java`
   - `artifact/backend/src/test/java/…/platform/FirstAdminIntegrationTest.java` (new)
 - **Steps**:
-  - [ ] Remove the switch and the login-off branch; update the Javadoc
-  - [ ] Remove `registry.add("platform.auth.enabled", …)` from the three integration tests and the
+  - [x] Remove the switch and the login-off branch; update the Javadoc
+  - [x] Remove `registry.add("platform.auth.enabled", …)` from the three integration tests and the
         switch from `TestSession`'s Javadoc
-  - [ ] `TradingPlatformApplicationTests`: replace `keepsTodaysBehaviourWithLoginOff` with a test that
+  - [x] `TradingPlatformApplicationTests`: replace `keepsTodaysBehaviourWithLoginOff` with a test that
         `/api/analyses` without a session is 401 and a POST without a CSRF token is 403; split
         `keepsUnknownApiPathsAndMissingAssetsAsNotFound` (a missing asset stays 404; an unknown API
         path without a session is 401); the SPA and OpenAPI tests stay as they are

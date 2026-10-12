@@ -50,19 +50,22 @@ class TradingPlatformApplicationTests {
     }
 
     @Test
-    void keepsUnknownApiPathsAndMissingAssetsAsNotFound() throws Exception {
-        mockMvc.perform(get("/api/does-not-exist")).andExpect(status().isNotFound());
+    void keepsMissingAssetsAsNotFound() throws Exception {
         mockMvc.perform(get("/assets/missing.js")).andExpect(status().isNotFound());
     }
 
     @Test
-    void keepsTodaysBehaviourWithLoginOff() throws Exception {
-        // platform.auth.enabled is off by default: no session needed, and no CSRF token for an unsafe request.
-        mockMvc.perform(get("/api/analyses")).andExpect(status().isOk());
+    void answers401ForAnUnknownApiPathWithoutASession() throws Exception {
+        mockMvc.perform(get("/api/does-not-exist")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void alwaysNeedsASessionAndACsrfTokenForTheApi() throws Exception {
+        mockMvc.perform(get("/api/analyses")).andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/presets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Off\",\"values\":{}}"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isForbidden());
     }
 
     @Test

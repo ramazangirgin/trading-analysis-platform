@@ -21,7 +21,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
 
-/** Login, logout, CSRF and the 401 rule over HTTP, with {@code platform.auth.enabled=true}. */
+/** Login, logout, CSRF and the 401 rule over HTTP. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestDatabaseConfiguration.class)
 class AuthApiIntegrationTest {
@@ -44,7 +44,6 @@ class AuthApiIntegrationTest {
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
-        registry.add("platform.auth.enabled", () -> "true");
         TestPlatformHome.register(registry, HOME, HOME.resolve("runner.sh"));
     }
 
