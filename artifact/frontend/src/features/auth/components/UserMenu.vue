@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { NDropdown } from 'naive-ui'
+import { NDropdown, useMessage } from 'naive-ui'
+import { useLabels } from '@/shared/composables/useLabels'
 import { useSessionStore } from '../store'
 
-const { t } = useI18n()
+const { t, error: errorText } = useLabels()
 const session = useSessionStore()
+const message = useMessage()
 
 // One action for now; the change-password entry fits in beside it later.
 const options = computed(() => [{ label: t('nav.logout'), key: 'logout' }])
 
-function onSelect(key: string) {
-  if (key === 'logout') void session.logout()
+async function onSelect(key: string) {
+  if (key !== 'logout') return
+  try {
+    await session.logout()
+  } catch (e) {
+    message.error(errorText(e))
+  }
 }
 </script>
 
