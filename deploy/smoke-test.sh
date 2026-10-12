@@ -40,15 +40,21 @@ wait_for_platform() {
 }
 
 # Logs in as the first admin; the session lives in memory, so every start needs a new one. The
-# cookie jar holds the session and the CSRF cookie that the POST sends back as a header.
+# cookie jar holds the session and the CSRF cookie that the POST sends back as a header. The health
+# check can answer a moment before the first admin is created, so the login is retried.
 login() {
-    : > "$JAR"
-    curl -fsS -c "$JAR" -b "$JAR" "$API/auth/me" > /dev/null 2>&1 || true
-    xsrf=$(awk '$6 == "XSRF-TOKEN" {print $7}' "$JAR")
-    [ -n "$xsrf" ] || fail "no CSRF cookie from $API/auth/me"
-    curl -fsS -c "$JAR" -b "$JAR" -X POST -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $xsrf" \
-        "$API/auth/login" -d '{"username":"admin","password":"smoke-test-only-password"}' > /dev/null \
-        || fail "the first admin could not log in"
+    for _ in $(seq 1 10); do
+        : > "$JAR"
+        curl -fsS -c "$JAR" -b "$JAR" "$API/auth/me" > /dev/null 2>&1 || true
+        xsrf=$(awk '$6 == "XSRF-TOKEN" {print $7}' "$JAR")
+        if [ -n "$xsrf" ] && curl -fsS -c "$JAR" -b "$JAR" -X POST -H 'Content-Type: application/json' \
+            -H "X-XSRF-TOKEN: $xsrf" "$API/auth/login" \
+            -d '{"username":"admin","password":"smoke-test-only-password"}' > /dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    fail "the first admin could not log in"
 }
 
 # Every API call goes through the session; a POST also sends the CSRF header.
