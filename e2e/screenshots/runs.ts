@@ -1,4 +1,5 @@
 import { expect, type APIRequestContext } from '@playwright/test'
+import { csrfHeaders } from '../tests/support'
 
 /**
  * Starts an analysis over the API and waits until ta-runner has replayed it. The recording's reports
@@ -13,6 +14,7 @@ export async function replayedRun(
   quickThinkLlm = 'gpt-5.4-mini',
 ) {
   const started = await request.post('/api/analyses', {
+    headers: await csrfHeaders(request),
     data: {
       ticker,
       tradeDate,
