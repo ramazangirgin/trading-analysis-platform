@@ -172,8 +172,12 @@ run = "scripts/agent/detach.sh"
 description = "Where an agent run is: active pid, work package, latest milestones and log lines: mise run agent:status plan/<issue>-<slug> (or a PR number)"
 run = "scripts/agent/status.sh"
 
+[tasks."agent:progress"]
+description = "Print the progress comment of an agent run (steps, durations, iterations, tokens), as it is on the issue: mise run agent:progress plan/<issue>-<slug> (or a PR number)"
+run = "scripts/agent/progress.sh show"
+
 [tasks."agent:test"]
-description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser and the usage figures"
+description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser, the usage figures and the progress comment"
 run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
 
 [tasks."skill:test"]

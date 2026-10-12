@@ -11,6 +11,8 @@
     agent_json.py get <result.json> <key>           a top-level value (structured_output as JSON)
     agent_json.py usage-line <run>...               tokens and cost, for the log
     agent_json.py usage-marker <run>...             "tokens=... tokens_in=... ..." for a step marker
+    agent_json.py progress-usage <result.json>      the usage marker with the run's duration_ms and
+                                                    num_turns, for progress.tsv (progress.py)
 
 A <run> is a result file (x.json) or its stream (x.jsonl). A stream whose result is missing (a run
 that was interrupted) adds its tokens only, and marks the total partial (`partial=1`).
@@ -307,6 +309,9 @@ def main(argv):
         print(f"{u['in']} in, {u['cached']} cached, {u['out']} out, {cost} at API prices")
     elif command == "usage-marker":
         print(usage_marker(usage(args)))
+    elif command == "progress-usage":
+        result = load(args[0])
+        print(f"{usage_marker(usage(args[:1]))} duration_ms={result.get('duration_ms') or 0} turns={result.get('num_turns') or 0}")
     elif command == "steps":
         for m in markers(sys.stdin):
             print(m.get("step", "?"), m.get("round", "0"), m.get("tokens", "0"))

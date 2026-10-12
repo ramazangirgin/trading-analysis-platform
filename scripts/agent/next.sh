@@ -39,6 +39,7 @@ else
   branch=$target
   pr=$(pr_of_branch "$branch")
 fi
+! $dry_run || AGENT_NO_PROGRESS=1
 use_state "$branch"
 if [ -z "$pr" ]; then
   log "$target has no open pull request; nothing to do"
@@ -108,6 +109,9 @@ while true; do
     [ "$waited" -lt $((AGENT_CI_TIMEOUT * 60)) ] || stop "CI did not finish within $AGENT_CI_TIMEOUT minutes."
     head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
     if [ "$head" != "$waiting_head" ]; then
+      # Each head's CI wait is a step of its own; a newer head replaces the one waited for.
+      $dry_run || step_end "superseded by ${head:0:7}"
+      $dry_run || step_begin "CI ${head:0:7}"
       milestone "#$pr: waiting for $AGENT_CI_CHECK on ${head:0:7}"
       waiting_head=$head
     elif [ $((waited % 120)) -eq 0 ]; then
@@ -125,13 +129,17 @@ while true; do
     if ! $dry_run && [ "$head" != "$reported_head" ]; then
       reported_head=$head
       if [ "$step" = fix-ci ]; then
-        milestone "#$pr: CI failed on ${head:0:7}: $(ci_failed_jobs "$head")"
+        failed_jobs=$(ci_failed_jobs "$head")
+        milestone "#$pr: CI failed on ${head:0:7}: $failed_jobs"
+        step_end "failed: $failed_jobs"
       else
         milestone "#$pr: CI passed on ${head:0:7}"
+        step_end passed
       fi
     fi
     ;;
   esac
+  $dry_run || step_end # a CI wait the next step does not depend on (fix, stop, none)
   milestone "#$pr: next step: $step"
   $dry_run && exit 0
   before=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)

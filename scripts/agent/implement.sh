@@ -34,6 +34,7 @@ branch=${1:?usage: $0 [--dry-run] plan/<issue>-<slug>}
 [[ $branch == plan/* ]] || die "not a plan branch: $branch"
 issue_of_branch "$branch" >/dev/null # fails for a branch without an issue number
 plan=$(plan_file_of_branch "$branch")
+! $dry_run || AGENT_NO_PROGRESS=1
 use_state "$branch"
 
 plan_py() { py "$AGENT_DIR/plan.py" "$@"; }
@@ -89,6 +90,7 @@ fi
 
 [ -z "$(pr_of_branch "$branch")" ] || die "$branch has an open pull request already; continue it with next.sh"
 lock_run
+step_begin implement
 checkout_branch --keep-changes "$branch"
 [ -f "$plan" ] || die "$branch has no $plan"
 # The commit that added the plan: what the run committed comes after it.
@@ -131,6 +133,7 @@ while true; do
   previous=$(sed -n 's/^package=//p' "$AGENT_STATE/current" 2>/dev/null || true)
   dirty=$(git status --short)
   echo "package=$package" >"$AGENT_STATE/current"
+  substep_begin "$label"
   milestone "$label: started${dirty:+ (on uncommitted work)}"
 
   {
@@ -193,12 +196,14 @@ while true; do
   else
     milestone "$label: not done: $(plan_py not-done "$plan" | sed -n "s/^- $package: //p")"
   fi
+  substep_end
 done
 rm -f "$AGENT_STATE/current"
 
 # Final checks: what CI would reject fast. Two more tries, each resuming the agent with the failure.
 results=()
 export AGENT_STEP_LABEL="final checks"
+substep_begin "final checks"
 for attempt in 1 2 3; do
   milestone "checking the implementation (attempt $attempt)"
   log "checking packages, commits, version bump, mise run check"
@@ -240,6 +245,7 @@ for attempt in 1 2 3; do
   session=$(py "$AGENT_DIR/agent_json.py" get "$retry" session_id)
   results+=("$retry")
 done
+substep_end
 
 push_branch
 

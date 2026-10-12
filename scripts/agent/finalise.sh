@@ -18,6 +18,7 @@ branch=$(gh pr view "$pr" --json headRefName --jq .headRefName)
 use_state "$branch"
 use_pr_base "$pr"
 plan=$(plan_file_of_branch "$branch")
+step_begin finalise
 milestone "finalise #$pr started"
 git fetch --quiet origin "$AGENT_BASE_BRANCH" "$branch"
 comments=$(pr_step_comments "$pr")
