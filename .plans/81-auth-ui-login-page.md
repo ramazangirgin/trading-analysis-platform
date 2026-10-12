@@ -167,18 +167,19 @@ screenshots stay valid.
 
 ### WP2: Auth feature, login page, routing and header
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `artifact/frontend/src/features/auth/{index.ts,api.ts,store.ts}`,
   `features/auth/model/redirect.ts`, `redirect.spec.ts`, `features/auth/store.spec.ts` (new),
   `features/auth/components/{LoginForm.vue,UserMenu.vue}`, `pages/LoginPage.vue`,
   `app/router/index.ts`, `app/main.ts`, `app/App.vue`, `shared/i18n/locales/{en,tr}.json`
 - **Steps**:
-  - [ ] `authApi`, `useSessionStore` with `load`, `login`, `logout`, `clear`, `can`
-  - [ ] `safeRedirect`
-  - [ ] `LoginForm`, `UserMenu`, `LoginPage`, the `/login` route with `meta.bare`
-  - [ ] the one-time `load()` guard and the `onUnauthorized` wiring in `main.ts`
-  - [ ] the header in `App.vue`: bare on the login page, `UserMenu` otherwise
-  - [ ] translations in both locales
+  - [x] `authApi`, `useSessionStore` with `load`, `login`, `logout`, `clear`, `can`
+  - [x] `safeRedirect`
+  - [x] `LoginForm`, `UserMenu`, `LoginPage`, the `/login` route with `meta.bare`
+  - [x] the one-time `load()` guard and the `onUnauthorized` wiring in `main.ts`
+  - [x] the header in `App.vue`: bare on the login page, `UserMenu` otherwise
+  - [x] translations in both locales
 - **Tests**: `redirect.spec.ts` (`/reports` kept, `//evil.example`, `/\evil`, `https://…`,
   `/login`, arrays and missing values → `/`); `store.spec.ts` with a fresh Pinia and a mocked
   `authApi` (`load` once for parallel callers, 401 → no user, `can` from permissions, `clear`);
