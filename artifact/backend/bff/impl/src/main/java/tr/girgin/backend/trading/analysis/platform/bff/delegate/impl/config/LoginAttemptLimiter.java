@@ -16,7 +16,9 @@ import org.springframework.stereotype.Component;
  * A sliding window of the failed logins of each client address, in memory like the sessions (a restart clears
  * it). An address that has failed {@code ip-max-failed-attempts} times (20 by default, 1 to 10,000) within
  * {@code ip-window} (5 minutes by default, 1 minute to 24 hours) is blocked until the oldest failure leaves
- * the window. Only failures count, so a busy but honest host is not slowed down.
+ * the window. A login holds a slot while it runs and keeps it only when it fails, so a busy but honest host
+ * is not slowed down; more than the limit of logins running at the same time from one address are still
+ * blocked, and their {@code Retry-After} can be longer than the time their slots are held.
  *
  * <p>At most {@value #MAX_TRACKED_ADDRESSES} addresses are tracked: when the table is full, addresses without
  * a failure in the window are dropped first, then the one whose latest failure is the oldest.
@@ -55,7 +57,10 @@ class LoginAttemptLimiter {
         this.window = window;
     }
 
-    /** The time until the address may try again; empty while it is under the limit. */
+    /**
+     * The time until the address may try again, without counting an attempt; empty while it is under the limit.
+     * For the tests: the filter uses {@link #tryAcquire}.
+     */
     Optional<Duration> blockedFor(String address) {
         AtomicReference<Duration> blocked = new AtomicReference<>();
         Instant now = clock.instant();
