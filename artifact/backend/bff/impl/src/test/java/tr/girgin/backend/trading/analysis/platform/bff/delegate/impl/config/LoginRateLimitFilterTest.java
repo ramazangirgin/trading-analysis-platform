@@ -75,8 +75,8 @@ class LoginRateLimitFilterTest {
 
     @Test
     void otherPathsAndMethodsPassUntouched() throws Exception {
-        limiter.recordFailure(ADDRESS);
-        limiter.recordFailure(ADDRESS);
+        limiter.tryAcquire(ADDRESS);
+        limiter.tryAcquire(ADDRESS);
 
         assertThat(run("GET", "/api/auth/login", 200).getStatus()).isEqualTo(200);
         assertThat(run("POST", "/api/auth/logout", 204).getStatus()).isEqualTo(204);

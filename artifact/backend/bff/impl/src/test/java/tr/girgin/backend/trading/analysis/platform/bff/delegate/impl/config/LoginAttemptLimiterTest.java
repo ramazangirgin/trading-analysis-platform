@@ -8,6 +8,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 
 class LoginAttemptLimiterTest {
@@ -19,22 +25,83 @@ class LoginAttemptLimiterTest {
 
     @Test
     void underTheLimitNothingIsBlockedAndTheLastAllowedFailureBlocks() {
-        limiter.recordFailure("10.0.0.1");
-        limiter.recordFailure("10.0.0.1");
+        limiter.tryAcquire("10.0.0.1");
+        limiter.tryAcquire("10.0.0.1");
 
         assertThat(limiter.blockedFor("10.0.0.1")).isEmpty();
 
-        limiter.recordFailure("10.0.0.1");
+        limiter.tryAcquire("10.0.0.1");
 
         assertThat(limiter.blockedFor("10.0.0.1")).isPresent();
     }
 
     @Test
-    void blockedForIsTheTimeUntilTheOldestFailureLeavesTheWindow() {
-        limiter.recordFailure("10.0.0.1");
+    void theAttemptsOverTheLimitAreRefusedAndNotCounted() {
+        for (int i = 0; i < 3; i++) {
+            assertThat(limiter.tryAcquire("10.0.0.1")).isEmpty();
+        }
+
+        assertThat(limiter.tryAcquire("10.0.0.1")).contains(WINDOW);
+
         clock.advance(Duration.ofMinutes(1));
-        limiter.recordFailure("10.0.0.1");
-        limiter.recordFailure("10.0.0.1");
+        // The refused attempt did not extend the block.
+        assertThat(limiter.tryAcquire("10.0.0.1")).contains(Duration.ofMinutes(4));
+    }
+
+    @Test
+    void aReleasedAttemptFreesItsSlot() {
+        for (int i = 0; i < 3; i++) {
+            limiter.tryAcquire("10.0.0.1");
+        }
+        assertThat(limiter.tryAcquire("10.0.0.1")).isPresent();
+
+        limiter.release("10.0.0.1");
+
+        assertThat(limiter.tryAcquire("10.0.0.1")).isEmpty();
+    }
+
+    @Test
+    void releasingTheOnlyAttemptStopsTrackingTheAddress() {
+        limiter.tryAcquire("10.0.0.1");
+
+        limiter.release("10.0.0.1");
+
+        assertThat(limiter.isTracking("10.0.0.1")).isFalse();
+    }
+
+    @Test
+    void concurrentAttemptsLetExactlyTheLimitThrough() throws Exception {
+        int attempts = 50;
+        ExecutorService executor = Executors.newFixedThreadPool(attempts);
+        try {
+            CountDownLatch start = new CountDownLatch(1);
+            List<Future<Boolean>> results = new ArrayList<>();
+            for (int i = 0; i < attempts; i++) {
+                results.add(executor.submit(() -> {
+                    start.await();
+                    return limiter.tryAcquire("10.0.0.1").isEmpty();
+                }));
+            }
+            start.countDown();
+            int allowed = 0;
+            for (Future<Boolean> result : results) {
+                if (result.get()) {
+                    allowed++;
+                }
+            }
+
+            assertThat(allowed).isEqualTo(3);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void blockedForIsTheTimeUntilTheOldestFailureLeavesTheWindow() {
+        limiter.tryAcquire("10.0.0.1");
+        clock.advance(Duration.ofMinutes(1));
+        limiter.tryAcquire("10.0.0.1");
+        limiter.tryAcquire("10.0.0.1");
 
         assertThat(limiter.blockedFor("10.0.0.1")).contains(Duration.ofMinutes(4));
 
@@ -49,7 +116,7 @@ class LoginAttemptLimiterTest {
     @Test
     void twoAddressesAreCountedApart() {
         for (int i = 0; i < 3; i++) {
-            limiter.recordFailure("10.0.0.1");
+            limiter.tryAcquire("10.0.0.1");
         }
 
         assertThat(limiter.blockedFor("10.0.0.1")).isPresent();
@@ -58,15 +125,15 @@ class LoginAttemptLimiterTest {
 
     @Test
     void atTheMemoryBoundExpiredAddressesGoFirst() {
-        limiter.recordFailure("old");
+        limiter.tryAcquire("old");
         clock.advance(WINDOW.plusSeconds(1));
         for (int i = 1; i < LoginAttemptLimiter.MAX_TRACKED_ADDRESSES; i++) {
-            limiter.recordFailure("address-" + i);
+            limiter.tryAcquire("address-" + i);
         }
 
         assertThat(limiter.trackedAddresses()).isEqualTo(LoginAttemptLimiter.MAX_TRACKED_ADDRESSES);
 
-        limiter.recordFailure("newcomer");
+        limiter.tryAcquire("newcomer");
 
         assertThat(limiter.trackedAddresses()).isEqualTo(LoginAttemptLimiter.MAX_TRACKED_ADDRESSES);
         assertThat(limiter.isTracking("old")).isFalse();
@@ -76,13 +143,13 @@ class LoginAttemptLimiterTest {
 
     @Test
     void atTheMemoryBoundWithNoExpiredAddressTheOneWithTheOldestFailureGoes() {
-        limiter.recordFailure("oldest");
+        limiter.tryAcquire("oldest");
         clock.advance(Duration.ofSeconds(1));
         for (int i = 1; i < LoginAttemptLimiter.MAX_TRACKED_ADDRESSES; i++) {
-            limiter.recordFailure("address-" + i);
+            limiter.tryAcquire("address-" + i);
         }
 
-        limiter.recordFailure("newcomer");
+        limiter.tryAcquire("newcomer");
 
         assertThat(limiter.trackedAddresses()).isEqualTo(LoginAttemptLimiter.MAX_TRACKED_ADDRESSES);
         assertThat(limiter.isTracking("oldest")).isFalse();
