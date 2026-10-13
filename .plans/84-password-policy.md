@@ -135,6 +135,7 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
 
 ### WP1: The policy in the identity core
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/core/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/identity/core/service/PasswordPolicy.java` (new)
@@ -147,12 +148,12 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
   - `artifact/backend/domain/identity/core/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/identity/core/inbound/ChangePasswordUseCase.java`, `CreateFirstAdminUseCase.java` (Javadoc)
   - tests: `…/core/service/PasswordPolicyTest.java` (new), `PasswordChangeServiceTest.java`, `FirstAdminServiceTest.java`, `OneTimePasswordGeneratorTest.java`
 - **Steps**:
-  - [ ] Download SecLists' `10k-most-common.txt` at a pinned commit, add the header (source URL,
+  - [x] Download SecLists' `10k-most-common.txt` at a pinned commit, add the header (source URL,
         commit, MIT licence), save it as the resource.
-  - [ ] `PasswordPolicyViolation`, `IdentityError.WEAK_PASSWORD`, `PasswordPolicy` as in the design.
-  - [ ] Apply it in `PasswordChangeService` and `FirstAdminService`; `OneTimePasswordGenerator.generate(int)`.
-  - [ ] Update the two use cases' Javadoc.
-  - [ ] Check that every password the tests and scripts use passes the policy
+  - [x] `PasswordPolicyViolation`, `IdentityError.WEAK_PASSWORD`, `PasswordPolicy` as in the design.
+  - [x] Apply it in `PasswordChangeService` and `FirstAdminService`; `OneTimePasswordGenerator.generate(int)`.
+  - [x] Update the two use cases' Javadoc.
+  - [x] Check that every password the tests and scripts use passes the policy
         (`TestSession.PASSWORD`, `PasswordChangeIntegrationTest.NEW_PASSWORD`,
         `FirstAdminConfiguredPasswordIntegrationTest.PASSWORD`, `e2e-test-password`,
         `smoke-test-only-password`, the e2e new passwords, `configured-secret` in

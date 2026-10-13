@@ -21,12 +21,17 @@ class PasswordChangeService implements ChangePasswordUseCase {
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
     private final AuthenticatedUserFactory authenticatedUsers;
+    private final PasswordPolicy policy;
 
     PasswordChangeService(
-            UserRepositoryPort users, PasswordHasherPort hasher, AuthenticatedUserFactory authenticatedUsers) {
+            UserRepositoryPort users,
+            PasswordHasherPort hasher,
+            AuthenticatedUserFactory authenticatedUsers,
+            PasswordPolicy policy) {
         this.users = users;
         this.hasher = hasher;
         this.authenticatedUsers = authenticatedUsers;
+        this.policy = policy;
     }
 
     @Override
@@ -38,6 +43,7 @@ class PasswordChangeService implements ChangePasswordUseCase {
             throw new IdentityException(
                     IdentityError.WRONG_CURRENT_PASSWORD, "The current password is wrong", Map.of());
         }
+        policy.check(newPassword, user.username());
         if (hasher.matches(newPassword, user.passwordHash())) {
             throw new IdentityException(
                     IdentityError.PASSWORD_UNCHANGED, "The new password is the same as the current one", Map.of());
