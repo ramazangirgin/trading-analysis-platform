@@ -14,8 +14,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Limits the failed logins of a client address: while the address is blocked, {@code POST /api/auth/login}
- * answers 429 {@code too_many_login_attempts} with {@code Retry-After} and never reaches the login. Every
- * other login answered 401 (wrong password, unknown user, locked account) counts as a failure.
+ * answers 429 {@code too_many_login_attempts} with {@code Retry-After} and never reaches the login. A login
+ * holds a slot of its address while it runs and keeps it only when it is answered 401 (wrong password,
+ * unknown user, locked account), which counts as a failure; any other answer gives the slot back. So more
+ * logins than the limit running at once from one address get 429 too.
  *
  * <p>The client address is {@link HttpServletRequest#getRemoteAddr()}. {@code X-Forwarded-For} is not
  * trusted: any client can set it, and no reverse proxy stands in front of the platform.
