@@ -250,6 +250,8 @@
     "password_unchanged": "The new password must differ from the current one.",
     "weak_password": "The password does not meet the password policy.",
     "password_change_required": "Change your password before you continue.",
+    "too_many_login_attempts": "Too many failed logins from this address. Try again in a few minutes.",
+    "user_not_found": "User not found.",
     "unauthorized": "Your session has ended. Log in again.",
     "network_error": "Cannot reach the server.",
     "unexpected_error": "Something unexpected went wrong.",
