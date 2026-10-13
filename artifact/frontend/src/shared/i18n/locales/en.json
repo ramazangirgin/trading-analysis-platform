@@ -21,7 +21,13 @@
     "repeat": "Repeat new password",
     "mismatch": "The passwords do not match.",
     "submit": "Change password",
-    "changed": "Password changed."
+    "changed": "Password changed.",
+    "policy": {
+      "too_short": "At least {minLength} characters.",
+      "too_long": "At most {maxLength} characters.",
+      "common": "This password is too common; choose another one.",
+      "same_as_username": "The password must not be your username."
+    }
   },
   "login": {
     "title": "Log in",
@@ -242,6 +248,7 @@
     "bad_credentials": "Wrong username or password.",
     "wrong_current_password": "The current password is wrong.",
     "password_unchanged": "The new password must differ from the current one.",
+    "weak_password": "The password does not meet the password policy.",
     "password_change_required": "Change your password before you continue.",
     "unauthorized": "Your session has ended. Log in again.",
     "network_error": "Cannot reach the server.",

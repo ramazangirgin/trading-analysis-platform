@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { NAlert, NButton, NForm, NFormItem, NInput } from 'naive-ui'
 import { ApiError } from '@/shared/api/error'
 import { useLabels } from '@/shared/composables/useLabels'
+import { weakPasswordMessages, type PolicyMessage } from '../model/passwordPolicy'
 import { useSessionStore } from '../store'
 
 const emit = defineEmits<{ changed: [] }>()
@@ -15,8 +16,11 @@ const newPassword = ref('')
 const repeatPassword = ref('')
 const submitting = ref(false)
 const repeatTouched = ref(false)
-// The two answers that belong to a field show next to it, any other error above the form.
-const fieldError = ref<'wrong_current_password' | 'password_unchanged' | null>(null)
+// The three answers that belong to a field show next to it, any other error above the form.
+const fieldError = ref<'wrong_current_password' | 'password_unchanged' | 'weak_password' | null>(
+  null,
+)
+const policyMessages = ref<PolicyMessage[]>([])
 const error = ref<string | null>(null)
 
 const mismatch = computed(() => repeatTouched.value && repeatPassword.value !== newPassword.value)
@@ -37,6 +41,9 @@ async function submit() {
       (e.errorCode === 'wrong_current_password' || e.errorCode === 'password_unchanged')
     ) {
       fieldError.value = e.errorCode
+    } else if (e instanceof ApiError && e.errorCode === 'weak_password') {
+      policyMessages.value = weakPasswordMessages(e.params)
+      fieldError.value = 'weak_password'
     } else {
       error.value = errorText(e)
     }
@@ -65,7 +72,9 @@ async function submit() {
     </NFormItem>
     <NFormItem
       :label="t('password.new')"
-      :validation-status="fieldError === 'password_unchanged' ? 'error' : undefined"
+      :validation-status="
+        fieldError === 'password_unchanged' || fieldError === 'weak_password' ? 'error' : undefined
+      "
       :feedback="fieldError === 'password_unchanged' ? t('errors.password_unchanged') : undefined"
     >
       <NInput
@@ -73,7 +82,13 @@ async function submit() {
         type="password"
         :input-props="{ autocomplete: 'new-password', name: 'new-password' }"
         :placeholder="t('password.new')"
+        @update:value="fieldError === 'weak_password' && (fieldError = null)"
       />
+      <template v-if="fieldError === 'weak_password'" #feedback>
+        <div v-for="message in policyMessages" :key="message.key">
+          {{ t(message.key, message.params) }}
+        </div>
+      </template>
     </NFormItem>
     <NFormItem
       :label="t('password.repeat')"
