@@ -3,10 +3,10 @@ import { createSSRApp, defineComponent, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { i18n, setLocale } from '@/shared/i18n'
 import { ApiError } from '@/shared/api/error'
-import { useLabels } from '@/shared/composables/useLabels'
+import { useLabels } from './useLabels'
 
-/** What LoginForm shows for a failed login: `useLabels().error` of the error, in an alert. */
-async function loginErrorText(error: ApiError): Promise<string> {
+/** The text `useLabels().error` gives for an error, as the login form shows it in its alert. */
+async function errorTextOf(error: ApiError): Promise<string> {
   const Probe = defineComponent({
     setup() {
       const { error: errorText } = useLabels()
@@ -17,17 +17,17 @@ async function loginErrorText(error: ApiError): Promise<string> {
   return renderToString(app)
 }
 
-describe('login error message', () => {
+describe('useLabels error for too_many_login_attempts', () => {
   afterEach(() => setLocale('en'))
 
   const tooMany = new ApiError(429, 'too_many_login_attempts', {}, 'Too many')
 
   it('tells the user that too many logins failed from this address', async () => {
-    expect(await loginErrorText(tooMany)).toContain('Too many failed logins from this address.')
+    expect(await errorTextOf(tooMany)).toContain('Too many failed logins from this address.')
   })
 
   it('is translated', async () => {
     setLocale('tr')
-    expect(await loginErrorText(tooMany)).toContain('çok fazla başarısız giriş')
+    expect(await errorTextOf(tooMany)).toContain('çok fazla başarısız giriş')
   })
 })
