@@ -201,15 +201,14 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
 
 ### WP3: Frontend and end-to-end
 
-- **Depends on**: WP2 (the e2e test needs the backend answer; the model and form can be written in
-  parallel)
+- **Depends on**: WP2
 - **Files**:
   - `artifact/frontend/src/features/auth/model/passwordPolicy.ts` (new), `passwordPolicy.spec.ts` (new)
   - `artifact/frontend/src/features/auth/components/ChangePasswordForm.vue`
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
   - `e2e/tests/password.e2e.ts`
 - **Steps**:
-  - [ ] `weakPasswordMessages` as in the design.
+  - [ ] `weakPasswordMessages` as in the design (only the e2e test needs WP2's backend answer).
   - [ ] The form's third field error, cleared on input.
   - [ ] The new messages in both locales.
 - **Tests**:
