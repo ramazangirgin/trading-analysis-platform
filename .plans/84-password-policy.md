@@ -203,6 +203,7 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
 
 ### WP3: Frontend and end-to-end
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**:
   - `artifact/frontend/src/features/auth/model/passwordPolicy.ts` (new), `passwordPolicy.spec.ts` (new)
@@ -210,9 +211,9 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
   - `e2e/tests/password.e2e.ts`
 - **Steps**:
-  - [ ] `weakPasswordMessages` as in the design (only the e2e test needs WP2's backend answer).
-  - [ ] The form's third field error, cleared on input.
-  - [ ] The new messages in both locales.
+  - [x] `weakPasswordMessages` as in the design (only the e2e test needs WP2's backend answer).
+  - [x] The form's third field error, cleared on input.
+  - [x] The new messages in both locales.
 - **Tests**:
   - `passwordPolicy.spec.ts`: every reason maps to its key and params, the order is kept, unknown
     reasons are skipped, no known reason falls back to `errors.weak_password`.

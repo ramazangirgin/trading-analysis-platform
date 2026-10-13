@@ -21,7 +21,13 @@
     "repeat": "Yeni parolayı tekrarlayın",
     "mismatch": "Parolalar eşleşmiyor.",
     "submit": "Parolayı değiştir",
-    "changed": "Parola değiştirildi."
+    "changed": "Parola değiştirildi.",
+    "policy": {
+      "too_short": "En az {minLength} karakter olmalı.",
+      "too_long": "En fazla {maxLength} karakter olabilir.",
+      "common": "Bu parola çok yaygın; başka bir parola seçin.",
+      "same_as_username": "Parola kullanıcı adınız olmamalı."
+    }
   },
   "login": {
     "title": "Giriş yap",
@@ -242,6 +248,7 @@
     "bad_credentials": "Kullanıcı adı veya parola hatalı.",
     "wrong_current_password": "Mevcut parola hatalı.",
     "password_unchanged": "Yeni parola mevcut paroladan farklı olmalı.",
+    "weak_password": "Parola, parola politikasına uymuyor.",
     "password_change_required": "Devam etmeden önce parolanızı değiştirin.",
     "unauthorized": "Oturumunuz sona erdi. Tekrar giriş yapın.",
     "network_error": "Sunucuya ulaşılamadı.",

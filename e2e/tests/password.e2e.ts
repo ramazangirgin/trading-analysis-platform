@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { E2E_USER } from './support'
+import { csrfHeaders, E2E_PASSWORD, E2E_USER } from './support'
 
 // Runs as the shared admin, whose password must not change: the other tests share its session and a
 // change would log them out. The successful change and the forced flow are covered by the backend
@@ -29,6 +29,27 @@ test('a wrong current password shows the message next to the field and stays on 
 
   await expect(page.getByText('The current password is wrong.')).toBeVisible()
   await expect(page).toHaveURL('/password')
+})
+
+test("a weak new password shows the policy's reasons", async ({ page, request }) => {
+  await page.goto('/password')
+  await page.getByPlaceholder('Current password').fill(E2E_PASSWORD)
+  await page.getByPlaceholder('New password', { exact: true }).fill('short')
+  await page.getByPlaceholder('Repeat new password').fill('short')
+
+  const answered = page.waitForResponse('**/api/auth/password')
+  await page.getByRole('button', { name: 'Change password' }).click()
+  expect((await answered).status()).toBe(400)
+
+  await expect(page.getByText('At least 12 characters.')).toBeVisible()
+  await expect(page).toHaveURL('/password')
+
+  // Nothing changed: the password still logs in.
+  const login = await request.post('/api/auth/login', {
+    data: { username: E2E_USER, password: E2E_PASSWORD },
+    headers: await csrfHeaders(request),
+  })
+  expect(login.ok()).toBe(true)
 })
 
 test('a repeat that does not match is caught in the form without a request', async ({ page }) => {
