@@ -72,10 +72,10 @@ First start: created the admin user "admin" with the generated password <passwor
 Log in at **http://127.0.0.1:8080** with it. To choose the name and password instead, set
 `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start; the password must
 meet the password policy (at least 12 characters, not a common password, not the username), or the
-platform does not start and says why. Later starts change nothing. A generated password is flagged to be changed: after logging in with it, the UI asks for a
-new password before anything else. If you lost it while
-`admin` is still the only user, delete the user (`DELETE FROM "IDENTITY"."USERS";` in the database)
-and restart to get a new one.
+platform does not start and says why. Later starts change nothing. A generated password is flagged
+to be changed: after logging in with it, the UI asks for a new password before anything else. If
+you lost it while `admin` is still the only user, delete the user
+(`DELETE FROM "IDENTITY"."USERS";` in the database) and restart to get a new one.
 
 ### 4. Add an API key
 
