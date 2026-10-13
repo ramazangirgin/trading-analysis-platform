@@ -31,7 +31,61 @@ class FirstAdminServiceTest {
     private final CountingGenerator generator = new CountingGenerator();
 
     private FirstAdminService service(String username, String password) {
-        return new FirstAdminService(users, hasher, generator, username, password);
+        return service(12, username, password);
+    }
+
+    private FirstAdminService service(int minLength, String username, String password) {
+        return new FirstAdminService(
+                users, hasher, generator, new PasswordPolicy(minLength, "password1234567\n"), username, password);
+    }
+
+    @Test
+    void aWeakConfiguredPasswordStopsTheStartWithoutLoggingIt() {
+        Logger logger = (Logger) LoggerFactory.getLogger(FirstAdminService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            assertThatThrownBy(() -> service("admin", "Xy7-weak").createFirstAdminIfNoUser())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("PLATFORM_ADMIN_PASSWORD")
+                    .hasMessageContaining("too_short")
+                    .hasMessageContaining("12")
+                    .hasMessageContaining("128")
+                    .hasMessageNotContaining("Xy7-weak");
+            assertThatThrownBy(() -> service("administrator1", "Administrator1").createFirstAdminIfNoUser())
+                    .hasMessageContaining("same_as_username");
+            assertThatThrownBy(() -> service("admin", "Password1234567").createFirstAdminIfNoUser())
+                    .hasMessageContaining("common");
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        assertThat(users.users).isEmpty();
+        assertThat(users.saved).isEmpty();
+        assertThat(appender.list)
+                .extracting(ILoggingEvent::getFormattedMessage)
+                .noneMatch(message -> message.contains("Xy7-weak") || message.contains("Password1234567"));
+    }
+
+    @Test
+    void aWeakConfiguredPasswordIsIgnoredWhenUsersExist() {
+        users.users.add(existing());
+
+        assertThatCode(() -> service("admin", "Xy7-weak").createFirstAdminIfNoUser())
+                .doesNotThrowAnyException();
+
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void theGeneratorIsAskedForAtLeastTwentyFourOrTheMinimumLength() {
+        service("admin", null).createFirstAdminIfNoUser();
+        assertThat(generator.lastLength).isEqualTo(24);
+
+        users.users.clear();
+        service(40, "admin", null).createFirstAdminIfNoUser();
+        assertThat(generator.lastLength).isEqualTo(40);
     }
 
     @Test
@@ -161,9 +215,11 @@ class FirstAdminServiceTest {
 
         private int calls;
         private String last;
+        private int lastLength;
 
         @Override
-        String generate() {
+        String generate(int length) {
+            lastLength = length;
             calls++;
             last = "generated-password-" + calls;
             return last;

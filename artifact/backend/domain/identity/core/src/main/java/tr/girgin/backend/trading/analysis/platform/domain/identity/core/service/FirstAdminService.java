@@ -10,6 +10,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreateFirstAdminUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
@@ -26,10 +27,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 class FirstAdminService implements CreateFirstAdminUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(FirstAdminService.class);
+    private static final int GENERATED_LENGTH = 24;
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
     private final OneTimePasswordGenerator generator;
+    private final PasswordPolicy policy;
     private final String username;
     private final String password;
 
@@ -37,20 +40,23 @@ class FirstAdminService implements CreateFirstAdminUseCase {
     FirstAdminService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
+            PasswordPolicy policy,
             @Value("${platform.admin.username:admin}") String username,
             @Value("${platform.admin.password:}") String password) {
-        this(users, hasher, new OneTimePasswordGenerator(), username, password);
+        this(users, hasher, new OneTimePasswordGenerator(), policy, username, password);
     }
 
     FirstAdminService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
             OneTimePasswordGenerator generator,
+            PasswordPolicy policy,
             String username,
             String password) {
         this.users = users;
         this.hasher = hasher;
         this.generator = generator;
+        this.policy = policy;
         this.username = username;
         this.password = password;
     }
@@ -70,7 +76,10 @@ class FirstAdminService implements CreateFirstAdminUseCase {
             return;
         }
         Username name = new Username(username);
-        String plain = configured ? password : generator.generate();
+        if (configured) {
+            checkConfiguredPassword(name);
+        }
+        String plain = configured ? password : generator.generate(Math.max(GENERATED_LENGTH, policy.minLength()));
         User admin = new User(
                 UserId.newId(),
                 name,
@@ -97,6 +106,18 @@ class FirstAdminService implements CreateFirstAdminUseCase {
                             + "It is shown only this once; change it after the first login.",
                     name.value(),
                     plain);
+        }
+    }
+
+    private void checkConfiguredPassword(Username name) {
+        try {
+            policy.check(password, name);
+        } catch (IdentityException e) {
+            throw new IllegalStateException("PLATFORM_ADMIN_PASSWORD breaks the password policy: "
+                    + e.params().get("reasons")
+                    + " (at least " + e.params().get("minLength") + " and at most "
+                    + e.params().get("maxLength") + " characters, not a common password, not the username)."
+                    + " Set another one, or leave it empty to get a generated password.");
         }
     }
 }

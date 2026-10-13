@@ -35,8 +35,8 @@ class PasswordChangeServiceTest {
 
     private final FakeUserRepository users = new FakeUserRepository();
     private final FakeRoleRepository roles = new FakeRoleRepository();
-    private final PasswordChangeService service =
-            new PasswordChangeService(users, new FakeHasher(), new AuthenticatedUserFactory(roles));
+    private final PasswordChangeService service = new PasswordChangeService(
+            users, new FakeHasher(), new AuthenticatedUserFactory(roles), new PasswordPolicy(8, "password\n"));
 
     @Test
     void aCorrectChangeStoresTheNewHashClearsTheFlagAndKeepsTheRest() {
@@ -67,6 +67,30 @@ class PasswordChangeServiceTest {
                         IdentityException.class,
                         e -> assertThat(e.error()).isEqualTo(IdentityError.WRONG_CURRENT_PASSWORD));
         assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void aWeakNewPasswordIsRejectedAndSavesNothing() {
+        User user = user("alice", true, true);
+        users.users.add(user);
+
+        for (String weak : List.of("short", "password", "alice")) {
+            assertThatThrownBy(() -> service.changePassword(user.id(), "old-secret", weak))
+                    .isInstanceOfSatisfying(
+                            IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.WEAK_PASSWORD));
+        }
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void aWrongCurrentPasswordIsReportedBeforeAWeakNewOne() {
+        User user = user("alice", true, true);
+        users.users.add(user);
+
+        assertThatThrownBy(() -> service.changePassword(user.id(), "wrong", "short"))
+                .isInstanceOfSatisfying(
+                        IdentityException.class,
+                        e -> assertThat(e.error()).isEqualTo(IdentityError.WRONG_CURRENT_PASSWORD));
     }
 
     @Test

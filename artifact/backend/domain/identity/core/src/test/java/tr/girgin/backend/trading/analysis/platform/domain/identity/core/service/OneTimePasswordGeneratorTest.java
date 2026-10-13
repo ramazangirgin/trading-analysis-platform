@@ -9,12 +9,13 @@ class OneTimePasswordGeneratorTest {
     private final OneTimePasswordGenerator generator = new OneTimePasswordGenerator();
 
     @Test
-    void generatesTwentyFourLettersAndDigits() {
-        assertThat(generator.generate()).hasSize(24).matches("[A-Za-z0-9]+");
+    void generatesTheGivenLengthOfLettersAndDigits() {
+        assertThat(generator.generate(24)).hasSize(24).matches("[A-Za-z0-9]+");
+        assertThat(generator.generate(40)).hasSize(40).matches("[A-Za-z0-9]+");
     }
 
     @Test
     void twoCallsDiffer() {
-        assertThat(generator.generate()).isNotEqualTo(generator.generate());
+        assertThat(generator.generate(24)).isNotEqualTo(generator.generate(24));
     }
 }
