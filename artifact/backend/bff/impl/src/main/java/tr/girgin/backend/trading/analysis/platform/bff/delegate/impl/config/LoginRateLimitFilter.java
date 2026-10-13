@@ -43,7 +43,9 @@ final class LoginRateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String address = request.getRemoteAddr();
-        Optional<Duration> blocked = limiter.blockedFor(address);
+        // The attempt is counted before the login runs: a check followed by a count would let every login
+        // in flight at the limit through.
+        Optional<Duration> blocked = limiter.tryAcquire(address);
         if (blocked.isPresent()) {
             response.setHeader(HttpHeaders.RETRY_AFTER, Long.toString(seconds(blocked.get())));
             writer.write(
@@ -53,9 +55,14 @@ final class LoginRateLimitFilter extends OncePerRequestFilter {
                     "Too many failed logins from this address, try again later");
             return;
         }
-        chain.doFilter(request, response);
-        if (response.getStatus() == HttpStatus.UNAUTHORIZED.value()) {
-            limiter.recordFailure(address);
+        boolean failed = false;
+        try {
+            chain.doFilter(request, response);
+            failed = response.getStatus() == HttpStatus.UNAUTHORIZED.value();
+        } finally {
+            if (!failed) {
+                limiter.release(address);
+            }
         }
     }
 

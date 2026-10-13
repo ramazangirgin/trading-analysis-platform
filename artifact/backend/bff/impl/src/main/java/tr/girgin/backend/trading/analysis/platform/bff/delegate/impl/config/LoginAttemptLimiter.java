@@ -69,16 +69,36 @@ class LoginAttemptLimiter {
         return Optional.ofNullable(blocked.get());
     }
 
-    void recordFailure(String address) {
+    /**
+     * Checks the limit and counts the attempt in one atomic step, so logins in flight at the same time cannot
+     * all pass the check before the first failure is recorded. Returns the time until the address may try
+     * again when it is blocked (nothing is counted then); empty when the attempt is counted and may run. The
+     * caller {@link #release releases} it when the login does not fail.
+     */
+    Optional<Duration> tryAcquire(String address) {
         if (failures.size() >= MAX_TRACKED_ADDRESSES && !failures.containsKey(address)) {
             makeRoom();
         }
+        AtomicReference<Duration> blocked = new AtomicReference<>();
         Instant now = clock.instant();
         failures.compute(address, (_, times) -> {
             Deque<Instant> kept = times == null ? new ArrayDeque<>() : times;
             prune(kept, now);
-            kept.addLast(now);
+            if (kept.size() >= maxFailedAttempts) {
+                blocked.set(Duration.between(now, kept.peekFirst().plus(window)));
+            } else {
+                kept.addLast(now);
+            }
             return kept;
+        });
+        return Optional.ofNullable(blocked.get());
+    }
+
+    /** Gives back an attempt counted by {@link #tryAcquire}: the login did not fail. */
+    void release(String address) {
+        failures.computeIfPresent(address, (_, times) -> {
+            times.pollLast();
+            return times.isEmpty() ? null : times;
         });
     }
 
