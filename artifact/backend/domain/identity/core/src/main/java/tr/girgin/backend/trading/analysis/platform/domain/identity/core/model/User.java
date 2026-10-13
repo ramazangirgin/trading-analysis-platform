@@ -67,4 +67,30 @@ public record User(
                 roleIds,
                 version);
     }
+
+    /** The same user with another count of failed logins and lock. */
+    public User withFailedLogin(int newFailedLoginCount, Optional<Instant> newLockedUntil) {
+        return new User(
+                id,
+                username,
+                passwordHash,
+                enabled,
+                mustChangePassword,
+                newFailedLoginCount,
+                newLockedUntil,
+                createdAt,
+                updatedAt,
+                roleIds,
+                version);
+    }
+
+    /** The same user with no failed logins and no lock. */
+    public User withLoginSucceeded() {
+        return withFailedLogin(0, Optional.empty());
+    }
+
+    /** Whether the account is locked at the given time: a lock is in force until its instant is reached. */
+    public boolean isLockedAt(Instant now) {
+        return lockedUntil.filter(now::isBefore).isPresent();
+    }
 }

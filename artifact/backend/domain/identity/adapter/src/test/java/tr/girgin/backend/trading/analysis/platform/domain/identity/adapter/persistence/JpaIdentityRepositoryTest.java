@@ -97,6 +97,25 @@ class JpaIdentityRepositoryTest {
     }
 
     @Test
+    void theFailedLoginCountAndTheLockRoundTripThroughASave() {
+        User user = users.save(user("lockout", Set.of()));
+
+        User locked = users.save(user.withFailedLogin(4, Optional.of(LOCKED_UNTIL)));
+
+        assertThat(users.findById(user.id())).hasValueSatisfying(found -> {
+            assertThat(found.failedLoginCount()).isEqualTo(4);
+            assertThat(found.lockedUntil()).contains(LOCKED_UNTIL);
+            assertThat(found).isEqualTo(locked);
+        });
+        User cleared = users.save(locked.withLoginSucceeded());
+        assertThat(users.findById(user.id())).hasValueSatisfying(found -> {
+            assertThat(found.failedLoginCount()).isZero();
+            assertThat(found.lockedUntil()).isEmpty();
+            assertThat(found).isEqualTo(cleared);
+        });
+    }
+
+    @Test
     void aNewUserGetsTheTimeOfTheClockAsCreatedAtAndUpdatedAt() {
         User saved = users.save(user("new-audit", Set.of()));
 
