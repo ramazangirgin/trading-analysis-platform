@@ -197,6 +197,7 @@ changes.
 
 ### WP2: IP limit, unlock endpoint and configuration in the BFF
 
+- **Status**: done
 - **Depends on**: WP1 (`UnlockUserUseCase`, `USER_NOT_FOUND`)
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/…/bff/controller/api/UsersApiController.java` (new),
@@ -211,13 +212,13 @@ changes.
     `artifact/backend/src/test/java/…/LoginLockoutIntegrationTest.java` (new),
     `artifact/backend/src/test/java/…/AuthApiIntegrationTest.java` (only if a shared helper is needed)
 - **Steps**:
-  - [ ] `LoginAttemptLimiter` with the `Clock`, its settings, range checks and the memory bound
-  - [ ] `LoginRateLimitFilter` (429, `Retry-After`, counts only 401 answers of `POST /api/auth/login`),
+  - [x] `LoginAttemptLimiter` with the `Clock`, its settings, range checks and the memory bound
+  - [x] `LoginRateLimitFilter` (429, `Retry-After`, counts only 401 answers of `POST /api/auth/login`),
         registered before `CsrfFilter`
-  - [ ] the `/api/users/*/unlock` rule with `user:manage`
-  - [ ] `UsersApiController`, `UsersApiDelegate`, `UsersApiDelegateImpl`
-  - [ ] `user_not_found` → 404 in the mapper
-  - [ ] the four `platform.login.*` properties with comments
+  - [x] the `/api/users/*/unlock` rule with `user:manage`
+  - [x] `UsersApiController`, `UsersApiDelegate`, `UsersApiDelegateImpl`
+  - [x] `user_not_found` → 404 in the mapper
+  - [x] the four `platform.login.*` properties with comments
 - **Tests**:
   - `LoginAttemptLimiterTest` (mutable clock):
     - under the limit nothing is blocked, and the 20th failure blocks;
