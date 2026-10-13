@@ -176,6 +176,7 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
 
 ### WP2: API answer and startup integration
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper/error/IdentityExceptionToApiExceptionMapper.java`
@@ -185,8 +186,8 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
   - the mapper's test, if there is one (`…/bff/delegate/impl/mapper/error/`)
   - `deploy/docker-compose.yml`, `deploy/.env.example`
 - **Steps**:
-  - [ ] Map `WEAK_PASSWORD` to 400 in the mapper's switch.
-  - [ ] Add `platform.password.min-length` to `application.properties`; pass and document
+  - [x] Map `WEAK_PASSWORD` to 400 in the mapper's switch.
+  - [x] Add `platform.password.min-length` to `application.properties`; pass and document
         `PLATFORM_PASSWORD_MIN_LENGTH` in the deploy files.
 - **Tests**:
   - `PasswordChangeIntegrationTest`: a too-short new password answers 400 `weak_password` with

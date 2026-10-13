@@ -18,6 +18,7 @@ class IdentityExceptionToApiExceptionMapperTest {
         "BAD_CREDENTIALS, 401, bad_credentials",
         "WRONG_CURRENT_PASSWORD, 400, wrong_current_password",
         "PASSWORD_UNCHANGED, 400, password_unchanged",
+        "WEAK_PASSWORD, 400, weak_password",
         "INVALID_USERNAME, 500, invalid_username",
         "UNKNOWN_PERMISSION, 500, unknown_permission"
     })

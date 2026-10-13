@@ -124,6 +124,42 @@ class PasswordChangeIntegrationTest {
     }
 
     @Test
+    void aWeakNewPasswordIs400WithItsReasonsAndChangesNothing() throws Exception {
+        String username = TestSession.createUser(users, hasher, true);
+        TestSession client = loggedInAs(username);
+
+        HttpResponse<String> tooShort = client.changePassword(TestSession.PASSWORD, "Xq7-tiny");
+        assertThat(tooShort.statusCode()).isEqualTo(400);
+        assertThat(errorCode(tooShort)).isEqualTo("weak_password");
+        JsonNode params = JSON.readTree(tooShort.body()).get("params");
+        assertThat(params.get("reasons")).extracting(JsonNode::asString).containsExactly("too_short");
+        assertThat(params.get("minLength").asInt()).isEqualTo(12);
+        assertThat(params.get("maxLength").asInt()).isEqualTo(128);
+        assertThat(tooShort.body()).doesNotContain("Xq7-tiny");
+
+        assertThat(reasons(client.changePassword(TestSession.PASSWORD, "unbelievable")))
+                .containsExactly("common");
+        assertThat(reasons(client.changePassword(TestSession.PASSWORD, username)))
+                .contains("same_as_username");
+
+        assertThat(TestSession.anonymous(port)
+                        .login(username, TestSession.PASSWORD)
+                        .statusCode())
+                .isEqualTo(200);
+    }
+
+    private static List<String> reasons(HttpResponse<String> response) {
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(errorCode(response)).isEqualTo("weak_password");
+        return JSON.readTree(response.body())
+                .get("params")
+                .get("reasons")
+                .valueStream()
+                .map(JsonNode::asString)
+                .toList();
+    }
+
+    @Test
     void anEmptyFieldIs400() throws Exception {
         TestSession client = TestSession.loggedIn(port, users, hasher);
 
