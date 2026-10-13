@@ -159,6 +159,7 @@ changes.
 
 ### WP1: Lockout and unlock in the identity core
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/core/src/main/java/…/domain/identity/core/model/User.java`
@@ -170,11 +171,11 @@ changes.
     `…/core/service/LoginLockoutPolicyTest.java` (new), `…/core/service/UserLockServiceTest.java` (new)
   - `artifact/backend/domain/identity/adapter/src/test/java/…/persistence/JpaIdentityRepositoryTest.java`
 - **Steps**:
-  - [ ] `User`: `withFailedLogin`, `withLoginSucceeded`, `isLockedAt`
-  - [ ] `LoginLockoutPolicy` with its two settings and range checks
-  - [ ] `AuthenticationService`: the five cases above, `Clock` and policy injected, one save per
+  - [x] `User`: `withFailedLogin`, `withLoginSucceeded`, `isLockedAt`
+  - [x] `LoginLockoutPolicy` with its two settings and range checks
+  - [x] `AuthenticationService`: the five cases above, `Clock` and policy injected, one save per
         login at most, the retry on optimistic-lock conflicts
-  - [ ] `IdentityError.USER_NOT_FOUND`, `UnlockUserUseCase`, `UserLockService`
+  - [x] `IdentityError.USER_NOT_FOUND`, `UnlockUserUseCase`, `UserLockService`
 - **Tests**:
   - `AuthenticationServiceTest` (fixed / advancing clock, in-memory or mocked port as the test does today):
     - the count rises with each wrong password;

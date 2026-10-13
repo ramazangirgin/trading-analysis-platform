@@ -70,6 +70,60 @@ class UserTest {
     }
 
     @Test
+    void withFailedLoginReplacesOnlyTheCountAndTheLock() {
+        Set<RoleId> roles = Set.of(RoleId.newId());
+        User user = user(UserId.newId(), new Username("alice"), roles);
+        Instant until = NOW.plusSeconds(900);
+
+        assertThat(user.withFailedLogin(4, Optional.of(until)))
+                .isEqualTo(new User(
+                        user.id(),
+                        user.username(),
+                        user.passwordHash(),
+                        true,
+                        false,
+                        4,
+                        Optional.of(until),
+                        NOW,
+                        NOW,
+                        roles,
+                        3L));
+    }
+
+    @Test
+    void withLoginSucceededClearsTheCountAndTheLockAndKeepsTheRest() {
+        Set<RoleId> roles = Set.of(RoleId.newId());
+        User user = user(UserId.newId(), new Username("alice"), roles)
+                .withFailedLogin(2, Optional.of(NOW.plusSeconds(900)));
+
+        assertThat(user.withLoginSucceeded())
+                .isEqualTo(new User(
+                        user.id(),
+                        user.username(),
+                        user.passwordHash(),
+                        true,
+                        false,
+                        0,
+                        Optional.empty(),
+                        NOW,
+                        NOW,
+                        roles,
+                        3L));
+    }
+
+    @Test
+    void aLockHoldsUntilItsInstantIsReached() {
+        User user = user(UserId.newId(), new Username("alice"), Set.of());
+        Instant until = NOW.plusSeconds(900);
+
+        assertThat(user.isLockedAt(NOW)).isFalse();
+        assertThat(user.withFailedLogin(0, Optional.of(until)).isLockedAt(until.minusMillis(1)))
+                .isTrue();
+        assertThat(user.withFailedLogin(0, Optional.of(until)).isLockedAt(until))
+                .isFalse();
+    }
+
+    @Test
     void withRoleIdsReplacesOnlyTheRoles() {
         User user = user(UserId.newId(), new Username("alice"), Set.of());
         Set<RoleId> roles = Set.of(RoleId.newId());

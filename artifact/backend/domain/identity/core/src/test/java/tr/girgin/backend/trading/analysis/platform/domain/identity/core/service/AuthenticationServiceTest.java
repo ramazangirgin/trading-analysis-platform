@@ -3,7 +3,11 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,8 +35,13 @@ class AuthenticationServiceTest {
     private final FakeUserRepository users = new FakeUserRepository();
     private final FakeRoleRepository roles = new FakeRoleRepository();
     private final FakeHasher hasher = new FakeHasher();
-    private final AuthenticationService service =
-            new AuthenticationService(users, new AuthenticatedUserFactory(roles), hasher);
+    private final MutableClock clock = new MutableClock(Instant.parse("2026-10-01T10:00:00Z"));
+    private final AuthenticationService service = new AuthenticationService(
+            users,
+            new AuthenticatedUserFactory(roles),
+            hasher,
+            clock,
+            new LoginLockoutPolicy(5, Duration.ofMinutes(15)));
 
     @Test
     void validLoginReturnsTheUserWithRoleNamesAndTheUnionOfPermissions() {
@@ -126,9 +135,179 @@ class AuthenticationServiceTest {
     void aConcurrentUpdateDuringRehashStillLogsTheUserIn() {
         users.users.add(user("alice", "secret", true));
         hasher.rehashNeeded = true;
-        users.failSave = true;
+        users.failSaves = Integer.MAX_VALUE;
 
         assertThat(service.authenticate("alice", "secret").username().value()).isEqualTo("alice");
+    }
+
+    @Test
+    void theCountRisesWithEachWrongPassword() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+
+        failure("alice", "wrong");
+        assertThat(stored(alice).failedLoginCount()).isEqualTo(1);
+        failure("alice", "wrong");
+        failure("alice", "wrong");
+
+        assertThat(stored(alice).failedLoginCount()).isEqualTo(3);
+        assertThat(stored(alice).lockedUntil()).isEmpty();
+    }
+
+    @Test
+    void theFifthWrongPasswordLocksForFifteenMinutesAndResetsTheCount() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+
+        for (int i = 0; i < 5; i++) {
+            failure("alice", "wrong");
+        }
+
+        assertThat(stored(alice).failedLoginCount()).isZero();
+        assertThat(stored(alice).lockedUntil()).contains(clock.instant().plus(Duration.ofMinutes(15)));
+    }
+
+    @Test
+    void aLockedAccountFailsLikeAWrongPasswordEvenWithTheRightOneAndIsNotCounted() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        IdentityException wrong = failure("alice", "wrong");
+        for (int i = 0; i < 4; i++) {
+            failure("alice", "wrong");
+        }
+        User locked = stored(alice);
+        users.saved.clear();
+
+        IdentityException right = failure("alice", "secret");
+        failure("alice", "wrong");
+
+        assertThat(right.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+        assertThat(right.params()).isEmpty();
+        assertThat(right.getMessage()).isEqualTo(wrong.getMessage());
+        assertThat(users.saved).isEmpty();
+        assertThat(stored(alice)).isEqualTo(locked);
+    }
+
+    @Test
+    void afterTheLockExpiresTheRightPasswordSucceedsAndClearsCountAndLock() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        for (int i = 0; i < 5; i++) {
+            failure("alice", "wrong");
+        }
+
+        clock.advance(Duration.ofMinutes(15));
+        service.authenticate("alice", "secret");
+
+        assertThat(stored(alice).failedLoginCount()).isZero();
+        assertThat(stored(alice).lockedUntil()).isEmpty();
+    }
+
+    @Test
+    void aWrongPasswordAfterTheLockExpiredStartsANewCount() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        for (int i = 0; i < 5; i++) {
+            failure("alice", "wrong");
+        }
+        clock.advance(Duration.ofMinutes(15));
+
+        failure("alice", "wrong");
+
+        assertThat(stored(alice).failedLoginCount()).isEqualTo(1);
+        assertThat(stored(alice).lockedUntil()).isEmpty();
+    }
+
+    @Test
+    void aSuccessAfterThreeFailuresResetsTheCount() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        for (int i = 0; i < 3; i++) {
+            failure("alice", "wrong");
+        }
+
+        service.authenticate("alice", "secret");
+
+        assertThat(stored(alice).failedLoginCount()).isZero();
+    }
+
+    @Test
+    void aNormalLoginWritesNothing() {
+        users.users.add(user("alice", "secret", true));
+
+        service.authenticate("alice", "secret");
+
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void rehashAndResetGoIntoOneSave() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        failure("alice", "wrong");
+        users.saved.clear();
+        hasher.rehashNeeded = true;
+
+        service.authenticate("alice", "secret");
+
+        assertThat(users.saved).hasSize(1);
+        assertThat(users.saved.getFirst().passwordHash()).isEqualTo(new PasswordHash("new:secret"));
+        assertThat(users.saved.getFirst().failedLoginCount()).isZero();
+    }
+
+    @Test
+    void anUnknownUserIsNotCounted() {
+        failure("nobody", "secret");
+
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void aDisabledUserWithTheRightPasswordIsNotCounted() {
+        users.users.add(user("bob", "secret", false));
+
+        failure("bob", "secret");
+
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void anOptimisticLockConflictIsRetried() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 2;
+
+        IdentityException e = failure("alice", "wrong");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+        assertThat(stored(alice).failedLoginCount()).isEqualTo(1);
+    }
+
+    @Test
+    void afterThreeConflictsTheAnswerIsStillBadCredentialsAndNothingIsCounted() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 3;
+
+        IdentityException e = failure("alice", "wrong");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+        assertThat(e.params()).isEmpty();
+        assertThat(stored(alice).failedLoginCount()).isZero();
+    }
+
+    @Test
+    void aConflictOnTheResetStillLogsTheUserIn() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        failure("alice", "wrong");
+        users.failSaves = 3;
+
+        assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
+    }
+
+    private User stored(User user) {
+        return users.findById(user.id()).orElseThrow();
     }
 
     @Test
@@ -201,7 +380,7 @@ class AuthenticationServiceTest {
 
         private final List<User> users = new ArrayList<>();
         private final List<User> saved = new ArrayList<>();
-        private boolean failSave;
+        private int failSaves;
 
         @Override
         public Optional<User> findById(UserId id) {
@@ -227,13 +406,42 @@ class AuthenticationServiceTest {
 
         @Override
         public User save(User user) {
-            if (failSave) {
+            if (failSaves > 0) {
+                failSaves--;
                 throw new OptimisticLockingFailureException("stale");
             }
             saved.add(user);
             users.removeIf(u -> u.id().equals(user.id()));
             users.add(user);
             return user;
+        }
+    }
+
+    private static final class MutableClock extends Clock {
+
+        private Instant now;
+
+        MutableClock(Instant now) {
+            this.now = now;
+        }
+
+        void advance(Duration duration) {
+            now = now.plus(duration);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return now;
         }
     }
 
