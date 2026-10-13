@@ -250,6 +250,8 @@
     "password_unchanged": "Yeni parola mevcut paroladan farklı olmalı.",
     "weak_password": "Parola, parola politikasına uymuyor.",
     "password_change_required": "Devam etmeden önce parolanızı değiştirin.",
+    "too_many_login_attempts": "Bu adresten çok fazla başarısız giriş denemesi yapıldı. Birkaç dakika sonra tekrar deneyin.",
+    "user_not_found": "Kullanıcı bulunamadı.",
     "unauthorized": "Oturumunuz sona erdi. Tekrar giriş yapın.",
     "network_error": "Sunucuya ulaşılamadı.",
     "unexpected_error": "Beklenmeyen bir hata oluştu.",

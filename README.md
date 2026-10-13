@@ -370,7 +370,7 @@ user's other sessions out; the current session continues.
 The backend:
 
 - `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
-  permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401
+  permissions, or 401 `bad_credentials` or 429 `too_many_login_attempts`; `GET /api/auth/me` returns the current user, or 401
   `unauthorized`; `POST /api/auth/logout` ends the session (204).
 - `POST /api/auth/password` (`currentPassword`, `newPassword`) answers 200 with the user (flag
   cleared), or 400 `wrong_current_password` / `password_unchanged` / `weak_password`. The last one
@@ -381,6 +381,27 @@ The backend:
   points), no composition rules, not one of the 10,000 most common passwords (bundled from
   [SecLists](https://github.com/danielmiessler/SecLists), so nothing leaves the machine) and not
   the username. The minimum is set with `PLATFORM_PASSWORD_MIN_LENGTH` (8 to 64, default 12).
+- Password guessing is slowed down ([#85](https://github.com/ramazangirgin/trading-analysis-platform/issues/85)).
+  After 5 wrong passwords in a row an account is locked for 15 minutes. While it is locked, every
+  login answers the same 401 `bad_credentials` as a wrong password, even with the right one, so a
+  locked account cannot be told from a wrong guess or an unknown user. A locked account is not
+  counted further, and a successful login resets the count. Each client address may also fail 20
+  logins in 5 minutes; after that it gets 429 `too_many_login_attempts` with `Retry-After` until
+  the window frees up. The address is the one of the connection (`X-Forwarded-For` is not trusted),
+  so under Docker Compose all clients may share the bridge gateway's address and the limit applies
+  to them together. The counts of the IP limit live in memory like the sessions, so a restart
+  clears them. The settings, all checked at startup:
+
+  | Variable | Default | Range |
+  |---|---|---|
+  | `PLATFORM_LOGIN_MAX_FAILED_ATTEMPTS` | `5` | 1 to 100 |
+  | `PLATFORM_LOGIN_LOCKOUT_DURATION` | `15m` | 1 minute to 24 hours |
+  | `PLATFORM_LOGIN_IP_MAX_FAILED_ATTEMPTS` | `20` | 1 to 10,000 |
+  | `PLATFORM_LOGIN_IP_WINDOW` | `5m` | 1 minute to 24 hours |
+
+- `POST /api/users/{id}/unlock` unlocks an account early. It needs the `user:manage` permission and
+  answers 204 (also when the account is not locked), 404 `user_not_found`, or 403 `forbidden`
+  without the permission.
 - Every other `/api/**` route answers 401 (`unauthorized`) without a session. The static UI,
   `/actuator/**` and `/api/openapi/**` stay open.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the

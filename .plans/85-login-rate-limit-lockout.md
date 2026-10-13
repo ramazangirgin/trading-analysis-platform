@@ -247,6 +247,7 @@ changes.
 
 ### WP3: Frontend messages, API types and docs
 
+- **Status**: done
 - **Depends on**: WP2 (the endpoint for `openapi.json`, the error codes)
 - **Files**:
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
@@ -255,9 +256,9 @@ changes.
   - `artifact/frontend/src/features/auth/` tests (`LoginForm` spec if one exists, otherwise a new
     `LoginForm.spec.ts`)
 - **Steps**:
-  - [ ] the two error messages in both catalogues
-  - [ ] refresh `openapi.json` and the API types
-  - [ ] the README changes below
+  - [x] the two error messages in both catalogues
+  - [x] refresh `openapi.json` and the API types
+  - [x] the README changes below
 - **Tests**:
   - A frontend unit test: the login form shows "Too many failed logins…" for a 429
     `too_many_login_attempts` answer.
