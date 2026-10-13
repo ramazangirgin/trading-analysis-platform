@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,30 +90,36 @@ class AuthenticationService implements AuthenticateUseCase {
 
     /** Counts a wrong password and locks the account when the count reaches the limit. Never changes the answer. */
     private void countFailure(User user) {
-        Optional<User> saved = saveWithRetry(user, this::withFailure);
+        AtomicReference<Instant> lockSet = new AtomicReference<>();
+        Optional<User> saved = saveWithRetry(user, current -> withFailure(current, lockSet));
         if (saved.isEmpty()) {
             log.warn(
                     "Failed login of user {} not counted, the user was updated concurrently",
                     user.id().value());
             return;
         }
-        saved.get()
-                .lockedUntil()
-                .ifPresent(until -> log.info(
-                        "User {} locked until {} after {} failed logins",
-                        user.id().value(),
-                        until,
-                        lockoutPolicy.maxFailedAttempts()));
+        Instant until = lockSet.get();
+        if (until != null) {
+            log.info(
+                    "User {} locked until {} after {} failed logins",
+                    user.id().value(),
+                    until,
+                    lockoutPolicy.maxFailedAttempts());
+        }
     }
 
-    private User withFailure(User user) {
+    /** Applies one failure; {@code lockSet} holds the lock this step set, or null when it set none. */
+    private User withFailure(User user, AtomicReference<Instant> lockSet) {
+        lockSet.set(null);
         Instant now = clock.instant();
         if (user.isLockedAt(now)) {
             return user;
         }
         int count = user.failedLoginCount() + 1;
         if (count >= lockoutPolicy.maxFailedAttempts()) {
-            return user.withFailedLogin(0, Optional.of(now.plus(lockoutPolicy.lockoutDuration())));
+            Instant until = now.plus(lockoutPolicy.lockoutDuration());
+            lockSet.set(until);
+            return user.withFailedLogin(0, Optional.of(until));
         }
         return user.withFailedLogin(count, Optional.empty());
     }
