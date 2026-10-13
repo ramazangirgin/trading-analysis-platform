@@ -226,6 +226,7 @@ to the platform service; `deploy/.env.example` lists it, commented, with the def
 
 ### WP4: Docs
 
+- **Status**: done
 - **Depends on**: WP1–WP3
 - **Files**: `README.md`
 - **Steps**: the changes in "Docs to update".

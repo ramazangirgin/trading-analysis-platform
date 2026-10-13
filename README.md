@@ -70,8 +70,9 @@ First start: created the admin user "admin" with the generated password <passwor
 ```
 
 Log in at **http://127.0.0.1:8080** with it. To choose the name and password instead, set
-`PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start. Later starts change
-nothing. A generated password is flagged to be changed: after logging in with it, the UI asks for a
+`PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start; the password must
+meet the password policy (at least 12 characters, not a common password, not the username), or the
+platform does not start and says why. Later starts change nothing. A generated password is flagged to be changed: after logging in with it, the UI asks for a
 new password before anything else. If you lost it while
 `admin` is still the only user, delete the user (`DELETE FROM "IDENTITY"."USERS";` in the database)
 and restart to get a new one.
@@ -207,7 +208,8 @@ docker compose -f deploy/docker-compose.yml up -d
 Open **http://127.0.0.1:8080** (or the `PLATFORM_PORT` you set), log in and add an API key under
 **Settings**, as in the [Quick start](#4-add-an-api-key). `.env` may set `PLATFORM_ADMIN_USERNAME` and
 `PLATFORM_ADMIN_PASSWORD` for the first admin; without them the generated password is in
-`docker compose -f deploy/docker-compose.yml logs platform`. `docker compose -f
+`docker compose -f deploy/docker-compose.yml logs platform`. It may also set
+`PLATFORM_PASSWORD_MIN_LENGTH` (8 to 64, default 12). `docker compose -f
 deploy/docker-compose.yml down` stops everything; `up -d` brings it back with all data.
 
 **Data** stays on the machine, in the folder named by `PLATFORM_DATA` (an absolute path):
@@ -371,9 +373,14 @@ The backend:
   permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401
   `unauthorized`; `POST /api/auth/logout` ends the session (204).
 - `POST /api/auth/password` (`currentPassword`, `newPassword`) answers 200 with the user (flag
-  cleared), or 400 `wrong_current_password` / `password_unchanged`. A session whose password must
-  be changed gets 403 `password_change_required` on every `/api/**` route but `me`, `password` and
-  `logout`.
+  cleared), or 400 `wrong_current_password` / `password_unchanged` / `weak_password`. The last one
+  carries `params.reasons` (`too_short`, `too_long`, `common`, `same_as_username`), `minLength` and
+  `maxLength`. A session whose password must be changed gets 403 `password_change_required` on
+  every `/api/**` route but `me`, `password` and `logout`.
+- The password policy follows NIST SP 800-63B: 12 to 128 characters (counted as Unicode code
+  points), no composition rules, not one of the 10,000 most common passwords (bundled from
+  [SecLists](https://github.com/danielmiessler/SecLists), so nothing leaves the machine) and not
+  the username. The minimum is set with `PLATFORM_PASSWORD_MIN_LENGTH` (8 to 64, default 12).
 - Every other `/api/**` route answers 401 (`unauthorized`) without a session. The static UI,
   `/actuator/**` and `/api/openapi/**` stay open.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
@@ -422,7 +429,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)); then `mise run skill:test`: the Python tests of the Claude Code skills' helpers ([`.claude/skills/`](.claude/skills)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
-| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
+| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so
