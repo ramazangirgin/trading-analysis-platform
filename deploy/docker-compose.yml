@@ -73,6 +73,8 @@ services:
       # The first admin, created on the first start only; empty password: one is generated and logged.
       PLATFORM_ADMIN_USERNAME: ${PLATFORM_ADMIN_USERNAME:-admin}
       PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-}
+      # The minimum password length of the password policy (8 to 64).
+      PLATFORM_PASSWORD_MIN_LENGTH: ${PLATFORM_PASSWORD_MIN_LENGTH:-12}
       DOCKER_HOST: tcp://docker-socket-proxy:2375
       TA_RUNNER_IMAGE: ${TA_RUNNER_IMAGE:-ta-runner:latest}
       # Runner containers are created by the engine itself, so this is a path on this machine.
