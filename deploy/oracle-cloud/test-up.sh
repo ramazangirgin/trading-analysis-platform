@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests up.sh against a fake terraform (mise run oracle:check, CI). The fake logs every call and
+# Tests up.sh against a fake terraform (mise run oracle-cloud:check, CI). The fake logs every call and
 # answers `apply` from a script of outcomes: "ok", "capacity" (OCI's sold-out error) or "other".
 set -euo pipefail
 
@@ -27,7 +27,7 @@ EOF
 chmod +x "$WORK/terraform"
 
 export TERRAFORM="$WORK/terraform"
-export ORACLE_RETRY_INTERVAL=0
+export ORACLE_CLOUD_RETRY_INTERVAL=0
 export FAKE_CALLS="$WORK/calls"
 export FAKE_COUNT="$WORK/count"
 
@@ -54,7 +54,7 @@ run() {
 run "first-time success applies once" "ok" 0 1
 run "two capacity failures, then success" "capacity capacity ok" 0 3
 run "another error stops at once with its code" "other ok" 7 1
-ORACLE_RETRY_ATTEMPTS=2 run "gives up after the attempt limit" "capacity capacity ok" 1 2
+ORACLE_CLOUD_RETRY_ATTEMPTS=2 run "gives up after the attempt limit" "capacity capacity ok" 1 2
 
 run "extra arguments reach apply" "ok" 0 1 -var ocpus=2
 if ! grep -q 'apply .*-var ocpus=2' "$FAKE_CALLS"; then

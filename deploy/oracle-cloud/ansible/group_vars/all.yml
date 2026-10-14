@@ -1,5 +1,5 @@
 # The defaults of the playbook. Override one with -e, e.g.
-#   mise run oracle:deploy -- -e app_ref=v4.3.0
+#   mise run oracle-cloud:deploy -- -e app_ref=v4.3.0
 
 # The user that owns the checkout and runs the Compose stack and the backup.
 app_user: platform

@@ -14,9 +14,9 @@ region = "eu-frankfurt-1"
 # Identity > Compartments > OCID. Leave out to use the tenancy (root compartment).
 # compartment_ocid = "ocid1.compartment.oc1..aaaa"
 
-# An SSH key pair for logging in as ubuntu (ssh-keygen -t ed25519 -f ~/.ssh/oracle).
-ssh_public_key_path  = "~/.ssh/oracle.pub"
-ssh_private_key_path = "~/.ssh/oracle"
+# An SSH key pair for logging in as ubuntu (ssh-keygen -t ed25519 -f ~/.ssh/oracle-cloud).
+ssh_public_key_path  = "~/.ssh/oracle-cloud.pub"
+ssh_private_key_path = "~/.ssh/oracle-cloud"
 
 # Optional (defaults shown). The Always Free limits are 4 OCPUs, 24 GB memory, 200 GB boot volumes.
 # availability_domain_index = 0

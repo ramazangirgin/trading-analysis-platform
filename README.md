@@ -433,11 +433,11 @@ mise run format-check  # check the formatting of every Java, frontend and e2e fi
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
-mise run oracle:plan     # Oracle Cloud: show what oracle:up would create (see deploy/oracle-cloud/README.md)
-mise run oracle:up       # create the Always Free VM (Terraform apply, retried while A1 is sold out)
-mise run oracle:deploy   # set up the VM and deploy the Compose stack on it (Ansible); -- -e app_ref=v4.4.0 for another ref
-mise run oracle:destroy  # remove the VM and its network (asks first)
-mise run oracle:check    # Terraform and Ansible checks without credentials (not part of check: it downloads the OCI provider)
+mise run oracle-cloud:plan     # Oracle Cloud: show what oracle-cloud:up would create (see deploy/oracle-cloud/README.md)
+mise run oracle-cloud:up       # create the Always Free VM (Terraform apply, retried while A1 is sold out)
+mise run oracle-cloud:deploy   # set up the VM and deploy the Compose stack on it (Ansible); -- -e app_ref=v4.4.0 for another ref
+mise run oracle-cloud:destroy  # remove the VM and its network (asks first)
+mise run oracle-cloud:check    # Terraform and Ansible checks without credentials (not part of check: it downloads the OCI provider)
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
@@ -460,7 +460,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
 | ta-runner image (arm64) | The same image built on an arm64 runner (`ubuntu-24.04-arm`) and run under the same lockdown flags, so a dependency without arm64 wheels shows up before anyone deploys to an Ampere VM |
-| Oracle deploy (Terraform, Ansible) | `mise run oracle:check` without cloud credentials: `terraform fmt` and `validate`, `ansible-lint` (production profile), the playbook's syntax and the test of the `oracle:up` retry loop ([`deploy/oracle-cloud/`](deploy/oracle-cloud/README.md)) |
+| Oracle Cloud deploy (Terraform, Ansible) | `mise run oracle-cloud:check` without cloud credentials: `terraform fmt` and `validate`, `ansible-lint` (production profile), the playbook's syntax and the test of the `oracle-cloud:up` retry loop ([`deploy/oracle-cloud/`](deploy/oracle-cloud/README.md)) |
 | End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
