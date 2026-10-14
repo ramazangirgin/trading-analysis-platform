@@ -3,7 +3,7 @@
 # Always Free Ampere A1 capacity is often sold out; OCI then fails with "Out of host capacity", and
 # the apply is tried again until it succeeds. Any other failure stops at once.
 #
-#   deploy/oracle/up.sh [extra terraform apply arguments]     e.g. -var ocpus=2
+#   deploy/oracle-cloud/up.sh [extra terraform apply arguments]     e.g. -var ocpus=2
 #
 # ORACLE_RETRY_INTERVAL  seconds between attempts (default 60)
 # ORACLE_RETRY_ATTEMPTS  attempts before giving up (default 60, 0 for no limit)

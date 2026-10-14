@@ -36,8 +36,8 @@ Done by hand, once:
 3. **OCI API key.** Profile menu > User settings > API keys > Add API key; download the private
    key to `~/.oci/` and keep the fingerprint. You also need the tenancy OCID and your user OCID.
 4. **SSH key.** `ssh-keygen -t ed25519 -f ~/.ssh/oracle`.
-5. **`terraform.tfvars`.** `cp deploy/oracle/terraform/terraform.tfvars.example
-   deploy/oracle/terraform/terraform.tfvars` and fill it in; the example says where to find each
+5. **`terraform.tfvars`.** `cp deploy/oracle-cloud/terraform/terraform.tfvars.example
+   deploy/oracle-cloud/terraform/terraform.tfvars` and fill it in; the example says where to find each
    value in the OCI console.
 6. **Tailscale.** In the [admin console](https://login.tailscale.com/admin) turn on **MagicDNS**
    and **HTTPS Certificates** (DNS page), then create an auth key (Settings > Keys): one-off or

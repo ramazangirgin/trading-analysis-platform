@@ -25,7 +25,7 @@ HTTPS on the tailnet.
 
 | Part | Conventions that apply |
 |---|---|
-| deploy (`deploy/oracle/`, new) | No convention document covers Terraform or Ansible yet. This plan sets the rules, and WP5 writes them into `docs/coding-convention/README.md`'s enforcement table: `terraform fmt` formatting, `terraform validate`, `ansible-lint` with the `production` profile, idempotent tasks (no `command`/`shell` without `creates:`, `changed_when:` or `when:`), pinned versions for every tool, provider, collection and image. Secrets are gitignored and come with a committed `*.example` (as `deploy/.env.example`). The existing Compose setup (`deploy/docker-compose.yml`, `deploy/.env.example`) stays as it is: the VM runs it unchanged. |
+| deploy (`deploy/oracle-cloud/`, new) | No convention document covers Terraform or Ansible yet. This plan sets the rules, and WP5 writes them into `docs/coding-convention/README.md`'s enforcement table: `terraform fmt` formatting, `terraform validate`, `ansible-lint` with the `production` profile, idempotent tasks (no `command`/`shell` without `creates:`, `changed_when:` or `when:`), pinned versions for every tool, provider, collection and image. Secrets are gitignored and come with a committed `*.example` (as `deploy/.env.example`). The existing Compose setup (`deploy/docker-compose.yml`, `deploy/.env.example`) stays as it is: the VM runs it unchanged. |
 | mise (`mise.toml`) | Tools pinned in `[tools]` to a minor, like `uv = "0.12"` and `lefthook = "2.1"`, each with a comment. Releases at least 14 days old (`.github/renovate.json5`, `minimumReleaseAge`). Tasks with a `description` naming what they need. |
 | CI (`.github/workflows/ci.yml`) | New jobs go into `ci-passed`'s `needs` and get a line in the header comment. Tools from `mise.toml` through `jdx/mise-action`. Actions pinned like the existing ones. No secrets or cloud credentials. |
 | Renovate (`.github/renovate.json5`) | Every pinned dependency is tracked; the comment lists the managers in use. |
@@ -37,7 +37,7 @@ HTTPS on the tailnet.
 ### Layout
 
 ```text
-deploy/oracle/
+deploy/oracle-cloud/
   README.md                       one-time manual steps, up, deploy, upgrade, backup, teardown
   up.sh                           terraform init + apply with the retry loop (oracle:up)
   test-up.sh                      tests up.sh against a fake terraform (oracle:check, CI)
@@ -54,10 +54,10 @@ deploy/oracle/
     roles/{base,docker,tailscale,app,backup}/{tasks,handlers,templates,defaults}/...
 ```
 
-The generated and secret files are gitignored in a `deploy/oracle/.gitignore`: `terraform.tfvars`,
+The generated and secret files are gitignored in a `deploy/oracle-cloud/.gitignore`: `terraform.tfvars`,
 `*.tfstate`, `*.tfstate.*`, `.terraform/`, `tfplan`, `ansible/inventory.ini`.
 
-### Terraform (`deploy/oracle/terraform/`)
+### Terraform (`deploy/oracle-cloud/terraform/`)
 
 - **Providers**: `oracle/oci` and `hashicorp/local`, each pinned to one version (`= x.y.z`, the
   newest at least 14 days old) in `versions.tf`, with `.terraform.lock.hcl` committed
@@ -90,7 +90,7 @@ The generated and secret files are gitignored in a `deploy/oracle/.gitignore`: `
 - **Outputs** (`outputs.tf`): `public_ip`, `instance_id`, `ssh_command`, `ui_url_hint`
   (`https://<tailscale_hostname>.<your tailnet>.ts.net`).
 
-### `oracle:up` and the retry loop (`deploy/oracle/up.sh`)
+### `oracle:up` and the retry loop (`deploy/oracle-cloud/up.sh`)
 
 Bash, `set -euo pipefail`, like `deploy/smoke-test.sh`. It runs `terraform -chdir=… init -input=false`
 once, then `terraform apply -input=false -auto-approve` in a loop. The output goes to the terminal
@@ -102,7 +102,7 @@ binary, so the test can put a fake one in. Extra arguments go to `apply` (`mise 
 -var ocpus=2`). Applying without asking is on purpose: the loop cannot answer a prompt on every
 attempt. The README says so and points to `terraform plan` (`mise run oracle:plan`) first.
 
-### Ansible (`deploy/oracle/ansible/`)
+### Ansible (`deploy/oracle-cloud/ansible/`)
 
 The full `ansible` package (not `ansible-core`), so the collections it uses (`community.general`
 for `ufw`, `community.docker` for `docker_compose_v2`) come with it, pinned through its version,
@@ -123,7 +123,7 @@ unchanged VM reports `changed=0`. `site.yml` runs the roles in order, as root (`
 (`false`), `backup_keep_days`, `backup_time`. Each is overridden with `-e`
 (`mise run oracle:deploy -- -e app_ref=v4.3.0`). No Ansible Vault: the only secret the controller
 holds is the Tailscale auth key, and an environment variable keeps it out of every file.
-`deploy/oracle/ansible/.env.example` (not read by anything; `cp` and `source` it, or use any secret
+`deploy/oracle-cloud/ansible/.env.example` (not read by anything; `cp` and `source` it, or use any secret
 manager) shows `TAILSCALE_AUTHKEY=tskey-auth-…`.
 
 ### The optional SSH lockdown
@@ -139,16 +139,16 @@ and the condition: the controller must be on the same tailnet.
 - `[tools]`: `terraform` (aqua backend), `ansible` (pypi backend: the full package) and
   `"pipx:ansible-lint"`, each pinned to a minor (or major for `ansible`, whose major pins
   `ansible-core`'s minor), at the newest release at least 14 days old, with a comment that they
-  serve `deploy/oracle/` only. mise-action's cache keeps them in CI.
+  serve `deploy/oracle-cloud/` only. mise-action's cache keeps them in CI.
 - Tasks:
 
   | Task | Runs |
   |---|---|
-  | `oracle:plan` | `terraform -chdir=deploy/oracle/terraform init -input=false` and `plan` |
-  | `oracle:up` | `deploy/oracle/up.sh` |
-  | `oracle:deploy` | `ansible-playbook site.yml` in `deploy/oracle/ansible` (extra arguments passed on) |
-  | `oracle:destroy` | `terraform -chdir=deploy/oracle/terraform destroy` (it asks before destroying) |
-  | `oracle:check` | `terraform fmt -check -recursive deploy/oracle/terraform`, `init -backend=false` and `validate`, `ansible-lint` in `deploy/oracle/ansible`, `ansible-playbook --syntax-check site.yml` (with a throwaway inventory), `deploy/oracle/test-up.sh`. No credentials needed. |
+  | `oracle:plan` | `terraform -chdir=deploy/oracle-cloud/terraform init -input=false` and `plan` |
+  | `oracle:up` | `deploy/oracle-cloud/up.sh` |
+  | `oracle:deploy` | `ansible-playbook site.yml` in `deploy/oracle-cloud/ansible` (extra arguments passed on) |
+  | `oracle:destroy` | `terraform -chdir=deploy/oracle-cloud/terraform destroy` (it asks before destroying) |
+  | `oracle:check` | `terraform fmt -check -recursive deploy/oracle-cloud/terraform`, `init -backend=false` and `validate`, `ansible-lint` in `deploy/oracle-cloud/ansible`, `ansible-playbook --syntax-check site.yml` (with a throwaway inventory), `deploy/oracle-cloud/test-up.sh`. No credentials needed. |
 
 `oracle:check` is not part of `mise run check`: `terraform init` downloads the OCI provider
 (about 100 MB) and `check` stays the quick check. CI runs it in a job of its own.
@@ -156,7 +156,7 @@ and the condition: the controller must be on the same tailnet.
 ### CI (`.github/workflows/ci.yml`)
 
 - New job `oracle`, **Oracle deploy (Terraform, Ansible)**, on `ubuntu-24.04`, 10 minutes:
-  checkout, `jdx/mise-action@v5`, a cache of `deploy/oracle/terraform/.terraform/providers` keyed on
+  checkout, `jdx/mise-action@v5`, a cache of `deploy/oracle-cloud/terraform/.terraform/providers` keyed on
   `.terraform.lock.hcl`, `mise run oracle:check`.
 - New job `runner-image-arm64`, **ta-runner image (arm64)**, on `ubuntu-24.04-arm` (free for this
   public repository): builds `artifact/ta-runner` (`docker/build-push-action@v7`, `load: true`,
@@ -178,8 +178,8 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 - **Status**: done
 - **Depends on**: none
-- **Files**: `deploy/oracle/terraform/*` (as in the layout, lock file included),
-  `deploy/oracle/up.sh`, `deploy/oracle/test-up.sh`, `deploy/oracle/.gitignore`
+- **Files**: `deploy/oracle-cloud/terraform/*` (as in the layout, lock file included),
+  `deploy/oracle-cloud/up.sh`, `deploy/oracle-cloud/test-up.sh`, `deploy/oracle-cloud/.gitignore`
 - **Steps**:
   - [x] Write `versions.tf`, `variables.tf` (with validations), `main.tf` (provider, availability
         domains, image data source), `network.tf`, `instance.tf`, `inventory.tf`,
@@ -199,7 +199,7 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 - **Status**: done
 - **Depends on**: none (the inventory format is fixed above)
-- **Files**: `deploy/oracle/ansible/ansible.cfg`, `site.yml`, `group_vars/all.yml`, `.env.example`,
+- **Files**: `deploy/oracle-cloud/ansible/ansible.cfg`, `site.yml`, `group_vars/all.yml`, `.env.example`,
   `roles/base/**`, `roles/docker/**`, `roles/tailscale/**`, `roles/app/**`, `roles/backup/**`
 - **Steps**:
   - [x] The five roles as designed, with handlers for service restarts, each task named, no bare
@@ -236,10 +236,10 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 - **Status**: done
 - **Depends on**: WP1, WP2, WP3, WP4 (it describes them)
-- **Files**: `deploy/oracle/README.md`, `README.md`, `docs/coding-convention/README.md`,
+- **Files**: `deploy/oracle-cloud/README.md`, `README.md`, `docs/coding-convention/README.md`,
   `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [x] `deploy/oracle/README.md` (see "Docs to update")
+  - [x] `deploy/oracle-cloud/README.md` (see "Docs to update")
   - [x] The root README and the convention README
   - [x] `mise run version:bump minor`
 - **Tests**: the links resolve (relative paths checked by hand); `scripts/version.sh check-sync`.
@@ -260,12 +260,12 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 | What | Where | Change |
 |---|---|---|
-| Text | `deploy/oracle/README.md` (new) | What it builds (a diagram like the Compose one: tailnet → `tailscale serve` → 127.0.0.1:8080 → the Compose stack). One-time manual steps: the Oracle account and the home region choice (it cannot be changed; A1 capacity varies by region), upgrading to Pay As You Go to avoid idle reclamation of Always Free VMs (still free within the limits), the OCI API key (`~/.oci/`, fingerprint, OCIDs into `terraform.tfvars`), an SSH key, Tailscale: MagicDNS and HTTPS certificates on in the admin console, a reusable or one-off pre-approved auth key in `TAILSCALE_AUTHKEY`. Then `oracle:plan`, `oracle:up` (the retry loop and its variables; that it applies without asking), `oracle:deploy`, the first login (the generated admin password), upgrading (`-e app_ref=…`), backups (where, how long, restoring with `psql`), the SSH lockdown and its way back, `oracle:destroy`, troubleshooting (capacity, Tailscale not logged in, the build on the VM). The secrets list: what is gitignored, what stays on the VM. |
-| Text | `README.md`: the artifact table | A row "Oracle Cloud deployment \| `deploy/oracle/` \| Terraform, Ansible, Tailscale". |
-| Text | `README.md`, "Run with Docker Compose" | A pointer to `deploy/oracle/README.md` for a free cloud VM, and in the "Exposing it beyond localhost" note: over Tailscale, as the Oracle setup does. |
+| Text | `deploy/oracle-cloud/README.md` (new) | What it builds (a diagram like the Compose one: tailnet → `tailscale serve` → 127.0.0.1:8080 → the Compose stack). One-time manual steps: the Oracle account and the home region choice (it cannot be changed; A1 capacity varies by region), upgrading to Pay As You Go to avoid idle reclamation of Always Free VMs (still free within the limits), the OCI API key (`~/.oci/`, fingerprint, OCIDs into `terraform.tfvars`), an SSH key, Tailscale: MagicDNS and HTTPS certificates on in the admin console, a reusable or one-off pre-approved auth key in `TAILSCALE_AUTHKEY`. Then `oracle:plan`, `oracle:up` (the retry loop and its variables; that it applies without asking), `oracle:deploy`, the first login (the generated admin password), upgrading (`-e app_ref=…`), backups (where, how long, restoring with `psql`), the SSH lockdown and its way back, `oracle:destroy`, troubleshooting (capacity, Tailscale not logged in, the build on the VM). The secrets list: what is gitignored, what stays on the VM. |
+| Text | `README.md`: the artifact table | A row "Oracle Cloud deployment \| `deploy/oracle-cloud/` \| Terraform, Ansible, Tailscale". |
+| Text | `README.md`, "Run with Docker Compose" | A pointer to `deploy/oracle-cloud/README.md` for a free cloud VM, and in the "Exposing it beyond localhost" note: over Tailscale, as the Oracle setup does. |
 | Text | `README.md`, "Tasks" | The five `oracle:*` tasks. |
 | Text | `README.md`, "Continuous integration" table | Rows for **Oracle deploy (Terraform, Ansible)** and **ta-runner image (arm64)**. |
-| Text | `docs/coding-convention/README.md`, "How the conventions are enforced" | A row for the deploy part: `terraform fmt`/`validate` and `ansible-lint` (production profile), configured in `deploy/oracle/`, run by `mise run oracle:check` and the CI job `oracle`, no Git hook (the provider download is too slow). |
+| Text | `docs/coding-convention/README.md`, "How the conventions are enforced" | A row for the deploy part: `terraform fmt`/`validate` and `ansible-lint` (production profile), configured in `deploy/oracle-cloud/`, run by `mise run oracle:check` and the CI job `oracle`, no Git hook (the provider download is too slow). |
 | Screenshot | none | The platform's pages do not change. |
 
 ## Out of scope

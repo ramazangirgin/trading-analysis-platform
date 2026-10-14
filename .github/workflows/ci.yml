@@ -12,7 +12,7 @@
 #   runner-image  the ta-runner image and its lockdown check, beside the build job
 #   runner-image-arm64  the same image built and checked on arm64, the Oracle Cloud VM's
 #              architecture: a missing arm64 wheel shows up here, before a deploy
-#   oracle     the Oracle Cloud deployment (deploy/oracle/): Terraform formatting and validation,
+#   oracle     the Oracle Cloud deployment (deploy/oracle-cloud/): Terraform formatting and validation,
 #              ansible-lint, the playbook's syntax and the retry loop's test; no cloud credentials
 #   images     the platform image, then the Docker Compose smoke test (deploy/smoke-test.sh);
 #              needs build and runner-image
@@ -225,8 +225,8 @@ jobs:
       - name: Terraform providers cache
         uses: actions/cache@v6
         with:
-          path: deploy/oracle/terraform/.terraform/providers
-          key: terraform-providers-${{ runner.os }}-${{ hashFiles('deploy/oracle/terraform/.terraform.lock.hcl') }}
+          path: deploy/oracle-cloud/terraform/.terraform/providers
+          key: terraform-providers-${{ runner.os }}-${{ hashFiles('deploy/oracle-cloud/terraform/.terraform.lock.hcl') }}
 
       - name: Terraform, Ansible and the retry loop
         run: mise run oracle:check

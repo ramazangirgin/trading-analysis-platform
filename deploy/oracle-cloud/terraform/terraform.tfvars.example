@@ -26,5 +26,5 @@ ssh_private_key_path = "~/.ssh/oracle"
 # instance_name             = "trading-analysis-platform"
 # tailscale_hostname        = "trading-analysis-platform"
 # ssh_ingress_cidr          = "0.0.0.0/0"
-# Set false after the first deploy to close SSH on the public IP (see deploy/oracle/README.md).
+# Set false after the first deploy to close SSH on the public IP (see deploy/oracle-cloud/README.md).
 # ssh_public                = true
