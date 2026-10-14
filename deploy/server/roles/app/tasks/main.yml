@@ -50,7 +50,7 @@
     group: root
     mode: "0700"
 
-# Made once, on the VM, and never copied off it.
+# Made once, on the server, and never copied off it.
 - name: Generate the database password
   ansible.builtin.command: openssl rand -hex -out /etc/trading-analysis-platform/postgres-password 32
   args:
@@ -118,7 +118,7 @@
   when: app_build_needed
   changed_when: true
 
-# The first build takes a while on the VM; async keeps the SSH connection from timing out.
+# The first build takes a while on the server; async keeps the SSH connection from timing out.
 - name: Build the images
   ansible.builtin.command: mise run docker-build
   args:
@@ -151,23 +151,20 @@
   delay: 10
   changed_when: false
 
-- name: Read the tailnet name of the VM
-  ansible.builtin.command: tailscale status --json
-  register: app_tailscale_status
-  changed_when: false
-  failed_when: false
-  check_mode: false
-
-- name: Show where the platform is
+# The UI listens on the server's 127.0.0.1 only; an SSH tunnel brings it to this machine.
+- name: Show how to open the platform
   ansible.builtin.debug:
     msg:
-      - "The platform is at https://{{ app_dns_name | regex_replace('[.]$', '') }}"
+      - "The platform runs. Open it through an SSH tunnel, kept open while you use it:"
+      - "  ssh {{ app_ssh_key }}{{ app_ssh_port }}-N -L {{ platform_port }}:127.0.0.1:{{ platform_port }} {{ app_ssh_target }}"
+      - "then http://127.0.0.1:{{ platform_port }}"
       - "{{ app_password_hint }}"
       - "  sudo -u {{ app_user }} docker compose -f {{ app_dir }}/deploy/docker-compose.yml logs platform"
   vars:
-    app_tailscale_self: "{{ (app_tailscale_status.stdout | default('{}', true) | from_json).Self | default({}) }}"
-    app_dns_name: "{{ app_tailscale_self.DNSName | default(tailscale_hostname ~ '.<your tailnet>.ts.net') }}"
+    app_ssh_key: "{{ '-i ' ~ ansible_ssh_private_key_file ~ ' ' if ansible_ssh_private_key_file is defined else '' }}"
+    app_ssh_port: "{{ '-p ' ~ ansible_port ~ ' ' if ansible_port is defined else '' }}"
+    app_ssh_target: "{{ (ansible_user ~ '@') if ansible_user is defined else '' }}{{ ansible_host | default(inventory_hostname) }}"
     app_password_hint: >-
-      {{ 'First start: the generated admin password is printed once in the log of the platform:'
+      {{ 'First start: the generated admin password is printed once in the log of the platform (on the server):'
       if app_postgres_password_file is changed
-      else 'The admin password generated on the first start is in the first lines of the log of the platform:' }}
+      else 'The admin password generated on the first start is in the first lines of the log of the platform (on the server):' }}

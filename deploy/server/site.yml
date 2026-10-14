@@ -1,0 +1,11 @@
+# Sets up the server in the inventory and deploys the Docker Compose setup (deploy/docker-compose.yml)
+# on it. Run it with `mise run server:deploy`; running it again changes nothing when nothing
+# changed. The defaults are in group_vars/all.yml.
+- name: Deploy the Trading Analysis Platform
+  hosts: server
+  become: true
+  roles:
+    - base
+    - docker
+    - app
+    - backup

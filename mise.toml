@@ -10,9 +10,8 @@ java = "temurin-25"
 uv = "0.12"
 # Git hooks (lefthook.yml): `mise run hooks` installs them.
 lefthook = "2.1"
-# Deployment to Oracle Cloud (deploy/oracle-cloud/): Terraform creates the VM, Ansible sets it up. They
-# serve deploy/oracle-cloud/ only; nothing else in the repository needs them.
-terraform = "1.14"
+# Deployment to a server over SSH (deploy/server/): Ansible sets it up. It serves deploy/server/
+# only; nothing else in the repository needs it.
 # ansible-core's commands (ansible-playbook) and ansible-lint, each in a tool environment that also
 # has the full `ansible` package (13.x), so the collections the roles use (community.general,
 # community.docker, ansible.posix) are there; its major pins ansible-core's minor.
@@ -194,38 +193,19 @@ run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test
 description = "Python tests of the Claude Code skills' helpers (.claude/skills/dependabot-fix/test_*.py)"
 run = "uv run --no-project python -m unittest discover -s .claude/skills/dependabot-fix -p 'test_*.py'"
 
-# Deployment to Oracle Cloud Always Free (deploy/oracle-cloud/README.md): Terraform creates the VM,
-# Ansible deploys the Compose setup on it. The first four need an Oracle account and the files
-# the README lists (terraform.tfvars, TAILSCALE_AUTHKEY); oracle-cloud:check needs nothing.
-[tasks."oracle-cloud:plan"]
-description = "Show what oracle-cloud:up would create in Oracle Cloud (Terraform plan); needs deploy/oracle-cloud/terraform/terraform.tfvars"
-run = [
-  "terraform -chdir=deploy/oracle-cloud/terraform init -input=false",
-  "terraform -chdir=deploy/oracle-cloud/terraform plan -input=false",
-]
-
-[tasks."oracle-cloud:up"]
-description = "Create the Always Free VM in Oracle Cloud (Terraform apply without asking, retried while A1 is out of capacity): mise run oracle-cloud:up [-- terraform apply arguments]; needs terraform.tfvars"
-run = "bash deploy/oracle-cloud/up.sh"
-
-[tasks."oracle-cloud:deploy"]
-description = "Deploy the Compose setup to the VM with Ansible: mise run oracle-cloud:deploy [-- -e app_ref=v1.2.3]; needs oracle-cloud:up first and TAILSCALE_AUTHKEY on the first deploy"
-dir = "deploy/oracle-cloud/ansible"
+# Deployment to a server over SSH (deploy/server/README.md): Ansible sets the server up and deploys
+# the Compose setup on it. server:deploy needs deploy/server/inventory.ini; server:check needs nothing.
+[tasks."server:deploy"]
+description = "Set up the server in deploy/server/inventory.ini over SSH and deploy the Compose setup on it (Ansible): mise run server:deploy [-- -e app_ref=v1.2.3]"
+dir = "deploy/server"
 run = "ansible-playbook site.yml"
 
-[tasks."oracle-cloud:destroy"]
-description = "Remove the VM and its network from Oracle Cloud (Terraform destroy, asks first); needs terraform.tfvars"
-run = "terraform -chdir=deploy/oracle-cloud/terraform destroy"
-
-[tasks."oracle-cloud:check"]
-description = "Check deploy/oracle-cloud/ without credentials: terraform fmt and validate, ansible-lint, the playbook's syntax and the retry loop's test (downloads the OCI provider, about 100 MB)"
+[tasks."server:check"]
+description = "Check deploy/server/ without a server: ansible-lint and the playbook's syntax"
+dir = "deploy/server"
 run = [
-  "terraform fmt -check -recursive deploy/oracle-cloud/terraform",
-  "terraform -chdir=deploy/oracle-cloud/terraform init -backend=false -input=false",
-  "terraform -chdir=deploy/oracle-cloud/terraform validate",
-  "cd deploy/oracle-cloud/ansible && ansible-lint",
-  "cd deploy/oracle-cloud/ansible && ansible-playbook -i localhost, --syntax-check site.yml",
-  "bash deploy/oracle-cloud/test-up.sh",
+  "ansible-lint",
+  "ansible-playbook -i inventory.ini.example --syntax-check site.yml",
 ]
 
 [tasks.clean]

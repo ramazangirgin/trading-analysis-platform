@@ -1,5 +1,5 @@
 # The defaults of the playbook. Override one with -e, e.g.
-#   mise run oracle-cloud:deploy -- -e app_ref=v4.3.0
+#   mise run server:deploy -- -e app_ref=v4.4.0
 
 # The user that owns the checkout and runs the Compose stack and the backup.
 app_user: platform
@@ -10,17 +10,14 @@ app_ref: main
 
 # PLATFORM_DATA of deploy/.env: the database, run logs, reports and the backups.
 platform_data: /srv/trading-analysis-platform
-# The port on 127.0.0.1 where the UI is served; tailscale serve publishes it on the tailnet.
+# The port on the server's 127.0.0.1 where the UI is served; open it through an SSH tunnel.
 platform_port: 8080
 # The first admin, created on the first start; its password is generated and logged once.
 platform_admin_username: admin
 
 # The size of the swap file, made once (a later change does not resize it).
 swap_size: 4G
-# true: SSH is allowed on the tailnet interface only (see the README, "Closing SSH to the internet").
-# The generated inventory sets it from ssh_public in terraform.tfvars; this default applies without it.
-ssh_over_tailnet_only: false
 
-# Daily database dump: the time (24 hours, HH:MM, VM time) and how many days to keep.
+# Daily database dump: the time (24 hours, HH:MM, the server's time) and how many days to keep.
 backup_time: "03:30"
 backup_keep_days: 14

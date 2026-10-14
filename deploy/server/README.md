@@ -1,0 +1,169 @@
+# Deployment to a server over SSH
+
+Ansible sets up an Ubuntu server you can reach over SSH, from any provider (a cloud VM, a home
+server), and starts the [Docker Compose setup](../docker-compose.yml) on it unchanged. All you
+prepare is an SSH key and an inventory file naming the server; nothing is done on the server by hand.
+
+```
+your machine ──ssh -L 8080──▶ server: 127.0.0.1:8080 ──▶ Compose stack
+http://127.0.0.1:8080          (only SSH is open)          (platform, postgres, socket proxy)
+```
+
+The UI listens on the server's 127.0.0.1 only, and the firewall lets nothing but SSH in. You open
+the UI through an SSH tunnel, which also encrypts it (the platform has a login but no HTTPS yet).
+
+| Command | What |
+|---|---|
+| `mise run server:deploy` | Set up the server and deploy the platform; run it again to change nothing, or with `-e` to change something |
+| `mise run server:check` | Check the code without a server (what CI runs) |
+
+## What the server needs
+
+- **Ubuntu 24.04**, amd64 or arm64.
+- **SSH with a key**, as a user with passwordless `sudo`. The default user of the cloud images
+  (`ubuntu`) is one.
+- **4 GB of memory** or more: the images are built on the server, and every analysis runs in a
+  container of its own (2 GB each). The deploy adds a 4 GB swap file.
+- **Outgoing internet**, for the packages, the repository and the LLM providers. No incoming port
+  but SSH.
+
+## Steps
+
+1. **SSH key.** Use a key you have, or make one: `ssh-keygen -t ed25519 -f ~/.ssh/platform-server`.
+   Put its public half (`.pub`) on the server: in the provider's console when you create the
+   server, or with `ssh-copy-id -i ~/.ssh/platform-server.pub ubuntu@<server>`. Check that
+   `ssh -i ~/.ssh/platform-server ubuntu@<server>` logs in without a password.
+2. **Inventory.** `cp deploy/server/inventory.ini.example deploy/server/inventory.ini` and set the
+   server's address, the user and the key ([the example](inventory.ini.example) explains each
+   field; `ansible_port` if SSH does not listen on 22). The file is gitignored.
+3. **Deploy.**
+
+   ```sh
+   mise run server:deploy
+   ```
+
+The tools (`ansible-playbook`, `ansible-lint`) come from [`mise.toml`](../../mise.toml).
+
+## What the deploy does
+
+The playbook ([`site.yml`](site.yml)) runs four roles as root:
+
+| Role | What |
+|---|---|
+| `base` | Package upgrades, automatic security updates (no automatic reboot), a swap file, the `ufw` firewall (deny incoming, the SSH port allowed) |
+| `docker` | Docker from its own apt repository, and the `platform` user in the `docker` group |
+| `app` | mise, the repository in `/opt/trading-analysis-platform` at `app_ref`, `deploy/.env` (the database password is generated on the server and never leaves it), the Docker images built on the server, `docker compose up`, and a wait for `/actuator/health` |
+| `backup` | A daily `pg_dump` (see below) |
+
+Every task is idempotent: a second `server:deploy` on an unchanged server reports `changed=0`. The
+first one takes several minutes, since the images are built on the server.
+
+## Open the platform
+
+At the end the deploy prints the tunnel command for your server. Keep it running while you use the
+UI:
+
+```sh
+ssh -i ~/.ssh/platform-server -N -L 8080:127.0.0.1:8080 ubuntu@<server>
+```
+
+Then open **http://127.0.0.1:8080**. If 8080 is taken on your machine, pick another local port:
+`-L 18080:127.0.0.1:8080` and http://127.0.0.1:18080.
+
+**First login:** the user is `admin` (`platform_admin_username`); its password is generated on the
+first start and logged once. On the server:
+
+```sh
+sudo -u platform docker compose -f /opt/trading-analysis-platform/deploy/docker-compose.yml logs platform
+```
+
+Then add an API key under **Settings** as in the [main README](../../README.md#4-add-an-api-key).
+
+### Settings
+
+Every default lives in [`group_vars/all.yml`](group_vars/all.yml) and is overridden with `-e`:
+
+```sh
+mise run server:deploy -- -e app_ref=v4.4.0 -e platform_admin_username=me
+```
+
+| Variable | Default | |
+|---|---|---|
+| `app_ref` | `main` | Branch, tag or commit to deploy |
+| `app_repo` | this repository | Git URL, e.g. a fork |
+| `app_dir`, `app_user` | `/opt/trading-analysis-platform`, `platform` | Checkout and the user that runs it |
+| `platform_data` | `/srv/trading-analysis-platform` | Database, run logs, reports and backups |
+| `platform_port` | `8080` | The port on the server's 127.0.0.1 |
+| `platform_admin_username` | `admin` | The first admin |
+| `swap_size` | `4G` | Made once; a later change does not resize it |
+| `backup_time`, `backup_keep_days` | `03:30`, `14` | Daily dump time (the server's time) and retention |
+
+Another inventory file (a second server, say) is used with `mise run server:deploy -- -i <file>`.
+
+## Upgrading
+
+Deploy another ref; the images are rebuilt when the checkout changed, and the stack is brought up
+again with its data:
+
+```sh
+mise run server:deploy -- -e app_ref=v4.4.0
+```
+
+Read the main README's upgrade notes for the versions in between first.
+
+## Backups
+
+The `backup` role installs `/usr/local/bin/trading-analysis-platform-backup` and a daily cron entry
+(`backup_time`) for `platform`. It writes `pg_dump` output, gzipped, to
+`/srv/trading-analysis-platform/backups/platform-<date>.sql.gz` (owner-only) and deletes dumps
+older than `backup_keep_days`. The dumps are on the server's disk: copy them off (`scp`) to keep
+them when the server goes away.
+
+To restore, log in over SSH and run everything as `platform`: only that user is in the `docker`
+group and can read `deploy/.env` (the database password). A dump copied off with `scp` goes into
+the backups directory first (`sudo install -o platform -g platform -m 600 platform-<date>.sql.gz
+/srv/trading-analysis-platform/backups/`). The database is never empty once the platform has
+started (the schema is migrated, the admin exists), so stop the platform, recreate the database,
+then load the dump:
+
+```sh
+COMPOSE="sudo -u platform docker compose -f /opt/trading-analysis-platform/deploy/docker-compose.yml"
+$COMPOSE stop platform
+$COMPOSE exec -T postgres psql -U platform -d postgres \
+  -c 'DROP DATABASE platform' -c 'CREATE DATABASE platform OWNER platform'
+sudo -u platform zcat /srv/trading-analysis-platform/backups/platform-<date>.sql.gz \
+  | $COMPOSE exec -T postgres psql -U platform platform
+$COMPOSE start platform
+```
+
+The dump holds the database only; API keys and run logs are in `platform_data/platform/`.
+
+## Moving to another server
+
+Deploy the new server as above, copy the latest dump over and restore it as in
+[Backups](#backups), then enter the API keys again under **Settings**.
+
+## Secrets
+
+| What | Where |
+|---|---|
+| `inventory.ini` | On your machine, gitignored ([`.gitignore`](.gitignore)); [`inventory.ini.example`](inventory.ini.example) shows the shape |
+| The SSH key | On your machine, outside the repository (`~/.ssh/`) |
+| The database password | Generated on the server in `/etc/trading-analysis-platform/postgres-password` (owner-only), written to `deploy/.env` there; never leaves the server |
+| API keys of the platform, the admin password | On the server, under `platform_data` (see the main README) |
+
+## Troubleshooting
+
+- **`Missing sudo password`.** The user needs passwordless `sudo`. Use one that has it (`ubuntu` on
+  the cloud images), or run with `-- --ask-become-pass` to type the password.
+- **SSH is not on port 22.** Set `ansible_port` in the inventory; the firewall allows that port.
+- **The build on the server fails or is slow.** It runs `mise run docker-build` there. On arm64,
+  the [ta-runner image (arm64)](../../README.md#continuous-integration) CI job catches
+  dependencies without arm64 wheels earlier. Retry the deploy; see `docker compose … logs` on the
+  server.
+- **The health wait times out.** The first start takes a minute or more; read the platform's log
+  as above.
+- **The page does not open.** Is the tunnel still running, and does it point at the right local
+  port?
+- **SSH asks about a host key.** The server was recreated on the same address: remove the old line
+  from `~/.ssh/known_hosts`.

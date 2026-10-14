@@ -1,6 +1,0 @@
-terraform.tfvars
-*.tfstate
-*.tfstate.*
-.terraform/
-tfplan
-ansible/inventory.ini
