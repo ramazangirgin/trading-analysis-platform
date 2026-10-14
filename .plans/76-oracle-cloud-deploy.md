@@ -213,11 +213,12 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ### WP3: mise tools and tasks
 
+- **Status**: done
 - **Depends on**: WP1, WP2 (the tasks run their files)
 - **Files**: `mise.toml`
 - **Steps**:
-  - [ ] Pin `terraform`, `ansible` and `pipx:ansible-lint` in `[tools]`
-  - [ ] Add `oracle:plan`, `oracle:up`, `oracle:deploy`, `oracle:destroy`, `oracle:check`
+  - [x] Pin `terraform`, `ansible` and `pipx:ansible-lint` in `[tools]`
+  - [x] Add `oracle:plan`, `oracle:up`, `oracle:deploy`, `oracle:destroy`, `oracle:check`
 - **Tests**: `mise run oracle:check` passes locally; `mise tasks` lists the five tasks.
 
 ### WP4: CI and Renovate
