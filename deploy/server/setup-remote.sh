@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Steps B and C of deploy/server/README.md, from your computer, when you can already log in to the
+# Step 2 of deploy/server/README.md, from your computer, when you can already log in to the
 # server over SSH (as root, or as a user who can sudo; with a password or a key).
 #
 #   deploy/server/setup-remote.sh <you>@<server> [ssh options, e.g. -p 2222 or -i ~/.ssh/other]
@@ -20,7 +20,7 @@ die() {
 }
 
 [ $# -ge 1 ] || die "usage: $0 <you>@<server> [--key-only-ssh] [ssh options]"
-case "$1" in -h | --help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;; esac
+case "$1" in -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;; esac
 target=$1
 shift
 extra=()

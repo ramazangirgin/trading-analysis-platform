@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step A of deploy/server/README.md, on your computer: the SSH key the deploy logs in with.
+# Step 1 of deploy/server/README.md, on your computer: the SSH key the deploy logs in with.
 #
 #   deploy/server/setup-key.sh [--no-passphrase]
 #
@@ -20,7 +20,7 @@ passphrase=ask
 for arg in "$@"; do
   case "$arg" in
     --no-passphrase) passphrase=none ;;
-    -h | --help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) die "unknown argument: $arg (see --help)" ;;
   esac
 done
@@ -48,7 +48,7 @@ The public key (it goes on the server; the private key $KEY never leaves this co
 
 $pub
 
-Next, put it on the server (README, steps B and C), one of:
+Next, put it on the server (README, step 2), one of:
   - you can log in to the server over SSH already:
       $DIR/setup-remote.sh <you>@<server>
   - you can only reach the server's console: copy setup-server.sh there, then

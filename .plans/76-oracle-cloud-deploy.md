@@ -223,7 +223,7 @@ each `ansible` release requires one `ansible-core` minor.
   - [x] `test-setup.sh` and `test-deploy.sh`, the tasks `server:test-setup` and `server:test`
   - [x] The `server` job runs `server:test-setup`; the job `server-e2e` runs `server:test` when the
         deployment changed
-  - [x] The README's steps use the scripts, with the commands by hand below them; a Testing section
+  - [x] The README's steps use the scripts (no by-hand steps); a Testing section
 - **Tests**: `server:test-setup` and `server:test` themselves, in CI.
 
 ### WP6: A container engine in `mise run setup`
@@ -264,7 +264,7 @@ each `ansible` release requires one `ansible-core` minor.
 | Text | `README.md`, "Tasks" | `server:deploy`, `server:check`, `server:test-setup`, `server:test` and `container-engine`; `setup` installs an engine when there is none. |
 | Text | `README.md`, "Prerequisites" | Docker or Podman: `mise run setup` installs one when there is none. |
 | Text | `README.md`, "Continuous integration" table | Rows for **Server deploy (Ansible)** (with the setup scripts' test), **Server deploy end-to-end** (when it runs) and **ta-runner image (arm64)**. |
-| Text | `deploy/server/README.md`, "Steps" and "Testing" | The steps with the scripts first and by hand below them; the three test commands, what CI runs when, and a throwaway VM for `server:test`. |
+| Text | `deploy/server/README.md`, "Steps" and "Testing" | The four steps, each a script or `mise run server:deploy` (no by-hand steps: the scripts' `--help` says what they do); the three test commands, what CI runs when, and a throwaway VM for `server:test`. |
 | Text | `docs/coding-convention/README.md`, "How the conventions are enforced" | A row for the deploy part: `ansible-lint` (production profile), configured in `deploy/server/`, run by `mise run server:check` and the CI job `server`, no Git hook. |
 | Screenshot | none | The platform's pages do not change. |
 

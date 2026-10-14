@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step D3 of deploy/server/README.md (mise run server:deploy): runs the playbook from this machine,
+# Step 4 of deploy/server/README.md (mise run server:deploy): runs the playbook from this machine,
 # which logs in to the server over SSH and does the work there (packages, Docker, the image build,
 # docker compose up). Only Ansible runs here; mise installs it from mise.toml on first use.
 #

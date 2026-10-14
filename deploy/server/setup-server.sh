@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Steps B and C of deploy/server/README.md, on the server: the user the deploy logs in as.
+# Step 2 of deploy/server/README.md, on the server: the user the deploy logs in as.
 #
 #   sudo bash setup-server.sh '<public key line>' [--key-only-ssh]
 #
@@ -11,8 +11,8 @@
 #   - lets it use sudo without a password (/etc/sudoers.d/90-deploy, checked with visudo first);
 #   - adds the public key (the line setup-key.sh printed) to its ~/.ssh/authorized_keys, with the
 #     modes SSH requires.
-# --key-only-ssh also turns off password and root logins for every user (README, "Optional:
-# key-only SSH"). Use it only once the deploy user's key login works, and only if you have a key
+# --key-only-ssh also turns off password and root logins for every user (README, after step 3).
+# Use it only once the deploy user's key login works, and only if you have a key
 # for your own login too.
 set -euo pipefail
 
@@ -31,7 +31,7 @@ key_only=false
 for arg in "$@"; do
   case "$arg" in
     --key-only-ssh) key_only=true ;;
-    -h | --help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     ssh-* | ecdsa-* | sk-*) key=$arg ;;
     *) die "unknown argument: $arg (the public key goes in quotes, as one argument; see --help)" ;;
   esac
@@ -105,6 +105,6 @@ fi
 ports=$(sshd -T 2> /dev/null | awk '$1 == "port" { print $2 }' | paste -sd, -)
 cat <<EOF
 
-Done. SSH listens on port ${ports:-22}. Next, on your computer (README, step D):
+Done. SSH listens on port ${ports:-22}. Next, on your computer (README, step 3):
   deploy/server/setup-inventory.sh <server>$([ "${ports:-22}" = 22 ] || echo " --port ${ports%%,*}")
 EOF

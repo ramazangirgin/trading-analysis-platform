@@ -18,7 +18,7 @@ set -euo pipefail
 mode=${1:-ensure}
 case "$mode" in
   ensure | check) ;;
-  -h | --help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
   *) echo "container-engine: unknown argument: $mode (see --help)" >&2; exit 2 ;;
 esac
 

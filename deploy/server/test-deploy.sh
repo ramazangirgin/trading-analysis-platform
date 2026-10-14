@@ -3,11 +3,11 @@
 # runs on is the server, reached over SSH at 127.0.0.1. It follows deploy/server/README.md with
 # its scripts, then checks what the deploy left:
 #
-#   A   setup-key.sh               a new key, no passphrase
-#   B,C setup-server.sh            the deploy user, passwordless sudo, the key (run with sudo here,
+#   1   setup-key.sh               a new key, no passphrase
+#   2   setup-server.sh            the deploy user, passwordless sudo, the key (run with sudo here,
 #                                  as from the server's console)
-#   D1,D2 setup-inventory.sh       the login test, an inventory for 127.0.0.1
-#   D3  mise run server:deploy     of this checkout's commit, then:
+#   3   setup-inventory.sh         the login test, an inventory for 127.0.0.1
+#   4   mise run server:deploy     of this checkout's commit, then:
 #       - a second deploy changes nothing (changed=0)
 #       - the UI answers through the SSH tunnel the deploy prints
 #       - port 8080 listens on 127.0.0.1 only, ufw lets only SSH in
@@ -46,7 +46,7 @@ recap() { grep -E '^platform +: ' "$1" | tail -n 1 | grep -oE "$2=[0-9]+" | cut 
 
 deploy() {
   local ref=$1 name=$2
-  step "D3: mise run server:deploy ($name, $ref)"
+  step "4: mise run server:deploy ($name, $ref)"
   (cd "$ROOT" && mise run server:deploy -- -i "$work/inventory.ini" \
     -e app_repo="$work/repo.git" -e app_ref="$ref" -e swap_size=1G) 2>&1 | tee "$work/$name.log"
   [ "$(recap "$work/$name.log" failed)" = 0 ] && [ "$(recap "$work/$name.log" unreachable)" = 0 ] \
@@ -70,17 +70,17 @@ for f in /etc/apt/sources.list.d/*.list; do
   fi
 done
 
-step "A: setup-key.sh"
+step "1: setup-key.sh"
 "$DIR/setup-key.sh" --no-passphrase
 
-step "B, C: setup-server.sh (with sudo, as on the server's console)"
+step "2: setup-server.sh (with sudo, as on the server's console)"
 sudo bash "$DIR/setup-server.sh" "$(cat "$DEPLOY_KEY.pub")"
-step "B, C again: nothing changes"
+step "2 again: nothing changes"
 sudo bash "$DIR/setup-server.sh" "$(cat "$DEPLOY_KEY.pub")" | tee "$work/setup-again.log"
 grep -q "already there" "$work/setup-again.log" || fail "the second run added the key again"
 [ "$(sudo grep -c . /home/deploy/.ssh/authorized_keys)" = 1 ] || fail "authorized_keys holds more than one key"
 
-step "D1, D2: setup-inventory.sh"
+step "3: setup-inventory.sh"
 "$DIR/setup-inventory.sh" 127.0.0.1 --inventory "$work/inventory.ini"
 cat "$work/inventory.ini"
 
