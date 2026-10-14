@@ -10,11 +10,10 @@
 #   runner     ta-runner: ruff, import-linter (package structure), deptry and pytest, upstream
 #              contract tests included; also the Python tests of the agent scripts (scripts/agent)
 #   runner-image  the ta-runner image and its lockdown check, beside the build job
-#   runner-image-arm64  the same image built and checked on arm64, the Oracle Cloud VM's
-#              architecture: a missing arm64 wheel shows up here, before a deploy
-#   oracle-cloud  the Oracle Cloud deployment (deploy/oracle-cloud/): Terraform formatting and
-#              validation, ansible-lint, the playbook's syntax and the retry loop's test; no cloud
-#              credentials
+#   runner-image-arm64  the same image built and checked on arm64, for arm64 servers: a missing
+#              arm64 wheel shows up here, before a deploy
+#   server     the server deployment (deploy/server/): ansible-lint and the playbook's syntax; no
+#              server needed
 #   images     the platform image, then the Docker Compose smoke test (deploy/smoke-test.sh);
 #              needs build and runner-image
 #   e2e        end-to-end tests (e2e/, Playwright) in parallel (playwright.config.ts), and the e2e
@@ -211,26 +210,20 @@ jobs:
           docker run "${flags[@]}" "$image" catalog | jq -e '.providers | length > 0'
           docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep -Fx "${{ steps.version.outputs.version }}"
 
-  # Terraform and Ansible are checked without cloud credentials; the provider download is why this
-  # is a job of its own and not part of `mise run check`.
-  oracle-cloud:
-    name: Oracle Cloud deploy (Terraform, Ansible)
+  # The Ansible code is checked without a server. Installing the Ansible tools is why this is a job
+  # of its own and not part of `mise run check`.
+  server:
+    name: Server deploy (Ansible)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
-      - name: Terraform, Ansible and ansible-lint (versions from mise.toml)
+      - name: Ansible and ansible-lint (versions from mise.toml)
         uses: jdx/mise-action@v5
 
-      - name: Terraform providers cache
-        uses: actions/cache@v6
-        with:
-          path: deploy/oracle-cloud/terraform/.terraform/providers
-          key: terraform-providers-${{ runner.os }}-${{ hashFiles('deploy/oracle-cloud/terraform/.terraform.lock.hcl') }}
-
-      - name: Terraform, Ansible and the retry loop
-        run: mise run oracle-cloud:check
+      - name: ansible-lint and the playbook's syntax
+        run: mise run server:check
 
   images:
     name: Platform image and Compose smoke test
@@ -396,7 +389,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [build, runner, runner-image, runner-image-arm64, oracle-cloud, images, version, e2e]
+    needs: [build, runner, runner-image, runner-image-arm64, server, images, version, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

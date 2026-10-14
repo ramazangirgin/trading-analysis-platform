@@ -6,8 +6,7 @@
 
   // Enables the dependency dashboard issue and the managers in use: gradle (the version catalog),
   // gradle-wrapper, npm (pnpm: artifact/frontend/ and e2e/), pep621 with uv (artifact/ta-runner/),
-  // dockerfile, docker-compose, github-actions, mise (mise.toml) and terraform (the providers and
-  // the lock file in deploy/oracle-cloud/terraform/).
+  // dockerfile, docker-compose, github-actions and mise (mise.toml).
   extends: ["config:recommended"],
 
   // One batch a week, not a stream of pull requests; the Monday morning's review picks it up.
@@ -184,7 +183,7 @@
       description: "ansible package",
       matchDepNames: ["ansible"],
       prBodyNotes: [
-        "**The ansible package is in this update:** set `pipx:ansible-core` in `mise.toml` to the ansible-core minor the new ansible release requires (its release notes name it), then run `mise run oracle-cloud:check`.",
+        "**The ansible package is in this update:** set `pipx:ansible-core` in `mise.toml` to the ansible-core minor the new ansible release requires (its release notes name it), then run `mise run server:check`.",
       ],
     },
     {

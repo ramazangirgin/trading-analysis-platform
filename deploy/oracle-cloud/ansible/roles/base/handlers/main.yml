@@ -1,6 +1,0 @@
-- name: Flush the input rules of Oracle's image
-  ansible.builtin.command: "{{ item }} -F INPUT"
-  loop:
-    - iptables
-    - ip6tables
-  changed_when: true

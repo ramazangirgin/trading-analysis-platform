@@ -15,7 +15,7 @@ then read the decision, the reports and the debates, and export them. The roadma
 | Platform (backend + UI, one jar) | `artifact/backend`, `artifact/frontend` | Java 25, Spring Boot 4.1 · Vue 3.5, Vite, Naive UI |
 | Runner (installed into the TradingAgents runtime) | `artifact/ta-runner` | Python 3.12, uv, TradingAgents `v0.5.1` |
 | Docker images and Compose setup | `deploy/`, `artifact/ta-runner/Dockerfile` | Temurin 25 JRE · PostgreSQL 18 · docker-socket-proxy |
-| Oracle Cloud deployment | `deploy/oracle-cloud/` | Terraform, Ansible, Tailscale |
+| Server deployment | `deploy/server/` | Ansible over SSH |
 | End-to-end tests (not shipped) | `e2e/` | Playwright, against the built jar |
 
 Two ways to run it: on your machine with `mise run run` ([Quick start](#quick-start)), or with
@@ -198,8 +198,9 @@ browser ──▶ 127.0.0.1:8080 ──▶ platform ──▶ postgres
 ```
 
 **Needs:** Docker with Compose v2, or Podman with `docker compose` pointed at its socket; and
-[mise](https://mise.jdx.dev/) to build the images. For a free cloud VM instead of your own machine,
-[`deploy/oracle-cloud/`](deploy/oracle-cloud/README.md) creates one in Oracle Cloud and deploys this setup on it.
+[mise](https://mise.jdx.dev/) to build the images. To run it on a server instead of your own machine,
+[`deploy/server/`](deploy/server/README.md) sets up any Ubuntu server you can reach over SSH and
+deploys this setup on it.
 
 ```sh
 cp deploy/.env.example deploy/.env      # set PLATFORM_DATA and POSTGRES_PASSWORD
@@ -243,9 +244,8 @@ platform picks it up again.
   $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
   rootful one).
 - **Exposing it beyond localhost** needs HTTPS first. Login is always on (see [Login](#login)); HTTPS
-  is not built yet. The port is published on 127.0.0.1 only. Over Tailscale (`tailscale serve` gives
-  HTTPS on the tailnet) it is safe to reach from your devices, as the
-  [Oracle setup](deploy/oracle-cloud/README.md) does.
+  is not built yet. The port is published on 127.0.0.1 only. On a server, open it through an SSH
+  tunnel, as the [server setup](deploy/server/README.md) describes.
 - The first start takes about a minute (longer under Podman's VM on macOS).
 
 ### Upgrading to 4.0.0
@@ -433,11 +433,8 @@ mise run format-check  # check the formatting of every Java, frontend and e2e fi
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
-mise run oracle-cloud:plan     # Oracle Cloud: show what oracle-cloud:up would create (see deploy/oracle-cloud/README.md)
-mise run oracle-cloud:up       # create the Always Free VM (Terraform apply, retried while A1 is sold out)
-mise run oracle-cloud:deploy   # set up the VM and deploy the Compose stack on it (Ansible); -- -e app_ref=v4.4.0 for another ref
-mise run oracle-cloud:destroy  # remove the VM and its network (asks first)
-mise run oracle-cloud:check    # Terraform and Ansible checks without credentials (not part of check: it downloads the OCI provider)
+mise run server:deploy # set up the server in deploy/server/inventory.ini over SSH and deploy the Compose stack on it (Ansible)
+mise run server:check  # ansible-lint and the playbook's syntax, without a server (not part of check)
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
@@ -460,7 +457,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
 | ta-runner image (arm64) | The same image built on an arm64 runner (`ubuntu-24.04-arm`) and run under the same lockdown flags, so a dependency without arm64 wheels shows up before anyone deploys to an Ampere VM |
-| Oracle Cloud deploy (Terraform, Ansible) | `mise run oracle-cloud:check` without cloud credentials: `terraform fmt` and `validate`, `ansible-lint` (production profile), the playbook's syntax and the test of the `oracle-cloud:up` retry loop ([`deploy/oracle-cloud/`](deploy/oracle-cloud/README.md)) |
+| Server deploy (Ansible) | `mise run server:check` without a server: `ansible-lint` (production profile) and the playbook's syntax ([`deploy/server/`](deploy/server/README.md)) |
 | End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 

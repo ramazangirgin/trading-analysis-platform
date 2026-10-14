@@ -29,7 +29,7 @@
     group: root
     mode: "0644"
 
-- name: Keep the VM from rebooting by itself
+- name: Keep the server from rebooting by itself
   ansible.builtin.copy:
     dest: /etc/apt/apt.conf.d/52unattended-upgrades-local
     content: |
@@ -38,7 +38,7 @@
     group: root
     mode: "0644"
 
-# The swap file: the build of the images and the analysis containers share 24 GB.
+# The swap file: the build of the images and the analysis containers share the memory.
 - name: Allocate the swap file
   ansible.builtin.command: fallocate -l {{ swap_size }} /swapfile
   args:
@@ -90,57 +90,13 @@
     state: present
     reload: true
 
-# Oracle's Ubuntu images ship netfilter-persistent with their own iptables rules (a REJECT after
-# SSH), which fight ufw. ufw takes over the firewall.
-- name: Remove the saved iptables rules of Oracle's image
-  ansible.builtin.apt:
-    name:
-      - iptables-persistent
-      - netfilter-persistent
-    state: absent
-    purge: true
-  notify: Flush the input rules of Oracle's image
-
-- name: Delete the rules files of iptables-persistent
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /etc/iptables/rules.v4
-    - /etc/iptables/rules.v6
-
-# Before ufw adds its own rules: flushing later would take them away.
-- name: Flush the handlers now
-  ansible.builtin.meta: flush_handlers
-
-- name: Allow SSH from anywhere
+# Only SSH comes in. The port is the inventory's (ansible_port), so a server with SSH on another
+# port keeps it; the rule is added before the firewall is enabled, so this connection survives.
+- name: Allow SSH
   community.general.ufw:
     rule: allow
-    port: "22"
+    port: "{{ ansible_port | default(22) | string }}"
     proto: tcp
-  when: not ssh_over_tailnet_only
-
-- name: Allow SSH on the tailnet interface
-  community.general.ufw:
-    rule: allow
-    port: "22"
-    proto: tcp
-    interface: tailscale0
-    direction: in
-
-- name: Stop allowing SSH from anywhere
-  community.general.ufw:
-    rule: allow
-    port: "22"
-    proto: tcp
-    delete: true
-  when: ssh_over_tailnet_only
-
-- name: Allow everything arriving on the tailnet interface
-  community.general.ufw:
-    rule: allow
-    interface: tailscale0
-    direction: in
 
 - name: Deny incoming traffic by default
   community.general.ufw:
