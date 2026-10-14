@@ -177,7 +177,8 @@
   ansible.builtin.debug:
     msg:
       - "The platform runs. Open it through an SSH tunnel, kept open while you use it:"
-      - "  ssh {{ app_ssh_key }}{{ app_ssh_port }}-N -L {{ platform_port }}:127.0.0.1:{{ platform_port }} {{ app_ssh_target }}"
+      - "  mise run server:tunnel{{ '' if platform_port | int == 8080 else ' -- --remote-port ' ~ platform_port }}"
+      - "  (or: ssh {{ app_ssh_key }}{{ app_ssh_port }}-N -L {{ platform_port }}:127.0.0.1:{{ platform_port }} {{ app_ssh_target }})"
       - "then http://127.0.0.1:{{ platform_port }}"
       - "{{ app_password_hint }}"
       - "  sudo -u {{ app_user }} docker compose -f {{ app_dir }}/deploy/docker-compose.yml logs platform"

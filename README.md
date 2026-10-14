@@ -437,6 +437,7 @@ mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
 mise run server:deploy # set up the server in deploy/server/inventory.ini over SSH and deploy the Compose stack on it (Ansible)
+mise run server:tunnel # open the deployed UI from this machine: an SSH tunnel, then http://127.0.0.1:8080
 mise run server:check  # ansible-lint and the playbook's syntax, without a server (not part of check)
 mise run server:test-setup  # the server setup scripts against a throwaway Ubuntu container (needs Docker or Podman)
 mise run server:test   # the whole server deployment with THIS machine as the server: throwaway machines only (CI)

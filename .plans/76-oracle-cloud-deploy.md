@@ -108,6 +108,7 @@ developer runs and the tests run too:
 | `setup-key.sh [--no-passphrase]` | the developer's computer | Step A: `~/.ssh/platform-deploy` (`DEPLOY_KEY`) unless it exists; prints the public key and the next step |
 | `setup-server.sh '<public key>' [--key-only-ssh]` | the server, as root | Steps B and C: the SSH server when missing, the user `deploy` (`DEPLOY_USER`) without a password, `/etc/sudoers.d/90-deploy` checked with `visudo -c` before it is installed, the key in `authorized_keys` (700/600, owned by the user, added once). `--key-only-ssh` writes `sshd_config.d/01-keys-only.conf` (first in name order, so it wins), checks it with `sshd -t` and reloads. Idempotent. |
 | `setup-remote.sh <you>@<server> [--key-only-ssh] [ssh options]` | the developer's computer | Steps B and C over an existing SSH login: copies `setup-server.sh` over and runs it with `sudo` (one reused connection, so one password prompt) |
+| `tunnel.sh [--port N] [--inventory FILE] [--remote-port N]` (`mise run server:tunnel`) | the developer's computer | Opens the UI: an SSH tunnel to the inventory's server (host, user, key and SSH port read from `inventory.ini`), from a local port (8080) to the server's 127.0.0.1:8080; prints the address; a failure says what to check |
 | `setup-inventory.sh <server> [--port N] [--inventory FILE] [--force]` | the developer's computer | Steps D1 and D2: logs in as `deploy` with the key only and runs `sudo -n true`, then writes `inventory.ini` (kept unless `--force` or unchanged) |
 | `test-setup.sh` (`mise run server:test-setup`) | the developer's computer or CI, with Docker or Podman | The four setup scripts against a throwaway Ubuntu 24.04 container (no systemd: `systemctl` is a no-op, `sshd` started by hand); checks the modes, a second run changing nothing, refused input, a sudo password caught, key-only SSH |
 | `test-deploy.sh` (`mise run server:test`) | a throwaway machine only (refuses unless `CI=true` or `SERVER_TEST_THROWAWAY=1`) | The README end to end with that machine as the server, over SSH to 127.0.0.1: the setup scripts, a deploy of the checked-out commit from a local bare repository, a second deploy with `changed=0`, the UI through the tunnel, 8080 on 127.0.0.1 only and `ufw` allowing SSH only, a backup dump, a deploy of another commit that rebuilds (`built-commit`), key-only SSH |
@@ -133,6 +134,7 @@ group), and starts a stopped Podman machine. It never fails the setup.
   |---|---|
   | `server:deploy` | `ansible-playbook site.yml` in `deploy/server` (extra arguments passed on) |
   | `server:check` | `ansible-lint` and `ansible-playbook -i inventory.ini.example --syntax-check site.yml` in `deploy/server`. No server and no credentials needed. |
+  | `server:tunnel` | `deploy/server/tunnel.sh`: the SSH tunnel to the UI |
   | `server:test-setup` | `deploy/server/test-setup.sh` |
   | `server:test` | `deploy/server/test-deploy.sh` (throwaway machines only) |
   | `container-engine` | `scripts/container-engine.sh`; also the last step of `setup` |
@@ -219,7 +221,7 @@ each `ansible` release requires one `ansible-core` minor.
   `setup-inventory.sh`, `test-setup.sh`, `test-deploy.sh`, `inventory.ini.example`, `mise.toml`,
   `.github/workflows/ci.yml`, `deploy/server/README.md`, `README.md`
 - **Steps**:
-  - [x] The four setup scripts, idempotent, each with `--help`
+  - [x] The four setup scripts, idempotent, each with `--help`; `tunnel.sh` (`server:tunnel`) to open the UI
   - [x] `test-setup.sh` and `test-deploy.sh`, the tasks `server:test-setup` and `server:test`
   - [x] The `server` job runs `server:test-setup`; the job `server-e2e` runs `server:test` when the
         deployment changed

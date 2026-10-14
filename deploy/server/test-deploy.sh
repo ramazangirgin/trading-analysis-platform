@@ -9,7 +9,7 @@
 #   3   setup-inventory.sh         the login test, an inventory for 127.0.0.1
 #   4   mise run server:deploy     of this checkout's commit, then:
 #       - a second deploy changes nothing (changed=0)
-#       - the UI answers through the SSH tunnel the deploy prints
+#       - the UI answers through the SSH tunnel of tunnel.sh (mise run server:tunnel)
 #       - port 8080 listens on 127.0.0.1 only, ufw lets only SSH in
 #       - the backup script writes a dump
 #       - a deploy of another commit rebuilds and comes up again
@@ -38,7 +38,14 @@ sudo -n true 2> /dev/null || fail "needs sudo without a password"
 work=$(mktemp -d)
 chmod 755 "$work"
 tunnel=""
-trap '[ -z "$tunnel" ] || kill "$tunnel" 2> /dev/null || true' EXIT
+# tunnel.sh runs ssh as its child: stop both.
+stop_tunnel() {
+  [ -n "$tunnel" ] || return 0
+  pkill -P "$tunnel" 2> /dev/null || true
+  kill "$tunnel" 2> /dev/null || true
+  tunnel=""
+}
+trap stop_tunnel EXIT
 export DEPLOY_KEY=$work/platform-deploy
 
 # The values in a PLAY RECAP line, e.g. "changed" of "platform : ok=60 changed=0 ...".
@@ -97,19 +104,17 @@ chmod -R a+rX "$work/repo.git"
 sudo git config --system --add safe.directory '*'
 
 deploy server-test first
-grep -q -- "-N -L 8080:127.0.0.1:8080 deploy@127.0.0.1" "$work/first.log" || fail "the deploy did not print the tunnel command"
+grep -q "mise run server:tunnel" "$work/first.log" || fail "the deploy did not print the tunnel command"
 
 deploy server-test second
 [ "$(recap "$work/second.log" changed)" = 0 ] || fail "the second deploy changed something; it must report changed=0"
 
-step "The UI through the SSH tunnel (local port $PORT)"
-ssh -i "$DEPLOY_KEY" -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -N \
-  -L "$PORT:127.0.0.1:8080" deploy@127.0.0.1 &
+step "The UI through the SSH tunnel: tunnel.sh (local port $PORT)"
+"$DIR/tunnel.sh" --inventory "$work/inventory.ini" --port "$PORT" &
 tunnel=$!
 health "http://127.0.0.1:$PORT"
 curl -fsS -o /dev/null "http://127.0.0.1:$PORT/" || fail "the UI does not load through the tunnel"
-kill "$tunnel"
-tunnel=""
+stop_tunnel
 echo "ok"
 
 step "Only SSH is open"

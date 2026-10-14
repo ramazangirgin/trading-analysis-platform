@@ -8,6 +8,8 @@
 #                              deploy user, passwordless sudo, the key; run twice, nothing changes
 #                              the second time
 #   3    setup-inventory.sh    from here: the key login and sudo -n, the inventory
+#   tunnel.sh                  reads the inventory and forwards a local port (to the container's
+#                              sshd here: there is no platform in the container)
 #   key-only SSH               setup-server.sh --key-only-ssh: passwords off, the key still works
 #
 # The container has no systemd, so systemctl is a no-op there and sshd is started by hand. The
@@ -97,6 +99,21 @@ again=$("$DIR/setup-inventory.sh" 127.0.0.1 --port "$PORT" --inventory "$work/in
 grep -q "up to date" <<< "$again" || fail "a second run did not keep the inventory: $again"
 ! "$DIR/setup-inventory.sh" 127.0.0.2 --port "$PORT" --inventory "$work/inventory.ini" > /dev/null 2>&1 \
   || fail "an inventory for another server was overwritten without --force"
+
+step "tunnel.sh: the inventory's server, user, key and port"
+tunnel_port=$((PORT + 1))
+"$DIR/tunnel.sh" --inventory "$work/inventory.ini" --port "$tunnel_port" --remote-port 22 > "$work/tunnel.log" 2>&1 &
+tunnel=$!
+for _ in $(seq 1 20); do
+  ssh-keyscan -p "$tunnel_port" 127.0.0.1 > /dev/null 2>&1 && break
+  sleep 0.5
+done
+ssh-keyscan -p "$tunnel_port" 127.0.0.1 > /dev/null 2>&1 \
+  || fail "nothing answers through the tunnel: $(cat "$work/tunnel.log")"
+pkill -P "$tunnel" 2> /dev/null || true
+kill "$tunnel" 2> /dev/null || true
+grep -q "http://127.0.0.1:$tunnel_port" "$work/tunnel.log" || fail "tunnel.sh did not print the address"
+echo "ok"
 
 step "A sudo password is caught"
 in_server sh -c 'echo "deploy ALL=(ALL) ALL" > /etc/sudoers.d/90-deploy'
