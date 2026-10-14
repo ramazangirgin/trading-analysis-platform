@@ -234,13 +234,14 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ### WP5: Docs and version
 
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3, WP4 (it describes them)
 - **Files**: `deploy/oracle/README.md`, `README.md`, `docs/coding-convention/README.md`,
   `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] `deploy/oracle/README.md` (see "Docs to update")
-  - [ ] The root README and the convention README
-  - [ ] `mise run version:bump minor`
+  - [x] `deploy/oracle/README.md` (see "Docs to update")
+  - [x] The root README and the convention README
+  - [x] `mise run version:bump minor`
 - **Tests**: the links resolve (relative paths checked by hand); `scripts/version.sh check-sync`.
 
 ## Tests
