@@ -29,10 +29,12 @@ Done by hand, once:
    **home region** you pick cannot be changed later, and the capacity of A1 shapes differs between
    regions: if one is always sold out, `oracle-cloud:up` keeps retrying (see below), but a quieter region
    would have saved you the wait.
-2. **Pay As You Go.** Upgrade the account (Billing > Upgrade). Oracle reclaims idle Always Free
-   VMs; an upgraded account is not treated that way, and what stays inside the Always Free limits
-   (4 OCPUs, 24 GB memory, 200 GB of boot volumes) is still free. The variables refuse values
-   above those limits.
+2. **Stay on the Free Tier.** No upgrade is needed: everything here fits the Always Free limits
+   (4 OCPUs, 24 GB memory, 200 GB of block storage in total, boot volumes included), and the
+   variables refuse values above them. The price is that Oracle may reclaim an Always Free VM it
+   finds idle, which this one often is between analyses (see
+   [When Oracle reclaims the VM](#when-oracle-reclaims-the-vm)). Upgrading to Pay As You Go
+   avoids that, but puts a card on file that anything outside the limits is charged to.
 3. **OCI API key.** Profile menu > User settings > API keys > Add API key; download the private
    key to `~/.oci/` and keep the fingerprint. You also need the tenancy OCID and your user OCID.
 4. **SSH key.** `ssh-keygen -t ed25519 -f ~/.ssh/oracle-cloud`.
@@ -174,6 +176,27 @@ mise run oracle-cloud:destroy
 
 It lists what it removes and asks. The VM, its boot volume (the database and the backups with it)
 and the network are gone; the Tailscale device stays in the admin console until you delete it there.
+
+## When Oracle reclaims the VM
+
+On the Free Tier, Oracle may reclaim an Always Free VM that stayed idle for 7 days (low CPU,
+network and memory use); it sends an email first. The platform is mostly idle between analyses, so
+expect this, and keep a recent dump off the VM ([Backups](#backups)) if the data matters.
+
+- **The VM is stopped:** start it in the OCI console (Compute > Instances > Start). The data is
+  on its boot volume, and the stack comes back by itself (`restart: unless-stopped`).
+- **The VM is gone:** create it again. Delete the old device in the Tailscale admin console first,
+  or the new one gets another name (`trading-analysis-platform-1`) and the URL changes. Then:
+
+  ```sh
+  export TAILSCALE_AUTHKEY=tskey-auth-…   # a new node logs in again
+  mise run oracle-cloud:up                # Terraform sees the VM missing and creates a new one
+  mise run oracle-cloud:deploy
+  ```
+
+  The new VM starts empty: a new admin password, no API keys, no analyses. Restore a dump you
+  copied off as in [Backups](#backups) (`scp` it to the VM first), and enter the API keys again.
+  The public IP changes, so SSH asks about the host key once.
 
 ## Secrets
 
