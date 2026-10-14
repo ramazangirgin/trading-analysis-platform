@@ -1,0 +1,173 @@
+- name: Add mise's apt repository
+  ansible.builtin.deb822_repository:
+    name: mise
+    types: deb
+    uris: https://mise.jdx.dev/deb
+    suites: stable
+    components: main
+    architectures: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+    signed_by: https://mise.jdx.dev/gpg-key.pub
+    state: present
+  register: app_mise_repository
+
+- name: Install mise
+  ansible.builtin.apt:
+    name: mise
+    state: present
+    update_cache: "{{ app_mise_repository is changed }}"
+
+- name: Create the application directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+
+- name: Create the data directory
+  ansible.builtin.file:
+    path: "{{ platform_data }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+
+- name: Check out the repository
+  ansible.builtin.git:
+    repo: "{{ app_repo }}"
+    dest: "{{ app_dir }}"
+    version: "{{ app_ref }}"
+    force: true
+  become: true
+  become_user: "{{ app_user }}"
+  register: app_checkout
+
+- name: Create the directory of the generated secrets
+  ansible.builtin.file:
+    path: /etc/trading-analysis-platform
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+# Made once, on the VM, and never copied off it.
+- name: Generate the database password
+  ansible.builtin.command: openssl rand -hex -out /etc/trading-analysis-platform/postgres-password 32
+  args:
+    creates: /etc/trading-analysis-platform/postgres-password
+  register: app_postgres_password_file
+
+- name: Restrict the database password file to root
+  ansible.builtin.file:
+    path: /etc/trading-analysis-platform/postgres-password
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Read the database password
+  ansible.builtin.slurp:
+    src: /etc/trading-analysis-platform/postgres-password
+  register: app_postgres_password_content
+  no_log: true
+
+- name: Write the Compose environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/deploy/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0600"
+  vars:
+    app_postgres_password: "{{ app_postgres_password_content.content | b64decode | trim }}"
+  no_log: true
+
+- name: Look for the images
+  ansible.builtin.command: docker image inspect {{ item }}
+  loop:
+    - "{{ app_platform_image }}"
+    - "{{ app_runner_image }}"
+  become: true
+  become_user: "{{ app_user }}"
+  environment: "{{ app_user_environment }}"
+  register: app_images
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Find out whether the images must be built
+  ansible.builtin.set_fact:
+    app_build_needed: "{{ app_checkout is changed or (app_images.results | selectattr('rc', 'ne', 0) | list | length > 0) }}"
+
+- name: Trust the mise configuration of the checkout
+  ansible.builtin.command: mise trust
+  args:
+    chdir: "{{ app_dir }}"
+  become: true
+  become_user: "{{ app_user }}"
+  environment: "{{ app_user_environment }}"
+  when: app_build_needed
+  changed_when: true
+
+- name: Install the tools of the checkout
+  ansible.builtin.command: mise install
+  args:
+    chdir: "{{ app_dir }}"
+  become: true
+  become_user: "{{ app_user }}"
+  environment: "{{ app_user_environment }}"
+  when: app_build_needed
+  changed_when: true
+
+# The first build takes a while on the VM; async keeps the SSH connection from timing out.
+- name: Build the images
+  ansible.builtin.command: mise run docker-build
+  args:
+    chdir: "{{ app_dir }}"
+  become: true
+  become_user: "{{ app_user }}"
+  environment: "{{ app_user_environment }}"
+  async: 3600
+  poll: 15
+  when: app_build_needed
+  changed_when: true
+
+# init-dirs runs to completion at every `up`; only the other containers count as a change.
+- name: Start the Compose stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}/deploy"
+    files:
+      - docker-compose.yml
+    state: present
+  register: app_compose
+  changed_when: app_compose.actions | rejectattr('id', 'search', 'init-dirs') | list | length > 0
+
+- name: Wait for the platform to be healthy
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ platform_port }}/actuator/health"
+    return_content: true
+  register: app_health
+  until: (app_health.json | default({})).status | default('') == 'UP'
+  retries: 30
+  delay: 10
+  changed_when: false
+
+- name: Read the tailnet name of the VM
+  ansible.builtin.command: tailscale status --json
+  register: app_tailscale_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Show where the platform is
+  ansible.builtin.debug:
+    msg:
+      - "The platform is at https://{{ app_dns_name | regex_replace('[.]$', '') }}"
+      - "{{ app_password_hint }}"
+      - "  sudo -u {{ app_user }} docker compose -f {{ app_dir }}/deploy/docker-compose.yml logs platform"
+  vars:
+    app_tailscale_self: "{{ (app_tailscale_status.stdout | default('{}', true) | from_json).Self | default({}) }}"
+    app_dns_name: "{{ app_tailscale_self.DNSName | default(tailscale_hostname ~ '.<your tailnet>.ts.net') }}"
+    app_password_hint: >-
+      {{ 'First start: the generated admin password is printed once in the log of the platform:'
+      if app_postgres_password_file is changed
+      else 'The admin password generated on the first start is in the first lines of the log of the platform:' }}

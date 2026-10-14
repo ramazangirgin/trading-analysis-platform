@@ -1,0 +1,62 @@
+- name: Install the packages Docker's repository and the Compose module need
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - python3-debian
+      - python3-docker
+    state: present
+
+- name: Add Docker's apt repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: stable
+    architectures: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+    signed_by: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  register: docker_repository
+
+- name: Install Docker
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: "{{ docker_repository is changed }}"
+
+# Container logs would otherwise grow without limit on the 100 GB disk.
+- name: Limit the size of the container logs
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {"max-size": "10m", "max-file": "3"}
+      }
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
+
+- name: Start Docker at boot
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+# Before the stack starts, so that a changed daemon.json does not restart its containers.
+- name: Restart Docker now if its configuration changed
+  ansible.builtin.meta: flush_handlers
+
+- name: Create the deploy user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    shell: /bin/bash
+    groups: docker
+    append: true
+    create_home: true
