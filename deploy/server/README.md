@@ -102,7 +102,8 @@ Another inventory file (a second server, say) is used with `mise run server:depl
 
 ## Upgrading
 
-Deploy another ref; the images are rebuilt when the checkout changed, and the stack is brought up
+Deploy another ref; the images are rebuilt when the checked-out commit differs from the one they were built from
+(so rerunning after a failed build builds again), and the stack is brought up
 again with its data:
 
 ```sh
