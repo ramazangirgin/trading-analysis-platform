@@ -94,9 +94,18 @@
   failed_when: false
   check_mode: false
 
+# The commit of the last successful build: a rerun after a failed build must build again, even though
+# the checkout no longer changes and the images of the previous version still exist.
+- name: Read the commit the images were built from
+  ansible.builtin.command: cat /etc/trading-analysis-platform/built-commit
+  register: app_built_commit
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
 - name: Find out whether the images must be built
   ansible.builtin.set_fact:
-    app_build_needed: "{{ app_checkout is changed or (app_images.results | selectattr('rc', 'ne', 0) | list | length > 0) }}"
+    app_build_needed: "{{ app_built_commit.rc != 0 or app_built_commit.stdout | trim != app_checkout.after or (app_images.results | selectattr('rc', 'ne', 0) | list | length > 0) }}"
 
 - name: Trust the mise configuration of the checkout
   ansible.builtin.command: mise trust
@@ -130,6 +139,15 @@
   poll: 15
   when: app_build_needed
   changed_when: true
+
+- name: Record the commit the images were built from
+  ansible.builtin.copy:
+    content: "{{ app_checkout.after }}\n"
+    dest: /etc/trading-analysis-platform/built-commit
+    owner: root
+    group: root
+    mode: "0644"
+  when: app_build_needed
 
 # init-dirs runs to completion at every `up`; only the other containers count as a change.
 - name: Start the Compose stack
