@@ -1,9 +1,9 @@
-# Copy to inventory.ini (gitignored) and fill in your server. Everything the deploy needs is here:
-# the address, the user to log in as (it needs passwordless sudo) and the private key.
+# Copy to inventory.ini (gitignored) and set ansible_host to your server. The user and the key are
+# the ones the README's steps create; change them if you made others.
 #
-#   ansible_host                  the server's address or DNS name
-#   ansible_user                  ubuntu on the usual cloud images
-#   ansible_ssh_private_key_file  the private key whose public half is on the server
+#   ansible_host                  the server's IP address or DNS name
+#   ansible_user                  the deploy user (README, step C); it needs passwordless sudo
+#   ansible_ssh_private_key_file  the private key of README step A, whose .pub is on the server
 #   ansible_port                  only if SSH does not listen on 22; the firewall allows this port
 [server]
-platform ansible_host=203.0.113.10 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_ed25519
+platform ansible_host=203.0.113.10 ansible_user=deploy ansible_ssh_private_key_file=~/.ssh/platform-deploy

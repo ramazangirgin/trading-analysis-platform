@@ -9,8 +9,8 @@
 
 Given a server with SSH access, `mise run server:deploy` sets it up and deploys the Docker Compose
 setup (`deploy/docker-compose.yml`) on it, with no manual step on the server. The server can come
-from any provider (a cloud VM, a home server). The only things to prepare are an SSH key pair and
-an inventory file naming the server. Re-running `server:deploy` changes nothing when nothing
+from any provider (a cloud VM, a home server). The only things to prepare are an SSH key pair, a
+deploy user created once on the server, and an inventory file naming the server. Re-running `server:deploy` changes nothing when nothing
 changed, and deploys another Git ref when one is given. The database is dumped daily on the
 server. The UI stays on the server's 127.0.0.1 and is opened through an SSH tunnel, so no port but
 SSH is open. CI checks the Ansible code, and builds the ta-runner image on arm64, so arm64 servers
@@ -53,10 +53,15 @@ deploy/server/
 
 ### What the server needs
 
-Ubuntu 24.04 (amd64 or arm64), reachable over SSH with a key, as a user with passwordless `sudo`
-(the default user of the cloud images, `ubuntu`, is one). 4 GB of memory at least (the image build
-and the analysis containers; the swap file helps). The developer puts the public key on the server
-(the provider's console, or `ssh-copy-id`), and nothing else.
+Ubuntu 24.04 (amd64 or arm64), with incoming SSH allowed, and 4 GB of memory at least (the image
+build and the analysis containers; the swap file helps). The deploy logs in as a dedicated user,
+`deploy`, with a key of its own and passwordless `sudo`. The README walks through setting it up
+from scratch, step by step: on the developer's computer, `ssh-keygen` for a new key; on the
+server, reached once over an existing SSH login or the provider's console, `adduser`, a
+`/etc/sudoers.d/90-deploy` file checked with `visudo -c`, and the public key in
+`/home/deploy/.ssh/authorized_keys` with the modes SSH requires; then a login test from the
+developer's computer (`ssh … 'sudo -n true'`) before the first deploy. Turning off password logins
+is an optional step. The playbook itself does not create the deploy user: it needs it to log in.
 
 ### The inventory
 
@@ -188,7 +193,7 @@ each `ansible` release requires one `ansible-core` minor.
 
 | What | Where | Change |
 |---|---|---|
-| Text | `deploy/server/README.md` (new) | What it does (a diagram: your machine → SSH tunnel → 127.0.0.1:8080 on the server → the Compose stack). What the server needs. The SSH key and the inventory. `server:deploy`, the first login (the generated admin password), the tunnel, the settings, upgrading (`-e app_ref=…`), backups (where, how long, restoring as `platform`, into an emptied database), troubleshooting (sudo password, SSH port, the build on the server, the health wait, a changed host key). What is secret and where it is kept. |
+| Text | `deploy/server/README.md` (new) | What it does (a diagram: your machine → SSH tunnel → 127.0.0.1:8080 on the server → the Compose stack). What the server needs. The steps, split into the developer's computer and the server: the key, a way in to the server (an SSH login or a console), the deploy user with passwordless `sudo` and the key, a login test, the inventory. Optional key-only SSH. `server:deploy`, the first login (the generated admin password), the tunnel, the settings, upgrading (`-e app_ref=…`), backups (where, how long, restoring as `platform`, into an emptied database), troubleshooting (sudo password, SSH port, the build on the server, the health wait, a changed host key). What is secret and where it is kept. |
 | Text | `README.md`: the artifact table | A row "Server deployment \| `deploy/server/` \| Ansible over SSH". |
 | Text | `README.md`, "Run with Docker Compose" | A pointer to `deploy/server/README.md` for setting up a server over SSH, and in the "Exposing it beyond localhost" note: the SSH tunnel. |
 | Text | `README.md`, "Tasks" | `server:deploy` and `server:check`. |
