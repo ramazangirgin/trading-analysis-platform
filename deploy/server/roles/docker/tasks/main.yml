@@ -53,7 +53,7 @@
 - name: Restart Docker now if its configuration changed
   ansible.builtin.meta: flush_handlers
 
-- name: Create the deploy user
+- name: Create the user that runs the platform
   ansible.builtin.user:
     name: "{{ app_user }}"
     shell: /bin/bash

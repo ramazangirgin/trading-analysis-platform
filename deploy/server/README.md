@@ -33,10 +33,71 @@ the UI through an SSH tunnel, which also encrypts it (the platform has a login b
 ## Steps
 
 The deploy logs in as a user of its own, `deploy`, with a key made for it and passwordless `sudo`.
-You create that user once, by hand; after that everything goes through `mise run server:deploy`.
-`<server>` below is the server's IP address or DNS name.
+You set that user up once; after that everything goes through `mise run server:deploy`. `<server>`
+below is the server's IP address or DNS name.
 
-### A. On your computer: make the key
+### With the scripts
+
+Four commands, from the repository's folder on your computer. Each script says what it did and
+what comes next, and is safe to run again; `--help` explains its options.
+
+1. **Make the key** (A):
+
+   ```sh
+   deploy/server/setup-key.sh
+   ```
+
+   It makes `~/.ssh/platform-deploy` unless it exists (it asks for an optional passphrase), and
+   prints the public key.
+2. **Set up the deploy user on the server** (B and C), whichever way you can reach it:
+   - **You can log in over SSH** (as `root` or a user who can `sudo`; with a password or a key):
+
+     ```sh
+     deploy/server/setup-remote.sh <you>@<server>      # SSH options after it: -p 2222, -i ~/.ssh/other
+     ```
+
+     It copies [`setup-server.sh`](setup-server.sh) to the server and runs it with `sudo`, asking for
+     your password once if you log in with one.
+   - **You only have a console** (the provider's web or serial console, or a keyboard and screen):
+     get `setup-server.sh` onto the server, then run it with the key line from step 1:
+
+     ```sh
+     curl -fsSLO https://raw.githubusercontent.com/ramazangirgin/trading-analysis-platform/main/deploy/server/setup-server.sh
+     sudo bash setup-server.sh 'ssh-ed25519 AAAA... platform-deploy'
+     ```
+
+     Without internet on the server, paste the file into an editor there instead (`nano
+     setup-server.sh`).
+
+   It installs and starts the SSH server when there is none, creates `deploy` without a password,
+   gives it passwordless `sudo` (checked with `visudo` first) and adds the key. It prints the SSH
+   port.
+3. **Test the login and write the inventory** (D1 and D2):
+
+   ```sh
+   deploy/server/setup-inventory.sh <server>              # --port N if SSH is not on 22
+   ```
+
+   It logs in as `deploy` with the key, checks that `sudo` needs no password, and writes
+   `deploy/server/inventory.ini` (gitignored).
+4. **Deploy** (D3):
+
+   ```sh
+   mise run server:deploy
+   ```
+
+   The first run takes several minutes. At the end it prints the tunnel command to open the UI
+   ([Open the platform](#open-the-platform)).
+
+Optional, once step 3 works: **key-only SSH** (passwords and `root` logins off; see
+[below](#optional-key-only-ssh) first): `deploy/server/setup-remote.sh <you>@<server> --key-only-ssh`,
+or `sudo bash setup-server.sh '<key>' --key-only-ssh` on the console.
+
+### By hand
+
+What the scripts do, step by step, if you want to see or do it yourself.
+
+#### A. On your computer: make the key
 
 1. Make a key pair for the deploy. Press Enter twice for no passphrase, or type one (then step D1
    asks for it, or add the key to your agent with `ssh-add ~/.ssh/platform-deploy`):
@@ -53,7 +114,7 @@ You create that user once, by hand; after that everything goes through `mise run
    cat ~/.ssh/platform-deploy.pub
    ```
 
-### B. On the server: get a shell, whichever way you can
+#### B. On the server: get a shell, whichever way you can
 
 - **You can log in over SSH already** (as `ubuntu`, `root` or any user who can `sudo`, with a
   password or a key): `ssh <you>@<server>`.
@@ -69,7 +130,7 @@ You create that user once, by hand; after that everything goes through `mise run
 If you are logged in as `root`, leave out `sudo` in the commands below (or keep it: `root` may run
 `sudo` too).
 
-### C. On the server: create the deploy user
+#### C. On the server: create the deploy user
 
 1. Create the user, with no password (it logs in with the key only):
 
@@ -102,7 +163,7 @@ If you are logged in as `root`, leave out `sudo` in the commands below (or keep 
 
 You can log out of the server now. Everything else is done from your computer.
 
-### D. On your computer: test the login, then deploy
+#### D. On your computer: test the login, then deploy
 
 1. Log in as `deploy` with the new key, and check that `sudo` needs no password. The first time,
    SSH asks whether to trust the server's host key: answer `yes`.
@@ -133,7 +194,7 @@ You can log out of the server now. Everything else is done from your computer.
 
 The tools (`ansible-playbook`, `ansible-lint`) come from [`mise.toml`](../../mise.toml).
 
-### Optional: key-only SSH
+#### Optional: key-only SSH
 
 Once D1 works, you can turn off password logins and direct `root` logins on the server, so only
 keys get in. Keep the session you run this in open, and test a new login from another terminal
@@ -255,6 +316,33 @@ The dump holds the database only; API keys and run logs are in `platform_data/pl
 
 Deploy the new server as above, copy the latest dump over and restore it as in
 [Backups](#backups), then enter the API keys again under **Settings**.
+
+## Testing
+
+| Command | Where | What |
+|---|---|---|
+| `mise run server:check` | anywhere | `ansible-lint` (production profile) and the playbook's syntax |
+| `mise run server:test-setup` | your computer, with Docker or Podman | The setup scripts against a throwaway Ubuntu 24.04 container ([`test-setup.sh`](test-setup.sh)): key, deploy user, sudoers and modes, a second run that changes nothing, the login test, the inventory, a deploy user that needs a sudo password caught, key-only SSH. About a minute. |
+| `mise run server:test` | a throwaway machine only | The whole deployment with that machine as the server, over SSH to `127.0.0.1` ([`test-deploy.sh`](test-deploy.sh)): the setup scripts, a deploy of the checked-out commit, a second deploy with `changed=0`, the UI through the tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH. 20 to 30 minutes. |
+
+CI runs the first two on every push (job *Server deploy (Ansible)*), and `server:test` on a fresh
+runner when the deployment changed (job *Server deploy end-to-end*: `deploy/`, the ta-runner
+Dockerfile, `mise.toml` or the CI workflow).
+
+`server:test` changes the machine for good (users, sudoers, firewall, Docker, swap) and refuses to
+start unless `CI=true` or `SERVER_TEST_THROWAWAY=1`. To run it yourself, use a VM you throw away
+afterwards, for example with [Multipass](https://canonical.com/multipass):
+
+```sh
+multipass launch 24.04 --name platform-test --cpus 4 --memory 8G --disk 40G
+multipass shell platform-test
+# in the VM:
+curl https://mise.run | sh && export PATH="$HOME/.local/bin:$PATH"
+git clone https://github.com/ramazangirgin/trading-analysis-platform.git && cd trading-analysis-platform
+mise trust && SERVER_TEST_THROWAWAY=1 mise run server:test
+# afterwards, on your computer:
+multipass delete --purge platform-test
+```
 
 ## Secrets
 

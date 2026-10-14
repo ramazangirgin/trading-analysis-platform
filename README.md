@@ -31,7 +31,9 @@ Docker Compose, where each analysis runs in its own container and the data is ke
   Install it with `curl https://mise.run | sh` (or `brew install mise`).
 - An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
   Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
-- Docker or Podman. `mise run run` and `mise run dev` start a local PostgreSQL 18 container
+- Docker or Podman (`mise run setup` installs one when there is none: Docker on Ubuntu or Debian,
+  Podman on macOS with Homebrew; `PLATFORM_INSTALL_ENGINE=0` skips that). `mise run run` and
+  `mise run dev` start a local PostgreSQL 18 container
   (`mise run db`; its data is in the volume `trading-analysis-platform-db`; `mise run db:stop` stops
   it, `mise run db:reset` deletes its data). To use your own PostgreSQL 18 server instead, set
   `PLATFORM_DB_HOST`, `PLATFORM_DB_PORT`, `PLATFORM_DB_NAME`, `PLATFORM_DB_USER` and
@@ -46,7 +48,7 @@ Docker Compose, where each analysis runs in its own container and the data is ke
 git clone https://github.com/ramazangirgin/trading-analysis-platform.git
 cd trading-analysis-platform
 mise trust && mise install   # once: Java 25 and uv for this repository
-mise run setup               # once: ta-runner (downloads TradingAgents) and the UI packages
+mise run setup               # once: ta-runner (downloads TradingAgents), the UI packages, a container engine if missing
 mise run run                 # builds the app if needed and serves it on :8080
 ```
 
@@ -416,7 +418,8 @@ The backend:
 ### Tasks
 
 ```sh
-mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks
+mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks, a container engine if there is none
+mise run container-engine  # check Docker or Podman, and install one when there is none (scripts/container-engine.sh)
 mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173 (starts the local PostgreSQL)
 mise run build         # all tests (ArchUnit included), lint (Checkstyle included), dependency checks (Gradle analysis, Knip), and the single jar
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed (starts the local PostgreSQL)
@@ -435,6 +438,8 @@ mise run api-types     # refresh the frontend's API types from the running backe
 mise run docker-build  # the platform and ta-runner Docker images
 mise run server:deploy # set up the server in deploy/server/inventory.ini over SSH and deploy the Compose stack on it (Ansible)
 mise run server:check  # ansible-lint and the playbook's syntax, without a server (not part of check)
+mise run server:test-setup  # the server setup scripts against a throwaway Ubuntu container (needs Docker or Podman)
+mise run server:test   # the whole server deployment with THIS machine as the server: throwaway machines only (CI)
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
@@ -457,7 +462,8 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
 | ta-runner image (arm64) | The same image built on an arm64 runner (`ubuntu-24.04-arm`) and run under the same lockdown flags, so a dependency without arm64 wheels shows up before anyone deploys to an arm64 server |
-| Server deploy (Ansible) | `mise run server:check` without a server: `ansible-lint` (production profile) and the playbook's syntax ([`deploy/server/`](deploy/server/README.md)) |
+| Server deploy (Ansible) | `mise run server:check` without a server: `ansible-lint` (production profile) and the playbook's syntax; then `mise run server:test-setup`: the setup scripts against a throwaway Ubuntu 24.04 container ([`deploy/server/`](deploy/server/README.md#testing)) |
+| Server deploy end-to-end | Only when `deploy/`, the ta-runner Dockerfile, `mise.toml` or the CI workflow changed (otherwise it passes in seconds): `mise run server:test`, with the runner as the server. The setup scripts, a deploy over SSH to `127.0.0.1`, a second deploy with `changed=0`, the UI through the SSH tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH |
 | End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 

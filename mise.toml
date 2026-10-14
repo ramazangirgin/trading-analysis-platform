@@ -21,12 +21,19 @@ lefthook = "2.1"
 "pipx:ansible-lint" = { version = "26.8", uvx_args = "--with ansible~=13.0" }
 
 [tasks.setup]
-description = "Install ta-runner (TradingAgents + deps), the frontend's packages and the Git hooks"
+description = "Install ta-runner (TradingAgents + deps), the frontend's packages, the Git hooks, and a container engine when there is none (Docker on Ubuntu/Debian, Podman on macOS; PLATFORM_INSTALL_ENGINE=0 skips it)"
 run = [
   "cd artifact/ta-runner && uv sync",
   "./gradlew :frontend:pnpmInstall",
   { task = "hooks" },
+  { task = "container-engine" },
 ]
+
+# Docker or Podman, which run, dev, the backend tests, the images and the end-to-end tests need. An
+# engine that works is left alone (scripts/container-engine.sh).
+[tasks.container-engine]
+description = "Check the container engine (Docker or Podman) and install one when there is none: Docker on Ubuntu/Debian (sudo apt-get), Podman on macOS (Homebrew)"
+run = "scripts/container-engine.sh"
 
 [tasks.hooks]
 description = "Install the Git hooks (lefthook.yml): lint and import checks on staged files before a commit"
@@ -207,6 +214,15 @@ run = [
   "ansible-lint",
   "ansible-playbook -i inventory.ini.example --syntax-check site.yml",
 ]
+
+[tasks."server:test-setup"]
+description = "Test the server setup scripts (deploy/server/setup-*.sh) against a throwaway Ubuntu 24.04 container, in about a minute; needs Docker or Podman"
+run = "deploy/server/test-setup.sh"
+
+# Changes the machine it runs on for good: CI runners and throwaway VMs only (it refuses otherwise).
+[tasks."server:test"]
+description = "End-to-end test of the server deployment on THIS machine as the server (throwaway machines only: CI, or SERVER_TEST_THROWAWAY=1): the README's setup scripts, a deploy over SSH to 127.0.0.1, idempotency, the tunnel, the firewall, a backup"
+run = "deploy/server/test-deploy.sh"
 
 [tasks.clean]
 description = "Remove build outputs"
