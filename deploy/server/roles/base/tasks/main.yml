@@ -1,8 +1,33 @@
+# A full upgrade on the first deploy, and when asked for (-e upgrade_packages=true); not on every
+# deploy, since there is nearly always something new, and a rerun must change nothing. The
+# security updates come daily from unattended-upgrades (below).
+- name: Create the directory of the deploy's own state
+  ansible.builtin.file:
+    path: /var/lib/trading-analysis-platform
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Find out whether a deploy upgraded the packages before
+  ansible.builtin.stat:
+    path: /var/lib/trading-analysis-platform/packages-upgraded
+  register: base_packages_upgraded
+
 - name: Upgrade the installed packages
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
     upgrade: dist
+  when: upgrade_packages | bool or not base_packages_upgraded.stat.exists
+
+- name: Remember that the packages were upgraded
+  ansible.builtin.copy:
+    content: ""
+    dest: /var/lib/trading-analysis-platform/packages-upgraded
+    owner: root
+    group: root
+    mode: "0644"
 
 - name: Install the base packages
   ansible.builtin.apt:
