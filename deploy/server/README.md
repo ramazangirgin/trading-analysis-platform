@@ -214,6 +214,17 @@ Do not do this if you log in as `root` or with a password yourself and have no k
 
 ## What the deploy does
 
+`mise run server:deploy` runs Ansible on your computer: it logs in to the server over SSH as
+`deploy` and runs each task there, with `sudo`. Everything heavy happens on the server (the
+packages, Docker, building the images, running the platform); your computer only needs Ansible,
+which mise installs from [`mise.toml`](../../mise.toml) on first use, and sends the commands.
+
+```
+your computer: mise run server:deploy ──ssh deploy@<server>──▶ server: apt, Docker, git checkout,
+               (ansible-playbook)       ◀── each task's result ──      mise run docker-build,
+                                                                        docker compose up
+```
+
 The playbook ([`site.yml`](site.yml)) runs four roles as root:
 
 | Role | What |
@@ -356,6 +367,11 @@ multipass delete --purge platform-test
 
 ## Troubleshooting
 
+- **mise fails to install `pipx:ansible-core` or `pipx:ansible-lint`** (on your computer, before
+  any SSH). A dependency had no ready-made wheel for your machine and uv tried to compile it. For
+  `cryptography` this is handled (`--no-build-package cryptography` in `mise.toml`: Intel Macs
+  get 48.0.1, the last release with wheels for them). For another package, the error names it;
+  `mise install` again after a `mise.toml` update, or tell us in an issue.
 - **`Permission denied (publickey)`.** The server did not accept the key. On the server, check
   that `/home/deploy/.ssh/authorized_keys` holds the whole `.pub` line from A2 on one line, and the
   modes and owner of C3 (`sudo ls -la /home/deploy/.ssh`). On your computer, check that you pass
