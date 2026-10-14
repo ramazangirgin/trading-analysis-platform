@@ -92,8 +92,9 @@ step "D1, D2: setup-inventory.sh"
 grep -qx "deploy user ok" "$work/inventory.log" || fail "the login test did not pass"
 grep -q "^platform ansible_host=127.0.0.1 ansible_user=deploy ansible_ssh_private_key_file=$DEPLOY_KEY ansible_port=$PORT$" \
   "$work/inventory.ini" || fail "the inventory is not as expected: $(cat "$work/inventory.ini")"
-"$DIR/setup-inventory.sh" 127.0.0.1 --port "$PORT" --inventory "$work/inventory.ini" | grep -q "up to date" \
-  || fail "a second run did not keep the inventory"
+# Output first, then grep: `| grep -q` would end the pipe early and fail it under pipefail.
+again=$("$DIR/setup-inventory.sh" 127.0.0.1 --port "$PORT" --inventory "$work/inventory.ini")
+grep -q "up to date" <<< "$again" || fail "a second run did not keep the inventory: $again"
 ! "$DIR/setup-inventory.sh" 127.0.0.2 --port "$PORT" --inventory "$work/inventory.ini" > /dev/null 2>&1 \
   || fail "an inventory for another server was overwritten without --force"
 
@@ -107,7 +108,7 @@ echo "ok"
 step "Key-only SSH: setup-server.sh --key-only-ssh"
 in_server bash /setup/setup-server.sh "$pub" --key-only-ssh
 start_sshd
-in_server sshd -T | grep -qx 'passwordauthentication no' || fail "password logins are still on"
+in_server sshd -T | grep -x 'passwordauthentication no' > /dev/null || fail "password logins are still on"
 "$DIR/setup-inventory.sh" 127.0.0.1 --port "$PORT" --inventory "$work/inventory.ini" > /dev/null \
   || fail "the key login fails after --key-only-ssh"
 echo "ok"
