@@ -1,0 +1,30 @@
+# Copy to terraform.tfvars (gitignored) and fill in. Where to find each value in the OCI console:
+
+# Profile menu (top right) > Tenancy: <name> > OCID.
+tenancy_ocid = "ocid1.tenancy.oc1..aaaa"
+# Profile menu > User settings > OCID.
+user_ocid = "ocid1.user.oc1..aaaa"
+# Profile menu > User settings > API keys > the key's fingerprint.
+fingerprint = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+# The private key you downloaded when adding the API key.
+private_key_path = "~/.oci/oci_api_key.pem"
+# Profile menu > Tenancy > Home region (identifier, e.g. eu-frankfurt-1).
+region = "eu-frankfurt-1"
+
+# Identity > Compartments > OCID. Leave out to use the tenancy (root compartment).
+# compartment_ocid = "ocid1.compartment.oc1..aaaa"
+
+# An SSH key pair for logging in as ubuntu (ssh-keygen -t ed25519 -f ~/.ssh/oracle).
+ssh_public_key_path  = "~/.ssh/oracle.pub"
+ssh_private_key_path = "~/.ssh/oracle"
+
+# Optional (defaults shown). The Always Free limits are 4 OCPUs, 24 GB memory, 200 GB boot volumes.
+# availability_domain_index = 0
+# ocpus                     = 4
+# memory_in_gbs             = 24
+# boot_volume_size_in_gbs   = 100
+# instance_name             = "trading-analysis-platform"
+# tailscale_hostname        = "trading-analysis-platform"
+# ssh_ingress_cidr          = "0.0.0.0/0"
+# Set false after the first deploy to close SSH on the public IP (see deploy/oracle/README.md).
+# ssh_public                = true

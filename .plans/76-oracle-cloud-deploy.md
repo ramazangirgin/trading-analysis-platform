@@ -176,17 +176,18 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ### WP1: Terraform and `oracle:up`
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `deploy/oracle/terraform/*` (as in the layout, lock file included),
   `deploy/oracle/up.sh`, `deploy/oracle/test-up.sh`, `deploy/oracle/.gitignore`
 - **Steps**:
-  - [ ] Write `versions.tf`, `variables.tf` (with validations), `main.tf` (provider, availability
+  - [x] Write `versions.tf`, `variables.tf` (with validations), `main.tf` (provider, availability
         domains, image data source), `network.tf`, `instance.tf`, `inventory.tf`,
         `inventory.ini.tftpl`, `outputs.tf`, `terraform.tfvars.example` (every variable, with a
         comment on where to find its value in the OCI console)
-  - [ ] Generate and commit `.terraform.lock.hcl` for the three platforms
-  - [ ] Write `up.sh` with the retry loop as designed
-  - [ ] Write `test-up.sh`: a fake `terraform` (a script in a temporary directory, its behaviour set
+  - [x] Generate and commit `.terraform.lock.hcl` for the three platforms
+  - [x] Write `up.sh` with the retry loop as designed
+  - [x] Write `test-up.sh`: a fake `terraform` (a script in a temporary directory, its behaviour set
         through a counter file) and `ORACLE_RETRY_INTERVAL=0`
 - **Tests**: `test-up.sh` proves that: a first-time success runs `apply` once; two
   `Out of host capacity` failures then a success run it three times and exit 0; a different error
