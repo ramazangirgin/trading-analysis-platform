@@ -16,6 +16,7 @@ the UI through an SSH tunnel, which also encrypts it (the platform has a login b
 | Command | What |
 |---|---|
 | `mise run server:deploy` | Set up the server and deploy the platform; run it again to change nothing, or with `-e` to change something |
+| `mise run server:tunnel` | Open the UI from your computer: an SSH tunnel, then http://127.0.0.1:8080 |
 | `mise run server:check` | Check the code without a server (what CI runs) |
 
 ## What the server needs
@@ -84,8 +85,8 @@ what comes next, and is safe to run again; `--help` explains its options.
    mise run server:deploy
    ```
 
-   The first run takes several minutes. At the end it prints the tunnel command to open the UI
-   ([Open the platform](#open-the-platform)).
+   The first run takes several minutes, the image build on the server most of it. Then open the
+   UI with `mise run server:tunnel` ([Open the platform](#open-the-platform)).
 
 Optional, once step 3 works: **key-only SSH**, which turns password and `root` logins off for every
 user: `deploy/server/setup-remote.sh <you>@<server> --key-only-ssh`, or `sudo bash setup-server.sh
@@ -119,21 +120,21 @@ first one takes several minutes, since the images are built on the server.
 
 ## Open the platform
 
-At the end the deploy prints the tunnel command for your server. Keep it running while you use the
-UI:
+The UI listens on the server's 127.0.0.1 only. From your computer:
 
 ```sh
-ssh -i ~/.ssh/platform-deploy -N -L 8080:127.0.0.1:8080 deploy@<server>
+mise run server:tunnel                    # 8080 taken here? mise run server:tunnel -- --port 18080
 ```
 
-Then open **http://127.0.0.1:8080**. If 8080 is taken on your machine, pick another local port:
-`-L 18080:127.0.0.1:8080` and http://127.0.0.1:18080.
+It opens an SSH tunnel to the server in `inventory.ini` and prints the address: open
+**http://127.0.0.1:8080** in your browser. Keep it running while you use the UI; Ctrl+C closes it.
 
 **First login:** the user is `admin` (`platform_admin_username`); its password is generated on the
-first start and logged once. On the server:
+first start and logged once. To read it from your computer:
 
 ```sh
-sudo -u platform docker compose -f /opt/trading-analysis-platform/deploy/docker-compose.yml logs platform
+ssh -i ~/.ssh/platform-deploy deploy@<server> \
+  'sudo -u platform docker compose -f /opt/trading-analysis-platform/deploy/docker-compose.yml logs platform | grep "generated password"'
 ```
 
 The log keeps the password only until the platform container is recreated (an upgrade, a rebuilt
@@ -266,7 +267,8 @@ multipass delete --purge platform-test
   server.
 - **The health wait times out.** The first start takes a minute or more; read the platform's log
   as above.
-- **The page does not open.** Is the tunnel still running, and does it point at the right local
-  port?
+- **The page does not open.** Is `mise run server:tunnel` still running, without an error, and
+  is the address the one it printed? On the server, `curl -s http://127.0.0.1:8080/actuator/health`
+  must answer `{"status":"UP"}`.
 - **SSH asks about a host key.** The server was recreated on the same address: remove the old line
   from `~/.ssh/known_hosts`.
