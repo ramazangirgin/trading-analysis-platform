@@ -223,12 +223,13 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ### WP4: CI and Renovate
 
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: `.github/workflows/ci.yml`, `.github/renovate.json5`
 - **Steps**:
-  - [ ] Jobs `oracle` and `runner-image-arm64` as designed, in `ci-passed`'s `needs` and the header
+  - [x] Jobs `oracle` and `runner-image-arm64` as designed, in `ci-passed`'s `needs` and the header
         comment
-  - [ ] The managers comment in `renovate.json5`
+  - [x] The managers comment in `renovate.json5`
 - **Tests**: CI on the pull request: both new jobs green, **CI passed** green.
 
 ### WP5: Docs and version
