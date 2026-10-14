@@ -98,6 +98,31 @@ secret is needed on the controller beyond the SSH key.
 http://127.0.0.1:8080. The traffic goes through SSH, so it is encrypted. The README says how to
 choose another local port, and that HTTPS and a public URL are out of scope.
 
+### The setup scripts and the tests (`deploy/server/`)
+
+Added with the developer after review round 2, so the README's setup steps are commands the
+developer runs and the tests run too:
+
+| Script | Runs on | Does |
+|---|---|---|
+| `setup-key.sh [--no-passphrase]` | the developer's computer | Step A: `~/.ssh/platform-deploy` (`DEPLOY_KEY`) unless it exists; prints the public key and the next step |
+| `setup-server.sh '<public key>' [--key-only-ssh]` | the server, as root | Steps B and C: the SSH server when missing, the user `deploy` (`DEPLOY_USER`) without a password, `/etc/sudoers.d/90-deploy` checked with `visudo -c` before it is installed, the key in `authorized_keys` (700/600, owned by the user, added once). `--key-only-ssh` writes `sshd_config.d/01-keys-only.conf` (first in name order, so it wins), checks it with `sshd -t` and reloads. Idempotent. |
+| `setup-remote.sh <you>@<server> [--key-only-ssh] [ssh options]` | the developer's computer | Steps B and C over an existing SSH login: copies `setup-server.sh` over and runs it with `sudo` (one reused connection, so one password prompt) |
+| `setup-inventory.sh <server> [--port N] [--inventory FILE] [--force]` | the developer's computer | Steps D1 and D2: logs in as `deploy` with the key only and runs `sudo -n true`, then writes `inventory.ini` (kept unless `--force` or unchanged) |
+| `test-setup.sh` (`mise run server:test-setup`) | the developer's computer or CI, with Docker or Podman | The four setup scripts against a throwaway Ubuntu 24.04 container (no systemd: `systemctl` is a no-op, `sshd` started by hand); checks the modes, a second run changing nothing, refused input, a sudo password caught, key-only SSH |
+| `test-deploy.sh` (`mise run server:test`) | a throwaway machine only (refuses unless `CI=true` or `SERVER_TEST_THROWAWAY=1`) | The README end to end with that machine as the server, over SSH to 127.0.0.1: the setup scripts, a deploy of the checked-out commit from a local bare repository, a second deploy with `changed=0`, the UI through the tunnel, 8080 on 127.0.0.1 only and `ufw` allowing SSH only, a backup dump, a deploy of another commit that rebuilds (`built-commit`), key-only SSH |
+
+### The container engine (`scripts/container-engine.sh`)
+
+Asked for by the developer while adding the tests: `mise run setup` installs a container engine
+when none works, since `run`, `dev`, the backend tests, the images and `server:test-setup` need one.
+An engine that works (`docker info` or `podman info`) is left alone. Otherwise: Docker from the
+distribution's packages on Ubuntu or Debian (`docker.io`, `docker-compose-v2`, `docker-buildx`, the
+user in the `docker` group), Podman and a machine sharing the home folder on macOS with Homebrew,
+and instructions elsewhere. `PLATFORM_INSTALL_ENGINE=0` skips the install; CI never installs. It
+reports what to do when an installed engine does not work (daemon stopped, user not in the
+group), and starts a stopped Podman machine. It never fails the setup.
+
 ### mise (`mise.toml`)
 
 - `[tools]`: `"pipx:ansible-core"` and `"pipx:ansible-lint"`, each pinned to a minor with
@@ -107,7 +132,10 @@ choose another local port, and that HTTPS and a public URL are out of scope.
   | Task | Runs |
   |---|---|
   | `server:deploy` | `ansible-playbook site.yml` in `deploy/server` (extra arguments passed on) |
-  | `server:check` | `ansible-lint` and `ansible-playbook -i <throwaway> --syntax-check site.yml` in `deploy/server`. No server and no credentials needed. |
+  | `server:check` | `ansible-lint` and `ansible-playbook -i inventory.ini.example --syntax-check site.yml` in `deploy/server`. No server and no credentials needed. |
+  | `server:test-setup` | `deploy/server/test-setup.sh` |
+  | `server:test` | `deploy/server/test-deploy.sh` (throwaway machines only) |
+  | `container-engine` | `scripts/container-engine.sh`; also the last step of `setup` |
 
 `server:check` is not part of `mise run check`: installing the Ansible tools takes a while the
 first time, and `check` stays the quick check. CI runs it in a job of its own.
@@ -119,7 +147,12 @@ first time, and `check` stays the quick check. CI runs it in a job of its own.
 - New job `runner-image-arm64`, **ta-runner image (arm64)**, on `ubuntu-24.04-arm`: builds
   `artifact/ta-runner` and runs the same lockdown checks as `runner-image`, so an arm64 server
   can build the image (some TradingAgents dependencies might lack arm64 wheels).
-- Both go into `ci-passed`'s `needs` and into the header comment.
+- The `server` job also runs `mise run server:test-setup` (Docker is on the runner).
+- New job `server-e2e`, **Server deploy end-to-end**, 60 minutes: `mise run server:test` on the
+  runner, only when `deploy/`, `artifact/ta-runner/Dockerfile`, `mise.toml` or `ci.yml` changed
+  against the pull request's base (or `main`, or the push's previous commit; always on demand). A
+  first step works that out with `git diff`; without a change the job passes in seconds.
+- All three go into `ci-passed`'s `needs` and into the header comment.
 
 ### Renovate (`.github/renovate.json5`)
 
@@ -178,16 +211,48 @@ each `ansible` release requires one `ansible-core` minor.
   - [x] `mise run version:bump minor`
 - **Tests**: the links resolve; `scripts/version.sh check-sync`.
 
+### WP5: Setup scripts and their tests
+
+- **Status**: done
+- **Depends on**: WP1, WP2, WP3
+- **Files**: `deploy/server/setup-key.sh`, `setup-server.sh`, `setup-remote.sh`,
+  `setup-inventory.sh`, `test-setup.sh`, `test-deploy.sh`, `inventory.ini.example`, `mise.toml`,
+  `.github/workflows/ci.yml`, `deploy/server/README.md`, `README.md`
+- **Steps**:
+  - [x] The four setup scripts, idempotent, each with `--help`
+  - [x] `test-setup.sh` and `test-deploy.sh`, the tasks `server:test-setup` and `server:test`
+  - [x] The `server` job runs `server:test-setup`; the job `server-e2e` runs `server:test` when the
+        deployment changed
+  - [x] The README's steps use the scripts, with the commands by hand below them; a Testing section
+- **Tests**: `server:test-setup` and `server:test` themselves, in CI.
+
+### WP6: A container engine in `mise run setup`
+
+- **Status**: done
+- **Depends on**: none
+- **Files**: `scripts/container-engine.sh`, `mise.toml`, `README.md`
+- **Steps**:
+  - [x] `scripts/container-engine.sh` (check, install when none) and the task `container-engine`,
+        run last by `setup`
+  - [x] The README's prerequisites and task list
+- **Tests**: `scripts/container-engine.sh check` reports the engine on the CI runners (the
+  `server` job runs `server:test-setup`, which starts with it). The install paths need a machine
+  without an engine and are the developer's manual check.
+
 ## Tests
 
 - `mise run server:check`: `ansible-lint` and the playbook's syntax. CI runs it in the `server`
   job.
+- `mise run server:test-setup`: the setup scripts against a throwaway container, in the `server`
+  job.
+- `mise run server:test`: the deployment end to end on the runner, in the `server-e2e` job when the
+  deployment changed. It checks the acceptance steps CI can: `changed=0` on a second deploy, another
+  ref, the tunnel, 8080 on 127.0.0.1 only.
 - `runner-image-arm64`: the ta-runner image builds and passes its lockdown checks on arm64.
 - `mise run check` and the existing CI jobs stay green (nothing in the app changes).
-- The acceptance steps that need a real server (a first `server:deploy` reaching the UI through
-  the tunnel, a second one with `changed=0`, another `app_ref`, port 8080 closed from outside, e.g.
-  `nc -vz <host> 8080` failing) cannot run in CI. The pull request lists them as the developer's
-  manual check.
+- What only a real server shows (a provider's console, a fresh image without the runner's tools,
+  port 8080 closed from outside, e.g. `nc -vz <host> 8080` failing) stays the developer's manual
+  check, listed in the pull request.
 
 ## Docs to update
 
@@ -196,8 +261,10 @@ each `ansible` release requires one `ansible-core` minor.
 | Text | `deploy/server/README.md` (new) | What it does (a diagram: your machine → SSH tunnel → 127.0.0.1:8080 on the server → the Compose stack). What the server needs. The steps, split into the developer's computer and the server: the key, a way in to the server (an SSH login or a console), the deploy user with passwordless `sudo` and the key, a login test, the inventory. Optional key-only SSH. `server:deploy`, the first login (the generated admin password), the tunnel, the settings, upgrading (`-e app_ref=…`), backups (where, how long, restoring as `platform`, into an emptied database), troubleshooting (sudo password, SSH port, the build on the server, the health wait, a changed host key). What is secret and where it is kept. |
 | Text | `README.md`: the artifact table | A row "Server deployment \| `deploy/server/` \| Ansible over SSH". |
 | Text | `README.md`, "Run with Docker Compose" | A pointer to `deploy/server/README.md` for setting up a server over SSH, and in the "Exposing it beyond localhost" note: the SSH tunnel. |
-| Text | `README.md`, "Tasks" | `server:deploy` and `server:check`. |
-| Text | `README.md`, "Continuous integration" table | Rows for **Server deploy (Ansible)** and **ta-runner image (arm64)**. |
+| Text | `README.md`, "Tasks" | `server:deploy`, `server:check`, `server:test-setup`, `server:test` and `container-engine`; `setup` installs an engine when there is none. |
+| Text | `README.md`, "Prerequisites" | Docker or Podman: `mise run setup` installs one when there is none. |
+| Text | `README.md`, "Continuous integration" table | Rows for **Server deploy (Ansible)** (with the setup scripts' test), **Server deploy end-to-end** (when it runs) and **ta-runner image (arm64)**. |
+| Text | `deploy/server/README.md`, "Steps" and "Testing" | The steps with the scripts first and by hand below them; the three test commands, what CI runs when, and a throwaway VM for `server:test`. |
 | Text | `docs/coding-convention/README.md`, "How the conventions are enforced" | A row for the deploy part: `ansible-lint` (production profile), configured in `deploy/server/`, run by `mise run server:check` and the CI job `server`, no Git hook. |
 | Screenshot | none | The platform's pages do not change. |
 
