@@ -194,28 +194,28 @@ run = "uv run --no-project python -m unittest discover -s .claude/skills/dependa
 
 # Deployment to Oracle Cloud Always Free (deploy/oracle-cloud/README.md): Terraform creates the VM,
 # Ansible deploys the Compose setup on it. The first four need an Oracle account and the files
-# the README lists (terraform.tfvars, TAILSCALE_AUTHKEY); oracle:check needs nothing.
-[tasks."oracle:plan"]
-description = "Show what oracle:up would create in Oracle Cloud (Terraform plan); needs deploy/oracle-cloud/terraform/terraform.tfvars"
+# the README lists (terraform.tfvars, TAILSCALE_AUTHKEY); oracle-cloud:check needs nothing.
+[tasks."oracle-cloud:plan"]
+description = "Show what oracle-cloud:up would create in Oracle Cloud (Terraform plan); needs deploy/oracle-cloud/terraform/terraform.tfvars"
 run = [
   "terraform -chdir=deploy/oracle-cloud/terraform init -input=false",
   "terraform -chdir=deploy/oracle-cloud/terraform plan -input=false",
 ]
 
-[tasks."oracle:up"]
-description = "Create the Always Free VM in Oracle Cloud (Terraform apply without asking, retried while A1 is out of capacity): mise run oracle:up [-- terraform apply arguments]; needs terraform.tfvars"
+[tasks."oracle-cloud:up"]
+description = "Create the Always Free VM in Oracle Cloud (Terraform apply without asking, retried while A1 is out of capacity): mise run oracle-cloud:up [-- terraform apply arguments]; needs terraform.tfvars"
 run = "bash deploy/oracle-cloud/up.sh"
 
-[tasks."oracle:deploy"]
-description = "Deploy the Compose setup to the VM with Ansible: mise run oracle:deploy [-- -e app_ref=v1.2.3]; needs oracle:up first and TAILSCALE_AUTHKEY on the first deploy"
+[tasks."oracle-cloud:deploy"]
+description = "Deploy the Compose setup to the VM with Ansible: mise run oracle-cloud:deploy [-- -e app_ref=v1.2.3]; needs oracle-cloud:up first and TAILSCALE_AUTHKEY on the first deploy"
 dir = "deploy/oracle-cloud/ansible"
 run = "ansible-playbook site.yml"
 
-[tasks."oracle:destroy"]
+[tasks."oracle-cloud:destroy"]
 description = "Remove the VM and its network from Oracle Cloud (Terraform destroy, asks first); needs terraform.tfvars"
 run = "terraform -chdir=deploy/oracle-cloud/terraform destroy"
 
-[tasks."oracle:check"]
+[tasks."oracle-cloud:check"]
 description = "Check deploy/oracle-cloud/ without credentials: terraform fmt and validate, ansible-lint, the playbook's syntax and the retry loop's test (downloads the OCI provider, about 100 MB)"
 run = [
   "terraform fmt -check -recursive deploy/oracle-cloud/terraform",

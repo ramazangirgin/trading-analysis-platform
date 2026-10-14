@@ -8,12 +8,12 @@
 ## Goal
 
 With an Oracle Cloud account, an OCI API key and a Tailscale auth key in place,
-`mise run oracle:up && mise run oracle:deploy` creates an Always Free Ampere A1 VM and deploys the
+`mise run oracle-cloud:up && mise run oracle-cloud:deploy` creates an Always Free Ampere A1 VM and deploys the
 Docker Compose setup (`deploy/docker-compose.yml`) on it, with no manual SSH. The UI is served at
 `https://<hostname>.<tailnet>.ts.net` through `tailscale serve`, and no port but SSH is open on the
-public IP (none after the optional SSH lockdown). Re-running `oracle:deploy` changes nothing when
+public IP (none after the optional SSH lockdown). Re-running `oracle-cloud:deploy` changes nothing when
 nothing changed, and deploys another Git ref when one is given. The database is dumped daily on the
-VM. `mise run oracle:destroy` removes it all. CI checks the Terraform and Ansible code without
+VM. `mise run oracle-cloud:destroy` removes it all. CI checks the Terraform and Ansible code without
 cloud credentials, and builds the ta-runner image on arm64, so an arm64 break shows up before a
 deploy.
 
@@ -39,8 +39,8 @@ HTTPS on the tailnet.
 ```text
 deploy/oracle-cloud/
   README.md                       one-time manual steps, up, deploy, upgrade, backup, teardown
-  up.sh                           terraform init + apply with the retry loop (oracle:up)
-  test-up.sh                      tests up.sh against a fake terraform (oracle:check, CI)
+  up.sh                           terraform init + apply with the retry loop (oracle-cloud:up)
+  test-up.sh                      tests up.sh against a fake terraform (oracle-cloud:check, CI)
   terraform/
     versions.tf                   required_version, providers oracle/oci and hashicorp/local, pinned
     .terraform.lock.hcl           committed, hashes for linux_amd64, linux_arm64, darwin_arm64
@@ -81,26 +81,26 @@ The generated and secret files are gitignored in a `deploy/oracle-cloud/.gitigno
   availability domain `availability_domain_index` of `oci_identity_availability_domains`. The image
   is the newest "Canonical Ubuntu" 24.04 image for that shape (`oci_core_images`, sorted by
   `TIMECREATED`), with `lifecycle { ignore_changes = [source_details[0].source_id] }` so a newer
-  image does not replace the VM on the next `oracle:up`. A public IP on the VNIC; the SSH public key
+  image does not replace the VM on the next `oracle-cloud:up`. A public IP on the VNIC; the SSH public key
   in `metadata.ssh_authorized_keys`.
 - **Inventory** (`inventory.tf`): a `local_file` writes `../ansible/inventory.ini` (mode 0600) from
-  `inventory.ini.tftpl`: one host `oracle`, `ansible_user=ubuntu`,
+  `inventory.ini.tftpl`: one host `oracle-cloud`, `ansible_user=ubuntu`,
   `ansible_ssh_private_key_file`, `tailscale_hostname`, and `ansible_host` = the public IP while
   `ssh_public` is true, else `tailscale_hostname` (reached over the tailnet with MagicDNS).
 - **Outputs** (`outputs.tf`): `public_ip`, `instance_id`, `ssh_command`, `ui_url_hint`
   (`https://<tailscale_hostname>.<your tailnet>.ts.net`).
 
-### `oracle:up` and the retry loop (`deploy/oracle-cloud/up.sh`)
+### `oracle-cloud:up` and the retry loop (`deploy/oracle-cloud/up.sh`)
 
 Bash, `set -euo pipefail`, like `deploy/smoke-test.sh`. It runs `terraform -chdir=… init -input=false`
 once, then `terraform apply -input=false -auto-approve` in a loop. The output goes to the terminal
 and to a temporary file. A failure whose output contains `Out of host capacity` (OCI's message for
-A1 being sold out) is retried after `ORACLE_RETRY_INTERVAL` seconds (default 60), up to
-`ORACLE_RETRY_ATTEMPTS` attempts (default 60, `0` for no limit), printing `attempt N of M`. Any
+A1 being sold out) is retried after `ORACLE_CLOUD_RETRY_INTERVAL` seconds (default 60), up to
+`ORACLE_CLOUD_RETRY_ATTEMPTS` attempts (default 60, `0` for no limit), printing `attempt N of M`. Any
 other failure stops at once with terraform's exit code. `TERRAFORM` (default `terraform`) names the
-binary, so the test can put a fake one in. Extra arguments go to `apply` (`mise run oracle:up --
+binary, so the test can put a fake one in. Extra arguments go to `apply` (`mise run oracle-cloud:up --
 -var ocpus=2`). Applying without asking is on purpose: the loop cannot answer a prompt on every
-attempt. The README says so and points to `terraform plan` (`mise run oracle:plan`) first.
+attempt. The README says so and points to `terraform plan` (`mise run oracle-cloud:plan`) first.
 
 ### Ansible (`deploy/oracle-cloud/ansible/`)
 
@@ -121,7 +121,7 @@ unchanged VM reports `changed=0`. `site.yml` runs the roles in order, as root (`
 (`https://github.com/ramazangirgin/trading-analysis-platform.git`), `app_ref`, `platform_data`,
 `platform_port` (8080), `platform_admin_username` (`admin`), `swap_size`, `ssh_over_tailnet_only`
 (`false`), `backup_keep_days`, `backup_time`. Each is overridden with `-e`
-(`mise run oracle:deploy -- -e app_ref=v4.3.0`). No Ansible Vault: the only secret the controller
+(`mise run oracle-cloud:deploy -- -e app_ref=v4.3.0`). No Ansible Vault: the only secret the controller
 holds is the Tailscale auth key, and an environment variable keeps it out of every file.
 `deploy/oracle-cloud/ansible/.env.example` (not read by anything; `cp` and `source` it, or use any secret
 manager) shows `TAILSCALE_AUTHKEY=tskey-auth-…`.
@@ -129,9 +129,9 @@ manager) shows `TAILSCALE_AUTHKEY=tskey-auth-…`.
 ### The optional SSH lockdown
 
 After a first deploy, with Tailscale up: set `ssh_public = false` in `terraform.tfvars`, run
-`mise run oracle:up` (the security list drops port 22, the inventory now points at the tailnet
-hostname), then `mise run oracle:deploy -- -e ssh_over_tailnet_only=true` (ufw allows SSH on
-`tailscale0` only). The README describes it, with the way back (`ssh_public = true`, `oracle:up`)
+`mise run oracle-cloud:up` (the security list drops port 22, the inventory now points at the tailnet
+hostname), then `mise run oracle-cloud:deploy -- -e ssh_over_tailnet_only=true` (ufw allows SSH on
+`tailscale0` only). The README describes it, with the way back (`ssh_public = true`, `oracle-cloud:up`)
 and the condition: the controller must be on the same tailnet.
 
 ### mise (`mise.toml`)
@@ -144,20 +144,20 @@ and the condition: the controller must be on the same tailnet.
 
   | Task | Runs |
   |---|---|
-  | `oracle:plan` | `terraform -chdir=deploy/oracle-cloud/terraform init -input=false` and `plan` |
-  | `oracle:up` | `deploy/oracle-cloud/up.sh` |
-  | `oracle:deploy` | `ansible-playbook site.yml` in `deploy/oracle-cloud/ansible` (extra arguments passed on) |
-  | `oracle:destroy` | `terraform -chdir=deploy/oracle-cloud/terraform destroy` (it asks before destroying) |
-  | `oracle:check` | `terraform fmt -check -recursive deploy/oracle-cloud/terraform`, `init -backend=false` and `validate`, `ansible-lint` in `deploy/oracle-cloud/ansible`, `ansible-playbook --syntax-check site.yml` (with a throwaway inventory), `deploy/oracle-cloud/test-up.sh`. No credentials needed. |
+  | `oracle-cloud:plan` | `terraform -chdir=deploy/oracle-cloud/terraform init -input=false` and `plan` |
+  | `oracle-cloud:up` | `deploy/oracle-cloud/up.sh` |
+  | `oracle-cloud:deploy` | `ansible-playbook site.yml` in `deploy/oracle-cloud/ansible` (extra arguments passed on) |
+  | `oracle-cloud:destroy` | `terraform -chdir=deploy/oracle-cloud/terraform destroy` (it asks before destroying) |
+  | `oracle-cloud:check` | `terraform fmt -check -recursive deploy/oracle-cloud/terraform`, `init -backend=false` and `validate`, `ansible-lint` in `deploy/oracle-cloud/ansible`, `ansible-playbook --syntax-check site.yml` (with a throwaway inventory), `deploy/oracle-cloud/test-up.sh`. No credentials needed. |
 
-`oracle:check` is not part of `mise run check`: `terraform init` downloads the OCI provider
+`oracle-cloud:check` is not part of `mise run check`: `terraform init` downloads the OCI provider
 (about 100 MB) and `check` stays the quick check. CI runs it in a job of its own.
 
 ### CI (`.github/workflows/ci.yml`)
 
-- New job `oracle`, **Oracle deploy (Terraform, Ansible)**, on `ubuntu-24.04`, 10 minutes:
+- New job `oracle-cloud`, **Oracle Cloud deploy (Terraform, Ansible)**, on `ubuntu-24.04`, 10 minutes:
   checkout, `jdx/mise-action@v5`, a cache of `deploy/oracle-cloud/terraform/.terraform/providers` keyed on
-  `.terraform.lock.hcl`, `mise run oracle:check`.
+  `.terraform.lock.hcl`, `mise run oracle-cloud:check`.
 - New job `runner-image-arm64`, **ta-runner image (arm64)**, on `ubuntu-24.04-arm` (free for this
   public repository): builds `artifact/ta-runner` (`docker/build-push-action@v7`, `load: true`,
   `cache-from/to: type=gha,scope=ta-runner-arm64`) and runs the same lockdown checks as
@@ -174,7 +174,7 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ## Work packages
 
-### WP1: Terraform and `oracle:up`
+### WP1: Terraform and `oracle-cloud:up`
 
 - **Status**: done
 - **Depends on**: none
@@ -188,10 +188,10 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
   - [x] Generate and commit `.terraform.lock.hcl` for the three platforms
   - [x] Write `up.sh` with the retry loop as designed
   - [x] Write `test-up.sh`: a fake `terraform` (a script in a temporary directory, its behaviour set
-        through a counter file) and `ORACLE_RETRY_INTERVAL=0`
+        through a counter file) and `ORACLE_CLOUD_RETRY_INTERVAL=0`
 - **Tests**: `test-up.sh` proves that: a first-time success runs `apply` once; two
   `Out of host capacity` failures then a success run it three times and exit 0; a different error
-  exits at once with its code; `ORACLE_RETRY_ATTEMPTS=2` gives up after two capacity failures with
+  exits at once with its code; `ORACLE_CLOUD_RETRY_ATTEMPTS=2` gives up after two capacity failures with
   a non-zero exit; extra arguments reach `apply`. `terraform fmt -check` and `terraform validate`
   pass.
 
@@ -218,8 +218,8 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 - **Files**: `mise.toml`
 - **Steps**:
   - [x] Pin `terraform`, `ansible` and `pipx:ansible-lint` in `[tools]`
-  - [x] Add `oracle:plan`, `oracle:up`, `oracle:deploy`, `oracle:destroy`, `oracle:check`
-- **Tests**: `mise run oracle:check` passes locally; `mise tasks` lists the five tasks.
+  - [x] Add `oracle-cloud:plan`, `oracle-cloud:up`, `oracle-cloud:deploy`, `oracle-cloud:destroy`, `oracle-cloud:check`
+- **Tests**: `mise run oracle-cloud:check` passes locally; `mise tasks` lists the five tasks.
 
 ### WP4: CI and Renovate
 
@@ -227,7 +227,7 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 - **Depends on**: WP3
 - **Files**: `.github/workflows/ci.yml`, `.github/renovate.json5`
 - **Steps**:
-  - [x] Jobs `oracle` and `runner-image-arm64` as designed, in `ci-passed`'s `needs` and the header
+  - [x] Jobs `oracle-cloud` and `runner-image-arm64` as designed, in `ci-passed`'s `needs` and the header
         comment
   - [x] The managers comment in `renovate.json5`
 - **Tests**: CI on the pull request: both new jobs green, **CI passed** green.
@@ -246,13 +246,13 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ## Tests
 
-- `mise run oracle:check`: Terraform formatting and validation, `ansible-lint`, the playbook's
-  syntax, and `test-up.sh` for the retry loop. CI runs it in the `oracle` job.
+- `mise run oracle-cloud:check`: Terraform formatting and validation, `ansible-lint`, the playbook's
+  syntax, and `test-up.sh` for the retry loop. CI runs it in the `oracle-cloud` job.
 - `runner-image-arm64`: the ta-runner image builds and passes its lockdown checks on arm64, the
   VM's architecture.
 - `mise run check` and the existing CI jobs stay green (nothing in the app changes).
-- The issue's acceptance criteria that need a real Oracle account (a fresh `oracle:up` +
-  `oracle:deploy` reaching `https://<vm>.<tailnet>.ts.net`, a second `oracle:deploy` with
+- The issue's acceptance criteria that need a real Oracle account (a fresh `oracle-cloud:up` +
+  `oracle-cloud:deploy` reaching `https://<vm>.<tailnet>.ts.net`, a second `oracle-cloud:deploy` with
   `changed=0`, another `app_ref`, port 8080 closed from the internet, e.g. `nc -vz <public ip>
   8080` failing) cannot run in CI. The pull request lists them as the developer's manual check.
 
@@ -260,12 +260,12 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 | What | Where | Change |
 |---|---|---|
-| Text | `deploy/oracle-cloud/README.md` (new) | What it builds (a diagram like the Compose one: tailnet → `tailscale serve` → 127.0.0.1:8080 → the Compose stack). One-time manual steps: the Oracle account and the home region choice (it cannot be changed; A1 capacity varies by region), upgrading to Pay As You Go to avoid idle reclamation of Always Free VMs (still free within the limits), the OCI API key (`~/.oci/`, fingerprint, OCIDs into `terraform.tfvars`), an SSH key, Tailscale: MagicDNS and HTTPS certificates on in the admin console, a reusable or one-off pre-approved auth key in `TAILSCALE_AUTHKEY`. Then `oracle:plan`, `oracle:up` (the retry loop and its variables; that it applies without asking), `oracle:deploy`, the first login (the generated admin password), upgrading (`-e app_ref=…`), backups (where, how long, restoring with `psql`), the SSH lockdown and its way back, `oracle:destroy`, troubleshooting (capacity, Tailscale not logged in, the build on the VM). The secrets list: what is gitignored, what stays on the VM. |
+| Text | `deploy/oracle-cloud/README.md` (new) | What it builds (a diagram like the Compose one: tailnet → `tailscale serve` → 127.0.0.1:8080 → the Compose stack). One-time manual steps: the Oracle account and the home region choice (it cannot be changed; A1 capacity varies by region), upgrading to Pay As You Go to avoid idle reclamation of Always Free VMs (still free within the limits), the OCI API key (`~/.oci/`, fingerprint, OCIDs into `terraform.tfvars`), an SSH key, Tailscale: MagicDNS and HTTPS certificates on in the admin console, a reusable or one-off pre-approved auth key in `TAILSCALE_AUTHKEY`. Then `oracle-cloud:plan`, `oracle-cloud:up` (the retry loop and its variables; that it applies without asking), `oracle-cloud:deploy`, the first login (the generated admin password), upgrading (`-e app_ref=…`), backups (where, how long, restoring with `psql`), the SSH lockdown and its way back, `oracle-cloud:destroy`, troubleshooting (capacity, Tailscale not logged in, the build on the VM). The secrets list: what is gitignored, what stays on the VM. |
 | Text | `README.md`: the artifact table | A row "Oracle Cloud deployment \| `deploy/oracle-cloud/` \| Terraform, Ansible, Tailscale". |
 | Text | `README.md`, "Run with Docker Compose" | A pointer to `deploy/oracle-cloud/README.md` for a free cloud VM, and in the "Exposing it beyond localhost" note: over Tailscale, as the Oracle setup does. |
-| Text | `README.md`, "Tasks" | The five `oracle:*` tasks. |
-| Text | `README.md`, "Continuous integration" table | Rows for **Oracle deploy (Terraform, Ansible)** and **ta-runner image (arm64)**. |
-| Text | `docs/coding-convention/README.md`, "How the conventions are enforced" | A row for the deploy part: `terraform fmt`/`validate` and `ansible-lint` (production profile), configured in `deploy/oracle-cloud/`, run by `mise run oracle:check` and the CI job `oracle`, no Git hook (the provider download is too slow). |
+| Text | `README.md`, "Tasks" | The five `oracle-cloud:*` tasks. |
+| Text | `README.md`, "Continuous integration" table | Rows for **Oracle Cloud deploy (Terraform, Ansible)** and **ta-runner image (arm64)**. |
+| Text | `docs/coding-convention/README.md`, "How the conventions are enforced" | A row for the deploy part: `terraform fmt`/`validate` and `ansible-lint` (production profile), configured in `deploy/oracle-cloud/`, run by `mise run oracle-cloud:check` and the CI job `oracle-cloud`, no Git hook (the provider download is too slow). |
 | Screenshot | none | The platform's pages do not change. |
 
 ## Out of scope

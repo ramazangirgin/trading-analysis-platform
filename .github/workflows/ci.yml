@@ -12,8 +12,9 @@
 #   runner-image  the ta-runner image and its lockdown check, beside the build job
 #   runner-image-arm64  the same image built and checked on arm64, the Oracle Cloud VM's
 #              architecture: a missing arm64 wheel shows up here, before a deploy
-#   oracle     the Oracle Cloud deployment (deploy/oracle-cloud/): Terraform formatting and validation,
-#              ansible-lint, the playbook's syntax and the retry loop's test; no cloud credentials
+#   oracle-cloud  the Oracle Cloud deployment (deploy/oracle-cloud/): Terraform formatting and
+#              validation, ansible-lint, the playbook's syntax and the retry loop's test; no cloud
+#              credentials
 #   images     the platform image, then the Docker Compose smoke test (deploy/smoke-test.sh);
 #              needs build and runner-image
 #   e2e        end-to-end tests (e2e/, Playwright) in parallel (playwright.config.ts), and the e2e
@@ -212,8 +213,8 @@ jobs:
 
   # Terraform and Ansible are checked without cloud credentials; the provider download is why this
   # is a job of its own and not part of `mise run check`.
-  oracle:
-    name: Oracle deploy (Terraform, Ansible)
+  oracle-cloud:
+    name: Oracle Cloud deploy (Terraform, Ansible)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -229,7 +230,7 @@ jobs:
           key: terraform-providers-${{ runner.os }}-${{ hashFiles('deploy/oracle-cloud/terraform/.terraform.lock.hcl') }}
 
       - name: Terraform, Ansible and the retry loop
-        run: mise run oracle:check
+        run: mise run oracle-cloud:check
 
   images:
     name: Platform image and Compose smoke test
@@ -395,7 +396,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [build, runner, runner-image, runner-image-arm64, oracle, images, version, e2e]
+    needs: [build, runner, runner-image, runner-image-arm64, oracle-cloud, images, version, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

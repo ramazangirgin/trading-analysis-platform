@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# Creates the Oracle Cloud VM (mise run oracle:up): terraform init, then terraform apply in a loop.
+# Creates the Oracle Cloud VM (mise run oracle-cloud:up): terraform init, then terraform apply in a loop.
 # Always Free Ampere A1 capacity is often sold out; OCI then fails with "Out of host capacity", and
 # the apply is tried again until it succeeds. Any other failure stops at once.
 #
 #   deploy/oracle-cloud/up.sh [extra terraform apply arguments]     e.g. -var ocpus=2
 #
-# ORACLE_RETRY_INTERVAL  seconds between attempts (default 60)
-# ORACLE_RETRY_ATTEMPTS  attempts before giving up (default 60, 0 for no limit)
+# ORACLE_CLOUD_RETRY_INTERVAL  seconds between attempts (default 60)
+# ORACLE_CLOUD_RETRY_ATTEMPTS  attempts before giving up (default 60, 0 for no limit)
 # TERRAFORM              the terraform binary (default terraform)
 #
 # Applies without asking, on purpose: the loop cannot answer a prompt on every attempt. Look at
-# what it will do first with mise run oracle:plan.
+# what it will do first with mise run oracle-cloud:plan.
 set -euo pipefail
 
 DIR=$(cd "$(dirname "$0")" && pwd)
 TF=${TERRAFORM:-terraform}
-INTERVAL=${ORACLE_RETRY_INTERVAL:-60}
-ATTEMPTS=${ORACLE_RETRY_ATTEMPTS:-60}
+INTERVAL=${ORACLE_CLOUD_RETRY_INTERVAL:-60}
+ATTEMPTS=${ORACLE_CLOUD_RETRY_ATTEMPTS:-60}
 LOG=$(mktemp)
 trap 'rm -f "$LOG"' EXIT
 

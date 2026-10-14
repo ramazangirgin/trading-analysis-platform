@@ -15,11 +15,11 @@ that.
 
 | Command | What |
 |---|---|
-| `mise run oracle:plan` | Show what `oracle:up` would create |
-| `mise run oracle:up` | Create the VM and its network; writes `ansible/inventory.ini` |
-| `mise run oracle:deploy` | Set up the VM and deploy the platform; run it again to change nothing, or with `-e` to change something |
-| `mise run oracle:destroy` | Remove the VM and its network (asks first) |
-| `mise run oracle:check` | Check the code without any credentials (what CI runs) |
+| `mise run oracle-cloud:plan` | Show what `oracle-cloud:up` would create |
+| `mise run oracle-cloud:up` | Create the VM and its network; writes `ansible/inventory.ini` |
+| `mise run oracle-cloud:deploy` | Set up the VM and deploy the platform; run it again to change nothing, or with `-e` to change something |
+| `mise run oracle-cloud:destroy` | Remove the VM and its network (asks first) |
+| `mise run oracle-cloud:check` | Check the code without any credentials (what CI runs) |
 
 ## One-time steps
 
@@ -27,7 +27,7 @@ Done by hand, once:
 
 1. **Oracle account.** Sign up at [oracle.com/cloud/free](https://www.oracle.com/cloud/free/). The
    **home region** you pick cannot be changed later, and the capacity of A1 shapes differs between
-   regions: if one is always sold out, `oracle:up` keeps retrying (see below), but a quieter region
+   regions: if one is always sold out, `oracle-cloud:up` keeps retrying (see below), but a quieter region
    would have saved you the wait.
 2. **Pay As You Go.** Upgrade the account (Billing > Upgrade). Oracle reclaims idle Always Free
    VMs; an upgraded account is not treated that way, and what stays inside the Always Free limits
@@ -35,7 +35,7 @@ Done by hand, once:
    above those limits.
 3. **OCI API key.** Profile menu > User settings > API keys > Add API key; download the private
    key to `~/.oci/` and keep the fingerprint. You also need the tenancy OCID and your user OCID.
-4. **SSH key.** `ssh-keygen -t ed25519 -f ~/.ssh/oracle`.
+4. **SSH key.** `ssh-keygen -t ed25519 -f ~/.ssh/oracle-cloud`.
 5. **`terraform.tfvars`.** `cp deploy/oracle-cloud/terraform/terraform.tfvars.example
    deploy/oracle-cloud/terraform/terraform.tfvars` and fill it in; the example says where to find each
    value in the OCI console.
@@ -52,28 +52,28 @@ Tools (`terraform`, `ansible`, `ansible-lint`) come from [`mise.toml`](../../mis
 ## Create the VM
 
 ```sh
-mise run oracle:plan     # optional: what will be created
-mise run oracle:up
+mise run oracle-cloud:plan     # optional: what will be created
+mise run oracle-cloud:up
 ```
 
-`oracle:up` runs `terraform apply` **without asking**: the retry loop cannot answer a prompt on
+`oracle-cloud:up` runs `terraform apply` **without asking**: the retry loop cannot answer a prompt on
 every attempt. Read the plan first. When Oracle answers `Out of host capacity` (A1 is often sold
 out), it waits and tries again; any other error stops it at once.
 
 | Variable | Default | |
 |---|---|---|
-| `ORACLE_RETRY_INTERVAL` | `60` | Seconds between attempts |
-| `ORACLE_RETRY_ATTEMPTS` | `60` | Attempts before giving up; `0` for no limit |
+| `ORACLE_CLOUD_RETRY_INTERVAL` | `60` | Seconds between attempts |
+| `ORACLE_CLOUD_RETRY_ATTEMPTS` | `60` | Attempts before giving up; `0` for no limit |
 | `TERRAFORM` | `terraform` | The binary to run |
 
-Arguments after `--` go to `terraform apply`: `mise run oracle:up -- -var ocpus=2`. The VM is
+Arguments after `--` go to `terraform apply`: `mise run oracle-cloud:up -- -var ocpus=2`. The VM is
 Ubuntu 24.04 on `VM.Standard.A1.Flex`; the state is local (`terraform/terraform.tfstate`, gitignored:
-keep it, `oracle:destroy` needs it).
+keep it, `oracle-cloud:destroy` needs it).
 
 ## Deploy
 
 ```sh
-mise run oracle:deploy
+mise run oracle-cloud:deploy
 ```
 
 The playbook ([`ansible/site.yml`](ansible/site.yml)) runs five roles as root:
@@ -86,7 +86,7 @@ The playbook ([`ansible/site.yml`](ansible/site.yml)) runs five roles as root:
 | `app` | mise, the repository in `/opt/trading-analysis-platform` at `app_ref`, `deploy/.env` (the database password is generated on the VM and never leaves it), the Docker images built on the VM, `docker compose up`, and a wait for `/actuator/health` |
 | `backup` | A daily `pg_dump` (see below) |
 
-Every task is idempotent: a second `oracle:deploy` on an unchanged VM reports `changed=0`. The first
+Every task is idempotent: a second `oracle-cloud:deploy` on an unchanged VM reports `changed=0`. The first
 one takes several minutes (the images are built on the VM, on arm64).
 
 At the end it prints the UI URL, `https://<hostname>.<your tailnet>.ts.net`. Open it from a machine
@@ -94,7 +94,7 @@ on the tailnet. **First login:** the user is `admin` (`platform_admin_username`)
 generated on the first start and logged once:
 
 ```sh
-ssh -i ~/.ssh/oracle ubuntu@<public ip>     # the address is in the output of oracle:up
+ssh -i ~/.ssh/oracle-cloud ubuntu@<public ip>     # the address is in the output of oracle-cloud:up
 sudo -u platform docker compose -f /opt/trading-analysis-platform/deploy/docker-compose.yml logs platform
 ```
 
@@ -106,7 +106,7 @@ Every default lives in [`ansible/group_vars/all.yml`](ansible/group_vars/all.yml
 with `-e`:
 
 ```sh
-mise run oracle:deploy -- -e app_ref=v4.3.0 -e platform_admin_username=me
+mise run oracle-cloud:deploy -- -e app_ref=v4.3.0 -e platform_admin_username=me
 ```
 
 | Variable | Default | |
@@ -127,7 +127,7 @@ Deploy another ref; the images are rebuilt when the checkout changed, and the st
 again with its data:
 
 ```sh
-mise run oracle:deploy -- -e app_ref=v4.4.0
+mise run oracle-cloud:deploy -- -e app_ref=v4.4.0
 ```
 
 Read the main README's upgrade notes for the versions in between first.
@@ -138,7 +138,7 @@ The `backup` role installs `/usr/local/bin/trading-analysis-platform-backup` and
 (`backup_time`) for `platform`. It writes `pg_dump` output, gzipped, to
 `/srv/trading-analysis-platform/backups/platform-<date>.sql.gz` (owner-only) and deletes dumps
 older than `backup_keep_days`. The dumps are on the VM's boot volume: they survive a restart, not
-`oracle:destroy`. Copy them off the VM to keep them (`scp`).
+`oracle-cloud:destroy`. Copy them off the VM to keep them (`scp`).
 
 To restore into an empty database, stop the platform and load the dump:
 
@@ -158,18 +158,18 @@ After a first deploy, with Tailscale up, the VM can drop its public SSH port. Th
 on the same tailnet.
 
 1. In `terraform.tfvars` set `ssh_public = false`.
-2. `mise run oracle:up`: the security list drops port 22, and the inventory now points at the
+2. `mise run oracle-cloud:up`: the security list drops port 22, and the inventory now points at the
    tailnet hostname (`tailscale_hostname`, resolved by MagicDNS).
-3. `mise run oracle:deploy -- -e ssh_over_tailnet_only=true`: `ufw` allows SSH on `tailscale0` only.
+3. `mise run oracle-cloud:deploy -- -e ssh_over_tailnet_only=true`: `ufw` allows SSH on `tailscale0` only.
 
-Way back: `ssh_public = true` and `mise run oracle:up`, then `mise run oracle:deploy` (with
+Way back: `ssh_public = true` and `mise run oracle-cloud:up`, then `mise run oracle-cloud:deploy` (with
 `ssh_over_tailnet_only` left `false`). If Tailscale is down on the VM, step 2 locks you out: set
 `ssh_public = true` again, or use the OCI console's serial console.
 
 ## Remove everything
 
 ```sh
-mise run oracle:destroy
+mise run oracle-cloud:destroy
 ```
 
 It lists what it removes and asks. The VM, its boot volume (the database and the backups with it)
@@ -191,7 +191,7 @@ and the network are gone; the Tailscale device stays in the admin console until 
   hours), lower `ocpus` and `memory_in_gbs`, or try another availability domain
   (`availability_domain_index`).
 - **`TAILSCALE_AUTHKEY` missing.** The deploy stops with a message when the node is not logged in and
-  the variable is empty. Export it and run `oracle:deploy` again; a key that expired needs a new one.
+  the variable is empty. Export it and run `oracle-cloud:deploy` again; a key that expired needs a new one.
 - **The page does not open.** Is the controller's device on the tailnet, and are MagicDNS and HTTPS
   certificates on? On the VM: `tailscale status` and `tailscale serve status`.
 - **The build on the VM fails or is slow.** It runs `mise run docker-build` on arm64; the

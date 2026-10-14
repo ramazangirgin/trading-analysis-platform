@@ -1,4 +1,4 @@
-# Run from this directory: `ansible-lint` (mise run oracle:check). No rule is skipped.
+# Run from this directory: `ansible-lint` (mise run oracle-cloud:check). No rule is skipped.
 profile: production
 # The collections come with the ansible package; nothing is downloaded.
 offline: true
