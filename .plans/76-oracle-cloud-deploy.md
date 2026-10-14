@@ -230,7 +230,7 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ### WP5: Docs and version
 
-- **Depends on**: WP1 to WP4 (it describes them)
+- **Depends on**: WP1, WP2, WP3, WP4 (it describes them)
 - **Files**: `deploy/oracle/README.md`, `README.md`, `docs/coding-convention/README.md`,
   `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
