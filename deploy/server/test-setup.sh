@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Quick test of the setup scripts of deploy/server/README.md (steps A to D2), in a throwaway Ubuntu
+# Quick test of the setup scripts of deploy/server/README.md (steps 1 to 3), in a throwaway Ubuntu
 # 24.04 container that stands in for the server (mise run server:test-setup). This machine is
 # "your computer"; nothing outside the container and a temporary folder is changed.
 #
-#   A    setup-key.sh          a new key, no passphrase, in a temporary folder
-#   B,C  setup-server.sh       in the container, as root (as from a console): the SSH server, the
+#   1    setup-key.sh          a new key, no passphrase, in a temporary folder
+#   2    setup-server.sh       in the container, as root (as from a console): the SSH server, the
 #                              deploy user, passwordless sudo, the key; run twice, nothing changes
 #                              the second time
-#   D1,D2 setup-inventory.sh   from here: the key login and sudo -n, the inventory
+#   3    setup-inventory.sh    from here: the key login and sudo -n, the inventory
 #   key-only SSH               setup-server.sh --key-only-ssh: passwords off, the key still works
 #
 # The container has no systemd, so systemctl is a no-op there and sshd is started by hand. The
@@ -63,16 +63,16 @@ step "The server: an Ubuntu 24.04 container on 127.0.0.1:$PORT"
 in_server bash -c 'apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sudo adduser procps > /dev/null'
 in_server bash -c 'printf "#!/bin/sh\nexit 0\n" > /usr/local/bin/systemctl && chmod +x /usr/local/bin/systemctl'
 
-step "A: setup-key.sh"
+step "1: setup-key.sh"
 "$DIR/setup-key.sh" --no-passphrase
 pub=$(cat "$DEPLOY_KEY.pub")
 
-step "B, C: setup-server.sh, as root in the container"
+step "2: setup-server.sh, as root in the container"
 in_server bash /setup/setup-server.sh "$pub"
 in_server mkdir -p /run/sshd
 start_sshd
 
-step "B, C again: nothing changes"
+step "2 again: nothing changes"
 in_server bash /setup/setup-server.sh "$pub" | tee "$work/again.log"
 grep -q "already there" "$work/again.log" || fail "the second run added the key again"
 grep -q "in place" "$work/again.log" || fail "the second run rewrote the sudoers file"
@@ -86,7 +86,7 @@ step "Wrong input is refused"
 ! in_server bash /setup/setup-server.sh 2> /dev/null || fail "a run without a key was accepted"
 echo "ok"
 
-step "D1, D2: setup-inventory.sh"
+step "3: setup-inventory.sh"
 "$DIR/setup-inventory.sh" 127.0.0.1 --port "$PORT" --inventory "$work/inventory.ini" \
   2>&1 | tee "$work/inventory.log"
 grep -qx "deploy user ok" "$work/inventory.log" || fail "the login test did not pass"

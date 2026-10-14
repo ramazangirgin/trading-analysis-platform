@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Steps D1 and D2 of deploy/server/README.md, on your computer: checks that the deploy user logs
+# Step 3 of deploy/server/README.md, on your computer: checks that the deploy user logs
 # in to the server with the key and may use sudo without a password, then writes the inventory.
 #
 #   deploy/server/setup-inventory.sh <server> [--port N] [--inventory FILE] [--force]
@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
     --port) port=${2:?--port needs a number}; shift ;;
     --inventory) inventory=${2:?--inventory needs a file}; shift ;;
     --force) force=true ;;
-    -h | --help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     -*) die "unknown option: $1 (see --help)" ;;
     *) [ -z "$server" ] || die "one server only"; server=$1 ;;
   esac
@@ -78,6 +78,6 @@ deploy_args=""
 [ "$inventory" = "$DIR/inventory.ini" ] || deploy_args=" -- -i $inventory"
 cat <<EOF
 
-Next (README, step D3):
+Next (README, step 4):
   mise run server:deploy$deploy_args
 EOF
