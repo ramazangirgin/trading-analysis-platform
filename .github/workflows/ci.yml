@@ -177,8 +177,8 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # The VM is arm64 (Ampere A1): build the image there to find a Python dependency without an arm64
-  # wheel. Not the platform image: its JRE image is multi-arch and the jar is plain Java.
+  # An arm64 server builds the image itself: build it on arm64 here to find a Python dependency
+  # without an arm64 wheel. Not the platform image: its JRE image is multi-arch and the jar is plain Java.
   runner-image-arm64:
     name: ta-runner image (arm64)
     runs-on: ubuntu-24.04-arm

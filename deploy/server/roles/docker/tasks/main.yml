@@ -29,7 +29,7 @@
     state: present
     update_cache: "{{ docker_repository is changed }}"
 
-# Container logs would otherwise grow without limit on the 100 GB disk.
+# Container logs would otherwise grow without limit on the server's disk.
 - name: Limit the size of the container logs
   ansible.builtin.copy:
     dest: /etc/docker/daemon.json
