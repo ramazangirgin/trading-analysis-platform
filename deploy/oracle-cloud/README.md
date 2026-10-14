@@ -120,7 +120,7 @@ mise run oracle-cloud:deploy -- -e app_ref=v4.3.0 -e platform_admin_username=me
 | `platform_port` | `8080` | The port on 127.0.0.1 |
 | `platform_admin_username` | `admin` | The first admin |
 | `swap_size` | `4G` | Made once; a later change does not resize it |
-| `ssh_over_tailnet_only` | `false` | See the lockdown below |
+| `ssh_over_tailnet_only` | `ssh_public` negated | Set in the generated inventory; see the lockdown below |
 | `backup_time`, `backup_keep_days` | `03:30`, `14` | Daily dump time (VM time) and retention |
 
 ## Upgrading
@@ -168,11 +168,12 @@ on the same tailnet.
 
 1. In `terraform.tfvars` set `ssh_public = false`.
 2. `mise run oracle-cloud:up`: the security list drops port 22, and the inventory now points at the
-   tailnet hostname (`tailscale_hostname`, resolved by MagicDNS).
-3. `mise run oracle-cloud:deploy -- -e ssh_over_tailnet_only=true`: `ufw` allows SSH on `tailscale0` only.
+   tailnet hostname (`tailscale_hostname`, resolved by MagicDNS) and sets `ssh_over_tailnet_only=True`.
+3. `mise run oracle-cloud:deploy`: `ufw` allows SSH on `tailscale0` only. Every later deploy keeps
+   it so, with no extra flag, as long as `ssh_public` stays `false`.
 
-Way back: `ssh_public = true` and `mise run oracle-cloud:up`, then `mise run oracle-cloud:deploy` (with
-`ssh_over_tailnet_only` left `false`). If Tailscale is down on the VM, step 2 locks you out: set
+Way back: `ssh_public = true` and `mise run oracle-cloud:up` (the inventory now sets
+`ssh_over_tailnet_only=False`), then `mise run oracle-cloud:deploy`. If Tailscale is down on the VM, step 3 locks you out: set
 `ssh_public = true` again, or use the OCI console's serial console.
 
 ## Remove everything

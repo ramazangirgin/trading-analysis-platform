@@ -18,6 +18,7 @@ platform_admin_username: admin
 # The size of the swap file, made once (a later change does not resize it).
 swap_size: 4G
 # true: SSH is allowed on the tailnet interface only (see the README, "Closing SSH to the internet").
+# The generated inventory sets it from ssh_public in terraform.tfvars; this default applies without it.
 ssh_over_tailnet_only: false
 
 # Daily database dump: the time (24 hours, HH:MM, VM time) and how many days to keep.
