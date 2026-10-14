@@ -105,6 +105,16 @@
       depNameTemplate: "postgres",
       datasourceTemplate: "docker",
     },
+    {
+      // The full ansible package (its collections) is installed next to ansible-core and ansible-lint
+      // with uvx_args in mise.toml, which the mise manager does not read.
+      customType: "regex",
+      managerFilePatterns: ["mise.toml"],
+      matchStrings: ['--with ansible(?<currentValue>~=[0-9][^"\\s]*)'],
+      depNameTemplate: "ansible",
+      datasourceTemplate: "pypi",
+      versioningTemplate: "pep440",
+    },
   ],
 
   // Later rules override earlier ones: the one group first, then the limits.
@@ -160,6 +170,22 @@
       matchPackageNames: ["postgres"],
       matchUpdateTypes: ["major"],
       enabled: false,
+    },
+    {
+      // ansible 13.x requires exactly ansible-core 2.20.x (and ansible 14 the next minor), so
+      // ansible-core alone would make the tool install unresolvable. It moves with the ansible
+      // update instead (the note below).
+      description: "ansible-core follows the ansible package",
+      matchManagers: ["mise"],
+      matchPackageNames: ["ansible-core"],
+      enabled: false,
+    },
+    {
+      description: "ansible package",
+      matchDepNames: ["ansible"],
+      prBodyNotes: [
+        "**The ansible package is in this update:** set `pipx:ansible-core` in `mise.toml` to the ansible-core minor the new ansible release requires (its release notes name it), then run `mise run oracle-cloud:check`.",
+      ],
     },
     {
       // Same reason as the eclipse-temurin image: the build targets Java 25.

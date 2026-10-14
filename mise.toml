@@ -16,6 +16,8 @@ terraform = "1.14"
 # ansible-core's commands (ansible-playbook) and ansible-lint, each in a tool environment that also
 # has the full `ansible` package (13.x), so the collections the roles use (community.general,
 # community.docker, ansible.posix) are there; its major pins ansible-core's minor.
+# Renovate does not read uvx_args: a custom manager in .github/renovate.json5 updates the `ansible~=`
+# range, and ansible-core is bumped by hand along with it.
 "pipx:ansible-core" = { version = "2.20", uvx_args = "--with ansible~=13.0" }
 "pipx:ansible-lint" = { version = "26.8", uvx_args = "--with ansible~=13.0" }
 
