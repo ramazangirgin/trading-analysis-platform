@@ -77,6 +77,11 @@ first start and logged once. On the server:
 sudo -u platform docker compose -f /opt/trading-analysis-platform/deploy/docker-compose.yml logs platform
 ```
 
+The log keeps the password only until the platform container is recreated (an upgrade, a rebuilt
+image or a changed `.env`) or the log rotates. Log in before you upgrade; if the password is gone,
+set `PLATFORM_ADMIN_PASSWORD` or reset the admin as the [main README](../../README.md#3-log-in)
+describes.
+
 Then add an API key under **Settings** as in the [main README](../../README.md#4-add-an-api-key).
 
 ### Settings
