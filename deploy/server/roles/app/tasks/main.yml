@@ -105,7 +105,10 @@
 
 - name: Find out whether the images must be built
   ansible.builtin.set_fact:
-    app_build_needed: "{{ app_built_commit.rc != 0 or app_built_commit.stdout | trim != app_checkout.after or (app_images.results | selectattr('rc', 'ne', 0) | list | length > 0) }}"
+    app_build_needed: >-
+      {{ app_built_commit.rc != 0
+      or app_built_commit.stdout | trim != app_checkout.after
+      or (app_images.results | selectattr('rc', 'ne', 0) | list | length > 0) }}
 
 - name: Trust the mise configuration of the checkout
   ansible.builtin.command: mise trust
@@ -185,4 +188,6 @@
     app_password_hint: >-
       {{ 'First start: the generated admin password is printed once in the log of the platform (on the server):'
       if app_postgres_password_file is changed
-      else 'The admin password generated on the first start is in the log of the platform only until the container is recreated (an upgrade, a rebuilt image or a changed .env) or the log rotates; if it is gone, see "Log in" in the main README to reset the admin. The log (on the server):' }}
+      else 'The admin password generated on the first start is in the log of the platform only until
+      the container is recreated (an upgrade, a rebuilt image or a changed .env) or the log rotates;
+      if it is gone, see "Log in" in the main README to reset the admin. The log (on the server):' }}
