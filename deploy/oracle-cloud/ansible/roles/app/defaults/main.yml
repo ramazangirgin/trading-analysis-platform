@@ -6,3 +6,5 @@ app_runner_image: ta-runner:latest
 app_user_environment:
   HOME: "/home/{{ app_user }}"
   MISE_YES: "1"
+  # The tools of deploy/oracle-cloud/ and the Git hooks are for the controller; the build needs the JDK only.
+  MISE_DISABLE_TOOLS: terraform,pipx:ansible-core,pipx:ansible-lint,lefthook,uv
