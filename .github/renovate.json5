@@ -7,7 +7,7 @@
   // Enables the dependency dashboard issue and the managers in use: gradle (the version catalog),
   // gradle-wrapper, npm (pnpm: artifact/frontend/ and e2e/), pep621 with uv (artifact/ta-runner/),
   // dockerfile, docker-compose, github-actions, mise (mise.toml) and terraform (the providers and
-  // the lock file in deploy/oracle/terraform/).
+  // the lock file in deploy/oracle-cloud/terraform/).
   extends: ["config:recommended"],
 
   // One batch a week, not a stream of pull requests; the Monday morning's review picks it up.

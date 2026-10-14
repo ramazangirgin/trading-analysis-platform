@@ -39,7 +39,7 @@
     fail_msg: >-
       This node is not logged in to Tailscale, and TAILSCALE_AUTHKEY is not set. Create an auth key
       in the Tailscale admin console and run `export TAILSCALE_AUTHKEY=tskey-auth-...` first
-      (deploy/oracle/ansible/.env.example).
+      (deploy/oracle-cloud/ansible/.env.example).
   when: not tailscale_logged_in
 
 - name: Log in to Tailscale
