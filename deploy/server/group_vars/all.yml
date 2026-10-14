@@ -17,6 +17,9 @@ platform_admin_username: admin
 
 # The size of the swap file, made once (a later change does not resize it).
 swap_size: 4G
+# Upgrade every installed package (apt dist-upgrade). The first deploy always does; later ones only
+# with -e upgrade_packages=true. Security updates are installed daily by unattended-upgrades.
+upgrade_packages: false
 
 # Daily database dump: the time (24 hours, HH:MM, the server's time) and how many days to keep.
 backup_time: "03:30"

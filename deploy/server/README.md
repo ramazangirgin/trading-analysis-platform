@@ -218,7 +218,7 @@ The playbook ([`site.yml`](site.yml)) runs four roles as root:
 
 | Role | What |
 |---|---|
-| `base` | Package upgrades, automatic security updates (no automatic reboot), a swap file, the `ufw` firewall (deny incoming, the SSH port allowed) |
+| `base` | A full package upgrade on the first deploy (later ones: `-e upgrade_packages=true`), automatic daily security updates (no automatic reboot), a swap file, the `ufw` firewall (deny incoming, the SSH port allowed) |
 | `docker` | Docker from its own apt repository, and the `platform` user in the `docker` group |
 | `app` | mise, the repository in `/opt/trading-analysis-platform` at `app_ref`, `deploy/.env` (the database password is generated on the server and never leaves it), the Docker images built on the server, `docker compose up`, and a wait for `/actuator/health` |
 | `backup` | A daily `pg_dump` (see below) |
@@ -269,6 +269,7 @@ mise run server:deploy -- -e app_ref=v4.4.0 -e platform_admin_username=me
 | `platform_port` | `8080` | The port on the server's 127.0.0.1 |
 | `platform_admin_username` | `admin` | The first admin |
 | `swap_size` | `4G` | Made once; a later change does not resize it |
+| `upgrade_packages` | `false` | `true`: upgrade every package again (`apt dist-upgrade`); the first deploy always does, security updates come daily anyway |
 | `backup_time`, `backup_keep_days` | `03:30`, `14` | Daily dump time (the server's time) and retention |
 
 Another inventory file (a second server, say) is used with `mise run server:deploy -- -i <file>`.
