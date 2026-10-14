@@ -17,8 +17,11 @@ lefthook = "2.1"
 # community.docker, ansible.posix) are there; its major pins ansible-core's minor.
 # Renovate does not read uvx_args: a custom manager in .github/renovate.json5 updates the `ansible~=`
 # range, and ansible-core is bumped by hand along with it.
-"pipx:ansible-core" = { version = "2.20", uvx_args = "--with ansible~=13.0" }
-"pipx:ansible-lint" = { version = "26.8", uvx_args = "--with ansible~=13.0" }
+# --no-build-package cryptography: take the newest cryptography with a ready-made wheel for this
+# machine instead of compiling one (which needs Rust and OpenSSL's headers). From 49.0 on there are
+# no wheels for Intel Macs, so they get 48.0.1; Linux and Apple Silicon get the newest.
+"pipx:ansible-core" = { version = "2.20", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
+"pipx:ansible-lint" = { version = "26.8", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
 
 [tasks.setup]
 description = "Install ta-runner (TradingAgents + deps), the frontend's packages, the Git hooks, and a container engine when there is none (Docker on Ubuntu/Debian, Podman on macOS; PLATFORM_INSTALL_ENGINE=0 skips it)"
@@ -203,9 +206,8 @@ run = "uv run --no-project python -m unittest discover -s .claude/skills/dependa
 # Deployment to a server over SSH (deploy/server/README.md): Ansible sets the server up and deploys
 # the Compose setup on it. server:deploy needs deploy/server/inventory.ini; server:check needs nothing.
 [tasks."server:deploy"]
-description = "Set up the server in deploy/server/inventory.ini over SSH and deploy the Compose setup on it (Ansible): mise run server:deploy [-- -e app_ref=v1.2.3]"
-dir = "deploy/server"
-run = "ansible-playbook site.yml"
+description = "Set up the server in deploy/server/inventory.ini over SSH and deploy the Compose setup on it (Ansible, run from this machine; the build happens on the server): mise run server:deploy [-- -e app_ref=v1.2.3]"
+run = "deploy/server/deploy.sh"
 
 [tasks."server:check"]
 description = "Check deploy/server/ without a server: ansible-lint and the playbook's syntax"
