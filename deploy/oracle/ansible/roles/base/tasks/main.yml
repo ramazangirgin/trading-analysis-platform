@@ -1,0 +1,157 @@
+- name: Upgrade the installed packages
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+    upgrade: dist
+
+- name: Install the base packages
+  ansible.builtin.apt:
+    name:
+      - acl
+      - ca-certificates
+      - cron
+      - curl
+      - git
+      - gnupg
+      - openssl
+      - ufw
+      - unattended-upgrades
+      - unzip
+    state: present
+
+- name: Turn on the automatic security updates
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Keep the VM from rebooting by itself
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/52unattended-upgrades-local
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "false";
+    owner: root
+    group: root
+    mode: "0644"
+
+# The swap file: the build of the images and the analysis containers share 24 GB.
+- name: Allocate the swap file
+  ansible.builtin.command: fallocate -l {{ swap_size }} /swapfile
+  args:
+    creates: /swapfile
+
+- name: Restrict the swap file to root
+  ansible.builtin.file:
+    path: /swapfile
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Look for the swap signature of the swap file
+  ansible.builtin.command: blkid -p -s TYPE -o value /swapfile
+  register: base_swap_type
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Format the swap file
+  ansible.builtin.command: mkswap /swapfile
+  when: base_swap_type.stdout != 'swap'
+  changed_when: true
+
+- name: List the active swap
+  ansible.builtin.command: swapon --noheadings --show=NAME
+  register: base_swap_active
+  changed_when: false
+  check_mode: false
+
+- name: Turn the swap file on
+  ansible.builtin.command: swapon /swapfile
+  when: "'/swapfile' not in base_swap_active.stdout_lines"
+  changed_when: true
+
+- name: Mount the swap file at boot
+  ansible.posix.mount:
+    src: /swapfile
+    path: none
+    fstype: swap
+    opts: sw
+    state: present
+
+- name: Prefer RAM to swap
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "10"
+    sysctl_file: /etc/sysctl.d/99-swappiness.conf
+    state: present
+    reload: true
+
+# Oracle's Ubuntu images ship netfilter-persistent with their own iptables rules (a REJECT after
+# SSH), which fight ufw. ufw takes over the firewall.
+- name: Remove the saved iptables rules of Oracle's image
+  ansible.builtin.apt:
+    name:
+      - iptables-persistent
+      - netfilter-persistent
+    state: absent
+    purge: true
+  notify: Flush the input rules of Oracle's image
+
+- name: Delete the rules files of iptables-persistent
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/iptables/rules.v4
+    - /etc/iptables/rules.v6
+
+# Before ufw adds its own rules: flushing later would take them away.
+- name: Flush the handlers now
+  ansible.builtin.meta: flush_handlers
+
+- name: Allow SSH from anywhere
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+  when: not ssh_over_tailnet_only
+
+- name: Allow SSH on the tailnet interface
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+    interface: tailscale0
+    direction: in
+
+- name: Stop allowing SSH from anywhere
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+    delete: true
+  when: ssh_over_tailnet_only
+
+- name: Allow everything arriving on the tailnet interface
+  community.general.ufw:
+    rule: allow
+    interface: tailscale0
+    direction: in
+
+- name: Deny incoming traffic by default
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Allow outgoing traffic by default
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: Enable the firewall
+  community.general.ufw:
+    state: enabled

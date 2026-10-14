@@ -197,14 +197,15 @@ the lock file) and the `mise` manager (the new tools). The managers comment at t
 
 ### WP2: Ansible roles and playbook
 
+- **Status**: done
 - **Depends on**: none (the inventory format is fixed above)
 - **Files**: `deploy/oracle/ansible/ansible.cfg`, `site.yml`, `group_vars/all.yml`, `.env.example`,
   `roles/base/**`, `roles/docker/**`, `roles/tailscale/**`, `roles/app/**`, `roles/backup/**`
 - **Steps**:
-  - [ ] The five roles as designed, with handlers for service restarts, each task named, no bare
+  - [x] The five roles as designed, with handlers for service restarts, each task named, no bare
         `command`/`shell` without `creates:`, `changed_when:` or `when:`
-  - [ ] `site.yml` and `group_vars/all.yml`
-  - [ ] `.env.example` with the Tailscale auth key
+  - [x] `site.yml` and `group_vars/all.yml`
+  - [x] `.env.example` with the Tailscale auth key
 - **Tests**: `ansible-lint` (profile `production`) passes with no skips beyond those named and
   explained in `.ansible-lint`; `ansible-playbook --syntax-check site.yml` passes. Running the roles
   against a real VM (idempotency: a second run gives `changed=0`) needs an Oracle account and is

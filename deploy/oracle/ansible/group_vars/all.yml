@@ -1,0 +1,25 @@
+# The defaults of the playbook. Override one with -e, e.g.
+#   mise run oracle:deploy -- -e app_ref=v4.3.0
+
+# The user that owns the checkout and runs the Compose stack and the backup.
+app_user: platform
+# Where the repository is cloned, and the Git URL and ref (branch, tag or commit) deployed.
+app_dir: /opt/trading-analysis-platform
+app_repo: https://github.com/ramazangirgin/trading-analysis-platform.git
+app_ref: main
+
+# PLATFORM_DATA of deploy/.env: the database, run logs, reports and the backups.
+platform_data: /srv/trading-analysis-platform
+# The port on 127.0.0.1 where the UI is served; tailscale serve publishes it on the tailnet.
+platform_port: 8080
+# The first admin, created on the first start; its password is generated and logged once.
+platform_admin_username: admin
+
+# The size of the swap file, made once (a later change does not resize it).
+swap_size: 4G
+# true: SSH is allowed on the tailnet interface only (see the README, "Closing SSH to the internet").
+ssh_over_tailnet_only: false
+
+# Daily database dump: the time (24 hours, HH:MM, VM time) and how many days to keep.
+backup_time: "03:30"
+backup_keep_days: 14

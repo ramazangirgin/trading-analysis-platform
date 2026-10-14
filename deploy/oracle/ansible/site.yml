@@ -1,0 +1,12 @@
+# Deploys the Docker Compose setup (deploy/docker-compose.yml) on the VM that Terraform created,
+# and serves it on the tailnet. Run it with `mise run oracle:deploy`; running it again changes
+# nothing when nothing changed. The defaults are in group_vars/all.yml.
+- name: Deploy the Trading Analysis Platform
+  hosts: oracle
+  become: true
+  roles:
+    - base
+    - docker
+    - tailscale
+    - app
+    - backup

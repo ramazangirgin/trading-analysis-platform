@@ -1,0 +1,8 @@
+# The images `mise run docker-build` makes, as named in deploy/.env.
+app_platform_image: trading-analysis-platform:latest
+app_runner_image: ta-runner:latest
+
+# For the commands run as the deploy user: sudo may keep the HOME of root.
+app_user_environment:
+  HOME: "/home/{{ app_user }}"
+  MISE_YES: "1"

@@ -1,0 +1,17 @@
+#!/bin/bash
+# Written by Ansible (deploy/oracle/ansible/roles/backup). Dumps the platform's database to
+# {{ platform_data }}/backups and deletes dumps older than {{ backup_keep_days }} days.
+set -euo pipefail
+
+backup_dir={{ platform_data }}/backups
+target="$backup_dir/platform-$(date +%F).sql.gz"
+partial="$target.partial"
+
+umask 077
+trap 'rm -f "$partial"' EXIT
+
+docker compose -f {{ app_dir }}/deploy/docker-compose.yml exec -T postgres pg_dump -U platform platform \
+  | gzip > "$partial"
+mv "$partial" "$target"
+
+find "$backup_dir" -maxdepth 1 -name 'platform-*.sql.gz' -mtime +{{ backup_keep_days }} -delete
