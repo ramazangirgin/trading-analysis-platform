@@ -55,7 +55,7 @@ deploy() {
 
 health() {
   for _ in $(seq 1 30); do
-    curl -fsS "$1/actuator/health" 2> /dev/null | grep -q '"status":"UP"' && return 0
+    curl -fsS "$1/actuator/health" 2> /dev/null | grep '"status":"UP"' > /dev/null && return 0
     sleep 2
   done
   fail "$1/actuator/health is not UP"
@@ -119,12 +119,12 @@ echo "8080 listens on: $listen"
 ! grep -qv '^127\.0\.0\.1:8080$' <<< "$listen" || fail "8080 listens on more than 127.0.0.1"
 sudo ufw status | tee "$work/ufw.txt"
 grep -q '^Status: active' "$work/ufw.txt" || fail "ufw is not active"
-! grep ALLOW "$work/ufw.txt" | grep -qv '^22/tcp' || fail "ufw allows more than 22/tcp"
+! grep ALLOW "$work/ufw.txt" | grep -v '^22/tcp' > /dev/null || fail "ufw allows more than 22/tcp"
 
 step "Backup"
 sudo -u platform /usr/local/bin/trading-analysis-platform-backup
 dump=$(sudo sh -c 'ls -t /srv/trading-analysis-platform/backups/*.sql.gz | head -n 1')
-sudo zcat "$dump" | grep -q 'PostgreSQL database dump' || fail "$dump is not a database dump"
+sudo zcat "$dump" | grep 'PostgreSQL database dump' > /dev/null || fail "$dump is not a database dump"
 echo "ok: $dump"
 
 deploy server-test-2 third
@@ -135,7 +135,7 @@ echo "ok: rebuilt from $second and up"
 
 step "Key-only SSH (setup-server.sh --key-only-ssh)"
 sudo bash "$DIR/setup-server.sh" "$(cat "$DEPLOY_KEY.pub")" --key-only-ssh
-sudo sshd -T | grep -qx 'passwordauthentication no' || fail "password logins are still on"
+sudo sshd -T | grep -x 'passwordauthentication no' > /dev/null || fail "password logins are still on"
 "$DIR/setup-inventory.sh" 127.0.0.1 --inventory "$work/inventory.ini"
 
 printf '\nAll server deployment checks passed.\n'
