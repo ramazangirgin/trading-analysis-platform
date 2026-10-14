@@ -142,14 +142,21 @@ The `backup` role installs `/usr/local/bin/trading-analysis-platform-backup` and
 older than `backup_keep_days`. The dumps are on the VM's boot volume: they survive a restart, not
 `oracle-cloud:destroy`. Copy them off the VM to keep them (`scp`).
 
-To restore into an empty database, stop the platform and load the dump:
+To restore, log in over SSH as `ubuntu` and run everything as `platform`: only that user is in the
+`docker` group and can read `deploy/.env` (the database password). A dump copied off with `scp` goes
+into the backups directory first (`sudo install -o platform -g platform -m 600 platform-<date>.sql.gz
+/srv/trading-analysis-platform/backups/`). The database is never empty once the platform has started
+(the schema is migrated, the admin exists), so stop the platform, recreate the database, then load the
+dump:
 
 ```sh
-cd /opt/trading-analysis-platform
-docker compose -f deploy/docker-compose.yml stop platform
-zcat /srv/trading-analysis-platform/backups/platform-<date>.sql.gz \
-  | docker compose -f deploy/docker-compose.yml exec -T postgres psql -U platform platform
-docker compose -f deploy/docker-compose.yml start platform
+COMPOSE="sudo -u platform docker compose -f /opt/trading-analysis-platform/deploy/docker-compose.yml"
+$COMPOSE stop platform
+$COMPOSE exec -T postgres psql -U platform -d postgres \
+  -c 'DROP DATABASE platform' -c 'CREATE DATABASE platform OWNER platform'
+sudo -u platform zcat /srv/trading-analysis-platform/backups/platform-<date>.sql.gz \
+  | $COMPOSE exec -T postgres psql -U platform platform
+$COMPOSE start platform
 ```
 
 The dump holds the database only; API keys and run logs are in `platform_data/platform/`.
@@ -195,7 +202,8 @@ expect this, and keep a recent dump off the VM ([Backups](#backups)) if the data
   ```
 
   The new VM starts empty: a new admin password, no API keys, no analyses. Restore a dump you
-  copied off as in [Backups](#backups) (`scp` it to the VM first), and enter the API keys again.
+  copied off as in [Backups](#backups) (`scp` it to the VM first; the restore recreates the
+  database the new platform already filled), and enter the API keys again.
   The public IP changes, so SSH asks about the host key once.
 
 ## Secrets
