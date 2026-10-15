@@ -199,7 +199,8 @@ report ("plan 2 of 3: plan/<n>-<slug>").
 Command: `scripts/agent/implement.sh plan/<n>-<slug>` (`mise run agent:implement`), in the issue's
 folder, in the background, followed as in
 [Long-running steps](#long-running-steps-and-their-progress). The developer agent (`AGENT_MODEL`,
-Sonnet by default) implements the plan with tests, runs `mise run check`, bumps the version and
+Sonnet by default, `deepseek-v4-pro` on the DeepSeek endpoint) implements the plan with tests, runs
+`mise run check`, bumps the version and
 commits. The script pushes the branch and opens a **draft** pull request labelled `agent`. Expect
 tens of minutes. Mention the settings that apply when the developer has set any (`AGENT_*` in the
 environment).
