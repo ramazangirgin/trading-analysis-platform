@@ -17,7 +17,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
@@ -32,6 +31,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Chan
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.CurrentUserDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.PasswordChangeRequiredFilter;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.IdentityExceptionToApiExceptionMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
@@ -46,6 +46,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
  * authentication, apply the session strategy, save the context. The password check itself is the
  * identity domain's.
  */
+// ClassFanOutComplexity: the auth API's delegate, with all its session and security collaborators.
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 @Service
 class AuthApiDelegateImpl implements AuthApiDelegate {
 
@@ -55,6 +57,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     private final AuthenticateUseCase authentication;
     private final ChangePasswordUseCase changePassword;
     private final SessionRegistry sessionRegistry;
+    private final SessionEventStreams sessionEventStreams;
     private final IdentityExceptionToApiExceptionMapper errorMapper;
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SecurityContextRepository contextRepository;
@@ -63,10 +66,12 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     private final SecurityContextLogoutHandler contextLogout = new SecurityContextLogoutHandler();
     private final CookieClearingLogoutHandler sessionCookieLogout = new CookieClearingLogoutHandler(SESSION_COOKIE);
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AuthApiDelegateImpl(
             AuthenticateUseCase authentication,
             ChangePasswordUseCase changePassword,
             SessionRegistry sessionRegistry,
+            SessionEventStreams sessionEventStreams,
             IdentityExceptionToApiExceptionMapper errorMapper,
             SessionAuthenticationStrategy sessionStrategy,
             SecurityContextRepository contextRepository,
@@ -74,6 +79,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         this.authentication = authentication;
         this.changePassword = changePassword;
         this.sessionRegistry = sessionRegistry;
+        this.sessionEventStreams = sessionEventStreams;
         this.errorMapper = errorMapper;
         this.sessionStrategy = sessionStrategy;
         this.contextRepository = contextRepository;
@@ -114,7 +120,11 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         String currentSessionId = http.getSession().getId();
         sessionRegistry.getAllSessions(id.get().value(), false).stream()
                 .filter(session -> !session.getSessionId().equals(currentSessionId))
-                .forEach(SessionInformation::expireNow);
+                .forEach(session -> {
+                    // An open stream never makes another request, so expireNow alone would not end it.
+                    sessionEventStreams.close(session.getSessionId());
+                    session.expireNow();
+                });
         // The same steps as a login: a new session ID and CSRF token, and the authorities without the mark.
         startSession(user, http, response);
         return ResponseEntity.ok(toDto(user));

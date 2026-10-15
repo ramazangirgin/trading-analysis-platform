@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -22,6 +23,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisStatusDtoToAnalysisStatusMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisToAnalysisDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PriceHistoryToPriceHistoryDtoMapper;
@@ -71,6 +73,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final AnalysisExceptionToApiExceptionMapper errorMapper;
     private final ReportToAnalysisReportDtoMapper reportMapper;
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
+    private final SessionEventStreams sessionEventStreams;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
@@ -90,7 +93,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
             AnalysisExceptionToApiExceptionMapper errorMapper,
             ReportToAnalysisReportDtoMapper reportMapper,
-            PriceHistoryToPriceHistoryDtoMapper pricesMapper) {
+            PriceHistoryToPriceHistoryDtoMapper pricesMapper,
+            SessionEventStreams sessionEventStreams) {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
@@ -108,6 +112,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.errorMapper = errorMapper;
         this.reportMapper = reportMapper;
         this.pricesMapper = pricesMapper;
+        this.sessionEventStreams = sessionEventStreams;
     }
 
     @Override
@@ -182,23 +187,35 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         emitter.onCompletion(cancel);
         emitter.onTimeout(cancel);
         emitter.onError(_ -> cancel.run());
-        // Events sent before this method returns are buffered by the emitter.
-        subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
-            @Override
-            public void onEvent(RunEvent event) {
-                send(
-                        emitter,
-                        SseEmitter.event()
-                                .id(Long.toString(event.seq()))
-                                .data(eventMapper.map(event), MediaType.APPLICATION_JSON));
-            }
+        // The stream belongs to the session that opened it and ends with it. The security chain
+        // guarantees a session here; without one (not reachable in practice) nothing is registered.
+        HttpSession session = http.getSession(false);
+        if (session != null) {
+            sessionEventStreams.register(session.getId(), emitter);
+        }
+        try {
+            // Events sent before this method returns are buffered by the emitter.
+            subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
+                @Override
+                public void onEvent(RunEvent event) {
+                    send(
+                            emitter,
+                            SseEmitter.event()
+                                    .id(Long.toString(event.seq()))
+                                    .data(eventMapper.map(event), MediaType.APPLICATION_JSON));
+                }
 
-            @Override
-            public void onComplete() {
-                send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
-                emitter.complete();
-            }
-        })));
+                @Override
+                public void onComplete() {
+                    send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
+                    emitter.complete();
+                }
+            })));
+        } catch (ApiException e) {
+            // No stream goes out: complete the emitter so it leaves the session's registrations again.
+            emitter.complete();
+            throw e;
+        }
         return emitter;
     }
 
