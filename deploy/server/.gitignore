@@ -1,2 +1,2 @@
-# The inventory names your server; it is yours, not the repository's (inventory.ini.example).
-inventory.ini
+# The inventories name your servers (inventory.ini, inventory-<name>.ini for others); they are yours, not the repository's (inventory.ini.example).
+inventory*.ini

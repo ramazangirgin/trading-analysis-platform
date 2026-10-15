@@ -3,4 +3,4 @@ profile: production
 # The collections come with the ansible package; nothing is downloaded.
 offline: true
 exclude_paths:
-  - inventory.ini
+  - inventory*.ini
