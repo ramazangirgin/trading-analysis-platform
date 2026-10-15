@@ -120,15 +120,16 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Frontend: go to the login page when the stream's session ended
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/frontend/src/features/analysis/composables/useRunStream.ts`
   - `artifact/frontend/src/features/analysis/composables/useRunStream.spec.ts` (new)
 - **Steps**:
-  - [ ] In `onerror`, when `source.readyState === EventSource.CLOSED` and the run has not ended,
+  - [x] In `onerror`, when `source.readyState === EventSource.CLOSED` and the run has not ended,
         call `analysisApi.getAnalysis(id)` once and ignore its outcome; close the source.
-  - [ ] Replace `onBeforeUnmount` with `onScopeDispose`.
-  - [ ] Update the composable's doc comment: the server closes the stream when the session ends; the
+  - [x] Replace `onBeforeUnmount` with `onScopeDispose`.
+  - [x] Update the composable's doc comment: the server closes the stream when the session ends; the
         check that follows leads to the login page through the 401 handler.
 - **Tests**: `useRunStream.spec.ts` (Vitest, `node` environment) with a fake `EventSource`
   (`vi.stubGlobal`) and `analysisApi` mocked (`vi.mock('../api')`), run in an `effectScope`:
