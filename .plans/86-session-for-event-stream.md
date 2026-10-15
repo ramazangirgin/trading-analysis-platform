@@ -85,6 +85,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Backend: tie open streams to their session
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/controller/api/AnalysesApiController.java`
@@ -96,12 +97,12 @@ Packages without a dependency between them can be implemented in parallel.
   - tests: `artifact/backend/bff/impl/src/test/java/.../bff/delegate/impl/SessionEventStreamsTest.java` (new),
     `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/AnalysesApiIntegrationTest.java`
 - **Steps**:
-  - [ ] Pass `HttpServletRequest` from the controller to `AnalysesApiDelegate.streamEvents`.
-  - [ ] Add `SessionEventStreams` (register, close, `SessionDestroyedEvent` listener, removal on the
+  - [x] Pass `HttpServletRequest` from the controller to `AnalysesApiDelegate.streamEvents`.
+  - [x] Add `SessionEventStreams` (register, close, `SessionDestroyedEvent` listener, removal on the
         emitter's completion, timeout and error).
-  - [ ] Register the emitter in `AnalysesApiDelegateImpl.streamEvents` under the request's session ID.
-  - [ ] Close the streams of the sessions `changePassword` expires.
-  - [ ] Permit `DispatcherType.ASYNC` in `SecurityConfig`, with the reason in a comment and in the
+  - [x] Register the emitter in `AnalysesApiDelegateImpl.streamEvents` under the request's session ID.
+  - [x] Close the streams of the sessions `changePassword` expires.
+  - [x] Permit `DispatcherType.ASYNC` in `SecurityConfig`, with the reason in a comment and in the
         class Javadoc's list of rules.
 - **Tests**:
   - `SessionEventStreamsTest` (unit): `close` completes every emitter of that session and none of
