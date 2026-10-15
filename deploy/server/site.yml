@@ -1,0 +1,22 @@
+# Sets up the server in the inventory and deploys the Docker Compose setup (deploy/docker-compose.yml)
+# on it. Run it with `mise run server:deploy`; running it again changes nothing when nothing
+# changed. The defaults are in group_vars/all.yml.
+- name: Deploy the Trading Analysis Platform
+  hosts: server
+  become: true
+  # Gathered below, once Ansible's temporary folder exists.
+  gather_facts: false
+  pre_tasks:
+    # A module that finds no ~/.ansible/tmp creates it and warns ("did not exist and was created
+    # with a mode of 0700"); raw runs no module, so it can make the folder first.
+    - name: Create the folder of Ansible's temporary files
+      ansible.builtin.raw: install -d -m 700 ~/.ansible/tmp
+      changed_when: false
+
+    - name: Gather the facts about the server
+      ansible.builtin.setup:
+  roles:
+    - base
+    - docker
+    - app
+    - backup

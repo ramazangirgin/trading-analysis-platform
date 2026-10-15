@@ -1,0 +1,26 @@
+# The defaults of the playbook. Override one with -e, e.g.
+#   mise run server:deploy -- -e app_ref=v4.4.0
+
+# The user that owns the checkout and runs the Compose stack and the backup.
+app_user: platform
+# Where the repository is cloned, and the Git URL and ref (branch, tag or commit) deployed.
+app_dir: /opt/trading-analysis-platform
+app_repo: https://github.com/ramazangirgin/trading-analysis-platform.git
+app_ref: main
+
+# PLATFORM_DATA of deploy/.env: the database, run logs, reports and the backups.
+platform_data: /srv/trading-analysis-platform
+# The port on the server's 127.0.0.1 where the UI is served; open it through an SSH tunnel.
+platform_port: 8080
+# The first admin, created on the first start; its password is generated and logged once.
+platform_admin_username: admin
+
+# The size of the swap file, made once (a later change does not resize it).
+swap_size: 4G
+# Upgrade every installed package (apt dist-upgrade). The first deploy always does; later ones only
+# with -e upgrade_packages=true. Security updates are installed daily by unattended-upgrades.
+upgrade_packages: false
+
+# Daily database dump: the time (24 hours, HH:MM, the server's time) and how many days to keep.
+backup_time: "03:30"
+backup_keep_days: 14

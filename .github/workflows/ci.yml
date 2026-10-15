@@ -10,6 +10,12 @@
 #   runner     ta-runner: ruff, import-linter (package structure), deptry and pytest, upstream
 #              contract tests included; also the Python tests of the agent scripts (scripts/agent)
 #   runner-image  the ta-runner image and its lockdown check, beside the build job
+#   runner-image-arm64  the same image built and checked on arm64, for arm64 servers: a missing
+#              arm64 wheel shows up here, before a deploy
+#   server     the server deployment (deploy/server/): ansible-lint, the playbook's syntax, and the
+#              setup scripts against a throwaway Ubuntu container (server:test-setup)
+#   server-e2e the server deployment end to end, this runner being the server (server:test); only
+#              when the deploy files change, else it passes at once
 #   images     the platform image, then the Docker Compose smoke test (deploy/smoke-test.sh);
 #              needs build and runner-image
 #   e2e        end-to-end tests (e2e/, Playwright) in parallel (playwright.config.ts), and the e2e
@@ -172,6 +178,107 @@ jobs:
           path: ${{ runner.temp }}/ta-runner-image.tar
           if-no-files-found: error
           retention-days: 1
+
+  # An arm64 server builds the image itself: build it on arm64 here to find a Python dependency
+  # without an arm64 wheel. Not the platform image: its JRE image is multi-arch and the jar is plain Java.
+  runner-image-arm64:
+    name: ta-runner image (arm64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version
+        id: version
+        run: echo "version=$(scripts/version.sh)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: ta-runner image
+        uses: docker/build-push-action@v7
+        with:
+          context: artifact/ta-runner
+          build-args: VERSION=${{ steps.version.outputs.version }}
+          tags: ta-runner:${{ steps.version.outputs.version }}
+          load: true
+          cache-from: type=gha,scope=ta-runner-arm64
+          cache-to: type=gha,scope=ta-runner-arm64,mode=max
+
+      - name: ta-runner image under the platform's lockdown
+        run: |
+          flags=(--rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --memory 1g --cpus 1)
+          image=ta-runner:${{ steps.version.outputs.version }}
+          docker run "${flags[@]}" "$image" version | jq -e --arg v "${{ steps.version.outputs.version }}" '.runner_version == $v'
+          docker run "${flags[@]}" "$image" catalog | jq -e '.providers | length > 0'
+          docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' | grep -Fx "${{ steps.version.outputs.version }}"
+
+  # The Ansible code is checked without a server. Installing the Ansible tools is why this is a job
+  # of its own and not part of `mise run check`.
+  server:
+    name: Server deploy (Ansible)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Ansible and ansible-lint (versions from mise.toml)
+        uses: jdx/mise-action@v5
+
+      - name: ansible-lint and the playbook's syntax
+        run: mise run server:check
+
+      - name: Setup scripts against a throwaway Ubuntu container
+        run: mise run server:test-setup
+
+  # The whole deployment, as deploy/server/README.md describes it, with this runner as the server:
+  # the setup scripts, then deploys over SSH to 127.0.0.1 (deploy/server/test-deploy.sh). It builds
+  # the images on the "server" (20 to 30 minutes), so it runs only when what it tests changes;
+  # otherwise it passes in seconds. It is in CI passed's needs either way.
+  server-e2e:
+    name: Server deploy end-to-end
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # The deployment, the images it builds, the tools and this job. On demand it always runs.
+      - name: Deploy files changed?
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before }}
+          PATTERN: '^(deploy/|artifact/ta-runner/Dockerfile$|mise\.toml$|\.github/workflows/ci\.yml$)'
+        run: |
+          case "$EVENT" in
+            workflow_dispatch) base="" ;;
+            pull_request) base=$(git merge-base "origin/$BASE_REF" HEAD) ;;
+            *) if [ "$REF" = refs/heads/main ]; then base=$BEFORE; else base=$(git merge-base origin/main HEAD || true); fi ;;
+          esac
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2> /dev/null; then
+            run=true
+          elif git diff --name-only "$base" HEAD | grep -qE "$PATTERN"; then
+            run=true
+          else
+            run=false
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "Deploy files changed since ${base:-(nothing to compare)}: $run"
+
+      - name: Ansible (versions from mise.toml)
+        if: steps.changes.outputs.run == 'true'
+        uses: jdx/mise-action@v5
+
+      - name: Deploy to this runner over SSH, as the README's steps do
+        if: steps.changes.outputs.run == 'true'
+        run: mise run server:test
+
+      - name: Nothing to test
+        if: steps.changes.outputs.run != 'true'
+        run: echo "No deploy files changed; the end-to-end test is not needed."
 
   images:
     name: Platform image and Compose smoke test
@@ -337,7 +444,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [build, runner, runner-image, images, version, e2e]
+    needs: [build, runner, runner-image, runner-image-arm64, server, server-e2e, images, version, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

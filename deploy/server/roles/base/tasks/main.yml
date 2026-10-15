@@ -1,0 +1,138 @@
+# A full upgrade on the first deploy, and when asked for (-e upgrade_packages=true); not on every
+# deploy, since there is nearly always something new, and a rerun must change nothing. The
+# security updates come daily from unattended-upgrades (below).
+- name: Create the directory of the deploy's own state
+  ansible.builtin.file:
+    path: /var/lib/trading-analysis-platform
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Find out whether a deploy upgraded the packages before
+  ansible.builtin.stat:
+    path: /var/lib/trading-analysis-platform/packages-upgraded
+  register: base_packages_upgraded
+
+- name: Upgrade the installed packages
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+    upgrade: dist
+  when: upgrade_packages | bool or not base_packages_upgraded.stat.exists
+
+- name: Remember that the packages were upgraded
+  ansible.builtin.copy:
+    content: ""
+    dest: /var/lib/trading-analysis-platform/packages-upgraded
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the base packages
+  ansible.builtin.apt:
+    name:
+      - acl
+      - ca-certificates
+      - cron
+      - curl
+      - git
+      - gnupg
+      - openssl
+      - ufw
+      - unattended-upgrades
+      - unzip
+    state: present
+
+- name: Turn on the automatic security updates
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Keep the server from rebooting by itself
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/52unattended-upgrades-local
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "false";
+    owner: root
+    group: root
+    mode: "0644"
+
+# The swap file: the build of the images and the analysis containers share the memory.
+- name: Allocate the swap file
+  ansible.builtin.command: fallocate -l {{ swap_size }} /swapfile
+  args:
+    creates: /swapfile
+
+- name: Restrict the swap file to root
+  ansible.builtin.file:
+    path: /swapfile
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Look for the swap signature of the swap file
+  ansible.builtin.command: blkid -p -s TYPE -o value /swapfile
+  register: base_swap_type
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Format the swap file
+  ansible.builtin.command: mkswap /swapfile
+  when: base_swap_type.stdout != 'swap'
+  changed_when: true
+
+- name: List the active swap
+  ansible.builtin.command: swapon --noheadings --show=NAME
+  register: base_swap_active
+  changed_when: false
+  check_mode: false
+
+- name: Turn the swap file on
+  ansible.builtin.command: swapon /swapfile
+  when: "'/swapfile' not in base_swap_active.stdout_lines"
+  changed_when: true
+
+- name: Mount the swap file at boot
+  ansible.posix.mount:
+    src: /swapfile
+    path: none
+    fstype: swap
+    opts: sw
+    state: present
+
+- name: Prefer RAM to swap
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "10"
+    sysctl_file: /etc/sysctl.d/99-swappiness.conf
+    state: present
+    reload: true
+
+# Only SSH comes in. The port is the inventory's (ansible_port), so a server with SSH on another
+# port keeps it; the rule is added before the firewall is enabled, so this connection survives.
+- name: Allow SSH
+  community.general.ufw:
+    rule: allow
+    port: "{{ ansible_port | default(22) | string }}"
+    proto: tcp
+
+- name: Deny incoming traffic by default
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Allow outgoing traffic by default
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: Enable the firewall
+  community.general.ufw:
+    state: enabled

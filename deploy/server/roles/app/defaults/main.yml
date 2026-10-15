@@ -1,0 +1,16 @@
+# The images `mise run docker-build` makes, as named in deploy/.env.
+app_platform_image: trading-analysis-platform:latest
+app_runner_image: ta-runner:latest
+
+# For the commands run as app_user (platform): sudo may keep the HOME of root.
+app_user_environment:
+  HOME: "/home/{{ app_user }}"
+  # sudo also brings the system-wide /etc/environment along, which may point these at another
+  # user's folders (GitHub's runners do: /home/runner/.config); the build's tools read them.
+  XDG_CONFIG_HOME: "/home/{{ app_user }}/.config"
+  XDG_CACHE_HOME: "/home/{{ app_user }}/.cache"
+  XDG_DATA_HOME: "/home/{{ app_user }}/.local/share"
+  XDG_STATE_HOME: "/home/{{ app_user }}/.local/state"
+  MISE_YES: "1"
+  # The tools of deploy/server/ and the Git hooks are for the controller; the build needs the JDK only.
+  MISE_DISABLE_TOOLS: pipx:ansible-core,pipx:ansible-lint,lefthook,uv
