@@ -1,5 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.bff.controller.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.MediaType;
@@ -77,13 +78,16 @@ public class AnalysesApiController {
     /**
      * Server-sent events: the run's events from {@code Last-Event-ID} (or {@code after}) onwards,
      * each with its {@code seq} as the event id, then an {@code end} event once the run is over.
+     * The stream belongs to the session that opened it: it is closed, without an {@code end} event,
+     * when that session ends.
      */
     @GetMapping(path = "/{id}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamEvents(
             @PathVariable String id,
             @RequestHeader(name = "Last-Event-ID", required = false) Long lastEventId,
-            @RequestParam(name = "after", required = false) Long after) {
+            @RequestParam(name = "after", required = false) Long after,
+            HttpServletRequest http) {
         long cursor = lastEventId != null ? lastEventId : after != null ? after : 0L;
-        return delegate.streamEvents(id, Math.max(cursor, 0L));
+        return delegate.streamEvents(id, Math.max(cursor, 0L), http);
     }
 }

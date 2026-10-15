@@ -1,5 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -168,7 +169,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     @Override
-    public SseEmitter streamEvents(String id, long afterSeq) {
+    public SseEmitter streamEvents(String id, long afterSeq, HttpServletRequest http) {
         // No timeout: runs take minutes, and the stream ends with the run.
         SseEmitter emitter = new SseEmitter(0L);
         AtomicReference<EventSubscription> subscription = new AtomicReference<>();

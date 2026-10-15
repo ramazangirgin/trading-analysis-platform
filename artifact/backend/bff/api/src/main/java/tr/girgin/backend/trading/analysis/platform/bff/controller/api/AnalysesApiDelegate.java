@@ -1,5 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.bff.controller.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -28,5 +29,5 @@ public interface AnalysesApiDelegate {
 
     ResponseEntity<RunLogDto> getLogs(String id, int tail);
 
-    SseEmitter streamEvents(String id, long afterSeq);
+    SseEmitter streamEvents(String id, long afterSeq, HttpServletRequest http);
 }
