@@ -1,11 +1,13 @@
 # shellcheck shell=bash disable=SC2034
 # Shared by the agent scripts (docs/agentic-development.md). Sourced,
-# not run. The agents are Claude Code, run headless on the developer's machine with the developer's
-# own Claude Code login; GitHub is reached through the developer's gh login and Git credentials.
+# not run. The agents are Claude Code, run headless on the developer's machine: with the developer's
+# own Claude Code login, or the DeepSeek API when it is configured. GitHub is reached through the
+# developer's gh login and Git credentials.
 # Configured by environment variables:
 #
-#   AGENT_MODEL          developer agent (implement, fix-ci, fix); default Sonnet
-#   AGENT_REVIEW_MODEL   review agent; default Opus
+#   AGENT_MODEL          developer agent (implement, fix-ci, fix); default Sonnet, or
+#                        deepseek-v4-pro on the DeepSeek endpoint
+#   AGENT_REVIEW_MODEL   review agent; default Opus, or deepseek-v4-pro on the DeepSeek endpoint
 #   AGENT_MAX_ROUNDS     review → fix rounds; default 2
 #   AGENT_MAX_CI_FIXES   attempts to fix a red CI over the whole pull request; default 3
 #   AGENT_MAX_TOKENS     tokens (input, cached and output) over the whole pull request; default 50000000
@@ -50,8 +52,32 @@ if ! command -v mise >/dev/null && [ -x "$HOME/.local/bin/mise" ]; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 
-AGENT_MODEL=${AGENT_MODEL:-claude-sonnet-5-5}
-AGENT_REVIEW_MODEL=${AGENT_REVIEW_MODEL:-claude-opus-5-5}
+DEEPSEEK_ENV_FILE="$HOME/.claude/deepseek.env"
+
+# Load the DeepSeek config when it is present but not in this environment: a detached agent runs in
+# a fresh bash that does not source the shell rc, and the agents must use DeepSeek (never the Claude
+# Code subscription) when it is configured.
+if [ -f "$DEEPSEEK_ENV_FILE" ] && [ -z "${ANTHROPIC_AUTH_TOKEN:-}" ]; then
+  # shellcheck disable=SC1090
+  . "$DEEPSEEK_ENV_FILE"
+fi
+
+# DeepSeek is configured when ANTHROPIC_BASE_URL points at it or its env file is present.
+deepseek_enabled() {
+  case "${ANTHROPIC_BASE_URL:-}" in
+    *deepseek*) return 0 ;;
+  esac
+  [ -f "$DEEPSEEK_ENV_FILE" ]
+}
+
+if deepseek_enabled; then
+  # On the DeepSeek endpoint both agents use the pro model.
+  AGENT_MODEL=${AGENT_MODEL:-deepseek-v4-pro}
+  AGENT_REVIEW_MODEL=${AGENT_REVIEW_MODEL:-deepseek-v4-pro}
+else
+  AGENT_MODEL=${AGENT_MODEL:-claude-sonnet-5-5}
+  AGENT_REVIEW_MODEL=${AGENT_REVIEW_MODEL:-claude-opus-5-5}
+fi
 AGENT_MAX_ROUNDS=${AGENT_MAX_ROUNDS:-2}
 AGENT_MAX_CI_FIXES=${AGENT_MAX_CI_FIXES:-3}
 AGENT_MAX_TOKENS=${AGENT_MAX_TOKENS:-50000000}
@@ -289,9 +315,18 @@ pr_of_branch() {
 # --- Claude Code ---------------------------------------------------------------------------------
 
 # Claude Code with the developer's own login: an API key or another endpoint in the environment
-# would take precedence over it, so they are removed for the agents.
+# would take precedence over it, so they are removed for the agents. The DeepSeek endpoint is the
+# exception: when it is configured (deepseek_enabled), the agents use it, and never the login.
 use_claude_login() {
-  unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL ANTHROPIC_MODEL
+  if deepseek_enabled; then
+    # Never fall back to the Claude Code subscription on the DeepSeek endpoint: fail if the
+    # endpoint or token is missing instead of silently using the login.
+    [ -n "${ANTHROPIC_BASE_URL:-}" ] || die "DeepSeek is configured but ANTHROPIC_BASE_URL is not set"
+    [ -n "${ANTHROPIC_AUTH_TOKEN:-}" ] || die "DeepSeek is configured but ANTHROPIC_AUTH_TOKEN is not set"
+    unset ANTHROPIC_API_KEY
+  else
+    unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL ANTHROPIC_MODEL
+  fi
   export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 }
 

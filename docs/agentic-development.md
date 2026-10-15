@@ -66,8 +66,10 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   skills, `CLAUDE.md`, subagents and hooks for every step, no API key or other model endpoint to
   manage, and no secrets in GitHub. The agents run headless (`claude -p`); the scripts remove any
   `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_BASE_URL` from their environment, so the
-  login is always what they use. GitHub is reached through the developer's `gh` login and Git
-  credentials, so the developer's pushes start CI as usual.
+  login is what they use — unless the DeepSeek endpoint is configured (`scripts/claude-deepseek.sh`),
+  in which case the agents use it (both on `deepseek-v4-pro`) and never the login. GitHub is reached
+  through the developer's `gh` login and Git credentials, so the developer's pushes start CI as
+  usual.
 - **Scripts, one per step.** [`scripts/agent/`](../scripts/agent) holds one script per step and
   `run.sh`, which runs them all; mise tasks start them. Each step can also be run, and debugged, on
   its own.
@@ -452,8 +454,8 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 
 | Variable | Default | What |
 |---|---|---|
-| `AGENT_MODEL` | `claude-sonnet-5-5` | The developer agent's model (implement, fix-ci, fix) |
-| `AGENT_REVIEW_MODEL` | `claude-opus-5-5` | The review agent's model |
+| `AGENT_MODEL` | `claude-sonnet-5-5` (`deepseek-v4-pro` on the DeepSeek endpoint) | The developer agent's model (implement, fix-ci, fix) |
+| `AGENT_REVIEW_MODEL` | `claude-opus-5-5` (`deepseek-v4-pro` on the DeepSeek endpoint) | The review agent's model |
 | `AGENT_MAX_ROUNDS` | 2 | Review → fix rounds |
 | `AGENT_MAX_CI_FIXES` | 3 | Attempts at a red CI, per pull request |
 | `AGENT_MAX_TOKENS` | 50 000 000 | Tokens per pull request, cached input included |
