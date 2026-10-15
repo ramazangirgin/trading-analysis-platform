@@ -142,13 +142,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Docs
 
+- **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**: `README.md`
 - **Steps**:
-  - [ ] Section "Login", the backend list: the live event stream (`GET /api/analyses/{id}/events`)
+  - [x] Section "Login", the backend list: the live event stream (`GET /api/analyses/{id}/events`)
         needs a session like every other `/api/**` route, and an open stream is closed when its
         session ends (logout, idle timeout, a password change in another session).
-  - [ ] Same section, the UI list: when a run's live stream closes because the session ended, the
+  - [x] Same section, the UI list: when a run's live stream closes because the session ended, the
         run page goes to the login page and returns to the run after login.
 - **Tests**: none (`mise run check` covers the formatting).
 
