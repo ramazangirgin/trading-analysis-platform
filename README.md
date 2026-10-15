@@ -356,6 +356,8 @@ page (`/login`):
 - Opening any page without a session leads to `/login?redirect=<page>`; after login the UI returns
   to the requested page. The header shows the username with a logout action, which ends the session
   and loads `/login` afresh. When the session ends (any 401), the UI goes back to the login page.
+- When a run's live stream closes because the session ended, the run page goes to the login page
+  and returns to the run after login.
 - The UI sends the CSRF header `X-XSRF-TOKEN` itself on every unsafe request.
 - The end-to-end tests log in as the first admin that `e2e/start-platform.sh` configures
   (`admin` / `e2e-test-password`), and so do the screenshots.
@@ -383,6 +385,9 @@ The backend:
   the username. The minimum is set with `PLATFORM_PASSWORD_MIN_LENGTH` (8 to 64, default 12).
 - Every other `/api/**` route answers 401 (`unauthorized`) without a session. The static UI,
   `/actuator/**` and `/api/openapi/**` stay open.
+- The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session like every
+  other `/api/**` route, and a stream that is open when its session ends (logout, idle timeout,
+  a password change in another session) is closed by the server.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
   `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.
 - Sessions live in the server's memory, so a restart logs everyone out. The idle timeout is
