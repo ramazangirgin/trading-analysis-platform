@@ -52,6 +52,8 @@ class AnalysesApiIntegrationTest {
             echo "INFO loading tradingagents" >&2
             echo "ERROR Incorrect API key provided: sk-proj-abcdEFGH12345678xyz" >&2
             [ "$SLOW_TICKER" != "" ] && grep -q "\\"ticker\\": *\\"$SLOW_TICKER\\"" "$3" && sleep 8
+            # While the test holds a run open (a file next to this script), it does not start, however long the test takes.
+            n=0; while [ -e "$(dirname "$0")/hold" ] && [ "$n" -lt 600 ]; do sleep 0.1; n=$((n+1)); done
             # Like ta-runner: each event goes to <out>/events.jsonl first, then to stdout.
             line() { printf '{"v":1,"ts":"2026-09-29T10:00:0%sZ","run_id":"x","seq":%s,"type":"%s"%s}\\n' "$1" "$1" "$2" "$3" | tee -a "$OUT/events.jsonl"; }
             line 1 run_started ',"spec":{}'
@@ -205,6 +207,8 @@ class AnalysesApiIntegrationTest {
         String username = TestSession.createUser(users, hasher, true);
         TestSession first = loggedInAs(username);
         TestSession second = loggedInAs(username);
+        // The run is held back until the assertions on the ended session are done.
+        Path hold = Files.createFile(HOME.resolve("hold"));
         String id = JSON.readTree(
                         first.send("POST", "/api/analyses", request("SLOW")).body())
                 .get("id")
@@ -212,15 +216,20 @@ class AnalysesApiIntegrationTest {
         InputStream ownStream = openStream(first, id, null);
         InputStream otherStream = openStream(second, id, null);
 
-        assertThat(first.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
-                .isEqualTo(200);
+        try {
+            assertThat(first.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
+                    .isEqualTo(200);
 
-        // The other session's stream ends at once, without an end event.
-        assertThat(readEvents(otherStream)).extracting(SseEvent::name).doesNotContain("end");
+            // The other session's stream ends at once, without an end event.
+            assertThat(readEvents(otherStream)).extracting(SseEvent::name).doesNotContain("end");
 
-        // The other session itself is expired: its cookies no longer open the stream.
-        assertThat(second.send("GET", "/api/analyses/" + id + "/events", null).statusCode())
-                .isEqualTo(401);
+            // The other session itself is expired: its cookies no longer open the stream.
+            assertThat(second.send("GET", "/api/analyses/" + id + "/events", null)
+                            .statusCode())
+                    .isEqualTo(401);
+        } finally {
+            Files.deleteIfExists(hold);
+        }
 
         // This session's stream stays open and still sees the run to its end.
         List<SseEvent> ownEvents = readEvents(ownStream);
