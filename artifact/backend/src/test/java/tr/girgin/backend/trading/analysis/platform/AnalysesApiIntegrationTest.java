@@ -238,6 +238,26 @@ class AnalysesApiIntegrationTest {
     }
 
     @Test
+    void loggingOutAfterAPasswordChangeClosesTheStreamThatMovedToTheNewSessionId() throws Exception {
+        String username = TestSession.createUser(users, hasher, true);
+        TestSession first = loggedInAs(username);
+        String id = JSON.readTree(
+                        first.send("POST", "/api/analyses", request("SLOW")).body())
+                .get("id")
+                .asString();
+        InputStream stream = openStream(first, id, null);
+
+        // The password change rotates this session's ID; the open stream moves with it.
+        assertThat(first.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
+                .isEqualTo(200);
+        assertThat(first.send("POST", "/api/auth/logout", null).statusCode()).isEqualTo(204);
+
+        assertThat(readEvents(stream)).extracting(SseEvent::name).doesNotContain("end");
+
+        awaitStatus(TestSession.loggedIn(port, users, hasher), id, "COMPLETED");
+    }
+
+    @Test
     void rejectsASecondRunForTheSameTickerAndDate() throws Exception {
         String first = JSON.readTree(post("/api/analyses", request("SLOW")).body())
                 .get("id")

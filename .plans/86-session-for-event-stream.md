@@ -85,7 +85,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Backend: tie open streams to their session
 
-- **Status**: done
+- **Status**: done. Deviations: `SessionEventStreams` is public and lives in
+  `bff.delegate.impl.config`, not package-private in `bff.delegate.impl`, because the architecture
+  test `delegate_root_holds_only_delegate_impls` forbids the latter. It also listens for
+  `HttpSessionIdChangedEvent` and moves its streams to the new ID, because a password change rotates
+  the session ID and a later logout would otherwise not close them.
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/controller/api/AnalysesApiController.java`
