@@ -29,17 +29,17 @@ public final class SessionEventStreams {
      */
     public void register(String sessionId, SseEmitter emitter) {
         streams.computeIfAbsent(sessionId, _ -> ConcurrentHashMap.newKeySet()).add(emitter);
-        emitter.onCompletion(() -> remove(sessionId, emitter));
-        emitter.onTimeout(() -> remove(sessionId, emitter));
-        emitter.onError(_ -> remove(sessionId, emitter));
+        emitter.onCompletion(() -> remove(emitter));
+        emitter.onTimeout(() -> remove(emitter));
+        emitter.onError(_ -> remove(emitter));
     }
 
     /**
      * Removes the emitter at once. An emitter that completed before Spring MVC initialised it never
      * runs the callbacks {@link #register} adds, so its owner removes it by hand.
      */
-    public void unregister(String sessionId, SseEmitter emitter) {
-        remove(sessionId, emitter);
+    public void unregister(SseEmitter emitter) {
+        remove(emitter);
     }
 
     /** Ends every open stream of the session, without an {@code end} event: the run may go on. */
@@ -64,10 +64,12 @@ public final class SessionEventStreams {
         }
     }
 
-    private void remove(String sessionId, SseEmitter emitter) {
-        streams.computeIfPresent(sessionId, (_, emitters) -> {
-            emitters.remove(emitter);
-            return emitters.isEmpty() ? null : emitters;
-        });
+    /** Drops the emitter from whichever set holds it: its session ID may have changed since. */
+    private void remove(SseEmitter emitter) {
+        streams.keySet()
+                .forEach(sessionId -> streams.computeIfPresent(sessionId, (_, emitters) -> {
+                    emitters.remove(emitter);
+                    return emitters.isEmpty() ? null : emitters;
+                }));
     }
 }

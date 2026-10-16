@@ -220,7 +220,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             // A run that ended before Spring MVC initialised the emitter (a finished run replays and
             // completes inside subscribe) never runs the removal callbacks, so remove it here.
             if (ended.get()) {
-                sessionEventStreams.unregister(session.getId(), emitter);
+                sessionEventStreams.unregister(emitter);
             }
         }
         return emitter;

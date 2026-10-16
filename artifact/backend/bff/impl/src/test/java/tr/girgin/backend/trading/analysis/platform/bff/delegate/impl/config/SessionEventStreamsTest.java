@@ -78,7 +78,7 @@ class SessionEventStreamsTest {
         SseEmitter emitter = mock(SseEmitter.class);
         streams.register("s1", emitter);
 
-        streams.unregister("s1", emitter);
+        streams.unregister(emitter);
         streams.close("s1");
 
         verify(emitter, never()).complete();
@@ -107,6 +107,22 @@ class SessionEventStreamsTest {
 
         streams.close("s2");
         verify(emitter).complete();
+    }
+
+    @Test
+    void anEmitterMovedToANewIdLeavesItWhenItEnds() {
+        SseEmitter emitter = mock(SseEmitter.class);
+        ArgumentCaptor<Runnable> onCompletion = ArgumentCaptor.forClass(Runnable.class);
+        streams.register("s1", emitter);
+        verify(emitter).onCompletion(onCompletion.capture());
+        HttpSession session = mock(HttpSession.class);
+        when(session.getId()).thenReturn("s2");
+        streams.onSessionIdChanged(new HttpSessionIdChangedEvent(session, "s1"));
+
+        onCompletion.getValue().run();
+        streams.close("s2");
+
+        verify(emitter, never()).complete();
     }
 
     @Test
