@@ -152,15 +152,16 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: ANALYST and VIEWER roles
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/adapter/src/main/resources/tr/girgin/backend/trading/analysis/platform/domain/identity/adapter/persistence/migration/V4__seed_analyst_and_viewer_roles.sql` (new)
   - `artifact/backend/domain/identity/core/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/identity/core/model/RoleId.java`
   - `artifact/backend/domain/identity/adapter/src/test/java/tr/girgin/backend/trading/analysis/platform/domain/identity/adapter/persistence/JpaIdentityRepositoryTest.java`
 - **Steps**:
-  - [ ] Write the migration with a header comment in the style of V3 (what it seeds, why the IDs
+  - [x] Write the migration with a header comment in the style of V3 (what it seeds, why the IDs
         are fixed, that a new `Permission` needs a migration deciding which built-in roles get it).
-  - [ ] Add `RoleId.ANALYST` and `RoleId.VIEWER`.
+  - [x] Add `RoleId.ANALYST` and `RoleId.VIEWER`.
 - **Tests**: `JpaIdentityRepositoryTest` loads `RoleId.ANALYST` and `RoleId.VIEWER` (next to the
   existing ADMIN case) and asserts name, `builtIn` and the exact permission sets; a user saved with
   one of them round-trips.
