@@ -193,6 +193,9 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         if (session != null) {
             sessionEventStreams.register(session.getId(), emitter);
         }
+        // The headers only go out with the first write: a comment commits the stream at once, so the
+        // client sees it open while the run has yet to send an event (and can be closed meanwhile).
+        send(emitter, SseEmitter.event().comment("open"));
         try {
             // Events sent before this method returns are buffered by the emitter.
             subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
