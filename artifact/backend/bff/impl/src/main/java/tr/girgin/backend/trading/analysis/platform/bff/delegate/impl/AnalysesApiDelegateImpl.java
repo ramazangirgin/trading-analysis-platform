@@ -187,37 +187,33 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         emitter.onCompletion(cancel);
         emitter.onTimeout(cancel);
         emitter.onError(_ -> cancel.run());
-        // The stream belongs to the session that opened it and ends with it. The security chain
-        // guarantees a session here; without one (not reachable in practice) nothing is registered.
-        HttpSession session = http.getSession(false);
-        if (session != null) {
-            sessionEventStreams.register(session.getId(), emitter);
-        }
         // The headers only go out with the first write: a comment commits the stream at once, so the
         // client sees it open while the run has yet to send an event (and can be closed meanwhile).
         send(emitter, SseEmitter.event().comment("open"));
-        try {
-            // Events sent before this method returns are buffered by the emitter.
-            subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
-                @Override
-                public void onEvent(RunEvent event) {
-                    send(
-                            emitter,
-                            SseEmitter.event()
-                                    .id(Long.toString(event.seq()))
-                                    .data(eventMapper.map(event), MediaType.APPLICATION_JSON));
-                }
+        // Events sent before this method returns are buffered by the emitter.
+        subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
+            @Override
+            public void onEvent(RunEvent event) {
+                send(
+                        emitter,
+                        SseEmitter.event()
+                                .id(Long.toString(event.seq()))
+                                .data(eventMapper.map(event), MediaType.APPLICATION_JSON));
+            }
 
-                @Override
-                public void onComplete() {
-                    send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
-                    emitter.complete();
-                }
-            })));
-        } catch (ApiException e) {
-            // No stream goes out: complete the emitter so it leaves the session's registrations again.
-            emitter.complete();
-            throw e;
+            @Override
+            public void onComplete() {
+                send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
+                emitter.complete();
+            }
+        })));
+        // The stream belongs to the session that opened it and ends with it. It is registered only
+        // once the subscription holds: a failed one never returns the emitter to Spring MVC, so
+        // nothing would ever remove it again. The security chain guarantees a session here; without
+        // one (not reachable in practice) nothing is registered.
+        HttpSession session = http.getSession(false);
+        if (session != null) {
+            sessionEventStreams.register(session.getId(), emitter);
         }
         return emitter;
     }
