@@ -1,11 +1,14 @@
 package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
@@ -21,6 +24,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisStatusDtoToAnalysisStatusMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisToAnalysisDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PriceHistoryToPriceHistoryDtoMapper;
@@ -70,6 +74,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final AnalysisExceptionToApiExceptionMapper errorMapper;
     private final ReportToAnalysisReportDtoMapper reportMapper;
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
+    private final SessionEventStreams sessionEventStreams;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
@@ -89,7 +94,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
             AnalysisExceptionToApiExceptionMapper errorMapper,
             ReportToAnalysisReportDtoMapper reportMapper,
-            PriceHistoryToPriceHistoryDtoMapper pricesMapper) {
+            PriceHistoryToPriceHistoryDtoMapper pricesMapper,
+            SessionEventStreams sessionEventStreams) {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
@@ -107,6 +113,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.errorMapper = errorMapper;
         this.reportMapper = reportMapper;
         this.pricesMapper = pricesMapper;
+        this.sessionEventStreams = sessionEventStreams;
     }
 
     @Override
@@ -168,10 +175,11 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     @Override
-    public SseEmitter streamEvents(String id, long afterSeq) {
+    public SseEmitter streamEvents(String id, long afterSeq, HttpServletRequest http) {
         // No timeout: runs take minutes, and the stream ends with the run.
         SseEmitter emitter = new SseEmitter(0L);
         AtomicReference<EventSubscription> subscription = new AtomicReference<>();
+        AtomicBoolean ended = new AtomicBoolean();
         Runnable cancel = () -> {
             EventSubscription current = subscription.get();
             if (current != null) {
@@ -181,6 +189,9 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         emitter.onCompletion(cancel);
         emitter.onTimeout(cancel);
         emitter.onError(_ -> cancel.run());
+        // The headers only go out with the first write: a comment commits the stream at once, so the
+        // client sees it open while the run has yet to send an event (and can be closed meanwhile).
+        send(emitter, SseEmitter.event().comment("open"));
         // Events sent before this method returns are buffered by the emitter.
         subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
             @Override
@@ -195,9 +206,23 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             @Override
             public void onComplete() {
                 send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
+                ended.set(true);
                 emitter.complete();
             }
         })));
+        // The stream belongs to the session that opened it and ends with it. It is registered only
+        // once the subscription holds: a failed one never returns the emitter to Spring MVC, so
+        // nothing would ever remove it again. The security chain guarantees a session here; without
+        // one (not reachable in practice) nothing is registered.
+        HttpSession session = http.getSession(false);
+        if (session != null) {
+            sessionEventStreams.register(session.getId(), emitter);
+            // A run that ended before Spring MVC initialised the emitter (a finished run replays and
+            // completes inside subscribe) never runs the removal callbacks, so remove it here.
+            if (ended.get()) {
+                sessionEventStreams.unregister(emitter);
+            }
+        }
         return emitter;
     }
 

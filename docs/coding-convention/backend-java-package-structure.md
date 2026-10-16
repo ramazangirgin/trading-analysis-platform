@@ -38,7 +38,8 @@ bff/delegate/impl/
   mapper/                          DTO <-> domain mappers and their scalar converters
   mapper/error/                    *ExceptionToApiExceptionMapper
   config/                          security configuration: SecurityConfig, its filters and its
-                                   401/403 handlers
+                                   401/403 handlers; SessionEventStreams, the registry that ties
+                                   open event streams to their session
 domain/<d>/core/
   model/                           value types, records, enums
   exception/                       *Exception and their error-code enums (*Error)

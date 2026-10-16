@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -38,6 +39,7 @@ class AnalysesApiIntegrationTest {
     private static final Path HOME = TestPlatformHome.create();
     private static final Path RUNNER = HOME.resolve("runner.sh");
     private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final String NEW_PASSWORD = "a brand new password";
 
     // A short run: four events, the last one ending it. The ticker named by SLOW_TICKER (set in
     // the secrets file, so it reaches the runner's environment) waits three seconds first.
@@ -161,6 +163,98 @@ class AnalysesApiIntegrationTest {
         List<SseEvent> events = readStream(id, "2");
 
         assertThat(events).extracting(SseEvent::id).containsExactly("3", "4", null);
+    }
+
+    @Test
+    void theEventStreamWithoutASessionAnswers401() throws Exception {
+        TestSession anonymous = TestSession.anonymous(port);
+
+        HttpResponse<String> response = anonymous.send("GET", "/api/analyses/r_unknown/events", null);
+
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(JSON.readTree(response.body()).get("errorCode").asString()).isEqualTo("unauthorized");
+    }
+
+    @Test
+    void theEventStreamOfAnUnknownRunAnswers404ToALoggedInSession() throws Exception {
+        HttpResponse<String> response = session.send("GET", "/api/analyses/r_unknown/events", null);
+
+        assertThat(response.statusCode()).isEqualTo(404);
+        assertThat(response.headers().firstValue("Content-Type").orElse("")).contains("json");
+        assertThat(JSON.readTree(response.body()).get("errorCode").asString()).isEqualTo("not_found");
+    }
+
+    @Test
+    void loggingOutClosesTheOpenStreamWithoutAnEndEvent() throws Exception {
+        String id = JSON.readTree(post("/api/analyses", request("SLOW")).body())
+                .get("id")
+                .asString();
+        InputStream stream = openStream(session, id, null);
+        String oldSession = session.cookie(TestSession.SESSION_COOKIE);
+
+        assertThat(session.send("POST", "/api/auth/logout", null).statusCode()).isEqualTo(204);
+
+        // The server ends the stream while the run is still going, without an end event.
+        assertThat(readEvents(stream)).extracting(SseEvent::name).doesNotContain("end");
+
+        // The session is gone: the old cookies no longer open the stream.
+        session.setCookie(TestSession.SESSION_COOKIE, oldSession);
+        HttpResponse<String> after = session.send("GET", "/api/analyses/" + id + "/events", null);
+        assertThat(after.statusCode()).isEqualTo(401);
+        assertThat(JSON.readTree(after.body()).get("errorCode").asString()).isEqualTo("unauthorized");
+
+        // The run is left to finish, so the next test can start its own SLOW run.
+        awaitStatus(TestSession.loggedIn(port, users, hasher), id, "COMPLETED");
+    }
+
+    @Test
+    void aPasswordChangeClosesTheOtherSessionsStreamAndKeepsThisSessions() throws Exception {
+        String username = TestSession.createUser(users, hasher, true);
+        TestSession first = loggedInAs(username);
+        TestSession second = loggedInAs(username);
+        String id = JSON.readTree(
+                        first.send("POST", "/api/analyses", request("SLOW")).body())
+                .get("id")
+                .asString();
+        InputStream ownStream = openStream(first, id, null);
+        InputStream otherStream = openStream(second, id, null);
+
+        assertThat(first.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
+                .isEqualTo(200);
+
+        // The other session's stream ends at once, without an end event.
+        assertThat(readEvents(otherStream)).extracting(SseEvent::name).doesNotContain("end");
+
+        // The other session itself is expired: its cookies no longer open the stream.
+        assertThat(second.send("GET", "/api/analyses/" + id + "/events", null).statusCode())
+                .isEqualTo(401);
+
+        // This session's stream stays open and still sees the run to its end.
+        List<SseEvent> ownEvents = readEvents(ownStream);
+        assertThat(ownEvents).extracting(SseEvent::id).containsExactly("1", "2", "3", "4", null);
+        assertThat(ownEvents.getLast().name()).isEqualTo("end");
+
+        awaitStatus(first, id, "COMPLETED");
+    }
+
+    @Test
+    void loggingOutAfterAPasswordChangeClosesTheStreamThatMovedToTheNewSessionId() throws Exception {
+        String username = TestSession.createUser(users, hasher, true);
+        TestSession first = loggedInAs(username);
+        String id = JSON.readTree(
+                        first.send("POST", "/api/analyses", request("SLOW")).body())
+                .get("id")
+                .asString();
+        InputStream stream = openStream(first, id, null);
+
+        // The password change rotates this session's ID; the open stream moves with it.
+        assertThat(first.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
+                .isEqualTo(200);
+        assertThat(first.send("POST", "/api/auth/logout", null).statusCode()).isEqualTo(204);
+
+        assertThat(readEvents(stream)).extracting(SseEvent::name).doesNotContain("end");
+
+        awaitStatus(TestSession.loggedIn(port, users, hasher), id, "COMPLETED");
     }
 
     @Test
@@ -303,11 +397,22 @@ class AnalysesApiIntegrationTest {
                  "deepThinkLlm":"deepseek-v4-pro","quickThinkLlm":"deepseek-v4-flash"}""".formatted(ticker);
     }
 
+    private TestSession loggedInAs(String username) throws Exception {
+        TestSession client = TestSession.anonymous(port);
+        assertThat(client.login(username, TestSession.PASSWORD).statusCode()).isEqualTo(200);
+        return client;
+    }
+
     private JsonNode awaitStatus(String id, String status) throws Exception {
+        return awaitStatus(session, id, status);
+    }
+
+    private static JsonNode awaitStatus(TestSession client, String id, String status) throws Exception {
         long deadline = System.nanoTime() + Duration.ofSeconds(20).toNanos();
         JsonNode analysis;
         do {
-            analysis = JSON.readTree(get("/api/analyses/" + id).body());
+            analysis = JSON.readTree(
+                    client.send("GET", "/api/analyses/" + id, null).body());
             if (analysis.get("status").asString().equals(status)) {
                 return analysis;
             }
@@ -317,17 +422,29 @@ class AnalysesApiIntegrationTest {
     }
 
     private List<SseEvent> readStream(String id, String lastEventId) throws Exception {
-        HttpRequest.Builder request = session.builder("/api/analyses/" + id + "/events")
+        return readEvents(openStream(session, id, lastEventId));
+    }
+
+    /**
+     * Opens the stream and returns its body; the run's events arrive there as they happen.
+     *
+     * @throws Exception if the request fails
+     */
+    private InputStream openStream(TestSession client, String id, String lastEventId) throws Exception {
+        HttpRequest.Builder request = client.builder("/api/analyses/" + id + "/events")
                 .timeout(Duration.ofSeconds(20))
                 .header("Accept", "text/event-stream");
         if (lastEventId != null) {
             request.header("Last-Event-ID", lastEventId);
         }
-        HttpResponse<java.io.InputStream> response = session.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
         assertThat(response.statusCode()).isEqualTo(200);
+        return response.body();
+    }
+
+    private static List<SseEvent> readEvents(InputStream body) throws IOException {
         List<SseEvent> events = new ArrayList<>();
-        try (BufferedReader reader =
-                new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8))) {
             String eventId = null;
             String name = null;
             StringBuilder data = new StringBuilder();
