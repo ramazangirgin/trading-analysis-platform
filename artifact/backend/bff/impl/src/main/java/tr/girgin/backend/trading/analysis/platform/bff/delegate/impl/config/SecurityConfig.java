@@ -105,7 +105,6 @@ public class SecurityConfig {
                 .addFilterBefore(new LoginRateLimitFilter(loginAttemptLimiter, writer), CsrfFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterAfter(new PasswordChangeRequiredFilter(writer), AuthorizationFilter.class)
-<<<<<<< HEAD
                 .authorizeHttpRequests(requests -> requests
                         // An ASYNC dispatch continues a request that was authorized when it
                         // started (an event stream closed by its session's end): it must pass,
@@ -118,26 +117,13 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/openapi", "/api/openapi/**", "/actuator/**")
                         .permitAll()
+                        // Checked here and not on the controller: bff.controller.api holds no security code.
+                        .requestMatchers(HttpMethod.POST, "/api/users/*/unlock")
+                        .hasAuthority(Permission.USER_MANAGE.key())
                         .requestMatchers("/api/**")
                         .authenticated()
                         .anyRequest()
                         .permitAll());
-=======
-                .authorizeHttpRequests(
-                        requests -> requests.requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout")
-                                .permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/auth/me")
-                                .permitAll()
-                                .requestMatchers("/api/openapi", "/api/openapi/**", "/actuator/**")
-                                .permitAll()
-                                // Checked here and not on the controller: bff.controller.api holds no security code.
-                                .requestMatchers(HttpMethod.POST, "/api/users/*/unlock")
-                                .hasAuthority(Permission.USER_MANAGE.key())
-                                .requestMatchers("/api/**")
-                                .authenticated()
-                                .anyRequest()
-                                .permitAll());
->>>>>>> origin/main
         return http.build();
     }
 }
