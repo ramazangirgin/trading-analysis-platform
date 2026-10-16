@@ -176,6 +176,15 @@ class AnalysesApiIntegrationTest {
     }
 
     @Test
+    void theEventStreamOfAnUnknownRunAnswers404ToALoggedInSession() throws Exception {
+        HttpResponse<String> response = session.send("GET", "/api/analyses/r_unknown/events", null);
+
+        assertThat(response.statusCode()).isEqualTo(404);
+        assertThat(response.headers().firstValue("Content-Type").orElse("")).contains("json");
+        assertThat(JSON.readTree(response.body()).get("errorCode").asString()).isEqualTo("not_found");
+    }
+
+    @Test
     void loggingOutClosesTheOpenStreamWithoutAnEndEvent() throws Exception {
         String id = JSON.readTree(post("/api/analyses", request("SLOW")).body())
                 .get("id")
