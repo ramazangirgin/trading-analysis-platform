@@ -42,14 +42,16 @@ class AnalysesApiIntegrationTest {
     private static final String NEW_PASSWORD = "a brand new password";
 
     // A short run: four events, the last one ending it. The ticker named by SLOW_TICKER (set in
-    // the secrets file, so it reaches the runner's environment) waits three seconds first.
+    // the secrets file, so it reaches the runner's environment) waits eight seconds first: longer
+    // than a password change takes on a slow CI runner (it hashes three times), so a stream is
+    // still open when the session ends.
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     private static final String SCRIPT = """
             #!/bin/sh
             OUT="$5"
             echo "INFO loading tradingagents" >&2
             echo "ERROR Incorrect API key provided: sk-proj-abcdEFGH12345678xyz" >&2
-            [ "$SLOW_TICKER" != "" ] && grep -q "\\"ticker\\": *\\"$SLOW_TICKER\\"" "$3" && sleep 3
+            [ "$SLOW_TICKER" != "" ] && grep -q "\\"ticker\\": *\\"$SLOW_TICKER\\"" "$3" && sleep 8
             # Like ta-runner: each event goes to <out>/events.jsonl first, then to stdout.
             line() { printf '{"v":1,"ts":"2026-09-29T10:00:0%sZ","run_id":"x","seq":%s,"type":"%s"%s}\\n' "$1" "$1" "$2" "$3" | tee -a "$OUT/events.jsonl"; }
             line 1 run_started ',"spec":{}'
