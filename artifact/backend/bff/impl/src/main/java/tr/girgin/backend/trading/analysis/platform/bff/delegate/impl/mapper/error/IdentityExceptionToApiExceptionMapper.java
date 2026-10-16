@@ -15,6 +15,7 @@ public interface IdentityExceptionToApiExceptionMapper {
         HttpStatus status = switch (source.error()) {
             case BAD_CREDENTIALS -> HttpStatus.UNAUTHORIZED;
             case WRONG_CURRENT_PASSWORD, PASSWORD_UNCHANGED, WEAK_PASSWORD -> HttpStatus.BAD_REQUEST;
+            case USER_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case INVALID_USERNAME, UNKNOWN_PERMISSION -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
         return new ApiException(

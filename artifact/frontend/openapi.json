@@ -413,6 +413,29 @@
                 }
             }
         },
+        "/api/users/{id}/unlock": {
+            "post": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "unlock",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/secrets": {
             "get": {
                 "tags": [

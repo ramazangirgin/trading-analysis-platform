@@ -1,0 +1,23 @@
+- name: Create the backup directory
+  ansible.builtin.file:
+    path: "{{ platform_data }}/backups"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0700"
+
+- name: Install the backup script
+  ansible.builtin.template:
+    src: backup.sh.j2
+    dest: /usr/local/bin/trading-analysis-platform-backup
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Schedule the daily database backup
+  ansible.builtin.cron:
+    name: Dump the platform database
+    user: "{{ app_user }}"
+    minute: "{{ backup_time.split(':')[1] | int }}"
+    hour: "{{ backup_time.split(':')[0] | int }}"
+    job: /usr/local/bin/trading-analysis-platform-backup

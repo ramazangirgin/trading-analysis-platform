@@ -5,6 +5,9 @@ import { E2E_PASSWORD, E2E_USER } from './support'
 // tests must stay alive, and logging out here would end it.
 test.use({ storageState: { cookies: [], origins: [] } })
 
+// Failed logins here must stay below the account lockout (5 in a row) and the per-address limit
+// (20 in 5 minutes, #85), retries included: every e2e test runs as the one shared admin from
+// 127.0.0.1, so locking it or using up the address's failure budget fails the parallel suite.
 async function logIn(page: Page, username: string, password: string) {
   await page.getByPlaceholder('Username').fill(username)
   await page.getByPlaceholder('Password').fill(password)

@@ -1,8 +1,12 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -22,6 +26,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 class AuthenticationService implements AuthenticateUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
+    private static final int MAX_ATTEMPTS = 3;
 
     private final UserRepositoryPort users;
     private final AuthenticatedUserFactory authenticatedUsers;
@@ -29,11 +34,20 @@ class AuthenticationService implements AuthenticateUseCase {
     /** Checked when the user is unknown, so that case takes as long as a wrong password. */
     private final PasswordHash decoyHash;
 
+    private final Clock clock;
+    private final LoginLockoutPolicy lockoutPolicy;
+
     AuthenticationService(
-            UserRepositoryPort users, AuthenticatedUserFactory authenticatedUsers, PasswordHasherPort hasher) {
+            UserRepositoryPort users,
+            AuthenticatedUserFactory authenticatedUsers,
+            PasswordHasherPort hasher,
+            Clock clock,
+            LoginLockoutPolicy lockoutPolicy) {
         this.users = users;
         this.authenticatedUsers = authenticatedUsers;
         this.hasher = hasher;
+        this.clock = clock;
+        this.lockoutPolicy = lockoutPolicy;
         this.decoyHash = hasher.hash(UUID.randomUUID().toString());
     }
 
@@ -45,14 +59,18 @@ class AuthenticationService implements AuthenticateUseCase {
             throw badCredentials();
         }
         User user = found.get();
-        if (!hasher.matches(password, user.passwordHash()) || !user.enabled()) {
+        boolean matches = hasher.matches(password, user.passwordHash());
+        if (user.isLockedAt(clock.instant())) {
             throw badCredentials();
         }
-        User current = user;
-        if (hasher.needsRehash(user.passwordHash())) {
-            current = rehash(user, password);
+        if (!matches) {
+            countFailure(user);
+            throw badCredentials();
         }
-        return authenticatedUsers.create(current);
+        if (!user.enabled()) {
+            throw badCredentials();
+        }
+        return authenticatedUsers.create(recordSuccess(user, password));
     }
 
     @Override
@@ -70,17 +88,89 @@ class AuthenticationService implements AuthenticateUseCase {
         return users.findByUsername(name);
     }
 
-    private User rehash(User user, CharSequence password) {
-        User updated = user.withPassword(hasher.hash(password), user.mustChangePassword());
-        try {
-            return users.save(updated);
-        } catch (OptimisticLockingFailureException e) {
-            log.debug(
-                    "Password rehash skipped, user {} was updated concurrently",
+    /** Counts a wrong password and locks the account when the count reaches the limit. Never changes the answer. */
+    private void countFailure(User user) {
+        AtomicReference<Instant> lockSet = new AtomicReference<>();
+        Optional<User> saved = saveWithRetry(user, current -> withFailure(current, lockSet));
+        if (saved.isEmpty()) {
+            log.warn(
+                    "Failed login of user {} not counted, the user was updated concurrently",
+                    user.id().value());
+            return;
+        }
+        Instant until = lockSet.get();
+        if (until != null) {
+            log.info(
+                    "User {} locked until {} after {} failed logins",
                     user.id().value(),
-                    e);
+                    until,
+                    lockoutPolicy.maxFailedAttempts());
+        }
+    }
+
+    /** Applies one failure; {@code lockSet} holds the lock this step set, or null when it set none. */
+    private User withFailure(User user, AtomicReference<Instant> lockSet) {
+        lockSet.set(null);
+        Instant now = clock.instant();
+        if (user.isLockedAt(now)) {
             return user;
         }
+        int count = user.failedLoginCount() + 1;
+        if (count >= lockoutPolicy.maxFailedAttempts()) {
+            Instant until = now.plus(lockoutPolicy.lockoutDuration());
+            lockSet.set(until);
+            return user.withFailedLogin(0, Optional.of(until));
+        }
+        return user.withFailedLogin(count, Optional.empty());
+    }
+
+    /** Clears the count and lock, and stores an outdated hash again, in one save. Never fails the login. */
+    private User recordSuccess(User user, CharSequence password) {
+        PasswordHash checked = user.passwordHash();
+        return saveWithRetry(user, current -> {
+                    User updated = current;
+                    if (current.failedLoginCount() > 0 || current.lockedUntil().isPresent()) {
+                        updated = updated.withLoginSucceeded();
+                    }
+                    if (current.passwordHash().equals(checked) && hasher.needsRehash(checked)) {
+                        updated = updated.withPassword(hasher.hash(password), current.mustChangePassword());
+                    }
+                    return updated;
+                })
+                .orElse(user);
+    }
+
+    /**
+     * Saves what {@code step} makes of the user; a step that returns the same instance writes nothing. On an
+     * optimistic-lock conflict the user is loaded again and the step applied again, up to 3 times in all.
+     *
+     * @return the saved user, or empty when every attempt conflicted or the user is gone
+     */
+    private Optional<User> saveWithRetry(User user, UnaryOperator<User> step) {
+        User current = user;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            User next = step.apply(current);
+            if (next == current) {
+                return Optional.of(current);
+            }
+            try {
+                return Optional.of(users.save(next));
+            } catch (OptimisticLockingFailureException e) {
+                log.debug(
+                        "User {} was updated concurrently, attempt {}",
+                        user.id().value(),
+                        attempt,
+                        e);
+                if (attempt < MAX_ATTEMPTS) {
+                    Optional<User> reloaded = users.findById(user.id());
+                    if (reloaded.isEmpty()) {
+                        return Optional.empty();
+                    }
+                    current = reloaded.get();
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     private static IdentityException badCredentials() {

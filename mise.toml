@@ -10,14 +10,33 @@ java = "temurin-25"
 uv = "0.12"
 # Git hooks (lefthook.yml): `mise run hooks` installs them.
 lefthook = "2.1"
+# Deployment to a server over SSH (deploy/server/): Ansible sets it up. It serves deploy/server/
+# only; nothing else in the repository needs it.
+# ansible-core's commands (ansible-playbook) and ansible-lint, each in a tool environment that also
+# has the full `ansible` package (13.x), so the collections the roles use (community.general,
+# community.docker, ansible.posix) are there; its major pins ansible-core's minor.
+# Renovate does not read uvx_args: a custom manager in .github/renovate.json5 updates the `ansible~=`
+# range, and ansible-core is bumped by hand along with it.
+# --no-build-package cryptography: take the newest cryptography with a ready-made wheel for this
+# machine instead of compiling one (which needs Rust and OpenSSL's headers). From 49.0 on there are
+# no wheels for Intel Macs, so they get 48.0.1; Linux and Apple Silicon get the newest.
+"pipx:ansible-core" = { version = "2.20", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
+"pipx:ansible-lint" = { version = "26.8", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
 
 [tasks.setup]
-description = "Install ta-runner (TradingAgents + deps), the frontend's packages and the Git hooks"
+description = "Install ta-runner (TradingAgents + deps), the frontend's packages, the Git hooks, and a container engine when there is none (Docker on Ubuntu/Debian, Podman on macOS; PLATFORM_INSTALL_ENGINE=0 skips it)"
 run = [
   "cd artifact/ta-runner && uv sync",
   "./gradlew :frontend:pnpmInstall",
   { task = "hooks" },
+  { task = "container-engine" },
 ]
+
+# Docker or Podman, which run, dev, the backend tests, the images and the end-to-end tests need. An
+# engine that works is left alone (scripts/container-engine.sh).
+[tasks.container-engine]
+description = "Check the container engine (Docker or Podman) and install one when there is none: Docker on Ubuntu/Debian (sudo apt-get), Podman on macOS (Homebrew)"
+run = "scripts/container-engine.sh"
 
 [tasks.hooks]
 description = "Install the Git hooks (lefthook.yml): lint and import checks on staged files before a commit"
@@ -183,6 +202,33 @@ run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test
 [tasks."skill:test"]
 description = "Python tests of the Claude Code skills' helpers (.claude/skills/dependabot-fix/test_*.py)"
 run = "uv run --no-project python -m unittest discover -s .claude/skills/dependabot-fix -p 'test_*.py'"
+
+# Deployment to a server over SSH (deploy/server/README.md): Ansible sets the server up and deploys
+# the Compose setup on it. server:deploy needs deploy/server/inventory.ini; server:check needs nothing.
+[tasks."server:deploy"]
+description = "Set up the server in deploy/server/inventory.ini over SSH and deploy the Compose setup on it (Ansible, run from this machine; the build happens on the server): mise run server:deploy [-- -e app_ref=v1.2.3]"
+run = "deploy/server/deploy.sh"
+
+[tasks."server:tunnel"]
+description = "Open the deployed platform's UI from this machine: an SSH tunnel to the server in deploy/server/inventory.ini, then http://127.0.0.1:8080 (mise run server:tunnel [-- --port N])"
+run = "deploy/server/tunnel.sh"
+
+[tasks."server:check"]
+description = "Check deploy/server/ without a server: ansible-lint and the playbook's syntax"
+dir = "deploy/server"
+run = [
+  "ansible-lint",
+  "ansible-playbook -i inventory.ini.example --syntax-check site.yml",
+]
+
+[tasks."server:test-setup"]
+description = "Test the server setup scripts (deploy/server/setup-*.sh) against a throwaway Ubuntu 24.04 container, in about a minute; needs Docker or Podman"
+run = "deploy/server/test-setup.sh"
+
+# Changes the machine it runs on for good: CI runners and throwaway VMs only (it refuses otherwise).
+[tasks."server:test"]
+description = "End-to-end test of the server deployment on THIS machine as the server (throwaway machines only: CI, or SERVER_TEST_THROWAWAY=1): the README's setup scripts, a deploy over SSH to 127.0.0.1, idempotency, the tunnel, the firewall, a backup"
+run = "deploy/server/test-deploy.sh"
 
 [tasks.clean]
 description = "Remove build outputs"

@@ -26,6 +26,7 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 
 /**
  * Spring Security: the session login of {@code /api/auth} and the rules that every other {@code /api}
@@ -80,6 +81,7 @@ public class SecurityConfig {
             SecurityContextRepository securityContextRepository,
             CsrfTokenRepository csrfTokenRepository,
             SessionRegistry sessionRegistry,
+            LoginAttemptLimiter loginAttemptLimiter,
             JsonMapper jsonMapper)
             throws Exception {
         ApiErrorWriter writer = new ApiErrorWriter(jsonMapper);
@@ -99,8 +101,11 @@ public class SecurityConfig {
                         handling -> handling.authenticationEntryPoint(new ApiAuthenticationEntryPoint(writer))
                                 .accessDeniedHandler(new ApiAccessDeniedHandler(writer)));
         http.csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository))
+                // A blocked address is turned away before any other work.
+                .addFilterBefore(new LoginRateLimitFilter(loginAttemptLimiter, writer), CsrfFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterAfter(new PasswordChangeRequiredFilter(writer), AuthorizationFilter.class)
+<<<<<<< HEAD
                 .authorizeHttpRequests(requests -> requests
                         // An ASYNC dispatch continues a request that was authorized when it
                         // started (an event stream closed by its session's end): it must pass,
@@ -117,6 +122,22 @@ public class SecurityConfig {
                         .authenticated()
                         .anyRequest()
                         .permitAll());
+=======
+                .authorizeHttpRequests(
+                        requests -> requests.requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout")
+                                .permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/auth/me")
+                                .permitAll()
+                                .requestMatchers("/api/openapi", "/api/openapi/**", "/actuator/**")
+                                .permitAll()
+                                // Checked here and not on the controller: bff.controller.api holds no security code.
+                                .requestMatchers(HttpMethod.POST, "/api/users/*/unlock")
+                                .hasAuthority(Permission.USER_MANAGE.key())
+                                .requestMatchers("/api/**")
+                                .authenticated()
+                                .anyRequest()
+                                .permitAll());
+>>>>>>> origin/main
         return http.build();
     }
 }

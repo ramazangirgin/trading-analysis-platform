@@ -15,6 +15,7 @@ then read the decision, the reports and the debates, and export them. The roadma
 | Platform (backend + UI, one jar) | `artifact/backend`, `artifact/frontend` | Java 25, Spring Boot 4.1 · Vue 3.5, Vite, Naive UI |
 | Runner (installed into the TradingAgents runtime) | `artifact/ta-runner` | Python 3.12, uv, TradingAgents `v0.5.1` |
 | Docker images and Compose setup | `deploy/`, `artifact/ta-runner/Dockerfile` | Temurin 25 JRE · PostgreSQL 18 · docker-socket-proxy |
+| Server deployment | `deploy/server/` | Ansible over SSH |
 | End-to-end tests (not shipped) | `e2e/` | Playwright, against the built jar |
 
 Two ways to run it: on your machine with `mise run run` ([Quick start](#quick-start)), or with
@@ -30,7 +31,9 @@ Docker Compose, where each analysis runs in its own container and the data is ke
   Install it with `curl https://mise.run | sh` (or `brew install mise`).
 - An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
   Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
-- Docker or Podman. `mise run run` and `mise run dev` start a local PostgreSQL 18 container
+- Docker or Podman (`mise run setup` installs one when there is none: Docker on Ubuntu or Debian,
+  Podman on macOS with Homebrew; `PLATFORM_INSTALL_ENGINE=0` skips that). `mise run run` and
+  `mise run dev` start a local PostgreSQL 18 container
   (`mise run db`; its data is in the volume `trading-analysis-platform-db`; `mise run db:stop` stops
   it, `mise run db:reset` deletes its data). To use your own PostgreSQL 18 server instead, set
   `PLATFORM_DB_HOST`, `PLATFORM_DB_PORT`, `PLATFORM_DB_NAME`, `PLATFORM_DB_USER` and
@@ -45,7 +48,7 @@ Docker Compose, where each analysis runs in its own container and the data is ke
 git clone https://github.com/ramazangirgin/trading-analysis-platform.git
 cd trading-analysis-platform
 mise trust && mise install   # once: Java 25 and uv for this repository
-mise run setup               # once: ta-runner (downloads TradingAgents) and the UI packages
+mise run setup               # once: ta-runner (downloads TradingAgents), the UI packages, a container engine if missing
 mise run run                 # builds the app if needed and serves it on :8080
 ```
 
@@ -197,7 +200,9 @@ browser ──▶ 127.0.0.1:8080 ──▶ platform ──▶ postgres
 ```
 
 **Needs:** Docker with Compose v2, or Podman with `docker compose` pointed at its socket; and
-[mise](https://mise.jdx.dev/) to build the images.
+[mise](https://mise.jdx.dev/) to build the images. To run it on a server instead of your own machine,
+[`deploy/server/`](deploy/server/README.md) sets up any Ubuntu server you can reach over SSH and
+deploys this setup on it.
 
 ```sh
 cp deploy/.env.example deploy/.env      # set PLATFORM_DATA and POSTGRES_PASSWORD
@@ -241,7 +246,8 @@ platform picks it up again.
   $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
   rootful one).
 - **Exposing it beyond localhost** needs HTTPS first. Login is always on (see [Login](#login)); HTTPS
-  is not built yet. The port is published on 127.0.0.1 only.
+  is not built yet. The port is published on 127.0.0.1 only. On a server, open it through an SSH
+  tunnel, as the [server setup](deploy/server/README.md) describes.
 - The first start takes about a minute (longer under Podman's VM on macOS).
 
 ### Upgrading to 4.0.0
@@ -372,7 +378,7 @@ user's other sessions out; the current session continues.
 The backend:
 
 - `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
-  permissions, or 401 `bad_credentials`; `GET /api/auth/me` returns the current user, or 401
+  permissions, or 401 `bad_credentials` or 429 `too_many_login_attempts`; `GET /api/auth/me` returns the current user, or 401
   `unauthorized`; `POST /api/auth/logout` ends the session (204).
 - `POST /api/auth/password` (`currentPassword`, `newPassword`) answers 200 with the user (flag
   cleared), or 400 `wrong_current_password` / `password_unchanged` / `weak_password`. The last one
@@ -383,6 +389,27 @@ The backend:
   points), no composition rules, not one of the 10,000 most common passwords (bundled from
   [SecLists](https://github.com/danielmiessler/SecLists), so nothing leaves the machine) and not
   the username. The minimum is set with `PLATFORM_PASSWORD_MIN_LENGTH` (8 to 64, default 12).
+- Password guessing is slowed down ([#85](https://github.com/ramazangirgin/trading-analysis-platform/issues/85)).
+  After 5 wrong passwords in a row an account is locked for 15 minutes. While it is locked, every
+  login answers the same 401 `bad_credentials` as a wrong password, even with the right one, so a
+  locked account cannot be told from a wrong guess or an unknown user. A locked account is not
+  counted further, and a successful login resets the count. Each client address may also fail 20
+  logins in 5 minutes; after that it gets 429 `too_many_login_attempts` with `Retry-After` until
+  the window frees up. The address is the one of the connection (`X-Forwarded-For` is not trusted),
+  so under Docker Compose all clients may share the bridge gateway's address and the limit applies
+  to them together. The counts of the IP limit live in memory like the sessions, so a restart
+  clears them. The settings, all checked at startup:
+
+  | Variable | Default | Range |
+  |---|---|---|
+  | `PLATFORM_LOGIN_MAX_FAILED_ATTEMPTS` | `5` | 1 to 100 |
+  | `PLATFORM_LOGIN_LOCKOUT_DURATION` | `15m` | 1 minute to 24 hours |
+  | `PLATFORM_LOGIN_IP_MAX_FAILED_ATTEMPTS` | `20` | 1 to 10,000 |
+  | `PLATFORM_LOGIN_IP_WINDOW` | `5m` | 1 minute to 24 hours |
+
+- `POST /api/users/{id}/unlock` unlocks an account early. It needs the `user:manage` permission and
+  answers 204 (also when the account is not locked), 404 `user_not_found`, or 403 `forbidden`
+  without the permission.
 - Every other `/api/**` route answers 401 (`unauthorized`) without a session. The static UI,
   `/actuator/**` and `/api/openapi/**` stay open.
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session like every
@@ -396,7 +423,8 @@ The backend:
 ### Tasks
 
 ```sh
-mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks
+mise run setup         # uv sync for ta-runner (downloads TradingAgents), frontend packages, Git hooks, a container engine if there is none
+mise run container-engine  # check Docker or Podman, and install one when there is none (scripts/container-engine.sh)
 mise run dev           # backend on :8080 + Vite with hot reload on http://localhost:5173 (starts the local PostgreSQL)
 mise run build         # all tests (ArchUnit included), lint (Checkstyle included), dependency checks (Gradle analysis, Knip), and the single jar
 mise run run           # the single jar on http://127.0.0.1:8080, rebuilt when something changed (starts the local PostgreSQL)
@@ -413,6 +441,11 @@ mise run format-check  # check the formatting of every Java, frontend and e2e fi
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
+mise run server:deploy # set up the server in deploy/server/inventory.ini over SSH and deploy the Compose stack on it (Ansible)
+mise run server:tunnel # open the deployed UI from this machine: an SSH tunnel, then http://127.0.0.1:8080
+mise run server:check  # ansible-lint and the playbook's syntax, without a server (not part of check)
+mise run server:test-setup  # the server setup scripts against a throwaway Ubuntu container (needs Docker or Podman)
+mise run server:test   # the whole server deployment with THIS machine as the server: throwaway machines only (CI)
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
@@ -434,6 +467,9 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)); then `mise run skill:test`: the Python tests of the Claude Code skills' helpers ([`.claude/skills/`](.claude/skills)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
+| ta-runner image (arm64) | The same image built on an arm64 runner (`ubuntu-24.04-arm`) and run under the same lockdown flags, so a dependency without arm64 wheels shows up before anyone deploys to an arm64 server |
+| Server deploy (Ansible) | `mise run server:check` without a server: `ansible-lint` (production profile) and the playbook's syntax; then `mise run server:test-setup`: the setup scripts against a throwaway Ubuntu 24.04 container ([`deploy/server/`](deploy/server/README.md#testing)) |
+| Server deploy end-to-end | Only when `deploy/`, the ta-runner Dockerfile, `mise.toml` or the CI workflow changed (otherwise it passes in seconds): `mise run server:test`, with the runner as the server. The setup scripts, a deploy over SSH to `127.0.0.1`, a second deploy with `changed=0`, the UI through the SSH tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH |
 | End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
