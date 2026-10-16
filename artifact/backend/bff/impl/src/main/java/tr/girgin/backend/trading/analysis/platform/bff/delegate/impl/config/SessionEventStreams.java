@@ -12,7 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 /**
  * The open event streams, one set per session ID, so a stream can be closed when its session ends.
  *
- * <p>The {@link HttpSessionEventPublisher} raises an {@link HttpSessionDestroyedEvent} when a session
+ * <p>The {@code HttpSessionEventPublisher} raises an {@link HttpSessionDestroyedEvent} when a session
  * is invalidated (a logout, the idle timeout) and an {@link HttpSessionIdChangedEvent} when a login
  * or a password change moves the session to a new ID; the streams follow it. A session that is only
  * marked expired, as a password change marks the user's other sessions, never makes another request
