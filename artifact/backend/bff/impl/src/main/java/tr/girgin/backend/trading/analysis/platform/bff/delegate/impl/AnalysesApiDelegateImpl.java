@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
@@ -178,6 +179,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         // No timeout: runs take minutes, and the stream ends with the run.
         SseEmitter emitter = new SseEmitter(0L);
         AtomicReference<EventSubscription> subscription = new AtomicReference<>();
+        AtomicBoolean ended = new AtomicBoolean();
         Runnable cancel = () -> {
             EventSubscription current = subscription.get();
             if (current != null) {
@@ -204,6 +206,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             @Override
             public void onComplete() {
                 send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
+                ended.set(true);
                 emitter.complete();
             }
         })));
@@ -214,6 +217,11 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         HttpSession session = http.getSession(false);
         if (session != null) {
             sessionEventStreams.register(session.getId(), emitter);
+            // A run that ended before Spring MVC initialised the emitter (a finished run replays and
+            // completes inside subscribe) never runs the removal callbacks, so remove it here.
+            if (ended.get()) {
+                sessionEventStreams.unregister(session.getId(), emitter);
+            }
         }
         return emitter;
     }

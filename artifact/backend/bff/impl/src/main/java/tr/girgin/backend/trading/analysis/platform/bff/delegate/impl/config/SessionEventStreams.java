@@ -23,12 +23,23 @@ public final class SessionEventStreams {
 
     private final ConcurrentMap<String, Set<SseEmitter>> streams = new ConcurrentHashMap<>();
 
-    /** Adds the emitter to the session's streams; it leaves the set again when the emitter ends. */
+    /**
+     * Adds the emitter to the session's streams; it leaves the set again when the emitter ends, if
+     * it was not already complete when Spring MVC initialised it (see {@link #unregister}).
+     */
     public void register(String sessionId, SseEmitter emitter) {
         streams.computeIfAbsent(sessionId, _ -> ConcurrentHashMap.newKeySet()).add(emitter);
         emitter.onCompletion(() -> remove(sessionId, emitter));
         emitter.onTimeout(() -> remove(sessionId, emitter));
         emitter.onError(_ -> remove(sessionId, emitter));
+    }
+
+    /**
+     * Removes the emitter at once. An emitter that completed before Spring MVC initialised it never
+     * runs the callbacks {@link #register} adds, so its owner removes it by hand.
+     */
+    public void unregister(String sessionId, SseEmitter emitter) {
+        remove(sessionId, emitter);
     }
 
     /** Ends every open stream of the session, without an {@code end} event: the run may go on. */

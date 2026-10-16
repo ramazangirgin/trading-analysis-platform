@@ -74,6 +74,17 @@ class SessionEventStreamsTest {
     }
 
     @Test
+    void anUnregisteredEmitterIsNotClosedWithItsSession() {
+        SseEmitter emitter = mock(SseEmitter.class);
+        streams.register("s1", emitter);
+
+        streams.unregister("s1", emitter);
+        streams.close("s1");
+
+        verify(emitter, never()).complete();
+    }
+
+    @Test
     void aDestroyedSessionClosesItsEmitters() {
         SseEmitter emitter = mock(SseEmitter.class);
         streams.register("s1", emitter);
