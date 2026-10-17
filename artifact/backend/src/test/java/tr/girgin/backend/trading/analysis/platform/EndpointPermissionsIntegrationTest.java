@@ -73,7 +73,7 @@ class EndpointPermissionsIntegrationTest {
 
         List<String> notRefused = new ArrayList<>();
         for (Endpoint endpoint : endpoints) {
-            if (!OPEN.contains(endpoint.toString()) && statusOf(session, endpoint) != 403) {
+            if (!OPEN.contains(endpoint.toString()) && statusOf(session, endpoint, true) != 403) {
                 notRefused.add(endpoint.toString());
             }
         }
@@ -88,7 +88,7 @@ class EndpointPermissionsIntegrationTest {
         List<String> refused = new ArrayList<>();
         for (Endpoint endpoint : endpoints()) {
             // The auth routes would end or change the session, and are open anyway.
-            if (!endpoint.path().startsWith("/api/auth/") && statusOf(session, endpoint) == 403) {
+            if (!endpoint.path().startsWith("/api/auth/") && statusOf(session, endpoint, false) == 403) {
                 refused.add(endpoint.toString());
             }
         }
@@ -119,7 +119,10 @@ class EndpointPermissionsIntegrationTest {
         return endpoints;
     }
 
-    private static int statusOf(TestSession session, Endpoint endpoint) throws IOException, InterruptedException {
+    // A valid body only where a refusal is expected: an admin must not start real analyses, and an empty body
+    // answers 400 (not 403) for it.
+    private static int statusOf(TestSession session, Endpoint endpoint, boolean validBody)
+            throws IOException, InterruptedException {
         if (endpoint.stream()) {
             // Only the status line is read: the stream of a real run would stay open.
             HttpResponse<InputStream> response = session.send(
@@ -131,7 +134,8 @@ class EndpointPermissionsIntegrationTest {
             return response.statusCode();
         }
         boolean hasBody = !endpoint.method().equals("GET") && !endpoint.method().equals("DELETE");
-        return session.send(endpoint.method(), endpoint.path(), hasBody ? "{}" : null)
+        String body = validBody ? TestSession.validBody(endpoint.method(), endpoint.path()) : "{}";
+        return session.send(endpoint.method(), endpoint.path(), hasBody ? body : null)
                 .statusCode();
     }
 

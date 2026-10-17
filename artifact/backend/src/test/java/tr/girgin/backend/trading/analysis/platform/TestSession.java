@@ -90,6 +90,24 @@ final class TestSession {
         return username;
     }
 
+    /**
+     * A body the request validation accepts for the endpoint, so a refusal can only come from the permission
+     * check: bean validation runs before the delegate method (and its permission) is called.
+     */
+    static String validBody(String method, String path) {
+        if (method.equals("POST") && path.equals("/api/analyses")) {
+            return "{\"ticker\":\"AAPL\",\"tradeDate\":\"2026-01-02\",\"analysts\":[\"MARKET\"],"
+                    + "\"llmProvider\":\"openai\",\"deepThinkLlm\":\"deep\",\"quickThinkLlm\":\"quick\"}";
+        }
+        if (method.equals("PUT") && path.startsWith("/api/secrets/")) {
+            return "{\"value\":\"secret\"}";
+        }
+        if (path.equals("/api/presets") || path.startsWith("/api/presets/")) {
+            return "{\"name\":\"preset\",\"values\":{}}";
+        }
+        return "{}";
+    }
+
     HttpResponse<String> login(String username, String password) throws IOException, InterruptedException {
         String body = "{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, password);
         return send(build("POST", "/api/auth/login", body));

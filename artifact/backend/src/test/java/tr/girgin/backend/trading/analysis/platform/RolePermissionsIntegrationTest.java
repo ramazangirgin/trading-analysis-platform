@@ -64,7 +64,8 @@ class RolePermissionsIntegrationTest {
                 new String[] {"GET", "/api/health"},
                 new String[] {"POST", "/api/users/" + id + "/unlock"});
         for (String[] request : refused) {
-            HttpResponse<String> response = viewer.send(request[0], request[1], "{}");
+            HttpResponse<String> response =
+                    viewer.send(request[0], request[1], TestSession.validBody(request[0], request[1]));
             assertThat(response.statusCode()).as(request[0] + " " + request[1]).isEqualTo(403);
             assertThat(JSON.readTree(response.body()).get("errorCode").asString())
                     .isEqualTo("forbidden");
@@ -83,7 +84,8 @@ class RolePermissionsIntegrationTest {
                 new String[] {"PUT", "/api/secrets/OPENAI_API_KEY"},
                 new String[] {"DELETE", "/api/secrets/OPENAI_API_KEY"},
                 new String[] {"POST", "/api/users/" + id + "/unlock"})) {
-            assertThat(analyst.send(request[0], request[1], "{}").statusCode())
+            assertThat(analyst.send(request[0], request[1], TestSession.validBody(request[0], request[1]))
+                            .statusCode())
                     .as(request[0] + " " + request[1])
                     .isEqualTo(403);
         }
