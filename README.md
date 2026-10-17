@@ -412,8 +412,8 @@ The backend:
   answers 204 (also when the account is not locked), 404 `user_not_found`, or 403 `forbidden`
   without the permission.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
-  (`forbidden`) without the permission. A route without a rule is refused for everyone, and
-  `EndpointPermissionsIntegrationTest` fails until a new endpoint has one. The static UI,
+  (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
+  delegate method, and `EndpointPermissionsIntegrationTest` fails until a new endpoint has one. The static UI,
   `/actuator/**` and `/api/openapi/**` stay open. The permissions per endpoint group:
 
   | Endpoints | Permission |

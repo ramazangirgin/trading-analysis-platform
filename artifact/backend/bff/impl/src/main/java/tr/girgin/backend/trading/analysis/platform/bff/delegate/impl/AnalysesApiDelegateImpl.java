@@ -24,6 +24,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisStatusDtoToAnalysisStatusMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisToAnalysisDtoMapper;
@@ -46,6 +47,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisPricesUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisReportUseCase;
 
@@ -117,11 +119,13 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request) {
         return created(call(() -> startAnalysis.start(specMapper.map(request))));
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_READ)
     public ResponseEntity<List<AnalysisDto>> listAnalyses(AnalysisStatusDto status, String ticker) {
         String normalizedTicker =
                 ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
@@ -131,21 +135,25 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_READ)
     public ResponseEntity<AnalysisDto> getAnalysis(String id) {
         return ResponseEntity.ok(analysisMapper.map(call(() -> getAnalysis.get(idMapper.map(id)))));
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> stopAnalysis(String id) {
         return ResponseEntity.ok(analysisMapper.map(call(() -> stopAnalysis.stop(idMapper.map(id)))));
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> rerunAnalysis(String id) {
         return created(call(() -> rerunAnalysis.rerun(idMapper.map(id))));
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_READ)
     public ResponseEntity<AnalysisReportDto> getReport(String id) {
         return call(() -> getReport.getReport(idMapper.map(id)))
                 .map(reportMapper::map)
@@ -158,6 +166,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_READ)
     public ResponseEntity<PriceHistoryDto> getPrices(String id) {
         return call(() -> getPrices.getPrices(idMapper.map(id)))
                 .map(pricesMapper::map)
@@ -170,11 +179,13 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_READ)
     public ResponseEntity<RunLogDto> getLogs(String id, int tail) {
         return ResponseEntity.ok(new RunLogDto(call(() -> readLogs.tailLogs(idMapper.map(id), tail))));
     }
 
     @Override
+    @RequiresPermission(Permission.ANALYSIS_READ)
     public SseEmitter streamEvents(String id, long afterSeq, HttpServletRequest http) {
         // No timeout: runs take minutes, and the stream ends with the run.
         SseEmitter emitter = new SseEmitter(0L);

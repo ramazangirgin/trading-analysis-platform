@@ -98,7 +98,7 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Controller, delegate interface | `bff.controller.api` (root) | `controller_root_holds_only_controllers_and_delegates` |
 | `ApiException`, `@RestControllerAdvice` | `bff.controller.api.error` | `exceptions_live_in_exception_packages`, `exception_packages_hold_only_exceptions_and_error_codes` |
 | Spring Security code (filter chain, filters, entry point, access-denied handler) | `bff.delegate.impl.config`, never `bff.controller.api` | `bff_api_holds_no_security_code` |
-| Permission rule of an endpoint | a request matcher in `SecurityConfig` (`bff.delegate.impl.config`), never `@PreAuthorize` on a controller; a route without a rule is refused (`denyAll`), and `EndpointPermissionsIntegrationTest` fails until it has one | `bff_api_holds_no_security_code` |
+| Permission rule of an endpoint | `@RequiresPermission` on its delegate method in `bff.delegate.impl` (the annotation and its enforcement live in `bff.delegate.impl.config`), never an annotation on a controller nor a request matcher in `SecurityConfig`; `EndpointPermissionsIntegrationTest` fails until an endpoint has one | `bff_api_holds_no_security_code` |
 | Delegate implementation `*ApiDelegateImpl` | `bff.delegate.impl` (root), nothing else there | `delegate_impls_live_at_the_delegate_root`, `delegate_root_holds_only_delegate_impls` |
 | MapStruct mapper | an adapter's `…mapper` package, `bff.delegate.impl.mapper` or `library.mapper` (the shared mapper library) | `mappers_live_at_layer_boundaries` |
 | Anything in a `mapper` package | is a MapStruct mapper (or its generated `*Impl`) | `mapper_packages_hold_only_mappers` |

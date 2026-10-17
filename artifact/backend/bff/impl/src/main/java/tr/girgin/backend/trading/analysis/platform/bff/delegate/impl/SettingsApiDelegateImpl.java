@@ -9,10 +9,12 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.SettingsAp
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PresetDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SavePresetRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SecretStatusDto;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.MapToJsonStringMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PresetToPresetDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.SecretStatusToSecretStatusDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.SettingsExceptionToApiExceptionMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
@@ -45,17 +47,20 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.SETTINGS_READ)
     public ResponseEntity<List<SecretStatusDto>> listSecrets() {
         return ResponseEntity.ok(
                 secrets.listSecrets().stream().map(secretMapper::map).toList());
     }
 
     @Override
+    @RequiresPermission(Permission.SETTINGS_KEYS_WRITE)
     public ResponseEntity<SecretStatusDto> setSecret(String name, String value) {
         return ResponseEntity.ok(secretMapper.map(call(() -> secrets.setSecret(name, value))));
     }
 
     @Override
+    @RequiresPermission(Permission.SETTINGS_KEYS_WRITE)
     public ResponseEntity<Void> removeSecret(String name) {
         call(() -> {
             secrets.removeSecret(name);
@@ -65,12 +70,14 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.PRESET_READ)
     public ResponseEntity<List<PresetDto>> listPresets() {
         return ResponseEntity.ok(
                 presets.listPresets().stream().map(presetMapper::map).toList());
     }
 
     @Override
+    @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<PresetDto> createPreset(SavePresetRequest request) {
         Preset preset = call(() -> presets.createPreset(request.name(), jsonMapper.map(request.values())));
         return ResponseEntity.created(URI.create("/api/presets/" + preset.id().value()))
@@ -78,12 +85,14 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<PresetDto> updatePreset(String id, SavePresetRequest request) {
         return ResponseEntity.ok(presetMapper.map(call(() -> presets.updatePreset(
                 new PresetId(id), request.name(), jsonMapper.map(request.values()), request.version()))));
     }
 
     @Override
+    @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<Void> deletePreset(String id) {
         call(() -> {
             presets.deletePreset(new PresetId(id));

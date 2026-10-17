@@ -87,6 +87,7 @@ spring-boot-transaction = { module = "org.springframework.boot:spring-boot-trans
 spring-context = { module = "org.springframework:spring-context" }
 spring-beans = { module = "org.springframework:spring-beans" }
 spring-core = { module = "org.springframework:spring-core" }
+spring-aop = { module = "org.springframework:spring-aop" }
 spring-tx = { module = "org.springframework:spring-tx" }
 spring-web = { module = "org.springframework:spring-web" }
 spring-webmvc = { module = "org.springframework:spring-webmvc" }

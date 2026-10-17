@@ -253,7 +253,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP5: Permissions on the delegate methods
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2, WP4 (it moves WP2's rules and corrects WP4's docs)
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/config/RequiresPermission.java` (new)
@@ -263,12 +263,12 @@ Packages without a dependency between them can be implemented in parallel.
   - a unit test for the authorization manager in `artifact/backend/bff/impl/src/test/java/…/bff/delegate/impl/config/`
   - `README.md`, `docs/coding-convention/backend-java-package-structure.md`
 - **Steps**:
-  - [ ] `@RequiresPermission` and the method-security beans that enforce it.
-  - [ ] Annotate every delegate method of the table with its permission(s); `AuthApiDelegateImpl`
+  - [x] `@RequiresPermission` and the method-security beans that enforce it.
+  - [x] Annotate every delegate method of the table with its permission(s); `AuthApiDelegateImpl`
         stays unannotated (its routes are open or need only a session, set in `SecurityConfig`).
-  - [ ] Remove the per-endpoint matchers, the unlock matcher and `denyAll()` from `SecurityConfig`;
+  - [x] Remove the per-endpoint matchers, the unlock matcher and `denyAll()` from `SecurityConfig`;
         `/api/**` back to `authenticated()`; update its Javadoc.
-  - [ ] Correct the docs (README "Login" and the package-structure row) to the delegate annotation.
+  - [x] Correct the docs (README "Login" and the package-structure row) to the delegate annotation.
 - **Tests**: a unit test of the authorization manager: granted with one of several permissions,
   denied without, denied for an anonymous authentication. `EndpointPermissionsIntegrationTest`,
   `RolePermissionsIntegrationTest` and the other integration tests pass unchanged: the HTTP

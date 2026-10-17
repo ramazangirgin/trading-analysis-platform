@@ -29,7 +29,8 @@ import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatab
 /**
  * The guard against a forgotten endpoint: every {@code /api} handler method of the application is sent a
  * request. A user without a role is refused (403) everywhere except on the open routes, and an admin is
- * refused nowhere, so an endpoint without a permission rule (it falls into {@code denyAll}) fails the build.
+ * refused nowhere, so an endpoint without a permission ({@code @RequiresPermission} on its delegate method)
+ * fails the build.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestDatabaseConfiguration.class)
