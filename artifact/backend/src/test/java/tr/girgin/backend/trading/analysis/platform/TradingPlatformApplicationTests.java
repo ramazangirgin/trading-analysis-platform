@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -79,14 +81,15 @@ class TradingPlatformApplicationTests {
     }
 
     // The frontend's Permission type is generated from this enum (mise run api-types): it must hold
-    // the keys of the domain enum, in its order, not the constant names.
+    // the keys of the domain enum, in its order, not the constant names. An ArrayList, since jsonPath
+    // converts the found array to the expected value's class and gets null for an immutable list.
     @Test
     void listsThePermissionKeysInTheOpenApiSpec() throws Exception {
+        List<String> keys = new ArrayList<>(
+                Arrays.stream(Permission.values()).map(Permission::key).toList());
         mockMvc.perform(get("/api/openapi"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.components.schemas.CurrentUserDto.properties.permissions.items.enum")
-                        .value(Arrays.stream(Permission.values())
-                                .map(Permission::key)
-                                .toList()));
+                        .value(keys));
     }
 }
