@@ -64,11 +64,24 @@ post_once() {
   echo "https://github.com/$(repo_slug)/issues/$issue#issuecomment-$id"
 }
 
+# The lock this script holds, released when it exits. Global, not local to post(): the EXIT trap
+# runs after post() has returned, and with set -u a local would be unbound there.
+lock=""
+
+# Releases the lock and hands the script's exit status on to agent_exit, which reads $? to record
+# the step as failed (an rm in the trap before it would turn every status into 0).
+release_lock() {
+  local status=$?
+  [ -z "$lock" ] || rm -f "$lock"
+  return "$status"
+}
+
 # One post at a time (progress.lock holds the poster's pid); a post asked for meanwhile is pending.
 # Nothing is posted with AGENT_ISSUE_PROGRESS=0.
 post() {
   [ "$AGENT_ISSUE_PROGRESS" = 1 ] || return 0
-  local lock=$AGENT_STATE/progress.lock pending=$AGENT_STATE/progress.pending tries=0 holder
+  local pending=$AGENT_STATE/progress.pending tries=0 holder
+  lock=$AGENT_STATE/progress.lock
   while ! (
     set -o noclobber
     echo $$ >"$lock"
@@ -86,7 +99,7 @@ post() {
     [ "$tries" -lt 60 ] || die "another post holds $lock"
     sleep 1
   done
-  trap 'rm -f "$lock"; agent_exit' EXIT
+  trap 'release_lock; agent_exit' EXIT
   rm -f "$pending"
   post_once
   while [ -e "$pending" ]; do
