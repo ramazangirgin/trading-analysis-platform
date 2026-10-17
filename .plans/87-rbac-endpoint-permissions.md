@@ -274,6 +274,22 @@ Packages without a dependency between them can be implemented in parallel.
   `RolePermissionsIntegrationTest` and the other integration tests pass unchanged: the HTTP
   behaviour (401 without a session, 403 `forbidden` without the permission) is the same.
 
+### WP6: Progress comment script exits cleanly
+
+- **Status**: done (a937fa7, in the developer's session while the agent loop of this pull request ran)
+- **Depends on**: none
+- **Files**: `scripts/agent/progress.sh`
+- **Steps**:
+  - [x] `post()` kept the lock path in a `local`, but its EXIT trap (`rm -f "$lock"; agent_exit`)
+        runs after `post()` returned: with `set -u` every call ended with `lock: unbound variable`
+        and exit 1 after a successful post, left `progress.lock` behind, and made the callers
+        report "the progress comment on the issue was not updated". The lock path is global now.
+  - [x] The trap's `rm` also hid the script's exit status from `agent_exit` (which reads `$?`), so
+        a failed call was recorded as successful: `release_lock` removes the lock and returns the
+        status it found.
+- **Tests**: by hand: `progress.sh post 170` exits 0, posts, and leaves no `progress.lock`. The
+  shell scripts have no test harness (only the Python helpers have `test_*.py`).
+
 ## Tests
 
 - Backend: `JpaIdentityRepositoryTest` (roles seeded on PostgreSQL), `RolePermissionsIntegrationTest`
