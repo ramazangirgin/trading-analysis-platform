@@ -4,9 +4,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
 
 @SpringBootTest
@@ -73,5 +76,17 @@ class TradingPlatformApplicationTests {
         mockMvc.perform(get("/api/openapi"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+    }
+
+    // The frontend's Permission type is generated from this enum (mise run api-types): it must hold
+    // the keys of the domain enum, in its order, not the constant names.
+    @Test
+    void listsThePermissionKeysInTheOpenApiSpec() throws Exception {
+        mockMvc.perform(get("/api/openapi"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.schemas.CurrentUserDto.properties.permissions.items.enum")
+                        .value(Arrays.stream(Permission.values())
+                                .map(Permission::key)
+                                .toList()));
     }
 }
