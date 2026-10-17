@@ -32,6 +32,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Curr
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.PasswordChangeRequiredFilter;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.IdentityExceptionToApiExceptionMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
@@ -59,6 +60,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     private final SessionRegistry sessionRegistry;
     private final SessionEventStreams sessionEventStreams;
     private final IdentityExceptionToApiExceptionMapper errorMapper;
+    private final PermissionToPermissionDtoMapper permissionMapper;
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SecurityContextRepository contextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
@@ -73,6 +75,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
             SessionRegistry sessionRegistry,
             SessionEventStreams sessionEventStreams,
             IdentityExceptionToApiExceptionMapper errorMapper,
+            PermissionToPermissionDtoMapper permissionMapper,
             SessionAuthenticationStrategy sessionStrategy,
             SecurityContextRepository contextRepository,
             CsrfTokenRepository csrfTokenRepository) {
@@ -81,6 +84,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         this.sessionRegistry = sessionRegistry;
         this.sessionEventStreams = sessionEventStreams;
         this.errorMapper = errorMapper;
+        this.permissionMapper = permissionMapper;
         this.sessionStrategy = sessionStrategy;
         this.contextRepository = contextRepository;
         this.csrfTokenRepository = csrfTokenRepository;
@@ -199,14 +203,14 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         return authorities;
     }
 
-    private static CurrentUserDto toDto(AuthenticatedUser user) {
+    private CurrentUserDto toDto(AuthenticatedUser user) {
         return new CurrentUserDto(
                 user.id().value(),
                 user.username().value(),
                 user.roleNames().stream().sorted().toList(),
                 user.permissions().stream()
-                        .map(Permission::key)
-                        .sorted(Comparator.naturalOrder())
+                        .sorted(Comparator.comparing(Permission::key))
+                        .map(permissionMapper::map)
                         .toList(),
                 user.mustChangePassword());
     }

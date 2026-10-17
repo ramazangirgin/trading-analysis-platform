@@ -843,7 +843,22 @@
                     "permissions": {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "analysis:run",
+                                "analysis:read",
+                                "analysis:read:all",
+                                "analysis:delete",
+                                "preset:read",
+                                "preset:manage",
+                                "preset:read:all",
+                                "settings:read",
+                                "settings:keys:write",
+                                "user:read",
+                                "user:manage",
+                                "role:manage",
+                                "audit:read"
+                            ]
                         }
                     },
                     "mustChangePassword": {

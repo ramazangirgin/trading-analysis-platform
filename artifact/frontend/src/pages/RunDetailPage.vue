@@ -26,6 +26,7 @@ import {
   RunLog,
   useRunStream,
 } from '@/features/analysis'
+import { PERMISSIONS, useSessionStore } from '@/features/auth'
 import type { Analysis, AnalysisReport } from '@/shared/api/types'
 import { MarkdownView, PriceChart, reportLanguage, reportsApi, SECTIONS } from '@/features/reports'
 import { outputLanguageFor } from '@/shared/i18n'
@@ -38,6 +39,7 @@ import StatusTag from '@/shared/ui/StatusTag.vue'
 
 const route = useRoute()
 const router = useRouter()
+const session = useSessionStore()
 const {
   t,
   language,
@@ -179,7 +181,7 @@ async function rerun() {
         </NSpace>
       </template>
       <template #header-extra>
-        <NSpace>
+        <NSpace v-if="session.can(PERMISSIONS.analysisRun)">
           <NPopconfirm v-if="active" @positive-click="stop">
             <template #trigger>
               <NButton type="error" secondary :loading="acting">{{ t('detail.stop') }}</NButton>

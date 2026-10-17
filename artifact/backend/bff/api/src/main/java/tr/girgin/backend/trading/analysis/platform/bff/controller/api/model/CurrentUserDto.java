@@ -7,4 +7,4 @@ import java.util.List;
  * {@code analysis:read:all}), both sorted.
  */
 public record CurrentUserDto(
-        String id, String username, List<String> roles, List<String> permissions, boolean mustChangePassword) {}
+        String id, String username, List<String> roles, List<PermissionDto> permissions, boolean mustChangePassword) {}

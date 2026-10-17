@@ -385,6 +385,40 @@ class JpaIdentityRepositoryTest {
         assertThat(saved.roleIds()).containsExactly(RoleId.ADMIN);
     }
 
+    @Test
+    void theMigrationsSeedTheBuiltInAnalystRole() {
+        assertThat(roles.findById(RoleId.ANALYST)).hasValueSatisfying(analyst -> {
+            assertThat(analyst.name()).isEqualTo("ANALYST");
+            assertThat(analyst.builtIn()).isTrue();
+            assertThat(analyst.permissions())
+                    .containsExactlyInAnyOrder(
+                            Permission.ANALYSIS_RUN,
+                            Permission.ANALYSIS_READ,
+                            Permission.ANALYSIS_DELETE,
+                            Permission.PRESET_READ,
+                            Permission.PRESET_MANAGE,
+                            Permission.SETTINGS_READ);
+        });
+    }
+
+    @Test
+    void theMigrationsSeedTheBuiltInViewerRole() {
+        assertThat(roles.findById(RoleId.VIEWER)).hasValueSatisfying(viewer -> {
+            assertThat(viewer.name()).isEqualTo("VIEWER");
+            assertThat(viewer.builtIn()).isTrue();
+            assertThat(viewer.permissions())
+                    .containsExactlyInAnyOrder(Permission.ANALYSIS_READ, Permission.PRESET_READ);
+        });
+    }
+
+    @Test
+    void aUserWithTheAnalystOrViewerRoleRoundTrips() {
+        User saved = users.save(user("seeded-analyst-viewer-user", Set.of(RoleId.ANALYST, RoleId.VIEWER)));
+
+        assertThat(users.findById(saved.id())).contains(saved);
+        assertThat(saved.roleIds()).containsExactlyInAnyOrder(RoleId.ANALYST, RoleId.VIEWER);
+    }
+
     private Role saveRole(String name, Set<Permission> permissions) {
         return roles.save(new Role(RoleId.newId(), name, false, "", permissions, null));
     }

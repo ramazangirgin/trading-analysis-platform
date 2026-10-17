@@ -12,6 +12,7 @@ import {
   type DataTableColumns,
 } from 'naive-ui'
 import type { SecretStatus } from '@/shared/api/types'
+import { PERMISSIONS, useSessionStore } from '@/features/auth'
 import { useCatalogStore } from '@/features/catalog'
 import { useLabels } from '@/shared/composables/useLabels'
 import { PresetManager, settingsApi } from '@/features/settings'
@@ -24,6 +25,7 @@ interface KeyRow {
 
 const { t, error: errorLabel } = useLabels()
 const message = useMessage()
+const session = useSessionStore()
 const catalogStore = useCatalogStore()
 const secrets = ref<SecretStatus[]>([])
 const drafts = reactive<Record<string, string>>({})
@@ -101,40 +103,49 @@ const columns = computed<DataTableColumns<KeyRow>>(() => [
           ])
         : h(NTag, { size: 'small', bordered: false }, () => t('settings.notSet')),
   },
-  {
-    title: t('settings.newValue'),
-    key: 'edit',
-    render: (row) =>
-      h(NSpace, { size: 4, wrap: false }, () => [
-        h(NInput, {
-          type: 'password',
-          showPasswordOn: 'click',
-          size: 'small',
-          value: drafts[row.env] ?? '',
-          'onUpdate:value': (value: string) => (drafts[row.env] = value),
-          inputProps: { autocomplete: 'off' },
-          style: 'min-width: 180px',
-        }),
-        h(
-          NButton,
-          {
-            size: 'small',
-            type: 'primary',
-            disabled: !drafts[row.env]?.trim(),
-            loading: saving.value === row.env,
-            onClick: () => save(row.env),
-          },
-          () => t('settings.save'),
-        ),
-        row.status?.source === 'PLATFORM'
-          ? h(
-              NButton,
-              { size: 'small', secondary: true, type: 'error', onClick: () => remove(row.env) },
-              () => t('settings.remove'),
-            )
-          : null,
-      ]),
-  },
+  ...(session.can(PERMISSIONS.settingsKeysWrite)
+    ? [
+        {
+          title: t('settings.newValue'),
+          key: 'edit',
+          render: (row: KeyRow) =>
+            h(NSpace, { size: 4, wrap: false }, () => [
+              h(NInput, {
+                type: 'password',
+                showPasswordOn: 'click',
+                size: 'small',
+                value: drafts[row.env] ?? '',
+                'onUpdate:value': (value: string) => (drafts[row.env] = value),
+                inputProps: { autocomplete: 'off' },
+                style: 'min-width: 180px',
+              }),
+              h(
+                NButton,
+                {
+                  size: 'small',
+                  type: 'primary',
+                  disabled: !drafts[row.env]?.trim(),
+                  loading: saving.value === row.env,
+                  onClick: () => save(row.env),
+                },
+                () => t('settings.save'),
+              ),
+              row.status?.source === 'PLATFORM'
+                ? h(
+                    NButton,
+                    {
+                      size: 'small',
+                      secondary: true,
+                      type: 'error',
+                      onClick: () => remove(row.env),
+                    },
+                    () => t('settings.remove'),
+                  )
+                : null,
+            ]),
+        },
+      ]
+    : []),
 ])
 
 onMounted(load)
@@ -154,9 +165,11 @@ onMounted(load)
         size="small"
         :scroll-x="820"
       />
-      <h3 class="heading">{{ t('presets.title') }}</h3>
-      <p class="note">{{ t('presets.note') }}</p>
-      <PresetManager />
+      <template v-if="session.can(PERMISSIONS.presetRead)">
+        <h3 class="heading">{{ t('presets.title') }}</h3>
+        <p class="note">{{ t('presets.note') }}</p>
+        <PresetManager :readonly="!session.can(PERMISSIONS.presetManage)" />
+      </template>
     </NSpace>
   </NCard>
 </template>

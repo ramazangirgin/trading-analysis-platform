@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
@@ -26,13 +27,12 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import tools.jackson.databind.json.JsonMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 
 /**
  * Spring Security: the session login of {@code /api/auth} and the rules that every other {@code /api}
  * route needs a session, every unsafe request a CSRF token, and an {@code ASYNC} dispatch passes: it
  * continues a request that was authorized when it started, e.g. an event stream whose session ended
- * meanwhile.
+ * meanwhile. Each endpoint's permission is the {@link RequiresPermission} on its delegate method.
  *
  * <p>The repository, CSRF and session strategy beans are shared with the login endpoint, so a login
  * through it is stored and protected the way this chain expects.
@@ -105,25 +105,30 @@ public class SecurityConfig {
                 .addFilterBefore(new LoginRateLimitFilter(loginAttemptLimiter, writer), CsrfFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterAfter(new PasswordChangeRequiredFilter(writer), AuthorizationFilter.class)
-                .authorizeHttpRequests(requests -> requests
-                        // An ASYNC dispatch continues a request that was authorized when it
-                        // started (an event stream closed by its session's end): it must pass,
-                        // or the entry point would write a 401 onto a committed response.
-                        .dispatcherTypeMatchers(DispatcherType.ASYNC)
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/me")
-                        .permitAll()
-                        .requestMatchers("/api/openapi", "/api/openapi/**", "/actuator/**")
-                        .permitAll()
-                        // Checked here and not on the controller: bff.controller.api holds no security code.
-                        .requestMatchers(HttpMethod.POST, "/api/users/*/unlock")
-                        .hasAuthority(Permission.USER_MANAGE.key())
-                        .requestMatchers("/api/**")
-                        .authenticated()
-                        .anyRequest()
-                        .permitAll());
+                .authorizeHttpRequests(this::authorizeApi);
         return http.build();
+    }
+
+    // An endpoint's permission is the @RequiresPermission on its delegate method, not a rule here.
+    private void authorizeApi(
+            AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry requests) {
+        requests
+                // An ASYNC dispatch continues a request that was authorized when it
+                // started (an event stream closed by its session's end): it must pass,
+                // or the entry point would write a 401 onto a committed response.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC)
+                .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/me")
+                .permitAll()
+                .requestMatchers("/api/openapi", "/api/openapi.yaml", "/api/openapi/**", "/actuator/**")
+                .permitAll()
+                // The rest needs a session (401 without one); the delegate methods check the permission.
+                // Every user changes their own password: that route needs only the session.
+                .requestMatchers("/api/**")
+                .authenticated()
+                .anyRequest()
+                .permitAll();
     }
 }
