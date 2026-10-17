@@ -28,5 +28,16 @@ run time. The worked example is the permissions (`Permission`).
 
 ## Adding a value
 
-Add the constant to the domain enum, then to the DTO enum (the compile fails until you do), then add
-the database row in a migration, and run `mise run api-types` so the frontend type follows.
+Each step has a check that fails when it is skipped:
+
+1. Add the constant to `Permission` (the domain enum).
+2. Add it to `PermissionDto`. Skipped: the MapStruct mapper fails the compile.
+3. Give the DTO constant the same key as `Permission::key`. Wrong key: ADMIN's `me` in
+   `RolePermissionsIntegrationTest` no longer returns every `Permission::key`.
+4. Add a new identity migration with `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE ...` (the
+   database type is an enum, not a table row) and grant the value to the built-in roles that should
+   have it, as the headers of V3 and V4 ask. Skipped: `JpaIdentityRepositoryTest` fails because the
+   database enum no longer matches `Permission`.
+5. Run `mise run api-types` so `shared/api/schema.d.ts` follows `openapi.json`. Skipped: `vue-tsc`
+   (`mise run check`) fails wherever the frontend uses the new key, for example in `permissions.ts`
+   with `satisfies Record<string, Permission>`.
