@@ -72,9 +72,10 @@ export const router = createRouter({
   ],
 })
 
-// Who is logged in is known before the first page. Nothing redirects on "no user" here: with login
-// off there is never one. The login page comes from the 401 handler (main.ts). A user who must
-// change the password sees nothing but the change-password page (and login).
+// Who is logged in is known before the first page. A navigation without a session goes to the login
+// page here (the permission gate would otherwise send it to the dashboard and lose the wanted
+// page); the 401 handler in main.ts covers a session that ends while a page is open. A user who
+// must change the password sees nothing but the change-password page (and login).
 let sessionLoaded = false
 router.beforeEach(async (to) => {
   const session = useSessionStore()
