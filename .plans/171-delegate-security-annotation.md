@@ -123,6 +123,7 @@ Javadoc gets a sentence that `TAP-A1` catches a missing annotation at build time
 
 ### WP1: The generic check `RequiredMethodAnnotationCheck`
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/RequiredMethodAnnotationCheck.java` (new)
@@ -135,12 +136,12 @@ Javadoc gets a sentence that `TAP-A1` catches a missing annotation at build time
   - `build-logic/checkstyle-rules/docs/RequiredMethodAnnotationCheck.md` (new)
   - `build-logic/checkstyle-rules/README.md` (a row in "The checks")
 - **Steps**:
-  - [ ] Write `SimpleNamePattern` and the check as designed above.
-  - [ ] Add the message key.
-  - [ ] Write the fixtures and the test class, in the style of `ForbiddenMemberAccessCheckTest`
+  - [x] Write `SimpleNamePattern` and the check as designed above.
+  - [x] Add the message key.
+  - [x] Write the fixtures and the test class, in the style of `ForbiddenMemberAccessCheckTest`
         (a parameterised "reports exactly the marked lines" over fixtures, plus message and
         invalid-value tests); reach 100% coverage.
-  - [ ] Write the reference document from `docs/_template.md` (what it matches, the parameter table
+  - [x] Write the reference document from `docs/_template.md` (what it matches, the parameter table
         listing exactly `classes`, `annotations`, `suggestion`, at least two configuration examples,
         the message, the project rules that use it) and add the index row.
 - **Tests**: `RequiredMethodAnnotationCheckTest` with fixtures for: a public method without any

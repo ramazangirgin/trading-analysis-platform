@@ -6,10 +6,16 @@ import java.util.regex.Pattern;
 final class Identifiers {
 
     private static final String IDENTIFIER = "[\\p{L}_$][\\p{L}\\p{N}_$]*";
+    private static final Pattern SINGLE_IDENTIFIER = Pattern.compile(IDENTIFIER);
     private static final Pattern DOTTED_NAME = Pattern.compile(IDENTIFIER + "(\\." + IDENTIFIER + ")*");
     private static final Pattern NAME_OR_PREFIX = Pattern.compile("(" + IDENTIFIER + ")?\\*|" + IDENTIFIER);
 
     private Identifiers() {}
+
+    /** A single Java identifier. */
+    static boolean isIdentifier(String text) {
+        return SINGLE_IDENTIFIER.matcher(text).matches();
+    }
 
     /** A Java identifier or several, separated by dots. */
     static boolean isDottedName(String text) {
