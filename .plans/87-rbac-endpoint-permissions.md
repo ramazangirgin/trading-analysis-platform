@@ -307,9 +307,11 @@ share.
     `List<PermissionDto>` (login, `me` and password responses). JSON on the wire stays the same.
   - Mapping: `PermissionToPermissionDtoMapper` in `bff.delegate.impl.mapper`, a MapStruct enum
     mapping (`SourceToTargetMapper` with one `map` method, as the other mappers). MapStruct fails the
-    compile when a `Permission` constant has no `PermissionDto` counterpart; a unit test asserts for
-    every `Permission` that the mapped DTO's key equals `Permission#key()`. `AuthApiDelegateImpl`
-    builds the list through the mapper instead of `Permission::key`.
+    compile when a `Permission` constant has no `PermissionDto` counterpart. No mapper unit test:
+    MapStruct cannot see the DTO's key strings, but `RolePermissionsIntegrationTest` already
+    asserts that ADMIN (who holds every permission) gets exactly `Permission::key` of every
+    constant from `me`, which checks every wire key end to end. `AuthApiDelegateImpl` builds the
+    list through the mapper instead of `Permission::key`.
   - OpenAPI: `openapi.json` shows the permissions as an enum whose values are the keys. Verify that
     springdoc takes the `@JsonValue` keys, not the constant names; if it does not, make it (for
     example a schema annotation derived from the enum, never a second hand-written list).
@@ -322,13 +324,13 @@ share.
     asks for, guarded by `JpaIdentityRepositoryTest`.
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/controller/api/model/{PermissionDto,CurrentUserDto}.java`
-  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper/PermissionToPermissionDtoMapper.java` (new), its test
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper/PermissionToPermissionDtoMapper.java` (new)
   - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/AuthApiDelegateImpl.java`
   - `openapi.json` (wherever `mise run api-types` reads it), `artifact/frontend/src/shared/api/{schema.d.ts,types.ts}`
   - `artifact/frontend/src/features/auth/{model/permissions.ts,store.ts}`, `artifact/frontend/src/app/router/index.ts` and any caller whose types change
   - `docs/coding-convention/repository-shared-types.md` (new), `docs/coding-convention/README.md`
 - **Steps**:
-  - [ ] `PermissionDto`, the typed `CurrentUserDto.permissions`, the mapper and its test.
+  - [ ] `PermissionDto`, the typed `CurrentUserDto.permissions` and the mapper.
   - [ ] Regenerate the OpenAPI document and the frontend API types; type the frontend with
         `Permission`.
   - [ ] Write `repository-shared-types.md` and list it in the conventions README table.
@@ -336,8 +338,10 @@ share.
   shared by the backend domain, the BFF and the frontend"), in the plain style of the other
   convention documents, with permissions as the worked example:
   - the domain enum is the single source of the values;
-  - the BFF API has a DTO enum mirror, mapped by a MapStruct enum mapping (the compile fails on a
-    missing constant) and a test that the wire values match;
+  - the BFF API has a DTO enum mirror, mapped by a MapStruct enum mapping: the compile fails on a
+    missing constant. The wire values (the DTO's own strings, which MapStruct cannot see) are
+    checked by one integration assertion where a response carries every value (for permissions:
+    ADMIN's `me`), not by an extra mapper unit test;
   - OpenAPI carries the values to the frontend as an enum; the frontend uses the generated type
     (`shared/api/types.ts`) and never hand-writes the set; constants for readability are checked
     with `satisfies`;
@@ -345,9 +349,10 @@ share.
     against the Java enum;
   - what to do when a value is added (domain constant, DTO constant, migration, `mise run
     api-types`) and which check fails at each missing step.
-- **Tests**: the mapper test; `vue-tsc` in `mise run check` (a wrong key in `permissions.ts` must
-  fail it); the existing `RolePermissionsIntegrationTest` and `AuthApiIntegrationTest` assertions
-  on the `me` permissions stay green, since the JSON does not change.
+- **Tests**: no new backend test (see Mapping). `vue-tsc` in `mise run check` (a wrong key in
+  `permissions.ts` must fail it); the existing `RolePermissionsIntegrationTest` and
+  `AuthApiIntegrationTest` assertions on the `me` permissions stay green, since the JSON does not
+  change, and keep guarding the wire keys.
 
 ## Tests
 
