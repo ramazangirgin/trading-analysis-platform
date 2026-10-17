@@ -290,6 +290,65 @@ Packages without a dependency between them can be implemented in parallel.
 - **Tests**: by hand: `progress.sh post 170` exits 0, posts, and leaves no `progress.lock`. The
   shell scripts have no test harness (only the Python helpers have `test_*.py`).
 
+### WP7: One permission catalogue, shared through OpenAPI
+
+Added after the third review, at the developer's request: the permission keys were written by hand
+again in `artifact/frontend/src/features/auth/model/permissions.ts`, a copy nothing checks. The
+domain enum `Permission` stays the one source, and every other layer gets it in a checked way.
+Documented as the generic approach for any value set the backend domain, the BFF and the frontend
+share.
+
+- **Status**: open
+- **Depends on**: WP3, WP5
+- **Design**:
+  - BFF API: a DTO enum `PermissionDto` in `bff.controller.api.model` (the API layer has its own
+    types, it does not use domain types). Each constant serialises to its key (`analysis:run`)
+    through `@JsonValue` on a `key()` accessor; `CurrentUserDto.permissions` becomes
+    `List<PermissionDto>` (login, `me` and password responses). JSON on the wire stays the same.
+  - Mapping: `PermissionToPermissionDtoMapper` in `bff.delegate.impl.mapper`, a MapStruct enum
+    mapping (`SourceToTargetMapper` with one `map` method, as the other mappers). MapStruct fails the
+    compile when a `Permission` constant has no `PermissionDto` counterpart; a unit test asserts for
+    every `Permission` that the mapped DTO's key equals `Permission#key()`. `AuthApiDelegateImpl`
+    builds the list through the mapper instead of `Permission::key`.
+  - OpenAPI: `openapi.json` shows the permissions as an enum whose values are the keys. Verify that
+    springdoc takes the `@JsonValue` keys, not the constant names; if it does not, make it (for
+    example a schema annotation derived from the enum, never a second hand-written list).
+  - Frontend: `mise run api-types` regenerates `shared/api/schema.d.ts`; `shared/api/types.ts`
+    exports `Permission` from it (only `types.ts` imports the schema). `permissions.ts` keeps the
+    friendly names only, `PERMISSIONS = { … } satisfies Record<string, Permission>`; `can()`,
+    `permissionGateRedirect` and the route `meta.permission` take `Permission`, so an unknown or
+    removed key fails `vue-tsc` (`mise run check`).
+  - Database: unchanged. `"IDENTITY"."PERMISSION"` stays the enum mirror the persistence convention
+    asks for, guarded by `JpaIdentityRepositoryTest`.
+- **Files**:
+  - `artifact/backend/bff/api/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/controller/api/model/{PermissionDto,CurrentUserDto}.java`
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper/PermissionToPermissionDtoMapper.java` (new), its test
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/AuthApiDelegateImpl.java`
+  - `openapi.json` (wherever `mise run api-types` reads it), `artifact/frontend/src/shared/api/{schema.d.ts,types.ts}`
+  - `artifact/frontend/src/features/auth/{model/permissions.ts,store.ts}`, `artifact/frontend/src/app/router/index.ts` and any caller whose types change
+  - `docs/coding-convention/repository-shared-types.md` (new), `docs/coding-convention/README.md`
+- **Steps**:
+  - [ ] `PermissionDto`, the typed `CurrentUserDto.permissions`, the mapper and its test.
+  - [ ] Regenerate the OpenAPI document and the frontend API types; type the frontend with
+        `Permission`.
+  - [ ] Write `repository-shared-types.md` and list it in the conventions README table.
+- **Convention** (`docs/coding-convention/repository-shared-types.md`, "Whole repository: values
+  shared by the backend domain, the BFF and the frontend"), in the plain style of the other
+  convention documents, with permissions as the worked example:
+  - the domain enum is the single source of the values;
+  - the BFF API has a DTO enum mirror, mapped by a MapStruct enum mapping (the compile fails on a
+    missing constant) and a test that the wire values match;
+  - OpenAPI carries the values to the frontend as an enum; the frontend uses the generated type
+    (`shared/api/types.ts`) and never hand-writes the set; constants for readability are checked
+    with `satisfies`;
+  - a database enum, where the persistence convention asks for one, is a mirror with a test
+    against the Java enum;
+  - what to do when a value is added (domain constant, DTO constant, migration, `mise run
+    api-types`) and which check fails at each missing step.
+- **Tests**: the mapper test; `vue-tsc` in `mise run check` (a wrong key in `permissions.ts` must
+  fail it); the existing `RolePermissionsIntegrationTest` and `AuthApiIntegrationTest` assertions
+  on the `me` permissions stay green, since the JSON does not change.
+
 ## Tests
 
 - Backend: `JpaIdentityRepositoryTest` (roles seeded on PostgreSQL), `RolePermissionsIntegrationTest`
