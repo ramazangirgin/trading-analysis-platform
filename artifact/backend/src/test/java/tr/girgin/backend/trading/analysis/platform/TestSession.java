@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -44,10 +45,10 @@ final class TestSession {
         return session;
     }
 
-    // A client logged in as a new enabled user.
-    static TestSession loggedIn(int port, UserRepositoryPort users, PasswordHasherPort hasher)
+    // A client logged in as a new enabled user with the given roles (none: a user without any permission).
+    static TestSession loggedIn(int port, UserRepositoryPort users, PasswordHasherPort hasher, RoleId... roles)
             throws IOException, InterruptedException {
-        String username = createUser(users, hasher, true);
+        String username = createUser(users, hasher, true, roles);
         TestSession session = anonymous(port);
         HttpResponse<String> login = session.login(username, PASSWORD);
         if (login.statusCode() != 200) {
@@ -56,18 +57,23 @@ final class TestSession {
         return session;
     }
 
-    /** Stores a user with a unique username and {@link #PASSWORD}; returns the username. */
-    static String createUser(UserRepositoryPort users, PasswordHasherPort hasher, boolean enabled) {
-        return storeUser(users, hasher, enabled, false);
+    /** Stores a user with the given roles, a unique username and {@link #PASSWORD}; returns the username. */
+    static String createUser(UserRepositoryPort users, PasswordHasherPort hasher, boolean enabled, RoleId... roles) {
+        return storeUser(users, hasher, enabled, false, roles);
     }
 
     /** Stores an enabled user with a unique username and {@link #PASSWORD} who must change it; returns the username. */
-    static String createUserWhoMustChangePassword(UserRepositoryPort users, PasswordHasherPort hasher) {
-        return storeUser(users, hasher, true, true);
+    static String createUserWhoMustChangePassword(
+            UserRepositoryPort users, PasswordHasherPort hasher, RoleId... roles) {
+        return storeUser(users, hasher, true, true, roles);
     }
 
     private static String storeUser(
-            UserRepositoryPort users, PasswordHasherPort hasher, boolean enabled, boolean mustChangePassword) {
+            UserRepositoryPort users,
+            PasswordHasherPort hasher,
+            boolean enabled,
+            boolean mustChangePassword,
+            RoleId... roles) {
         String username = "user-" + UUID.randomUUID();
         users.save(new User(
                 UserId.newId(),
@@ -79,9 +85,27 @@ final class TestSession {
                 Optional.empty(),
                 null,
                 null,
-                Set.of(),
+                Set.of(roles),
                 null));
         return username;
+    }
+
+    /**
+     * A body the request validation accepts for the endpoint, so a refusal can only come from the permission
+     * check: bean validation runs before the delegate method (and its permission) is called.
+     */
+    static String validBody(String method, String path) {
+        if (method.equals("POST") && path.equals("/api/analyses")) {
+            return "{\"ticker\":\"AAPL\",\"tradeDate\":\"2026-01-02\",\"analysts\":[\"MARKET\"],"
+                    + "\"llmProvider\":\"openai\",\"deepThinkLlm\":\"deep\",\"quickThinkLlm\":\"quick\"}";
+        }
+        if (method.equals("PUT") && path.startsWith("/api/secrets/")) {
+            return "{\"value\":\"secret\"}";
+        }
+        if (path.equals("/api/presets") || path.startsWith("/api/presets/")) {
+            return "{\"name\":\"preset\",\"values\":{}}";
+        }
+        return "{}";
     }
 
     HttpResponse<String> login(String username, String password) throws IOException, InterruptedException {

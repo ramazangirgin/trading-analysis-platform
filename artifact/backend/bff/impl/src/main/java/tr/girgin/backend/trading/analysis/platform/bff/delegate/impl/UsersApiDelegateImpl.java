@@ -3,9 +3,11 @@ package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.UsersApiDelegate;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.IdentityExceptionToApiExceptionMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UnlockUserUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
 @Service
@@ -20,6 +22,7 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
     }
 
     @Override
+    @RequiresPermission(Permission.USER_MANAGE)
     public ResponseEntity<Void> unlock(String id) {
         try {
             unlockUser.unlock(new UserId(id));

@@ -72,7 +72,8 @@ The first start creates the user `admin` and prints a generated password once in
 First start: created the admin user "admin" with the generated password <password>. It is shown only this once; change it after the first login.
 ```
 
-Log in at **http://127.0.0.1:8080** with it. To choose the name and password instead, set
+Log in at **http://127.0.0.1:8080** with it. The first admin has the ADMIN role, with every
+permission. To choose the name and password instead, set
 `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start; the password must
 meet the password policy (at least 12 characters, not a common password, not the username), or the
 platform does not start and says why. Later starts change nothing. A generated password is flagged
@@ -365,6 +366,10 @@ page (`/login`):
 - When a run's live stream closes because the session ended, the run page goes to the login page
   and returns to the run after login.
 - The UI sends the CSRF header `X-XSRF-TOKEN` itself on every unsafe request.
+- An endpoint is checked in this order: 401 without a session, then 400 from request validation,
+  then 403 `forbidden` from the endpoint's permission. A caller without the permission who sends an
+  invalid body therefore gets 400 with the validation errors; only a valid request reaches the
+  permission check.
 - The end-to-end tests log in as the first admin that `e2e/start-platform.sh` configures
   (`admin` / `e2e-test-password`), and so do the screenshots.
 
@@ -410,10 +415,32 @@ The backend:
 - `POST /api/users/{id}/unlock` unlocks an account early. It needs the `user:manage` permission and
   answers 204 (also when the account is not locked), 404 `user_not_found`, or 403 `forbidden`
   without the permission.
-- Every other `/api/**` route answers 401 (`unauthorized`) without a session. The static UI,
-  `/actuator/**` and `/api/openapi/**` stay open.
-- The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session like every
-  other `/api/**` route, and a stream that is open when its session ends (logout, idle timeout,
+- Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
+  (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
+  delegate method, and `EndpointPermissionsIntegrationTest` fails until a new endpoint has one. The static UI,
+  `/actuator/**` and `/api/openapi/**` stay open. The permissions per endpoint group:
+
+  | Endpoints | Permission |
+  |---|---|
+  | `POST /api/auth/password` | a session only (everyone changes their own password) |
+  | `POST /api/analyses`, `…/{id}/stop`, `…/{id}/rerun`, `POST /api/reports/rescan` | `analysis:run` |
+  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read` |
+  | `GET /api/catalog`, `GET /api/health` | `analysis:run` or `settings:read` |
+  | `GET /api/secrets` | `settings:read` |
+  | `PUT` and `DELETE /api/secrets/{name}` | `settings:keys:write` |
+  | `GET /api/presets` | `preset:read` |
+  | `POST`, `PUT` and `DELETE /api/presets…` | `preset:manage` |
+  | `POST /api/users/{id}/unlock` | `user:manage` |
+
+  Three roles are built in. ADMIN has every permission, and the first admin has it. ANALYST runs
+  analyses, reads and deletes analyses, manages presets and reads the settings. VIEWER reads
+  analyses and presets. The analyses and presets are those of every user until the ownership
+  issues ([#91](https://github.com/ramazangirgin/trading-analysis-platform/issues/91),
+  [#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) make "their own"
+  true. The UI hides the links, buttons and pages the user has no permission for; the backend
+  rules are what protect.
+- The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
+  `analysis:read` like the other analysis reads, and a stream that is open when its session ends (logout, idle timeout,
   a password change in another session) is closed by the server.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
   `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.

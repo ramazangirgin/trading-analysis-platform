@@ -6,9 +6,11 @@ import { ACTIVE_STATUSES, analysisApi, AnalysisTable } from '@/features/analysis
 import type { Analysis, AnalysisStatus } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
 import { usePolling } from '@/shared/composables/usePolling'
+import { PERMISSIONS, useSessionStore } from '@/features/auth'
 import { reportsApi } from '@/features/reports'
 
 const { t, error: errorLabel } = useLabels()
+const session = useSessionStore()
 const analyses = ref<Analysis[]>([])
 const loading = ref(true)
 const failure = ref<unknown>(null)
@@ -77,8 +79,19 @@ usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.
           @click="compare"
           >{{ t('runs.compare', { count: checked.length }) }}</NButton
         >
-        <NButton secondary :loading="scanning" @click="rescan">{{ t('runs.rescan') }}</NButton>
-        <RouterLink :to="{ name: 'new-analysis' }" custom v-slot="{ navigate }">
+        <NButton
+          v-if="session.can(PERMISSIONS.analysisRun)"
+          secondary
+          :loading="scanning"
+          @click="rescan"
+          >{{ t('runs.rescan') }}</NButton
+        >
+        <RouterLink
+          v-if="session.can(PERMISSIONS.analysisRun)"
+          :to="{ name: 'new-analysis' }"
+          custom
+          v-slot="{ navigate }"
+        >
           <NButton type="primary" @click="navigate">{{ t('nav.newAnalysis') }}</NButton>
         </RouterLink>
       </NSpace>

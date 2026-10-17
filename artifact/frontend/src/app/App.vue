@@ -16,7 +16,7 @@ import {
   enUS,
   trTR,
 } from 'naive-ui'
-import { UserMenu, useSessionStore } from '@/features/auth'
+import { PERMISSIONS, UserMenu, useSessionStore } from '@/features/auth'
 import LocaleSwitcher from '@/shared/ui/LocaleSwitcher.vue'
 
 const { t, locale } = useI18n()
@@ -47,14 +47,23 @@ watchEffect(() => {
           <RouterLink to="/" class="app__brand">{{ t('app.title') }}</RouterLink>
           <nav v-if="!bare" class="app__nav">
             <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
-            <RouterLink :to="{ name: 'analyses' }">{{ t('nav.analyses') }}</RouterLink>
-            <RouterLink :to="{ name: 'new-analysis' }">{{ t('nav.newAnalysis') }}</RouterLink>
+            <RouterLink v-if="session.can(PERMISSIONS.analysisRead)" :to="{ name: 'analyses' }">{{
+              t('nav.analyses')
+            }}</RouterLink>
             <RouterLink
+              v-if="session.can(PERMISSIONS.analysisRun)"
+              :to="{ name: 'new-analysis' }"
+              >{{ t('nav.newAnalysis') }}</RouterLink
+            >
+            <RouterLink
+              v-if="session.can(PERMISSIONS.analysisRead)"
               :to="{ name: 'reports' }"
               :class="{ 'router-link-exact-active': reportsActive }"
               >{{ t('nav.reports') }}</RouterLink
             >
-            <RouterLink :to="{ name: 'settings' }">{{ t('nav.settings') }}</RouterLink>
+            <RouterLink v-if="session.can(PERMISSIONS.settingsRead)" :to="{ name: 'settings' }">{{
+              t('nav.settings')
+            }}</RouterLink>
           </nav>
           <span v-else class="app__nav" />
           <UserMenu v-if="!route.meta.bare" />

@@ -14,8 +14,10 @@ import {
 import type { Preset } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
 import { settingsApi } from '../api'
+import { presetColumnPlan } from '../model/presetColumns'
 
 /** Saved New Analysis presets: what each holds, rename, delete. Presets are made on New Analysis. */
+const props = defineProps<{ readonly?: boolean }>()
 const { t, error: errorLabel, language, dateTime } = useLabels()
 const message = useMessage()
 const presets = ref<Preset[]>([])
@@ -86,31 +88,33 @@ function summary(values: Record<string, unknown>): string {
   return parts.join(' · ')
 }
 
-const columns = computed<DataTableColumns<Preset>>(() => [
+const allColumns = computed<DataTableColumns<Preset>>(() => [
   {
     title: t('presets.name'),
     key: 'name',
     width: 280,
     render: (preset) =>
-      h(NSpace, { size: 4, wrap: false }, () => [
-        h(NInput, {
-          size: 'small',
-          value: names[preset.id] ?? preset.name,
-          maxlength: 80,
-          'onUpdate:value': (value: string) => (names[preset.id] = value),
-          onKeyup: (event: KeyboardEvent) => event.key === 'Enter' && rename(preset),
-        }),
-        h(
-          NButton,
-          {
-            size: 'small',
-            disabled: !names[preset.id]?.trim() || names[preset.id]?.trim() === preset.name,
-            loading: busy.value === preset.id,
-            onClick: () => rename(preset),
-          },
-          () => t('presets.rename'),
-        ),
-      ]),
+      !presetColumnPlan(props.readonly ?? false).nameEditable
+        ? preset.name
+        : h(NSpace, { size: 4, wrap: false }, () => [
+            h(NInput, {
+              size: 'small',
+              value: names[preset.id] ?? preset.name,
+              maxlength: 80,
+              'onUpdate:value': (value: string) => (names[preset.id] = value),
+              onKeyup: (event: KeyboardEvent) => event.key === 'Enter' && rename(preset),
+            }),
+            h(
+              NButton,
+              {
+                size: 'small',
+                disabled: !names[preset.id]?.trim() || names[preset.id]?.trim() === preset.name,
+                loading: busy.value === preset.id,
+                onClick: () => rename(preset),
+              },
+              () => t('presets.rename'),
+            ),
+          ]),
   },
   { title: t('presets.values'), key: 'values', render: (preset) => summary(preset.values) },
   {
@@ -137,6 +141,11 @@ const columns = computed<DataTableColumns<Preset>>(() => [
       ),
   },
 ])
+
+const columns = computed(() => {
+  const keys = presetColumnPlan(props.readonly ?? false).keys
+  return allColumns.value.filter((column) => 'key' in column && keys.includes(String(column.key)))
+})
 
 onMounted(load)
 </script>

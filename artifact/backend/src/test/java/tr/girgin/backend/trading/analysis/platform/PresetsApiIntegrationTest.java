@@ -14,6 +14,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
@@ -39,7 +40,7 @@ class PresetsApiIntegrationTest {
 
     @BeforeEach
     void logIn() throws Exception {
-        session = TestSession.loggedIn(port, users, hasher);
+        session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
     }
 
     @DynamicPropertySource

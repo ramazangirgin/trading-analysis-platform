@@ -24,6 +24,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
@@ -72,7 +73,7 @@ class AnalysesApiIntegrationTest {
 
     @BeforeEach
     void logIn() throws Exception {
-        session = TestSession.loggedIn(port, users, hasher);
+        session = TestSession.loggedIn(port, users, hasher, RoleId.ANALYST);
     }
 
     @DynamicPropertySource
@@ -204,12 +205,12 @@ class AnalysesApiIntegrationTest {
         assertThat(JSON.readTree(after.body()).get("errorCode").asString()).isEqualTo("unauthorized");
 
         // The run is left to finish, so the next test can start its own SLOW run.
-        awaitStatus(TestSession.loggedIn(port, users, hasher), id, "COMPLETED");
+        awaitStatus(TestSession.loggedIn(port, users, hasher, RoleId.ANALYST), id, "COMPLETED");
     }
 
     @Test
     void aPasswordChangeClosesTheOtherSessionsStreamAndKeepsThisSessions() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
         TestSession first = loggedInAs(username);
         TestSession second = loggedInAs(username);
         String id = JSON.readTree(
@@ -239,7 +240,7 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void loggingOutAfterAPasswordChangeClosesTheStreamThatMovedToTheNewSessionId() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
         TestSession first = loggedInAs(username);
         String id = JSON.readTree(
                         first.send("POST", "/api/analyses", request("SLOW")).body())
@@ -254,7 +255,7 @@ class AnalysesApiIntegrationTest {
 
         assertThat(readEvents(stream)).extracting(SseEvent::name).doesNotContain("end");
 
-        awaitStatus(TestSession.loggedIn(port, users, hasher), id, "COMPLETED");
+        awaitStatus(TestSession.loggedIn(port, users, hasher, RoleId.ANALYST), id, "COMPLETED");
     }
 
     @Test
@@ -353,6 +354,8 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void managesSecretsWithoutEverReturningThem() throws Exception {
+        // Writing keys is an admin permission: the analyst of the other tests does not have it.
+        session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
         HttpResponse<String> set = put("/api/secrets/OPENAI_API_KEY", "{\"value\":\"sk-test-secret-9876\"}");
         HttpResponse<String> forbidden = put("/api/secrets/PATH", "{\"value\":\"/tmp\"}");
 

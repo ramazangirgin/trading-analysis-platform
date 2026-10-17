@@ -15,6 +15,7 @@ enforces each rule.
 | [backend-java-persistence.md](backend-java-persistence.md) | Backend (Java): Spring Data JPA / Hibernate only, no plain SQL; entities, embeddables, converters, repositories, enum and array columns, optimistic locking with `@Version`, the shared persistence library and its test fixtures |
 | [repository-git-hooks.md](repository-git-hooks.md) | Whole repository: the pre-commit hook (lefthook), what it runs on which files, how to install, run or skip it |
 | [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
+| [repository-shared-types.md](repository-shared-types.md) | Whole repository: values shared by the backend domain, the BFF and the frontend (permissions as the example): one domain enum, a DTO mirror with a MapStruct mapping, OpenAPI to the generated frontend type |
 | [repository-dependency-hygiene.md](repository-dependency-hygiene.md) | Whole repository: declare what you use, use what you declare (Gradle analysis, Knip, deptry), exceptions |
 
 The structure documents cover package / folder placement and the dependencies between packages.

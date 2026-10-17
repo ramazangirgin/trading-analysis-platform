@@ -14,7 +14,7 @@ const user: CurrentUser = {
   id: 'u_1',
   username: 'ada',
   roles: ['ADMIN'],
-  permissions: ['runs.start', 'settings.edit'],
+  permissions: ['analysis:run', 'settings:keys:write'],
   mustChangePassword: false,
 }
 
@@ -56,11 +56,11 @@ describe('useSessionStore', () => {
   it('answers can() from the permissions', async () => {
     vi.mocked(authApi.login).mockResolvedValue(user)
     const store = useSessionStore()
-    expect(store.can('runs.start')).toBe(false)
+    expect(store.can('analysis:run')).toBe(false)
     await store.login('ada', 'secret')
     expect(authApi.login).toHaveBeenCalledWith('ada', 'secret')
-    expect(store.can('runs.start')).toBe(true)
-    expect(store.can('users.manage')).toBe(false)
+    expect(store.can('analysis:run')).toBe(true)
+    expect(store.can('user:manage')).toBe(false)
   })
 
   it('stores the user returned by a password change and clears the flag', async () => {
@@ -93,6 +93,6 @@ describe('useSessionStore', () => {
     await store.login('ada', 'secret')
     store.clear()
     expect(store.user).toBeNull()
-    expect(store.can('runs.start')).toBe(false)
+    expect(store.can('analysis:run')).toBe(false)
   })
 })

@@ -16,6 +16,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
@@ -61,7 +62,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aFlaggedUserReachesNothingButMePasswordAndLogout() throws Exception {
-        String username = TestSession.createUserWhoMustChangePassword(users, hasher);
+        String username = TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
 
         for (String path : new String[] {"/api/analyses", "/api/presets"}) {
@@ -80,13 +81,13 @@ class PasswordChangeIntegrationTest {
         assertThat(client.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
                 .isEqualTo(200);
 
-        TestSession other = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher));
+        TestSession other = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN));
         assertThat(other.send("POST", "/api/auth/logout", null).statusCode()).isEqualTo(204);
     }
 
     @Test
     void anUnflaggedUserIsNotGated() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher);
+        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
 
         assertThat(client.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
         assertThat(client.send("POST", "/api/presets", PRESET).statusCode()).isEqualTo(201);
@@ -94,7 +95,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aWrongCurrentPasswordIs400AndChangesNothing() throws Exception {
-        String username = TestSession.createUserWhoMustChangePassword(users, hasher);
+        String username = TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
 
         HttpResponse<String> response = client.changePassword("not the password", NEW_PASSWORD);
@@ -115,7 +116,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void theSamePasswordIs400() throws Exception {
-        TestSession client = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher));
+        TestSession client = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN));
 
         HttpResponse<String> response = client.changePassword(TestSession.PASSWORD, TestSession.PASSWORD);
 
@@ -125,7 +126,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aWeakNewPasswordIs400WithItsReasonsAndChangesNothing() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
 
         HttpResponse<String> tooShort = client.changePassword(TestSession.PASSWORD, "Xq7-tiny");
@@ -161,7 +162,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void anEmptyFieldIs400() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher);
+        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
 
         for (HttpResponse<String> response :
                 List.of(client.changePassword("", NEW_PASSWORD), client.changePassword(TestSession.PASSWORD, ""))) {
@@ -177,7 +178,7 @@ class PasswordChangeIntegrationTest {
         assertThat(unauthorized.statusCode()).isEqualTo(401);
         assertThat(errorCode(unauthorized)).isEqualTo("unauthorized");
 
-        TestSession client = TestSession.loggedIn(port, users, hasher);
+        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
         HttpResponse<String> noCsrf = client.sendWithoutCsrfHeader(
                 "POST",
                 "/api/auth/password",
@@ -188,7 +189,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aChangeClearsTheFlagAndKeepsTheSessionWorkingUnderNewIds() throws Exception {
-        String username = TestSession.createUserWhoMustChangePassword(users, hasher);
+        String username = TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
         String sessionBefore = client.cookie(TestSession.SESSION_COOKIE);
         String csrfBefore = client.cookie(TestSession.CSRF_COOKIE);
@@ -214,10 +215,10 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aChangeEndsTheOtherSessionsOfTheUserOnly() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
         TestSession first = loggedInAs(username);
         TestSession second = loggedInAs(username);
-        TestSession stranger = TestSession.loggedIn(port, users, hasher);
+        TestSession stranger = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
         assertThat(second.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
 
         assertThat(first.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
@@ -232,7 +233,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void theRegistryFollowsTheSessionIdOfALoginAndOfAChange() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
         User stored = users.findByUsername(new Username(username)).orElseThrow();
         TestSession client = loggedInAs(username);
         // A second login in the same session changes its ID again.
