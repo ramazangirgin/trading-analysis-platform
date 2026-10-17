@@ -14,6 +14,7 @@ import {
 import type { Preset } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
 import { settingsApi } from '../api'
+import { presetColumnPlan } from '../model/presetColumns'
 
 /** Saved New Analysis presets: what each holds, rename, delete. Presets are made on New Analysis. */
 const props = defineProps<{ readonly?: boolean }>()
@@ -87,13 +88,13 @@ function summary(values: Record<string, unknown>): string {
   return parts.join(' · ')
 }
 
-const columns = computed<DataTableColumns<Preset>>(() => [
+const allColumns = computed<DataTableColumns<Preset>>(() => [
   {
     title: t('presets.name'),
     key: 'name',
     width: 280,
     render: (preset) =>
-      props.readonly
+      !presetColumnPlan(props.readonly ?? false).nameEditable
         ? preset.name
         : h(NSpace, { size: 4, wrap: false }, () => [
             h(NInput, {
@@ -122,28 +123,29 @@ const columns = computed<DataTableColumns<Preset>>(() => [
     width: 150,
     render: (preset) => dateTime(preset.updatedAt),
   },
-  ...(props.readonly
-    ? []
-    : [
+  {
+    title: '',
+    key: 'delete',
+    width: 90,
+    render: (preset) =>
+      h(
+        NPopconfirm,
+        { onPositiveClick: () => remove(preset) },
         {
-          title: '',
-          key: 'delete',
-          width: 90,
-          render: (preset: Preset) =>
-            h(
-              NPopconfirm,
-              { onPositiveClick: () => remove(preset) },
-              {
-                trigger: () =>
-                  h(NButton, { size: 'small', secondary: true, type: 'error' }, () =>
-                    t('presets.delete'),
-                  ),
-                default: () => t('presets.confirmDelete', { name: preset.name }),
-              },
+          trigger: () =>
+            h(NButton, { size: 'small', secondary: true, type: 'error' }, () =>
+              t('presets.delete'),
             ),
+          default: () => t('presets.confirmDelete', { name: preset.name }),
         },
-      ]),
+      ),
+  },
 ])
+
+const columns = computed(() => {
+  const keys = presetColumnPlan(props.readonly ?? false).keys
+  return allColumns.value.filter((column) => 'key' in column && keys.includes(String(column.key)))
+})
 
 onMounted(load)
 </script>
