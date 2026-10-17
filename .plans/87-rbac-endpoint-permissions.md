@@ -303,7 +303,7 @@ Packages without a dependency between them can be implemented in parallel.
 - An analysis delete endpoint (`analysis:delete` stays in the catalogue for it): not planned in
   #78; a separate issue when wanted.
 - `audit:read` endpoints: #93.
-- A static check (ArchUnit) that every delegate method carries `@RequiresPermission` or an explicit marker: #171.
+- A static check (a simple Checkstyle check, or ArchUnit) that every delegate method carries `@RequiresPermission` or an explicit marker: #171.
 
 ## Open questions
 
