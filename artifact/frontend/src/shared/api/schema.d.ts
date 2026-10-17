@@ -377,7 +377,7 @@ export interface components {
             id?: string;
             username?: string;
             roles?: string[];
-            permissions?: string[];
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
             mustChangePassword?: boolean;
         };
         StartAnalysisRequest: {

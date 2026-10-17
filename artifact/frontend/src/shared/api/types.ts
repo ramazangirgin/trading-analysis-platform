@@ -55,6 +55,7 @@ export type HealthCheck = Omit<Present<Schemas['HealthCheckDto']>, 'params'> & {
   params: Record<string, unknown>
 }
 export type SystemHealth = { overall: 'UP' | 'WARN' | 'DOWN'; checks: HealthCheck[] }
+export type Permission = NonNullable<Schemas['CurrentUserDto']['permissions']>[number]
 export type CurrentUser = Present<Schemas['CurrentUserDto']>
 export type ChangePasswordRequest = Present<Schemas['ChangePasswordRequest']>
 export type SecretStatus = Present<Schemas['SecretStatusDto']>

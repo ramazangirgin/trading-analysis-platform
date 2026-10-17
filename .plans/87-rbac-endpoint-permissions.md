@@ -298,7 +298,7 @@ domain enum `Permission` stays the one source, and every other layer gets it in 
 Documented as the generic approach for any value set the backend domain, the BFF and the frontend
 share.
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3, WP5
 - **Design**:
   - BFF API: a DTO enum `PermissionDto` in `bff.controller.api.model` (the API layer has its own
@@ -330,11 +330,11 @@ share.
   - `artifact/frontend/src/features/auth/{model/permissions.ts,store.ts}`, `artifact/frontend/src/app/router/index.ts` and any caller whose types change
   - `docs/coding-convention/repository-shared-types.md` (new), `docs/coding-convention/README.md`
 - **Steps**:
-  - [ ] `PermissionDto`, the typed `CurrentUserDto.permissions` and the mapper.
-  - [ ] Regenerate the OpenAPI document and the frontend API types; type the frontend with
+  - [x] `PermissionDto`, the typed `CurrentUserDto.permissions` and the mapper.
+  - [x] Regenerate the OpenAPI document and the frontend API types; type the frontend with
         `Permission`.
-  - [ ] Write `repository-shared-types.md` and list it in the conventions README table.
-  - [ ] README "Login": say that the permission is checked after request validation. Since WP5 the
+  - [x] Write `repository-shared-types.md` and list it in the conventions README table.
+  - [x] README "Login": say that the permission is checked after request validation. Since WP5 the
         check runs on the delegate method, after the controller's `@Valid`, so a request without
         the permission but with an invalid body answers 400 with the validation errors, and only a
         valid one reaches the check and gets 403 `forbidden`. Accepted by the developer as Spring's

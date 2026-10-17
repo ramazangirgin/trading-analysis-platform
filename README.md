@@ -366,6 +366,10 @@ page (`/login`):
 - When a run's live stream closes because the session ended, the run page goes to the login page
   and returns to the run after login.
 - The UI sends the CSRF header `X-XSRF-TOKEN` itself on every unsafe request.
+- An endpoint is checked in this order: 401 without a session, then 400 from request validation,
+  then 403 `forbidden` from the endpoint's permission. A caller without the permission who sends an
+  invalid body therefore gets 400 with the validation errors; only a valid request reaches the
+  permission check.
 - The end-to-end tests log in as the first admin that `e2e/start-platform.sh` configures
   (`admin` / `e2e-test-password`), and so do the screenshots.
 

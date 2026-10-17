@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import type { Permission } from '@/shared/api/types'
 import { permissionGateRedirect } from './permissions'
 
 const none = () => false
 const only =
-  (...keys: string[]) =>
-  (permission: string) =>
+  (...keys: Permission[]) =>
+  (permission: Permission) =>
     keys.includes(permission)
 
 describe('permissionGateRedirect', () => {

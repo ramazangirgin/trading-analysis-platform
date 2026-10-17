@@ -100,6 +100,7 @@ spring-data-jpa = { module = "org.springframework.data:spring-data-jpa" }
 jakarta-persistence-api = { module = "jakarta.persistence:jakarta.persistence-api" }
 # For @JdbcTypeCode (PostgreSQL enum and array columns).
 hibernate-core = { module = "org.hibernate.orm:hibernate-core" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
 jackson-core = { module = "tools.jackson.core:jackson-core" }
 jackson-databind = { module = "tools.jackson.core:jackson-databind" }
 flyway-core = { module = "org.flywaydb:flyway-core" }

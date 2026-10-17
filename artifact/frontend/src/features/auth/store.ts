@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ApiError } from '@/shared/api/error'
-import type { CurrentUser } from '@/shared/api/types'
+import type { CurrentUser, Permission } from '@/shared/api/types'
 import { authApi } from './api'
 
 /** The logged-in user and their permissions: the one place the UI asks who may do what. */
@@ -14,7 +14,7 @@ export const useSessionStore = defineStore('session', () => {
   const permissions = computed(() => new Set(user.value?.permissions ?? []))
   const mustChangePassword = computed(() => user.value?.mustChangePassword ?? false)
 
-  function can(permission: string): boolean {
+  function can(permission: Permission): boolean {
     return permissions.value.has(permission)
   }
 
