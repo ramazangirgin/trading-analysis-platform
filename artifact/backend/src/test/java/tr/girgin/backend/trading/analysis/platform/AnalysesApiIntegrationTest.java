@@ -354,6 +354,8 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void managesSecretsWithoutEverReturningThem() throws Exception {
+        // Writing keys is an admin permission: the analyst of the other tests does not have it.
+        session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
         HttpResponse<String> set = put("/api/secrets/OPENAI_API_KEY", "{\"value\":\"sk-test-secret-9876\"}");
         HttpResponse<String> forbidden = put("/api/secrets/PATH", "{\"value\":\"/tmp\"}");
 

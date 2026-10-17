@@ -126,7 +126,7 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me")
                 .permitAll()
-                .requestMatchers("/api/openapi", "/api/openapi/**", "/actuator/**")
+                .requestMatchers("/api/openapi", "/api/openapi.yaml", "/api/openapi/**", "/actuator/**")
                 .permitAll()
                 // Every user changes their own password.
                 .requestMatchers(HttpMethod.POST, "/api/auth/password")

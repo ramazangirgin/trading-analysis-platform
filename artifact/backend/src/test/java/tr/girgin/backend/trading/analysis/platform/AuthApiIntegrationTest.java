@@ -106,7 +106,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void aValidLoginStartsAProtectedSessionWithAFreshId() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
         TestSession client = TestSession.anonymous(port);
 
         HttpResponse<String> login = client.login(username, TestSession.PASSWORD);

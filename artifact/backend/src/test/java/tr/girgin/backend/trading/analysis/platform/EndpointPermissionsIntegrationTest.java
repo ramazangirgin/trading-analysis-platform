@@ -43,7 +43,8 @@ class EndpointPermissionsIntegrationTest {
             "POST /api/auth/logout",
             "GET /api/auth/me",
             "POST /api/auth/password",
-            "GET /api/openapi");
+            "GET /api/openapi",
+            "GET /api/openapi.yaml");
 
     @LocalServerPort
     private int port;
