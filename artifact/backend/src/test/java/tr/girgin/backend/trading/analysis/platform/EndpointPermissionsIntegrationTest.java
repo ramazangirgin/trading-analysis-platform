@@ -102,6 +102,9 @@ class EndpointPermissionsIntegrationTest {
                     info.getProducesCondition().getProducibleMediaTypes().contains(MediaType.TEXT_EVENT_STREAM);
             for (String pattern : info.getPathPatternsCondition().getPatternValues()) {
                 if (pattern.startsWith("/api/")) {
+                    assertThat(info.getMethodsCondition().getMethods())
+                            .as("every /api mapping must declare its HTTP method: " + pattern)
+                            .isNotEmpty();
                     info.getMethodsCondition()
                             .getMethods()
                             .forEach(method -> endpoints.add(new Endpoint(
