@@ -86,6 +86,11 @@ router.beforeEach(async (to) => {
       // Not a 401: the page shows its own error when it loads its data.
     }
   }
+  // No session (the 401 handler in main.ts only knows the route before this navigation): to the
+  // login page, which returns to the wanted page afterwards.
+  if (session.loaded && !session.user && to.name !== 'login') {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
   return (
     passwordGateRedirect(session.mustChangePassword, to) ??
     permissionGateRedirect(session.can, to) ??
