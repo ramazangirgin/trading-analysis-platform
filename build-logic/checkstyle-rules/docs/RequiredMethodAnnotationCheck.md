@@ -130,4 +130,4 @@ when the module has no `id`. The annotations are listed by their simple names, a
 
 | Rule | Configuration |
 |---|---|
-| [`TAP-A1`](../../../docs/coding-convention/backend-java-checkstyle.md#project-rules) | `classes = *ApiDelegateImpl`, `annotations = RequiresPermission, NoPermissionRequired`: every public method of a BFF delegate declares who may call it (added with the project rule) |
+| [`TAP-A1`](../../../docs/coding-convention/backend-java-checkstyle.md#project-rules) | `classes = *ApiDelegateImpl`, `annotations = ...config.RequiresPermission, ...config.NoPermissionRequired`: every public method of a BFF delegate declares who may call it |
