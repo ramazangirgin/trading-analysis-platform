@@ -253,6 +253,7 @@
     "too_many_login_attempts": "Bu adresten çok fazla başarısız giriş denemesi yapıldı. Birkaç dakika sonra tekrar deneyin.",
     "user_not_found": "Kullanıcı bulunamadı.",
     "unauthorized": "Oturumunuz sona erdi. Tekrar giriş yapın.",
+    "forbidden": "Bunun için yetkiniz yok.",
     "network_error": "Sunucuya ulaşılamadı.",
     "unexpected_error": "Beklenmeyen bir hata oluştu.",
     "runner_error": "Analiz sırasında hata",

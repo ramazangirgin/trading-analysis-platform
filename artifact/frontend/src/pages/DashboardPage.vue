@@ -2,12 +2,14 @@
 import { computed, ref } from 'vue'
 import { NAlert, NButton, NCard, NEmpty, NSpace } from 'naive-ui'
 import { ACTIVE_STATUSES, analysisApi, AnalysisTable } from '@/features/analysis'
+import { PERMISSIONS, useSessionStore } from '@/features/auth'
 import type { Analysis } from '@/shared/api/types'
 import { HealthAlerts } from '@/features/health'
 import { useLabels } from '@/shared/composables/useLabels'
 import { usePolling } from '@/shared/composables/usePolling'
 
 const { t, error: errorLabel } = useLabels()
+const session = useSessionStore()
 const analyses = ref<Analysis[]>([])
 const loading = ref(true)
 const failure = ref<unknown>(null)
@@ -31,11 +33,18 @@ usePolling(refresh, () => active.value.length > 0 || failure.value !== null)
 
 <template>
   <NSpace vertical :size="16">
-    <HealthAlerts />
+    <HealthAlerts
+      v-if="session.can(PERMISSIONS.analysisRun) || session.can(PERMISSIONS.settingsRead)"
+    />
     <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
     <NCard :title="t('dashboard.active')">
       <template #header-extra>
-        <RouterLink :to="{ name: 'new-analysis' }" custom v-slot="{ navigate }">
+        <RouterLink
+          v-if="session.can(PERMISSIONS.analysisRun)"
+          :to="{ name: 'new-analysis' }"
+          custom
+          v-slot="{ navigate }"
+        >
           <NButton type="primary" @click="navigate">{{ t('dashboard.start') }}</NButton>
         </RouterLink>
       </template>

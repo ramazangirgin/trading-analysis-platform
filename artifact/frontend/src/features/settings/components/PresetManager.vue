@@ -16,6 +16,7 @@ import { useLabels } from '@/shared/composables/useLabels'
 import { settingsApi } from '../api'
 
 /** Saved New Analysis presets: what each holds, rename, delete. Presets are made on New Analysis. */
+const props = defineProps<{ readonly?: boolean }>()
 const { t, error: errorLabel, language, dateTime } = useLabels()
 const message = useMessage()
 const presets = ref<Preset[]>([])
@@ -92,25 +93,27 @@ const columns = computed<DataTableColumns<Preset>>(() => [
     key: 'name',
     width: 280,
     render: (preset) =>
-      h(NSpace, { size: 4, wrap: false }, () => [
-        h(NInput, {
-          size: 'small',
-          value: names[preset.id] ?? preset.name,
-          maxlength: 80,
-          'onUpdate:value': (value: string) => (names[preset.id] = value),
-          onKeyup: (event: KeyboardEvent) => event.key === 'Enter' && rename(preset),
-        }),
-        h(
-          NButton,
-          {
-            size: 'small',
-            disabled: !names[preset.id]?.trim() || names[preset.id]?.trim() === preset.name,
-            loading: busy.value === preset.id,
-            onClick: () => rename(preset),
-          },
-          () => t('presets.rename'),
-        ),
-      ]),
+      props.readonly
+        ? preset.name
+        : h(NSpace, { size: 4, wrap: false }, () => [
+            h(NInput, {
+              size: 'small',
+              value: names[preset.id] ?? preset.name,
+              maxlength: 80,
+              'onUpdate:value': (value: string) => (names[preset.id] = value),
+              onKeyup: (event: KeyboardEvent) => event.key === 'Enter' && rename(preset),
+            }),
+            h(
+              NButton,
+              {
+                size: 'small',
+                disabled: !names[preset.id]?.trim() || names[preset.id]?.trim() === preset.name,
+                loading: busy.value === preset.id,
+                onClick: () => rename(preset),
+              },
+              () => t('presets.rename'),
+            ),
+          ]),
   },
   { title: t('presets.values'), key: 'values', render: (preset) => summary(preset.values) },
   {
@@ -119,23 +122,27 @@ const columns = computed<DataTableColumns<Preset>>(() => [
     width: 150,
     render: (preset) => dateTime(preset.updatedAt),
   },
-  {
-    title: '',
-    key: 'delete',
-    width: 90,
-    render: (preset) =>
-      h(
-        NPopconfirm,
-        { onPositiveClick: () => remove(preset) },
+  ...(props.readonly
+    ? []
+    : [
         {
-          trigger: () =>
-            h(NButton, { size: 'small', secondary: true, type: 'error' }, () =>
-              t('presets.delete'),
+          title: '',
+          key: 'delete',
+          width: 90,
+          render: (preset: Preset) =>
+            h(
+              NPopconfirm,
+              { onPositiveClick: () => remove(preset) },
+              {
+                trigger: () =>
+                  h(NButton, { size: 'small', secondary: true, type: 'error' }, () =>
+                    t('presets.delete'),
+                  ),
+                default: () => t('presets.confirmDelete', { name: preset.name }),
+              },
             ),
-          default: () => t('presets.confirmDelete', { name: preset.name }),
         },
-      ),
-  },
+      ]),
 ])
 
 onMounted(load)

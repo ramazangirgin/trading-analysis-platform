@@ -1,5 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { passwordGateRedirect, useSessionStore } from '@/features/auth'
+import {
+  PERMISSIONS,
+  passwordGateRedirect,
+  permissionGateRedirect,
+  useSessionStore,
+} from '@/features/auth'
 
 // History mode: the backend forwards unknown non-API paths to index.html (SpaWebConfig).
 export const router = createRouter({
@@ -17,36 +22,48 @@ export const router = createRouter({
       component: () => import('@/pages/ChangePasswordPage.vue'),
     },
     { path: '/', name: 'dashboard', component: () => import('@/pages/DashboardPage.vue') },
-    { path: '/analyses', name: 'analyses', component: () => import('@/pages/RunsPage.vue') },
+    {
+      path: '/analyses',
+      name: 'analyses',
+      component: () => import('@/pages/RunsPage.vue'),
+      meta: { permission: PERMISSIONS.analysisRead },
+    },
     {
       path: '/analyses/new',
       name: 'new-analysis',
       component: () => import('@/pages/NewAnalysisPage.vue'),
+      meta: { permission: PERMISSIONS.analysisRun },
     },
     {
       path: '/analyses/compare',
       name: 'compare',
       component: () => import('@/pages/ComparePage.vue'),
-      meta: { wide: true },
+      meta: { wide: true, permission: PERMISSIONS.analysisRead },
     },
     {
       path: '/analyses/:id',
       name: 'analysis',
       component: () => import('@/pages/RunDetailPage.vue'),
+      meta: { permission: PERMISSIONS.analysisRead },
     },
     {
       path: '/reports',
       name: 'reports',
       component: () => import('@/pages/ReportsPage.vue'),
-      meta: { wide: true },
+      meta: { wide: true, permission: PERMISSIONS.analysisRead },
     },
     {
       path: '/reports/:id',
       name: 'report',
       component: () => import('@/pages/ReportsPage.vue'),
-      meta: { wide: true },
+      meta: { wide: true, permission: PERMISSIONS.analysisRead },
     },
-    { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/pages/SettingsPage.vue'),
+      meta: { permission: PERMISSIONS.settingsRead },
+    },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -69,5 +86,9 @@ router.beforeEach(async (to) => {
       // Not a 401: the page shows its own error when it loads its data.
     }
   }
-  return passwordGateRedirect(session.mustChangePassword, to) ?? true
+  return (
+    passwordGateRedirect(session.mustChangePassword, to) ??
+    permissionGateRedirect(session.can, to) ??
+    true
+  )
 })

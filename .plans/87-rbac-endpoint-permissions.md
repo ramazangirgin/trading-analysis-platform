@@ -195,6 +195,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: UI follows the permissions
 
+- **Status**: done
 - **Depends on**: none (the `me` response already carries the permissions)
 - **Files**:
   - `artifact/frontend/src/features/auth/model/permissions.ts` (new), `permissions.spec.ts` (new)
@@ -205,10 +206,10 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/frontend/src/shared/i18n/locales/{en,tr}.json`
   - component specs next to the changed components where the feature has them
 - **Steps**:
-  - [ ] Permission constants and `permissionGateRedirect`.
-  - [ ] Route meta and the gate in `beforeEach`.
-  - [ ] Hide the links, buttons and the key/preset editing as in the design.
-  - [ ] The `forbidden` error label in both locales.
+  - [x] Permission constants and `permissionGateRedirect`.
+  - [x] Route meta and the gate in `beforeEach`.
+  - [x] Hide the links, buttons and the key/preset editing as in the design.
+  - [x] The `forbidden` error label in both locales.
 - **Tests**: `permissions.spec.ts`: the gate lets a route without `meta.permission` through,
   redirects to `dashboard` without the permission, accepts any of a list, and never redirects the
   dashboard. A spec for `PresetManager` in read-only mode (no create, edit, delete) and, if the

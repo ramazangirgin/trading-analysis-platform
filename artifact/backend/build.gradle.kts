@@ -56,6 +56,7 @@ dependencies {
     testImplementation(libs.spring.boot.webmvc.test)
     testRuntimeOnly(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.spring.web)
+    testImplementation(libs.spring.webmvc)
     testImplementation(libs.spring.security.core)
     testImplementation(project(":backend:domain:identity:core"))
     testImplementation(libs.spring.data.commons)

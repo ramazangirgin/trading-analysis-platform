@@ -253,6 +253,7 @@
     "too_many_login_attempts": "Too many failed logins from this address. Try again in a few minutes.",
     "user_not_found": "User not found.",
     "unauthorized": "Your session has ended. Log in again.",
+    "forbidden": "You do not have permission for this.",
     "network_error": "Cannot reach the server.",
     "unexpected_error": "Something unexpected went wrong.",
     "runner_error": "Error during the analysis",
