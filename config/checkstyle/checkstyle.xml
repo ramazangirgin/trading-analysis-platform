@@ -301,5 +301,13 @@
             <property name="members" value="System#out, System#err, *#printStackTrace(0)"/>
             <property name="suggestion" value="Use an SLF4J logger: log.info(...)."/>
         </module>
+        <module name="tr.girgin.checkstyle.RequiredMethodAnnotationCheck">
+            <property name="id" value="TAP-A1"/>
+            <property name="classes" value="*ApiDelegateImpl"/>
+            <property name="annotations" value="
+                tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission,
+                tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired"/>
+            <property name="suggestion" value="Declare who may call it: @RequiresPermission(Permission...), or @NoPermissionRequired(&quot;reason&quot;) for a route that needs no permission."/>
+        </module>
     </module>
 </module>

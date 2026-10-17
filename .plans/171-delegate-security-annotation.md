@@ -158,6 +158,7 @@ Javadoc gets a sentence that `TAP-A1` catches a missing annotation at build time
 
 ### WP2: The marker, the project rule `TAP-A1` and the docs
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/config/NoPermissionRequired.java` (new)
@@ -171,19 +172,19 @@ Javadoc gets a sentence that `TAP-A1` catches a missing annotation at build time
   - `README.md`
   - the version files (`mise run version:bump minor`)
 - **Steps**:
-  - [ ] Add `@NoPermissionRequired` and put it, with the reasons above, on the four methods of
+  - [x] Add `@NoPermissionRequired` and put it, with the reasons above, on the four methods of
         `AuthApiDelegateImpl`.
-  - [ ] Configure `TAP-A1` in `checkstyle.xml` as above.
-  - [ ] Add the `rules/TAP-A1` fixtures, in `package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;`
+  - [x] Configure `TAP-A1` in `checkstyle.xml` as above.
+  - [x] Add the `rules/TAP-A1` fixtures, in `package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;`
         with the imports of the real annotations: `Violation.java` (an `*ApiDelegateImpl` with a
         public method without either annotation, and one with only `@Override`, both marked),
         `Compliant.java` (`@RequiresPermission`, `@NoPermissionRequired("...")`, a private helper
         without either), `Suppressed.java` (`@SuppressWarnings("checkstyle:TAP-A1")` with a reason).
-  - [ ] Update the docs (table below).
-  - [ ] Run `mise run check`; it passes with every current delegate method. Make sure that removing
+  - [x] Update the docs (table below).
+  - [x] Run `mise run check`; it passes with every current delegate method. Make sure that removing
         `@RequiresPermission` from one delegate method locally fails it with the method's name
         (then put it back).
-  - [ ] Bump the version (minor).
+  - [x] Bump the version (minor).
 - **Tests**: `ProjectRulesTest` proves `TAP-A1` on its fixtures (the marked lines exactly, with the
   id; nothing on the compliant and suppressed ones) and fails without them. `DocumentationTest`
   checks the catalogue row. `checkstyleMain` on `bff/impl` passes on the real delegates.
