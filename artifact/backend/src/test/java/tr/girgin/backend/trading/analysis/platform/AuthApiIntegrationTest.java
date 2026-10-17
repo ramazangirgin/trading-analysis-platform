@@ -15,6 +15,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
@@ -138,7 +139,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void anUnsafeRequestWithASessionNeedsTheCsrfToken() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher);
+        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
 
         HttpResponse<String> without = client.sendWithoutCsrfHeader("POST", "/api/presets", PRESET);
         HttpResponse<String> with = client.send("POST", "/api/presets", PRESET);
@@ -150,7 +151,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void logoutEndsTheSession() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher);
+        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
         String sessionId = client.cookie(TestSession.SESSION_COOKIE);
         assertThat(client.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
 
@@ -166,7 +167,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void meEndsTheSessionOfAUserDisabledSinceTheLogin() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher);
+        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
         String sessionId = client.cookie(TestSession.SESSION_COOKIE);
         HttpResponse<String> before = client.send("GET", "/api/auth/me", null);
         assertThat(before.statusCode()).isEqualTo(200);

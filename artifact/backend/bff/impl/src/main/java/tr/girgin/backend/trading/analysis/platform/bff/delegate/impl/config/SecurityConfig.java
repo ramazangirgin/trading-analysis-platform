@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
@@ -30,9 +31,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Pe
 
 /**
  * Spring Security: the session login of {@code /api/auth} and the rules that every other {@code /api}
- * route needs a session, every unsafe request a CSRF token, and an {@code ASYNC} dispatch passes: it
- * continues a request that was authorized when it started, e.g. an event stream whose session ended
- * meanwhile.
+ * route needs its permission (a route without a rule is refused), every unsafe request a CSRF token,
+ * and an {@code ASYNC} dispatch passes: it continues a request that was authorized when it started,
+ * e.g. an event stream whose session ended meanwhile.
  *
  * <p>The repository, CSRF and session strategy beans are shared with the login endpoint, so a login
  * through it is stored and protected the way this chain expects.
@@ -105,25 +106,68 @@ public class SecurityConfig {
                 .addFilterBefore(new LoginRateLimitFilter(loginAttemptLimiter, writer), CsrfFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterAfter(new PasswordChangeRequiredFilter(writer), AuthorizationFilter.class)
-                .authorizeHttpRequests(requests -> requests
-                        // An ASYNC dispatch continues a request that was authorized when it
-                        // started (an event stream closed by its session's end): it must pass,
-                        // or the entry point would write a 401 onto a committed response.
-                        .dispatcherTypeMatchers(DispatcherType.ASYNC)
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/me")
-                        .permitAll()
-                        .requestMatchers("/api/openapi", "/api/openapi/**", "/actuator/**")
-                        .permitAll()
-                        // Checked here and not on the controller: bff.controller.api holds no security code.
-                        .requestMatchers(HttpMethod.POST, "/api/users/*/unlock")
-                        .hasAuthority(Permission.USER_MANAGE.key())
-                        .requestMatchers("/api/**")
-                        .authenticated()
-                        .anyRequest()
-                        .permitAll());
+                .authorizeHttpRequests(this::authorizeApi);
         return http.build();
+    }
+
+    // Checked here and not on the controllers: bff.controller.api holds no security code.
+    private void authorizeApi(
+            AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry requests) {
+        String run = Permission.ANALYSIS_RUN.key();
+        String read = Permission.ANALYSIS_READ.key();
+        String settingsRead = Permission.SETTINGS_READ.key();
+        requests
+                // An ASYNC dispatch continues a request that was authorized when it
+                // started (an event stream closed by its session's end): it must pass,
+                // or the entry point would write a 401 onto a committed response.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC)
+                .permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/logout")
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/me")
+                .permitAll()
+                .requestMatchers("/api/openapi", "/api/openapi/**", "/actuator/**")
+                .permitAll()
+                // Every user changes their own password.
+                .requestMatchers(HttpMethod.POST, "/api/auth/password")
+                .authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/analyses", "/api/analyses/*/stop", "/api/analyses/*/rerun")
+                .hasAuthority(run)
+                .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/analyses",
+                        "/api/analyses/*",
+                        "/api/analyses/*/report",
+                        "/api/analyses/*/prices",
+                        "/api/analyses/*/logs",
+                        "/api/analyses/*/events")
+                .hasAuthority(read)
+                // It creates and updates analyses from the data folder, as runs do.
+                .requestMatchers(HttpMethod.POST, "/api/reports/rescan")
+                .hasAuthority(run)
+                // The new-analysis form and the settings page read the catalog; the health alerts are about running.
+                .requestMatchers(HttpMethod.GET, "/api/catalog", "/api/health")
+                .hasAnyAuthority(run, settingsRead)
+                .requestMatchers(HttpMethod.GET, "/api/secrets")
+                .hasAuthority(settingsRead)
+                .requestMatchers(HttpMethod.PUT, "/api/secrets/*")
+                .hasAuthority(Permission.SETTINGS_KEYS_WRITE.key())
+                .requestMatchers(HttpMethod.DELETE, "/api/secrets/*")
+                .hasAuthority(Permission.SETTINGS_KEYS_WRITE.key())
+                .requestMatchers(HttpMethod.GET, "/api/presets")
+                .hasAuthority(Permission.PRESET_READ.key())
+                .requestMatchers(HttpMethod.POST, "/api/presets")
+                .hasAuthority(Permission.PRESET_MANAGE.key())
+                .requestMatchers(HttpMethod.PUT, "/api/presets/*")
+                .hasAuthority(Permission.PRESET_MANAGE.key())
+                .requestMatchers(HttpMethod.DELETE, "/api/presets/*")
+                .hasAuthority(Permission.PRESET_MANAGE.key())
+                .requestMatchers(HttpMethod.POST, "/api/users/*/unlock")
+                .hasAuthority(Permission.USER_MANAGE.key())
+                // A route without a rule above is refused for everyone.
+                .requestMatchers("/api/**")
+                .denyAll()
+                .anyRequest()
+                .permitAll();
     }
 }

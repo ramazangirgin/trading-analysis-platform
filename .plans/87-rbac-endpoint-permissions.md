@@ -168,6 +168,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Permission rules in the security chain
 
+- **Status**: done
 - **Depends on**: WP1 (the tests log in with the new roles)
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/config/SecurityConfig.java`
@@ -176,9 +177,9 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/RolePermissionsIntegrationTest.java` (new)
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/{AnalysesApiIntegrationTest,PresetsApiIntegrationTest,PasswordChangeIntegrationTest,AuthApiIntegrationTest,LoginLockoutIntegrationTest,TradingPlatformApplicationTests}.java`
 - **Steps**:
-  - [ ] Replace the catch-all with the rules of the table and `denyAll()`; update the Javadoc.
-  - [ ] Give `TestSession.loggedIn` and `createUser` the role argument; update the callers.
-  - [ ] Write the two new tests.
+  - [x] Replace the catch-all with the rules of the table and `denyAll()`; update the Javadoc.
+  - [x] Give `TestSession.loggedIn` and `createUser` the role argument; update the callers.
+  - [x] Write the two new tests.
 - **Tests**:
   - `EndpointPermissionsIntegrationTest` (above): no endpoint without a rule, every rule refuses a
     user without roles.
