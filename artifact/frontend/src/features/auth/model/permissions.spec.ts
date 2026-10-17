@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Permission } from '@/shared/api/types'
-import { permissionGateRedirect } from './permissions'
+import { type PermissionTarget, permissionGateRedirect } from './permissions'
 
 const none = () => false
 const only =
@@ -30,7 +30,10 @@ describe('permissionGateRedirect', () => {
   })
 
   it('accepts any permission of a list', () => {
-    const to = { name: 'x', meta: { permission: ['analysis:run', 'settings:read'] } }
+    const to: PermissionTarget = {
+      name: 'x',
+      meta: { permission: ['analysis:run', 'settings:read'] },
+    }
     expect(permissionGateRedirect(only('settings:read'), to)).toBeNull()
     expect(permissionGateRedirect(only('preset:read'), to)).toEqual({ name: 'dashboard' })
   })

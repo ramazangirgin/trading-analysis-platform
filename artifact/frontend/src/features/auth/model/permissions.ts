@@ -1,3 +1,4 @@
+import type { RouteMeta } from 'vue-router'
 import type { Permission } from '@/shared/api/types'
 
 /**
@@ -13,9 +14,15 @@ export const PERMISSIONS = {
   settingsKeysWrite: 'settings:keys:write',
 } as const satisfies Record<string, Permission>
 
+declare module 'vue-router' {
+  interface RouteMeta {
+    permission?: Permission | Permission[]
+  }
+}
+
 export interface PermissionTarget {
   name?: string | symbol | null
-  meta?: object
+  meta?: RouteMeta
 }
 
 /**
@@ -28,7 +35,7 @@ export function permissionGateRedirect(
   to: PermissionTarget,
 ) {
   if (to.name === 'dashboard') return null
-  const required = (to.meta as { permission?: Permission | Permission[] } | undefined)?.permission
+  const required = to.meta?.permission
   if (required === undefined || required === null) return null
   const anyOf = Array.isArray(required) ? required : [required]
   if (anyOf.some((permission) => can(permission))) return null
