@@ -334,6 +334,11 @@ share.
   - [ ] Regenerate the OpenAPI document and the frontend API types; type the frontend with
         `Permission`.
   - [ ] Write `repository-shared-types.md` and list it in the conventions README table.
+  - [ ] README "Login": say that the permission is checked after request validation. Since WP5 the
+        check runs on the delegate method, after the controller's `@Valid`, so a request without
+        the permission but with an invalid body answers 400 with the validation errors, and only a
+        valid one reaches the check and gets 403 `forbidden`. Accepted by the developer as Spring's
+        usual method-security order; no behaviour change.
 - **Convention** (`docs/coding-convention/repository-shared-types.md`, "Whole repository: values
   shared by the backend domain, the BFF and the frontend"), in the plain style of the other
   convention documents, with permissions as the worked example:
@@ -372,6 +377,7 @@ share.
 | Text | `README.md` → "Development" → "Login", "The backend" list | Replace "Every other `/api/**` route answers 401 without a session" with: each route needs a permission (401 without a session, 403 `forbidden` without the permission), and a short table of the built-in roles (ADMIN: everything; ANALYST: run, read and delete analyses, manage presets, read settings; VIEWER: read analyses and presets) and of which permission each endpoint group needs (the table in "Endpoint permissions", condensed). Say that the first admin has ADMIN, that "their own" becomes true with ownership (#91, #92), and that the UI hides what the user may not do. |
 | Text | `README.md` → "Quick start" → "3. Log in" | One sentence: the first admin has the ADMIN role, with every permission. Only if the section does not say so already. |
 | Text | `docs/coding-convention/backend-java-package-structure.md` → "Where each class kind goes" | A row (or a note under the Spring Security row): an endpoint's permission is `@RequiresPermission` on its delegate method in `bff.delegate.impl`, never an annotation on a controller nor a request matcher in `SecurityConfig`; the annotation type and its enforcement live in `bff.delegate.impl.config`, and `EndpointPermissionsIntegrationTest` fails while an endpoint lacks it. |
+| Text | `README.md` → "Development" → "Login" | The order of the checks: 401 without a session, then request validation (400), then the endpoint's permission (403 `forbidden`). |
 | Screenshot | none | The screenshots log in as the first admin, who sees every link and button, so no page changes for them. |
 
 ## Out of scope
