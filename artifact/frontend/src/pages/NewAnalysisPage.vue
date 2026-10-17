@@ -30,8 +30,10 @@ import { useLabels } from '@/shared/composables/useLabels'
 import { HealthAlerts } from '@/features/health'
 import { analysisApi } from '@/features/analysis'
 import { settingsApi } from '@/features/settings'
+import { PERMISSIONS, useSessionStore } from '@/features/auth'
 
 const router = useRouter()
+const session = useSessionStore()
 const { locale } = useI18n()
 const { t, language, error: errorLabel } = useLabels()
 const catalogStore = useCatalogStore()
@@ -124,7 +126,7 @@ const deepOptions = computed(() => toOptions(provider.value?.deepModels ?? []))
 const quickOptions = computed(() => toOptions(provider.value?.quickModels ?? []))
 
 onMounted(async () => {
-  void loadPresets()
+  if (session.can(PERMISSIONS.presetRead)) void loadPresets()
   await catalogStore.load()
   const defaults = catalog.value?.defaults
   if (defaults && !form.llmProvider) {
@@ -224,15 +226,23 @@ const futureDate = (millis: number) => {
     <NSpace vertical :size="12">
       <HealthAlerts />
       <NAlert v-if="catalogStore.error" type="warning" :title="t('form.catalogUnavailable')" />
-      <div class="presets">
+      <div
+        v-if="session.can(PERMISSIONS.presetRead) || session.can(PERMISSIONS.presetManage)"
+        class="presets"
+      >
         <NSelect
+          v-if="session.can(PERMISSIONS.presetRead)"
           :options="presetOptions"
           :placeholder="presets.length ? t('presets.load') : t('presets.none')"
           :disabled="!presets.length"
           clearable
           @update:value="applyPreset"
         />
-        <NPopover trigger="click" placement="bottom-end">
+        <NPopover
+          v-if="session.can(PERMISSIONS.presetManage)"
+          trigger="click"
+          placement="bottom-end"
+        >
           <template #trigger>
             <NButton secondary>{{ t('presets.save') }}</NButton>
           </template>
