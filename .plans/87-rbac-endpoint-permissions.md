@@ -218,10 +218,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Docs
 
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3
 - **Files**: `README.md`, `docs/coding-convention/backend-java-package-structure.md`
 - **Steps**:
-  - [ ] As in "Docs to update".
+  - [x] As in "Docs to update".
 - **Tests**: none (`mise run check` runs the Markdown checks).
 
 ## Tests
