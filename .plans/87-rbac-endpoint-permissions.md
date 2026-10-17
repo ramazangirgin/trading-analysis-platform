@@ -32,7 +32,7 @@ The issue predates #79 to #86, which already did part of it. These stay as they 
 
 | Part | Conventions that apply |
 |---|---|
-| backend | `backend-java-package-structure.md`: Spring Security code lives in `bff.delegate.impl.config`, never in `bff.controller.api` (`bff_api_holds_no_security_code`), so **no `@PreAuthorize` on controllers** as the issue sketched: the rules go into `SecurityConfig`'s request matchers, as the unlock rule does. `backend-database-naming.md` and `backend-java-persistence.md`: quoted uppercase names, the identity schema's own Flyway history, permissions as the enum array on `"ROLES"`, labels are the Java constant names. `backend-java-checkstyle.md`, `backend-java-formatting.md`. |
+| backend | `backend-java-package-structure.md`: Spring Security code lives in `bff.delegate.impl`, never in `bff.controller.api` (`bff_api_holds_no_security_code`), so **no annotation on controllers** as the issue sketched: an endpoint's permission is an annotation on its delegate method in `bff.delegate.impl` (the endpoint's business logic), next to the code it protects; the annotation type and its interceptor live in `bff.delegate.impl.config`, since the delegate root holds only delegate implementations (`delegate_root_holds_only_delegate_impls`). `backend-database-naming.md` and `backend-java-persistence.md`: quoted uppercase names, the identity schema's own Flyway history, permissions as the enum array on `"ROLES"`, labels are the Java constant names. `backend-java-checkstyle.md`, `backend-java-formatting.md`. |
 | frontend | `frontend-folder-structure.md`: permission logic in `features/auth` (pure helpers in `model/` with `*.spec.ts`, exported through `index.ts`), pages and `app/` ask `useSessionStore().can(...)`; i18n strings in `shared/i18n/locales/{en,tr}.json`. |
 | docs | Root `README.md` "Login" section; `backend-java-package-structure.md` (where an endpoint's permission rule goes). |
 
@@ -58,9 +58,39 @@ The issue predates #79 to #86, which already did part of it. These stay as they 
 
 ### Endpoint permissions (backend, BFF)
 
-`SecurityConfig#securityFilterChain` gets one request matcher per endpoint (method and path), in the
-order of the controllers, replacing the catch-all `.requestMatchers("/api/**").authenticated()` with
-`.requestMatchers("/api/**").denyAll()`. The rules, all through `Permission.X.key()`:
+Each endpoint's permission is declared on its delegate method (`*ApiDelegateImpl` in
+`bff.delegate.impl`), not in `SecurityConfig`: the definition stays next to the endpoint's
+business logic (changed after the first review, see WP5). WP2 first put the rules into
+`SecurityConfig`'s request matchers; WP5 moves them.
+
+- A custom annotation `@RequiresPermission(Permission[] value)` in `bff.delegate.impl.config`
+  (`@Target(METHOD)`, `@Retention(RUNTIME)`, `@Documented`): the caller needs **any** of the given
+  permissions. It takes the `Permission` enum, not key strings, so a typo does not compile and no
+  SpEL is involved. Example: `@RequiresPermission(Permission.ANALYSIS_RUN)` on
+  `AnalysesApiDelegateImpl#startAnalysis`, `@RequiresPermission({Permission.ANALYSIS_RUN,
+  Permission.SETTINGS_READ})` on `CatalogApiDelegateImpl#getCatalog`.
+- Spring Security method security enforces it: `@EnableMethodSecurity` (pre/post annotations not
+  needed for this) plus an infrastructure `Advisor` bean
+  (`AuthorizationManagerBeforeMethodInterceptor` with an `AnnotationMatchingPointcut` on
+  `@RequiresPermission` and an `AuthorizationManager<MethodInvocation>` that reads the annotation
+  and checks the authentication's authorities against `Permission#key()`). Both in
+  `bff.delegate.impl.config` (a `MethodSecurityConfig` next to `SecurityConfig`, or in it). A
+  refused call throws `AccessDeniedException`; `ApiExceptionHandler` has no catch-all handler, so
+  `ExceptionTranslationFilter` turns it into the existing 403 `forbidden` from
+  `ApiAccessDeniedHandler`. Check that this holds for the SSE endpoint too (the check runs before
+  the delegate returns the emitter).
+- `SecurityConfig` keeps only what is not about one endpoint's permission: the ASYNC dispatcher
+  rule, the open routes (`/api/auth/login`, `/api/auth/logout`, `GET /api/auth/me`,
+  `/api/openapi`, `/api/openapi.yaml`, `/api/openapi/**`, `/actuator/**`), and
+  `.requestMatchers("/api/**").authenticated()` for the rest (401 without a session before any
+  delegate runs). The per-endpoint matchers, the `denyAll()` catch-all and the unlock rule go.
+  `POST /api/auth/password` needs only the session, as today.
+- Fail closed: without the URL `denyAll()`, a delegate method without `@RequiresPermission` would
+  be open to every session. `EndpointPermissionsIntegrationTest` still catches it (a user without
+  roles must get 403 everywhere outside the allow list). A static check that every delegate method
+  carries a security annotation is the follow-up issue #171, not this plan.
+
+The permissions per endpoint (the delegate method of each):
 
 | Endpoint | Permission |
 |---|---|
@@ -75,8 +105,7 @@ order of the controllers, replacing the catch-all `.requestMatchers("/api/**").a
 | `PUT /api/secrets/*`, `DELETE /api/secrets/*` | `settings:keys:write` |
 | `GET /api/presets` | `preset:read` |
 | `POST /api/presets`, `PUT /api/presets/*`, `DELETE /api/presets/*` | `preset:manage` |
-| `POST /api/users/*/unlock` | `user:manage` (unchanged) |
-| any other `/api/**` | `denyAll()` |
+| `POST /api/users/*/unlock` | `user:manage` (moves from `SecurityConfig` to `UsersApiDelegateImpl`) |
 
 The ASYNC dispatcher rule stays first, and `PasswordChangeRequiredFilter` keeps answering
 `password_change_required` before the permission check matters. A refused request gets the existing
@@ -84,17 +113,14 @@ The ASYNC dispatcher rule stays first, and `PasswordChangeRequiredFilter` keeps 
 `analysis:read:all`, `preset:read:all`, `user:read`, `role:manage` and `audit:read` guard no
 endpoint yet: there is no analysis delete endpoint (the issue's "delete" for a VIEWER is proved on
 the preset and secret delete endpoints), and the others come with #88, #90, #91, #92 and #93, each
-adding its rules here.
+annotating its own delegate methods.
 
-To keep the class readable, the matchers may move into a private method
-`authorizeApi(AuthorizeHttpRequestsConfigurer<...>.AuthorizationManagerRequestMatcherRegistry)` in
-`SecurityConfig`; no new class. Update the class Javadoc ("every other `/api` route needs a
-session" → "needs its permission; a route without a rule is refused").
+Update `SecurityConfig`'s class Javadoc: every other `/api` route needs a session, and each
+endpoint's permission is the `@RequiresPermission` on its delegate method.
 
 ### The guard against a forgotten endpoint (backend, test)
 
-The issue's optional Checkstyle or ArchUnit rule cannot see request matchers, so the guard is an
-integration test instead, `EndpointPermissionsIntegrationTest` in
+The runtime guard is an integration test, `EndpointPermissionsIntegrationTest` in
 `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/`. It reads every
 handler method from Spring's `RequestMappingHandlerMapping` (`requestMappingHandlerMapping` bean),
 fills path variables with a random ID, and for each one sends the request:
@@ -102,7 +128,7 @@ fills path variables with a random ID, and for each one sends the request:
 - from a session whose user has no role: every endpoint answers 403, except the open ones and
   `POST /api/auth/password` (an explicit, short allow list in the test);
 - from an ADMIN session: no endpoint answers 403 (any 2xx, 400 or 404 is fine, a random ID gives
-  404). This fails when a new endpoint falls into `denyAll()`. The SSE endpoint is sent with
+  404). This fails when an endpoint's permission is wrong for ADMIN. The SSE endpoint is sent with
   `Accept: text/event-stream` and read only up to the status line.
 
 Unsafe requests carry the CSRF header (via `TestSession`) and a body of `{}` where the endpoint
@@ -225,6 +251,29 @@ Packages without a dependency between them can be implemented in parallel.
   - [x] As in "Docs to update".
 - **Tests**: none (`mise run check` runs the Markdown checks).
 
+### WP5: Permissions on the delegate methods
+
+- **Status**: open
+- **Depends on**: WP2, WP4 (it moves WP2's rules and corrects WP4's docs)
+- **Files**:
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/config/RequiresPermission.java` (new)
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/config/MethodSecurityConfig.java` (new, or the beans in `SecurityConfig`)
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/config/SecurityConfig.java`
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/{AnalysesApiDelegateImpl,ReportsApiDelegateImpl,CatalogApiDelegateImpl,HealthApiDelegateImpl,SettingsApiDelegateImpl,UsersApiDelegateImpl}.java`
+  - a unit test for the authorization manager in `artifact/backend/bff/impl/src/test/java/…/bff/delegate/impl/config/`
+  - `README.md`, `docs/coding-convention/backend-java-package-structure.md`
+- **Steps**:
+  - [ ] `@RequiresPermission` and the method-security beans that enforce it.
+  - [ ] Annotate every delegate method of the table with its permission(s); `AuthApiDelegateImpl`
+        stays unannotated (its routes are open or need only a session, set in `SecurityConfig`).
+  - [ ] Remove the per-endpoint matchers, the unlock matcher and `denyAll()` from `SecurityConfig`;
+        `/api/**` back to `authenticated()`; update its Javadoc.
+  - [ ] Correct the docs (README "Login" and the package-structure row) to the delegate annotation.
+- **Tests**: a unit test of the authorization manager: granted with one of several permissions,
+  denied without, denied for an anonymous authentication. `EndpointPermissionsIntegrationTest`,
+  `RolePermissionsIntegrationTest` and the other integration tests pass unchanged: the HTTP
+  behaviour (401 without a session, 403 `forbidden` without the permission) is the same.
+
 ## Tests
 
 - Backend: `JpaIdentityRepositoryTest` (roles seeded on PostgreSQL), `RolePermissionsIntegrationTest`
@@ -242,7 +291,7 @@ Packages without a dependency between them can be implemented in parallel.
 |---|---|---|
 | Text | `README.md` → "Development" → "Login", "The backend" list | Replace "Every other `/api/**` route answers 401 without a session" with: each route needs a permission (401 without a session, 403 `forbidden` without the permission), and a short table of the built-in roles (ADMIN: everything; ANALYST: run, read and delete analyses, manage presets, read settings; VIEWER: read analyses and presets) and of which permission each endpoint group needs (the table in "Endpoint permissions", condensed). Say that the first admin has ADMIN, that "their own" becomes true with ownership (#91, #92), and that the UI hides what the user may not do. |
 | Text | `README.md` → "Quick start" → "3. Log in" | One sentence: the first admin has the ADMIN role, with every permission. Only if the section does not say so already. |
-| Text | `docs/coding-convention/backend-java-package-structure.md` → "Where each class kind goes" | A row (or a note under the Spring Security row): an endpoint's permission rule is a request matcher in `SecurityConfig`, never `@PreAuthorize` on a controller; a route without a rule is refused (`denyAll`), and `EndpointPermissionsIntegrationTest` fails until it has one. |
+| Text | `docs/coding-convention/backend-java-package-structure.md` → "Where each class kind goes" | A row (or a note under the Spring Security row): an endpoint's permission is `@RequiresPermission` on its delegate method in `bff.delegate.impl`, never an annotation on a controller nor a request matcher in `SecurityConfig`; the annotation type and its enforcement live in `bff.delegate.impl.config`, and `EndpointPermissionsIntegrationTest` fails while an endpoint lacks it. |
 | Screenshot | none | The screenshots log in as the first admin, who sees every link and button, so no page changes for them. |
 
 ## Out of scope
@@ -254,14 +303,18 @@ Packages without a dependency between them can be implemented in parallel.
 - An analysis delete endpoint (`analysis:delete` stays in the catalogue for it): not planned in
   #78; a separate issue when wanted.
 - `audit:read` endpoints: #93.
+- A static check (ArchUnit) that every delegate method carries `@RequiresPermission` or an explicit marker: #171.
 
 ## Open questions
 
 None left. Decisions made in this plan, for the plan review:
 
-- Permission checks are request matchers in `SecurityConfig`, not `@PreAuthorize`, because of the
-  documented `bff_api_holds_no_security_code` rule.
-- The optional build rule is an integration test over every handler mapping plus `denyAll()` as
-  the default, not Checkstyle or ArchUnit, which cannot see the request matchers.
+- Permission checks are a custom `@RequiresPermission(Permission...)` on the delegate methods
+  (decided after the first review: the definition belongs next to the endpoint's business logic),
+  not request matchers in `SecurityConfig` and not annotations on the controllers
+  (`bff_api_holds_no_security_code`). A custom annotation rather than `@PreAuthorize`: it takes
+  the enum, needs no SpEL strings, and gives the follow-up check one annotation to look for.
+- The runtime guard is an integration test over every handler mapping. A static check that every
+  delegate method carries a security annotation is #171.
 - `POST /api/reports/rescan` needs `analysis:run`; `GET /api/catalog` and `GET /api/health` need
   `analysis:run` or `settings:read`, so a VIEWER's dashboard shows no health alerts.
