@@ -19,8 +19,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * unknown user, locked account), which counts as a failure; any other answer gives the slot back. So more
  * logins than the limit running at once from one address get 429 too.
  *
- * <p>The client address is {@link HttpServletRequest#getRemoteAddr()}. {@code X-Forwarded-For} is not
- * trusted: any client can set it, and no reverse proxy stands in front of the platform.
+ * <p>The client address is {@link HttpServletRequest#getRemoteAddr()}. Behind a reverse proxy on an internal
+ * address (the Caddy overlay), Tomcat replaces it with the {@code X-Forwarded-For} client
+ * ({@code server.forward-headers-strategy=native}); from any other address {@code X-Forwarded-For} is ignored,
+ * as any client can set it.
  */
 final class LoginRateLimitFilter extends OncePerRequestFilter {
 

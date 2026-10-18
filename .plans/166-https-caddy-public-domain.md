@@ -144,6 +144,8 @@ stays tunnel-only, and local runs and the plain Compose run are as before.
 
 ### WP1: Backend: forwarded headers from the proxy
 
+- **Status**: done
+
 - **Depends on**: none
 - **Files**: `artifact/backend/src/main/resources/application.properties`,
   `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/config/LoginRateLimitFilter.java`
@@ -153,10 +155,10 @@ stays tunnel-only, and local runs and the plain Compose run are as before.
   `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/TestSession.java` (only
   if a header hook is needed)
 - **Steps**:
-  - [ ] `server.forward-headers-strategy=native` with its comment; correct the `server.address`
+  - [x] `server.forward-headers-strategy=native` with its comment; correct the `server.address`
         comment
-  - [ ] Rewrite the client-address paragraph of `LoginRateLimitFilter`'s Javadoc
-  - [ ] Let `TestSession` send extra headers on every request (e.g. a `withHeader(name, value)`
+  - [x] Rewrite the client-address paragraph of `LoginRateLimitFilter`'s Javadoc
+  - [x] Let `TestSession` send extra headers on every request (e.g. a `withHeader(name, value)`
         returning the session), if the tests need it
 - **Tests** (Spring Boot, `RANDOM_PORT`, the test client connects from 127.0.0.1, a trusted proxy):
   - `LoginLockoutIntegrationTest`: failed logins with `X-Forwarded-For: 203.0.113.1` up to the limit

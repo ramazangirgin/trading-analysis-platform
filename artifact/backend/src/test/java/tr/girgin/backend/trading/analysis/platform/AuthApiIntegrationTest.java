@@ -138,6 +138,30 @@ class AuthApiIntegrationTest {
     }
 
     @Test
+    void theCookiesAreSecureBehindAProxyThatSpeaksHttpsAndOnlyThen() throws Exception {
+        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+
+        HttpResponse<String> https = TestSession.anonymous(port)
+                .withHeader("X-Forwarded-Proto", "https")
+                .login(username, TestSession.PASSWORD);
+        HttpResponse<String> http = TestSession.anonymous(port).login(username, TestSession.PASSWORD);
+
+        assertThat(https.statusCode()).isEqualTo(200);
+        assertThat(setCookie(https, TestSession.SESSION_COOKIE)).contains("Secure");
+        assertThat(setCookie(https, TestSession.CSRF_COOKIE)).contains("Secure");
+        assertThat(http.statusCode()).isEqualTo(200);
+        assertThat(setCookie(http, TestSession.SESSION_COOKIE)).doesNotContain("Secure");
+        assertThat(setCookie(http, TestSession.CSRF_COOKIE)).doesNotContain("Secure");
+    }
+
+    private static String setCookie(HttpResponse<String> response, String name) {
+        return response.headers().allValues("Set-Cookie").stream()
+                .filter(c -> c.startsWith(name + "="))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Test
     void anUnsafeRequestWithASessionNeedsTheCsrfToken() throws Exception {
         TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
 
