@@ -151,7 +151,7 @@ describes.
 
 Then add an API key under **Settings** as in the [main README](../../README.md#4-add-an-api-key).
 
-## HTTPS on a domain
+### HTTPS on a domain
 
 With a domain, the platform is also served on the internet: a Caddy container in front of it gets
 and renews a Let's Encrypt certificate and redirects `http://` and `www.` to
