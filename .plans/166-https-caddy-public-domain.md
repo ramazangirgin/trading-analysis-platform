@@ -171,13 +171,15 @@ stays tunnel-only, and local runs and the plain Compose run are as before.
 
 ### WP2: Compose overlay and Caddyfile
 
+- **Status**: done
+
 - **Depends on**: none
 - **Files**: `deploy/docker-compose.public.yml` (new), `deploy/Caddyfile` (new),
   `deploy/.env.example`, `deploy/docker-compose.yml` (header comment only)
 - **Steps**:
-  - [ ] The overlay with the pinned `caddy` image, ports, environment, volumes, network
-  - [ ] The Caddyfile as in "Design"
-  - [ ] `.env.example`: the public section
+  - [x] The overlay with the pinned `caddy` image, ports, environment, volumes, network
+  - [x] The Caddyfile as in "Design"
+  - [x] `.env.example`: the public section
 - **Tests**:
   - `docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.public.yml config` with a
     sample `.env` (or `--env-file` from the scratch directory) succeeds, and fails with the

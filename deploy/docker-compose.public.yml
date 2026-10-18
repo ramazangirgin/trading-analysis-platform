@@ -1,0 +1,30 @@
+# HTTPS on the internet, for a machine with a domain. Used together with docker-compose.yml:
+#   caddy   gets and renews a Let's Encrypt certificate for ${PLATFORM_DOMAIN}, redirects http:// and
+#           www. to https://${PLATFORM_DOMAIN}, and passes only /actuator/health of the actuator
+#
+# Set PLATFORM_DOMAIN and ACME_EMAIL in deploy/.env, point the domain's DNS at this machine and open
+# ports 80 and 443 (TCP) and 443 (UDP) first, then:
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.public.yml up -d
+# The platform still listens on 127.0.0.1:${PLATFORM_PORT} (the SSH tunnel keeps working).
+
+services:
+  caddy:
+    image: caddy:2.10.2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      # HTTP/3
+      - "443:443/udp"
+    environment:
+      PLATFORM_DOMAIN: ${PLATFORM_DOMAIN:?set PLATFORM_DOMAIN in deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,z
+      # The certificates and the ACME account: kept when the container is recreated.
+      - ${PLATFORM_DATA:?set PLATFORM_DATA in deploy/.env}/caddy/data:/data:z
+      - ${PLATFORM_DATA}/caddy/config:/config:z
+    depends_on:
+      platform:
+        condition: service_started
+    networks: [backend]

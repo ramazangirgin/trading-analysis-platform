@@ -7,6 +7,8 @@
 #   cp deploy/.env.example deploy/.env    # then edit
 #   mise run docker-build                 # the two images
 #   docker compose -f deploy/docker-compose.yml up -d
+#
+# HTTPS on a domain: add -f deploy/docker-compose.public.yml (a Caddy in front; see deploy/.env.example).
 
 name: trading-analysis-platform
 
