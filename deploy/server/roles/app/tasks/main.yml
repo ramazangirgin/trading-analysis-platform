@@ -156,8 +156,7 @@
 - name: Start the Compose stack
   community.docker.docker_compose_v2:
     project_src: "{{ app_dir }}/deploy"
-    files:
-      - docker-compose.yml
+    files: "{{ ['docker-compose.yml'] + (['docker-compose.public.yml'] if public_domain | length > 0 else []) }}"
     state: present
   register: app_compose
   changed_when: app_compose.actions | rejectattr('id', 'search', 'init-dirs') | list | length > 0
@@ -172,17 +171,48 @@
   delay: 10
   changed_when: false
 
-# The UI listens on the server's 127.0.0.1 only; an SSH tunnel brings it to this machine.
+# From this machine, not the server: it proves DNS, the provider's firewall, the server's firewall
+# and the certificate, which the first request makes Caddy get (a few minutes at most).
+- name: Check the platform over HTTPS
+  when: public_domain | length > 0
+  block:
+    - name: Wait for the platform to answer over HTTPS
+      ansible.builtin.uri:
+        url: "https://{{ public_domain }}/actuator/health"
+        return_content: true
+      register: app_public_health
+      until: (app_public_health.json | default({})).status | default('') == 'UP'
+      retries: 30
+      delay: 10
+      changed_when: false
+      delegate_to: localhost
+      become: false
+  rescue:
+    - name: Explain why the platform does not answer over HTTPS
+      ansible.builtin.fail:
+        msg: >-
+          https://{{ public_domain }}/actuator/health does not answer from this machine. Check that
+          the DNS record of {{ public_domain }} points at the server, that the provider's firewall
+          lets TCP 80 and 443 in (and UDP 443), that the server's firewall does (sudo ufw status;
+          on Oracle Cloud also sudo iptables -L INPUT -n), and that Caddy got a certificate
+          (sudo -u {{ app_user }} docker compose -f {{ app_dir }}/deploy/docker-compose.yml
+          -f {{ app_dir }}/deploy/docker-compose.public.yml logs caddy).
+
+# The UI listens on the server's 127.0.0.1 only (an SSH tunnel brings it to this machine), and on the
+# public domain when there is one.
 - name: Show how to open the platform
   ansible.builtin.debug:
-    msg:
-      - "The platform runs. Open it through an SSH tunnel, kept open while you use it:"
+    msg: "{{ app_lines | select | list }}"
+  vars:
+    app_lines:
+      - "{{ ('The platform runs on https://' ~ public_domain) if public_domain | length > 0 else '' }}"
+      - "{{ 'It can also be opened through an SSH tunnel, kept open while you use it:' if public_domain | length > 0
+        else 'The platform runs. Open it through an SSH tunnel, kept open while you use it:' }}"
       - "  mise run server:tunnel{{ '' if platform_port | int == 8080 else ' -- --remote-port ' ~ platform_port }}"
       - "  (or: ssh {{ app_ssh_key }}{{ app_ssh_port }}-N -L {{ platform_port }}:127.0.0.1:{{ platform_port }} {{ app_ssh_target }})"
       - "then http://127.0.0.1:{{ platform_port }}"
       - "{{ app_password_hint }}"
       - "  sudo -u {{ app_user }} docker compose -f {{ app_dir }}/deploy/docker-compose.yml logs platform"
-  vars:
     app_ssh_key: "{{ '-i ' ~ ansible_ssh_private_key_file ~ ' ' if ansible_ssh_private_key_file is defined else '' }}"
     app_ssh_port: "{{ '-p ' ~ ansible_port ~ ' ' if ansible_port is defined else '' }}"
     app_ssh_target: "{{ (ansible_user ~ '@') if ansible_user is defined else '' }}{{ ansible_host | default(inventory_hostname) }}"

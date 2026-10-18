@@ -1,0 +1,6 @@
+# The ports Caddy needs when the server has a public domain: HTTP (the certificate challenge and
+# the redirect), HTTPS, and HTTP/3.
+base_public_ports:
+  - { port: "80", proto: tcp }
+  - { port: "443", proto: tcp }
+  - { port: "443", proto: udp }

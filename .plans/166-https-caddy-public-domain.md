@@ -190,14 +190,16 @@ stays tunnel-only, and local runs and the plain Compose run are as before.
 
 ### WP3: Ansible: public domain, firewall, overlay, health over HTTPS
 
+- **Status**: done
+
 - **Depends on**: WP2 (the file names it starts)
 - **Files**: `deploy/server/group_vars/all.yml`, `deploy/server/site.yml`,
   `deploy/server/roles/base/tasks/main.yml`, `deploy/server/roles/app/tasks/main.yml`,
   `deploy/server/roles/app/templates/env.j2`
 - **Steps**:
-  - [ ] `public_domain`, `acme_email` and the assert
-  - [ ] `base`: ufw rules and the Oracle Cloud iptables rules, all only when `public_domain` is set
-  - [ ] `app`: `.env`, the compose files, the outside health wait, the final message
+  - [x] `public_domain`, `acme_email` and the assert
+  - [x] `base`: ufw rules and the Oracle Cloud iptables rules, all only when `public_domain` is set
+  - [x] `app`: `.env`, the compose files, the outside health wait, the final message
 - **Tests**:
   - `mise run server:check` (ansible-lint production profile, syntax check) passes.
   - `mise run server:test` (CI job *Server deploy end-to-end*, tunnel-only) passes unchanged: the
