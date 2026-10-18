@@ -209,11 +209,13 @@ stays tunnel-only, and local runs and the plain Compose run are as before.
 
 ### WP4: Docs
 
+- **Status**: done
+
 - **Depends on**: WP1, WP2, WP3
 - **Files**: `deploy/server/README.md`, `README.md`
 - **Steps**:
-  - [ ] `deploy/server/README.md`: see "Docs to update"
-  - [ ] `README.md`: see "Docs to update"
+  - [x] `deploy/server/README.md`: see "Docs to update"
+  - [x] `README.md`: see "Docs to update"
 - **Tests**: none (docs only)
 
 ## Tests

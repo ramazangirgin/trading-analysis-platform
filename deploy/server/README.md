@@ -10,8 +10,14 @@ your machine ──ssh -L 8080──▶ server: 127.0.0.1:8080 ──▶ Compose
 http://127.0.0.1:8080          (only SSH is open)          (platform, postgres, socket proxy)
 ```
 
-The UI listens on the server's 127.0.0.1 only, and the firewall lets nothing but SSH in. You open
-the UI through an SSH tunnel, which also encrypts it (the platform has a login but no HTTPS yet).
+By default the UI listens on the server's 127.0.0.1 only, and the firewall lets nothing but SSH in.
+You open the UI through an SSH tunnel, which also encrypts it. With a domain
+(`-e public_domain=…`), Caddy also serves it over HTTPS on the internet
+([HTTPS on a domain](#https-on-a-domain)):
+
+```
+browser ──https──▶ server: Caddy :443 ──▶ platform
+```
 
 | Command | What |
 |---|---|
@@ -26,7 +32,8 @@ the UI through an SSH tunnel, which also encrypts it (the platform has a login b
   container of its own (2 GB each). The deploy adds a 4 GB swap file.
 - **Outgoing internet**, for the packages, the repository and the LLM providers.
 - **Incoming SSH** (TCP 22, or the port you set) allowed by the provider's firewall or security
-  group, if it has one. No other incoming port is needed.
+  group, if it has one. No other incoming port is needed, except TCP 80, TCP 443 and UDP 443 for
+  a [public domain](#https-on-a-domain).
 - **A way in, once**, to set up the deploy user: an SSH login you already have (with a
   password or a key, as `root` or as a user who can `sudo`), or the provider's web or serial
   console, or a keyboard and screen on the machine.
@@ -110,9 +117,9 @@ The playbook ([`site.yml`](site.yml)) runs four roles as root:
 
 | Role | What |
 |---|---|
-| `base` | A full package upgrade on the first deploy (later ones: `-e upgrade_packages=true`), automatic daily security updates (no automatic reboot), a swap file, the `ufw` firewall (deny incoming, the SSH port allowed) |
+| `base` | A full package upgrade on the first deploy (later ones: `-e upgrade_packages=true`), automatic daily security updates (no automatic reboot), a swap file, the `ufw` firewall (deny incoming, the SSH port allowed; with `public_domain` also 80/tcp, 443/tcp and 443/udp, plus Oracle Cloud's iptables rules) |
 | `docker` | Docker from its own apt repository, and the `platform` user in the `docker` group |
-| `app` | mise, the repository in `/opt/trading-analysis-platform` at `app_ref`, `deploy/.env` (the database password is generated on the server and never leaves it), the Docker images built on the server, `docker compose up`, and a wait for `/actuator/health` |
+| `app` | mise, the repository in `/opt/trading-analysis-platform` at `app_ref`, `deploy/.env` (the database password is generated on the server and never leaves it), the Docker images built on the server, `docker compose up` (with the Caddy overlay when `public_domain` is set), and a wait for `/actuator/health` (with `public_domain`, also over HTTPS from your computer) |
 | `backup` | A daily `pg_dump` (see below) |
 
 Every task is idempotent: a second `server:deploy` on an unchanged server reports `changed=0`. The
@@ -144,6 +151,51 @@ describes.
 
 Then add an API key under **Settings** as in the [main README](../../README.md#4-add-an-api-key).
 
+## HTTPS on a domain
+
+With a domain, the platform is also served on the internet: a Caddy container in front of it gets
+and renews a Let's Encrypt certificate and redirects `http://` and `www.` to
+`https://<domain>`. Without `public_domain` nothing of this happens.
+
+Before going public:
+
+1. **Set a strong admin password.** Log in through the tunnel first and change the generated one.
+2. **DNS:** an `A` record for `@` and a `CNAME` for `www` pointing at the server.
+3. **The provider's firewall:** allow incoming TCP 80, TCP 443 and UDP 443. On Oracle Cloud these
+   are ingress rules in the subnet's security list.
+
+Then deploy with the domain (without `www.`) and a contact address for Let's Encrypt:
+
+```sh
+mise run server:deploy -- -e public_domain=example.com -e acme_email=you@example.com
+```
+
+Besides the usual deploy, this:
+
+- allows 80/tcp, 443/tcp and 443/udp in `ufw`, and on Oracle Cloud images also in iptables (the
+  shipped rules end `INPUT` with a `REJECT` that comes before ufw's, so ufw alone opens nothing);
+- writes `PLATFORM_DOMAIN`, `ACME_EMAIL` and `COMPOSE_FILE` to `deploy/.env`, so a plain `docker
+  compose` in `deploy/` on the server includes the Caddy overlay
+  ([`docker-compose.public.yml`](../docker-compose.public.yml));
+- starts the stack with the overlay and waits until `https://<domain>/actuator/health` answers
+  `UP` from your computer, which proves DNS, both firewalls and the certificate.
+
+Of `/actuator/*`, only `health` is reachable through Caddy; the rest answers 404. The certificates
+and the Let's Encrypt account are in `platform_data/caddy/`. The tunnel keeps working. To check:
+
+```sh
+curl -sI http://example.com                       # redirect to https
+curl -sI https://www.example.com                  # redirect to https://example.com
+curl -s -o /dev/null -w '%{http_code}' https://example.com/actuator/metrics   # 404
+sudo ufw status
+sudo iptables -L INPUT -n --line-numbers          # Oracle Cloud: the ACCEPT rules come before the REJECT
+```
+
+Deploying again without `public_domain` does not undo this: Caddy's container and the firewall
+rules stay. To go back to tunnel-only, remove them by hand (`docker compose … down caddy`,
+`ufw delete allow 80/tcp`, and so on, and the iptables lines on Oracle Cloud), and drop the three
+lines from `deploy/.env`.
+
 ### Settings
 
 Every default lives in [`group_vars/all.yml`](group_vars/all.yml) and is overridden with `-e`:
@@ -162,6 +214,8 @@ mise run server:deploy -- -e app_ref=v4.4.0 -e platform_admin_username=me
 | `platform_admin_username` | `admin` | The first admin |
 | `swap_size` | `4G` | Made once; a later change does not resize it |
 | `upgrade_packages` | `false` | `true`: upgrade every package again (`apt dist-upgrade`); the first deploy always does, security updates come daily anyway |
+| `public_domain` | empty | A domain without `www.`: serve the platform on `https://<domain>` ([HTTPS on a domain](#https-on-a-domain)); empty: tunnel only |
+| `acme_email` | empty | Contact address for Let's Encrypt; required with `public_domain` |
 | `backup_time`, `backup_keep_days` | `03:30`, `14` | Daily dump time (the server's time) and retention |
 
 Another inventory file (a second server, say) is used with `mise run server:deploy -- -i <file>`.
@@ -270,5 +324,13 @@ multipass delete --purge platform-test
 - **The page does not open.** Is `mise run server:tunnel` still running, without an error, and
   is the address the one it printed? On the server, `curl -s http://127.0.0.1:8080/actuator/health`
   must answer `{"status":"UP"}`.
+- **The HTTPS health check fails** ("HTTPS on a domain"). The deploy waits about 5 minutes for
+  `https://<domain>/actuator/health` from your computer. Check, in this order: DNS (`dig +short
+  <domain>` must print the server's address), the provider's firewall (TCP 80, TCP 443, UDP 443),
+  the server's (`sudo ufw status`), and Caddy's log, which shows certificate errors and Let's
+  Encrypt rate limits: `sudo -u platform docker compose -f
+  /opt/trading-analysis-platform/deploy/docker-compose.yml -f
+  /opt/trading-analysis-platform/deploy/docker-compose.public.yml logs caddy`. Fix the cause and
+  deploy again.
 - **SSH asks about a host key.** The server was recreated on the same address: remove the old line
   from `~/.ssh/known_hosts`.
