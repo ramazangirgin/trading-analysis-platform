@@ -12,6 +12,13 @@ app_ref: main
 platform_data: /srv/trading-analysis-platform
 # The port on the server's 127.0.0.1 where the UI is served; open it through an SSH tunnel.
 platform_port: 8080
+# The domain to serve the platform on over HTTPS (Caddy, with a Let's Encrypt certificate), without
+# "www." (it redirects here), e.g. analystock.app. Empty: the server stays tunnel only. DNS must
+# point at the server and the provider's firewall must let 80 and 443 in first, see the README.
+public_domain: ""
+# The e-mail address Let's Encrypt gets for the certificate account; required with public_domain.
+acme_email: ""
+
 # The first admin, created on the first start; its password is generated and logged once.
 platform_admin_username: admin
 

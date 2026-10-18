@@ -1,0 +1,27 @@
+# Global options: the address Let's Encrypt writes to about the certificate.
+{
+	email {$ACME_EMAIL}
+}
+
+# The platform, over HTTPS (http:// is redirected to it by Caddy itself).
+{$PLATFORM_DOMAIN} {
+	# Only the health endpoint of the actuator is public; the discovery page, metrics, info and the rest answer 404.
+	@actuator path /actuator /actuator/*
+	handle @actuator {
+		@health path /actuator/health
+		handle @health {
+			reverse_proxy platform:8080
+		}
+		respond 404
+	}
+
+	header Strict-Transport-Security "max-age=31536000"
+
+	# Sets X-Forwarded-For (the client address) and X-Forwarded-Proto: https for the backend.
+	reverse_proxy platform:8080
+}
+
+# www. goes to the bare domain.
+www.{$PLATFORM_DOMAIN} {
+	redir https://{$PLATFORM_DOMAIN}{uri} permanent
+}

@@ -123,6 +123,55 @@
     port: "{{ ansible_port | default(22) | string }}"
     proto: tcp
 
+# A public domain: Caddy listens on 80 and 443 (TCP), and 443 (UDP, HTTP/3).
+- name: Allow HTTP and HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop: "{{ base_public_ports }}"
+  when: public_domain | length > 0
+
+# On Oracle Cloud's Ubuntu images the shipped rules end INPUT with a REJECT that comes before ufw's
+# chains, so ufw alone opens nothing there. The ports are inserted ahead of it, in the live rules and
+# in the saved ones (so they survive a reboot). The saved file is edited, never rewritten with
+# iptables-save or netfilter-persistent: that would also save Docker's own chains, which Docker adds
+# again at every start.
+- name: Look for the saved iptables rules
+  ansible.builtin.stat:
+    path: /etc/iptables/rules.v4
+  register: base_iptables_rules
+  when: public_domain | length > 0
+
+- name: Read the saved iptables rules
+  ansible.builtin.slurp:
+    src: /etc/iptables/rules.v4
+  register: base_iptables_content
+  when: public_domain | length > 0 and base_iptables_rules.stat.exists
+
+- name: Open HTTP and HTTPS in the live iptables rules
+  ansible.builtin.iptables:
+    action: insert
+    chain: INPUT
+    protocol: "{{ item.proto }}"
+    destination_port: "{{ item.port }}"
+    ctstate: NEW
+    jump: ACCEPT
+  loop: "{{ base_public_ports }}"
+  when: >-
+    public_domain | length > 0 and base_iptables_rules.stat.exists
+    and '-A INPUT -j REJECT' in (base_iptables_content.content | b64decode)
+
+- name: Open HTTP and HTTPS in the saved iptables rules
+  ansible.builtin.lineinfile:
+    path: /etc/iptables/rules.v4
+    insertbefore: '^-A INPUT -j REJECT'
+    line: "-A INPUT -p {{ item.proto }} -m state --state NEW -m {{ item.proto }} --dport {{ item.port }} -j ACCEPT"
+  loop: "{{ base_public_ports }}"
+  when: >-
+    public_domain | length > 0 and base_iptables_rules.stat.exists
+    and '-A INPUT -j REJECT' in (base_iptables_content.content | b64decode)
+
 - name: Deny incoming traffic by default
   community.general.ufw:
     default: deny

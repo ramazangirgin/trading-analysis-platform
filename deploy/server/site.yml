@@ -15,6 +15,12 @@
 
     - name: Gather the facts about the server
       ansible.builtin.setup:
+
+    - name: Check that a public domain comes with an e-mail address
+      ansible.builtin.assert:
+        that: public_domain | length == 0 or acme_email | length > 0
+        fail_msg: "public_domain is set ({{ public_domain }}), so acme_email is required: -e acme_email=<mail>"
+        quiet: true
   roles:
     - base
     - docker

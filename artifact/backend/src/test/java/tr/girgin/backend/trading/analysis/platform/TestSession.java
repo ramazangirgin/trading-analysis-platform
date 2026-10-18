@@ -33,6 +33,7 @@ final class TestSession {
     private final int port;
     private final HttpClient http = HttpClient.newHttpClient();
     private final Map<String, String> cookies = new LinkedHashMap<>();
+    private final Map<String, String> headers = new LinkedHashMap<>();
 
     private TestSession(int port) {
         this.port = port;
@@ -128,6 +129,12 @@ final class TestSession {
         cookies.put(name, value);
     }
 
+    /** Sends this header on every following request, as a reverse proxy does; returns this client. */
+    TestSession withHeader(String name, String value) {
+        headers.put(name, value);
+        return this;
+    }
+
     // The same client without the CSRF header, to prove the server asks for it.
     HttpResponse<String> sendWithoutCsrfHeader(String method, String path, String body)
             throws IOException, InterruptedException {
@@ -150,6 +157,7 @@ final class TestSession {
 
     private <T> HttpResponse<T> send(HttpRequest.Builder request, HttpResponse.BodyHandler<T> handler, boolean csrf)
             throws IOException, InterruptedException {
+        headers.forEach(request::header);
         if (!cookies.isEmpty()) {
             request.header("Cookie", cookieHeader());
         }

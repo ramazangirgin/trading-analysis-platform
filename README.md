@@ -246,9 +246,13 @@ platform picks it up again.
   `/var/home/core/trading-analysis-platform`) or recreate it with `podman machine init --volume
   $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
   rootful one).
-- **Exposing it beyond localhost** needs HTTPS first. Login is always on (see [Login](#login)); HTTPS
-  is not built yet. The port is published on 127.0.0.1 only. On a server, open it through an SSH
-  tunnel, as the [server setup](deploy/server/README.md) describes.
+- **Exposing it beyond localhost** needs HTTPS first. Login is always on (see [Login](#login)). The
+  port is published on 127.0.0.1 only, and a plain Compose run stays that way. For a machine with a
+  domain, [`deploy/docker-compose.public.yml`](deploy/docker-compose.public.yml) adds a Caddy
+  container that gets a Let's Encrypt certificate and serves the platform on 80/443: set
+  `PLATFORM_DOMAIN` and `ACME_EMAIL` in `deploy/.env` and run `docker compose -f docker-compose.yml
+  -f docker-compose.public.yml up -d`. The [server setup](deploy/server/README.md) does this with
+  `-e public_domain=…`, or you open the platform through an SSH tunnel instead.
 - The first start takes about a minute (longer under Podman's VM on macOS).
 
 ### Upgrading to 4.0.0
@@ -471,7 +475,7 @@ mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
 mise run server:deploy # set up the server in deploy/server/inventory.ini over SSH and deploy the Compose stack on it (Ansible)
-mise run server:tunnel # open the deployed UI from this machine: an SSH tunnel, then http://127.0.0.1:8080
+mise run server:tunnel # open the deployed UI from this machine: an SSH tunnel, then http://127.0.0.1:8080 (with a domain, https://<domain> works too)
 mise run server:check  # ansible-lint and the playbook's syntax, without a server (not part of check)
 mise run server:test-setup  # the server setup scripts against a throwaway Ubuntu container (needs Docker or Podman)
 mise run server:test   # the whole server deployment with THIS machine as the server: throwaway machines only (CI)

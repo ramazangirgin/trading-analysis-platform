@@ -216,6 +216,29 @@ class LoginLockoutIntegrationTest {
         assertThat(loginWithTheRightPassword(username).statusCode()).isEqualTo(200);
     }
 
+    @Test
+    void behindTheProxyTheLimitCountsTheForwardedClientAndNotTheProxy() throws Exception {
+        String username = TestSession.createUser(users, hasher, true);
+        for (int i = 0; i < IP_MAX_FAILED; i++) {
+            assertThat(TestSession.anonymous(port)
+                            .withHeader("X-Forwarded-For", "203.0.113.1")
+                            .login("nobody-" + i, "not the password")
+                            .statusCode())
+                    .isEqualTo(401);
+        }
+
+        HttpResponse<String> blocked = TestSession.anonymous(port)
+                .withHeader("X-Forwarded-For", "203.0.113.1")
+                .login(username, TestSession.PASSWORD);
+        HttpResponse<String> otherClient = TestSession.anonymous(port)
+                .withHeader("X-Forwarded-For", "203.0.113.2")
+                .login(username, TestSession.PASSWORD);
+
+        assertThat(blocked.statusCode()).isEqualTo(429);
+        assertThat(errorCode(blocked)).isEqualTo("too_many_login_attempts");
+        assertThat(otherClient.statusCode()).isEqualTo(200);
+    }
+
     @TestConfiguration
     static class ClockConfiguration {
 
