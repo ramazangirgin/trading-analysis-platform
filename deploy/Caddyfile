@@ -5,8 +5,8 @@
 
 # The platform, over HTTPS (http:// is redirected to it by Caddy itself).
 {$PLATFORM_DOMAIN} {
-	# Only the health endpoint of the actuator is public; metrics, info and the rest answer 404.
-	@actuator path /actuator/*
+	# Only the health endpoint of the actuator is public; the discovery page, metrics, info and the rest answer 404.
+	@actuator path /actuator /actuator/*
 	handle @actuator {
 		@health path /actuator/health
 		handle @health {
