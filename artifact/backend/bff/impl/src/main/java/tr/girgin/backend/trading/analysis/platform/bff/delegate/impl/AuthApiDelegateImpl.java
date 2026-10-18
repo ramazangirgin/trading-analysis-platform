@@ -30,6 +30,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiE
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ChangePasswordRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.CurrentUserDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.PasswordChangeRequiredFilter;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionDtoMapper;
@@ -91,6 +92,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     }
 
     @Override
+    @NoPermissionRequired("the login itself: the caller has no session yet")
     public ResponseEntity<CurrentUserDto> login(
             LoginRequest request, HttpServletRequest http, HttpServletResponse response) {
         AuthenticatedUser user;
@@ -104,6 +106,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     }
 
     @Override
+    @NoPermissionRequired("every user changes their own password: a session only")
     public ResponseEntity<CurrentUserDto> changePassword(
             ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response) {
         Optional<UserId> id = currentUserId();
@@ -149,6 +152,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     }
 
     @Override
+    @NoPermissionRequired("tells the client whether it has a session: 401 without one")
     public ResponseEntity<CurrentUserDto> me(HttpServletRequest http, HttpServletResponse response) {
         Optional<UserId> id = currentUserId();
         if (id.isEmpty()) {
@@ -165,6 +169,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     }
 
     @Override
+    @NoPermissionRequired("ends the caller's own session, also one that has expired")
     public ResponseEntity<Void> logout(HttpServletRequest http, HttpServletResponse response) {
         endSession(http, response);
         return ResponseEntity.noContent().build();

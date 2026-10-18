@@ -130,8 +130,8 @@ built-in check such as `IllegalImport`, `TodoComment` or `RegexpSingleline`, lin
 `TreeWalker` in `checkstyle.xml`. A finding starts with the rule's id and ends with its advice:
 `TAP-L1: Field 'System#out' is not allowed. Use an SLF4J logger: log.info(...).`
 
-**Ids** are `TAP-<group><n>`, with a group per topic (`L`, `D`, `T`, `C`, `J`, `S`, `X`; `L` is
-logging). Ids are not reused.
+**Ids** are `TAP-<group><n>`, with a group per topic (`L`, `D`, `T`, `C`, `J`, `S`, `X`, `A`; `L` is
+logging, `A` access control). Ids are not reused.
 
 **Suppressing** one is as for any check, with the id: `@SuppressWarnings("checkstyle:TAP-L1")` and a
 reason on the same line or the line above (see [Suppressing a finding](#suppressing-a-finding)).
@@ -146,6 +146,7 @@ the repository.
 | Id | Rule | Sources | Check | Parameters | Reason | Bad / good |
 |---|---|---|---|---|---|---|
 | `TAP-L1` | No `System.out`, `System.err` and no `printStackTrace()` without arguments; use SLF4J | main and test | [`ForbiddenMemberAccessCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenMemberAccessCheck.md) | `members = System#out, System#err, *#printStackTrace(0)` | Console output has no level, no logger name and no timestamp, and bypasses the log configuration; a stack trace belongs in the log with the message | `System.out.println("started");` / `log.info("started");` and `e.printStackTrace();` / `log.error("failed", e);` |
+| `TAP-A1` | Every public method of a `*ApiDelegateImpl` carries `@RequiresPermission(Permission...)` or `@NoPermissionRequired("reason")` | main and test | [`RequiredMethodAnnotationCheck`](../../build-logic/checkstyle-rules/docs/RequiredMethodAnnotationCheck.md) | `classes = *ApiDelegateImpl`, `annotations = ...config.RequiresPermission, ...config.NoPermissionRequired` | `SecurityConfig` only requires a session for `/api/**`, so a method without a permission is open to every logged-in user; the marker makes each exception visible, with its reason | `public ResponseEntity<Void> stop(...) {...}` / `@RequiresPermission(Permission.ANALYSIS_RUN) public ResponseEntity<Void> stop(...) {...}` |
 
 ## Suppressing a finding
 

@@ -417,7 +417,9 @@ The backend:
   without the permission.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
   (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
-  delegate method, and `EndpointPermissionsIntegrationTest` fails until a new endpoint has one. The static UI,
+  delegate method. The build fails (Checkstyle rule `TAP-A1`) while a delegate method has neither
+  `@RequiresPermission` nor `@NoPermissionRequired("reason")`, the marker of the auth routes, and
+  `EndpointPermissionsIntegrationTest` checks it at runtime. The static UI,
   `/actuator/**` and `/api/openapi/**` stay open. The permissions per endpoint group:
 
   | Endpoints | Permission |

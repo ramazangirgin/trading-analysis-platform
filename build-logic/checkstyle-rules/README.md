@@ -15,6 +15,7 @@ instance of a check: a few lines of XML, no Java. The rules, with their reasons 
 | Check | Reports | Project rules |
 |---|---|---|
 | [`ForbiddenMemberAccessCheck`](docs/ForbiddenMemberAccessCheck.md) | a reference to a forbidden field, a call of a forbidden method or constructor | `TAP-L1` |
+| [`RequiredMethodAnnotationCheck`](docs/RequiredMethodAnnotationCheck.md) | a public method of a selected class without one of the required annotations | `TAP-A1` |
 
 Every check has a reference document in
 [`docs/`](docs/), written from the

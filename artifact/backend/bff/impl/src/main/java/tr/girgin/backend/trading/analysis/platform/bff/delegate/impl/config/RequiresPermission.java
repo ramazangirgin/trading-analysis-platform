@@ -10,7 +10,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Pe
 /**
  * The permission an endpoint needs, declared on its delegate method: the caller needs <b>any</b> of the
  * given permissions, or the call is refused with an {@code AccessDeniedException} (a 403 {@code forbidden}).
- * {@link MethodSecurityConfig} enforces it.
+ * {@link MethodSecurityConfig} enforces it. Every public delegate method has it or {@link NoPermissionRequired},
+ * which the Checkstyle rule {@code TAP-A1} enforces.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
