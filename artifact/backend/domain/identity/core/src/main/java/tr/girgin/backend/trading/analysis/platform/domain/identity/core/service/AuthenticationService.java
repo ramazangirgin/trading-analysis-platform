@@ -126,11 +126,14 @@ class AuthenticationService implements AuthenticateUseCase {
 
     /**
      * Sets the time of the login, clears the count and lock, and stores an outdated hash again, in one save.
-     * Never fails the login.
+     * Fails the login when the user was disabled or got another password hash while the password was checked.
      */
     private User recordSuccess(User user, CharSequence password) {
         PasswordHash checked = user.passwordHash();
         return saveWithRetry(user, current -> {
+                    if (!current.enabled() || !current.passwordHash().equals(checked)) {
+                        throw badCredentials();
+                    }
                     User updated = current.withLastLogin(clock.instant());
                     if (current.failedLoginCount() > 0 || current.lockedUntil().isPresent()) {
                         updated = updated.withLoginSucceeded();

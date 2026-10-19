@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
@@ -338,6 +339,32 @@ class AuthenticationServiceTest {
         assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
     }
 
+    @Test
+    void aLoginFailsWhenTheUserIsDisabledDuringTheLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 1;
+        users.concurrentChange = current -> current.withEnabled(false);
+
+        IdentityException e = failure("alice", "secret");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void aLoginFailsWhenThePasswordIsResetDuringTheLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 1;
+        users.concurrentChange = current -> current.withPassword(new PasswordHash("new:other"), true);
+
+        IdentityException e = failure("alice", "secret");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+        assertThat(users.saved).isEmpty();
+    }
+
     private User stored(User user) {
         return users.findById(user.id()).orElseThrow();
     }
@@ -414,6 +441,8 @@ class AuthenticationServiceTest {
         private final List<User> users = new ArrayList<>();
         private final List<User> saved = new ArrayList<>();
         private int failSaves;
+        /** What another transaction does to the stored user before the next conflicting save. */
+        private UnaryOperator<User> concurrentChange = UnaryOperator.identity();
 
         @Override
         public Optional<User> findById(UserId id) {
@@ -448,6 +477,7 @@ class AuthenticationServiceTest {
         public User save(User user) {
             if (failSaves > 0) {
                 failSaves--;
+                users.replaceAll(u -> u.id().equals(user.id()) ? concurrentChange.apply(u) : u);
                 throw new OptimisticLockingFailureException("stale");
             }
             saved.add(user);
