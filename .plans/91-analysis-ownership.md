@@ -245,14 +245,15 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP6: e2e, screenshot and docs
 
+- **Status**: done
 - **Depends on**: WP5
 - **Files**:
   - `e2e/tests/ownership.e2e.ts` (new)
   - `e2e/screenshots/analyses.shot.ts`, `docs/screenshots/analyses.png`
   - `README.md`
 - **Steps**:
-  - [ ] e2e: the admin creates an ANALYST (unique name, as in `users.e2e.ts`, through the API); the analyst logs in, changes the one-time password, and sees an empty **Analyses** list without the All users switch while the admin's completed run (`completedAnalysis`) exists; opening that run's URL shows "not found". The admin turns on **All users** and sees the run with the Owner column.
-  - [ ] Retake the screenshot and update the docs below.
+  - [x] e2e: the admin creates an ANALYST (unique name, as in `users.e2e.ts`, through the API); the analyst logs in, changes the one-time password, and sees an empty **Analyses** list without the All users switch while the admin's completed run (`completedAnalysis`) exists; opening that run's URL shows "not found". The admin turns on **All users** and sees the run with the Owner column.
+  - [x] Retake the screenshot and update the docs below.
 - **Tests**: the e2e test above (`mise run e2e`).
 
 ## Tests
