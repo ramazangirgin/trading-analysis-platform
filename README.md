@@ -522,8 +522,9 @@ The backend:
   issues ([#91](https://github.com/ramazangirgin/trading-analysis-platform/issues/91),
   [#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) make "their own"
   true. Admins can add custom roles with any set of permissions. The permissions of ANALYST and
-  VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or deleted. The UI hides the links, buttons and pages the user has no permission for; the backend
-  rules are what protect.
+  VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or deleted. The UI
+  hides the links, buttons and pages the user has no permission for; the backend rules are what
+  protect.
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
   `analysis:read` like the other analysis reads, and a stream that is open when its session ends (logout, idle timeout,
   a password change in another session, a disable or password reset by an admin) is closed by the server.
