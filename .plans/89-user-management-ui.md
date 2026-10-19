@@ -150,12 +150,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: End-to-end test, screenshot, docs and version
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `e2e/tests/users.e2e.ts`, `e2e/screenshots/users.shot.ts`, `docs/screenshots/users.png`,
   `README.md`, `gradle.properties`, `artifact/frontend/package.json`,
   `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] `users.e2e.ts`, as the shared admin (its session and password are never changed):
+  - [x] `users.e2e.ts`, as the shared admin (its session and password are never changed):
     - the issue's acceptance flow: the admin opens **Admin → Users**, creates a user with a unique
       name (`e2e-user-<timestamp>`, the tests run in parallel and are retried) and the VIEWER role
       with a generated password, and reads it from the one-time-password dialog. In a new browser
@@ -164,11 +165,11 @@ Packages without a dependency between them can be implemented in parallel.
       admin disables the user in the table. The user's next navigation lands on the login page, and
       logging in again answers "Wrong username or password.";
     - a guard rail: on the admin's own row, **Disable** is disabled and its tooltip explains why.
-  - [ ] `users.shot.ts`: creates over the API an ANALYST and a VIEWER, disables the VIEWER, then
+  - [x] `users.shot.ts`: creates over the API an ANALYST and a VIEWER, disables the VIEWER, then
         takes `users` of `/admin/users` (role IDs from `GET /api/roles`).
-  - [ ] Run `mise run screenshots users` and commit `docs/screenshots/users.png`.
-  - [ ] Update `README.md` (see *Docs to update*).
-  - [ ] `mise run version:bump minor`.
+  - [x] Run `mise run screenshots users` and commit `docs/screenshots/users.png`.
+  - [x] Update `README.md` (see *Docs to update*).
+  - [x] `mise run version:bump minor`.
 - **Tests**: `users.e2e.ts` proves the issue's acceptance criterion; the e2e job runs it in CI.
 
 ## Tests
