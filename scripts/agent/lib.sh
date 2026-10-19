@@ -316,8 +316,8 @@ pr_of_branch() {
 }
 
 # The stage of pull request $1: plan (an open pull request labelled AGENT_PLAN_LABEL, the plan is
-# under review; marking it ready for review on GitHub counts as approving it), agent (an open draft
-# labelled AGENT_LABEL, the agent loop) or other.
+# under review; marking it ready for review on GitHub does not start anything, and implement.sh
+# turns it back into a draft), agent (an open draft labelled AGENT_LABEL, the agent loop) or other.
 pr_stage() {
   gh pr view "$1" --json state,isDraft,labels --jq "
     if .state != \"OPEN\" then \"other\"
