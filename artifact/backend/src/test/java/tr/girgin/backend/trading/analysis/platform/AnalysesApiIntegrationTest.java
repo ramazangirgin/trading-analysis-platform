@@ -187,6 +187,8 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void loggingOutClosesTheOpenStreamWithoutAnEndEvent() throws Exception {
+        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        session = loggedInAs(username);
         String id = JSON.readTree(post("/api/analyses", request("SLOW")).body())
                 .get("id")
                 .asString();
@@ -205,7 +207,10 @@ class AnalysesApiIntegrationTest {
         assertThat(JSON.readTree(after.body()).get("errorCode").asString()).isEqualTo("unauthorized");
 
         // The run is left to finish, so the next test can start its own SLOW run.
-        awaitStatus(TestSession.loggedIn(port, users, hasher, RoleId.ANALYST), id, "COMPLETED");
+        // The run belongs to the first session's user, so only that user can follow it.
+        TestSession owner = TestSession.anonymous(port);
+        assertThat(owner.login(username, TestSession.PASSWORD).statusCode()).isEqualTo(200);
+        awaitStatus(owner, id, "COMPLETED");
     }
 
     @Test
@@ -255,7 +260,9 @@ class AnalysesApiIntegrationTest {
 
         assertThat(readEvents(stream)).extracting(SseEvent::name).doesNotContain("end");
 
-        awaitStatus(TestSession.loggedIn(port, users, hasher, RoleId.ANALYST), id, "COMPLETED");
+        TestSession owner = TestSession.anonymous(port);
+        assertThat(owner.login(username, NEW_PASSWORD).statusCode()).isEqualTo(200);
+        awaitStatus(owner, id, "COMPLETED");
     }
 
     @Test
