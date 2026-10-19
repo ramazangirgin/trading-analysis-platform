@@ -71,6 +71,12 @@ export const router = createRouter({
       meta: { permission: PERMISSIONS.userRead },
     },
     {
+      path: '/admin/roles',
+      name: 'roles',
+      component: () => import('@/pages/RolesPage.vue'),
+      meta: { permission: PERMISSIONS.roleManage },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/pages/NotFoundPage.vue'),

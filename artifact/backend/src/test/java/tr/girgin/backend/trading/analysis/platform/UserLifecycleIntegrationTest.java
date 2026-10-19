@@ -56,6 +56,22 @@ class UserLifecycleIntegrationTest extends UsersApiTestBase {
                 .isEqualTo(200);
     }
 
+    @Test
+    void theUiOfADisabledUsersSessionStillLoadsWithoutTheSession() throws Exception {
+        Account account = newAccount(RoleId.VIEWER);
+        TestSession target = login(account);
+
+        admin().send("PATCH", "/api/users/" + account.id(), "{\"enabled\":false}");
+
+        HttpResponse<String> script = target.send("GET", "/assets/RunsPage.js?v=1", null);
+        assertThat(script.statusCode()).isEqualTo(302);
+        assertThat(script.headers().firstValue("Location"))
+                .hasValueSatisfying(url -> assertThat(url).endsWith("/assets/RunsPage.js?v=1"));
+        HttpResponse<String> api = target.send("GET", "/api/analyses", null);
+        assertThat(api.statusCode()).isEqualTo(401);
+        assertThat(errorCode(api)).isEqualTo("unauthorized");
+    }
+
     // ---- guard rails ----
 
     @Test

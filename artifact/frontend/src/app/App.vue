@@ -29,7 +29,12 @@ const bare = computed(() => Boolean(route.meta.bare) || session.mustChangePasswo
 const reportsActive = computed(() => route.name === 'report')
 const router = useRouter()
 const adminActive = computed(() => route.path.startsWith('/admin'))
-const adminOptions = computed(() => [{ label: t('nav.users'), key: 'users' }])
+const adminOptions = computed(() =>
+  [
+    { label: t('nav.users'), key: 'users', permission: PERMISSIONS.userRead },
+    { label: t('nav.roles'), key: 'roles', permission: PERMISSIONS.roleManage },
+  ].filter((option) => session.can(option.permission)),
+)
 const preferredDark = usePreferredDark()
 const version = __APP_VERSION__
 
@@ -69,7 +74,7 @@ watchEffect(() => {
               t('nav.settings')
             }}</RouterLink>
             <NDropdown
-              v-if="session.can(PERMISSIONS.userRead)"
+              v-if="adminOptions.length > 0"
               trigger="click"
               :options="adminOptions"
               @select="(name: string) => router.push({ name })"
