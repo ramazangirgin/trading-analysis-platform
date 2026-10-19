@@ -478,7 +478,7 @@ The backend:
   |---|---|
   | `POST /api/auth/password` | a session only (everyone changes their own password) |
   | `POST /api/analyses`, `…/{id}/stop`, `…/{id}/rerun`, `POST /api/reports/rescan` | `analysis:run` |
-  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read` |
+  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all` |
   | `GET /api/catalog`, `GET /api/health` | `analysis:run` or `settings:read` |
   | `GET /api/secrets` | `settings:read` |
   | `PUT` and `DELETE /api/secrets/{name}` | `settings:keys:write` |
@@ -500,7 +500,8 @@ The backend:
   ignored without it. The UI hides the links, buttons and pages the user has no permission for; the backend
   rules are what protect.
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
-  `analysis:read` like the other analysis reads, and a stream that is open when its session ends (logout, idle timeout,
+  `analysis:read` like the other analysis reads (another user's run answers 404 unless the user has
+  `analysis:read:all`), and a stream that is open when its session ends (logout, idle timeout,
   a password change in another session, a disable or password reset by an admin) is closed by the server.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
   `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.
