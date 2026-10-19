@@ -14,11 +14,22 @@ public interface IdentityExceptionToApiExceptionMapper {
         // from user input when an admin creates a user (a login turns it into BAD_CREDENTIALS), so 400.
         HttpStatus status = switch (source.error()) {
             case BAD_CREDENTIALS -> HttpStatus.UNAUTHORIZED;
-            case WRONG_CURRENT_PASSWORD, PASSWORD_UNCHANGED, WEAK_PASSWORD, INVALID_USERNAME, UNKNOWN_ROLE ->
-                HttpStatus.BAD_REQUEST;
-            case USER_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case USERNAME_TAKEN, CANNOT_DISABLE_SELF, CANNOT_REMOVE_OWN_ADMIN, LAST_ADMIN, CONCURRENT_UPDATE ->
-                HttpStatus.CONFLICT;
+            case WRONG_CURRENT_PASSWORD,
+                    PASSWORD_UNCHANGED,
+                    WEAK_PASSWORD,
+                    INVALID_USERNAME,
+                    UNKNOWN_ROLE,
+                    INVALID_ROLE_NAME,
+                    INVALID_ROLE_DESCRIPTION -> HttpStatus.BAD_REQUEST;
+            case USER_NOT_FOUND, ROLE_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case USERNAME_TAKEN,
+                    CANNOT_DISABLE_SELF,
+                    CANNOT_REMOVE_OWN_ADMIN,
+                    LAST_ADMIN,
+                    CONCURRENT_UPDATE,
+                    ROLE_NAME_TAKEN,
+                    BUILT_IN_ROLE,
+                    ROLE_IN_USE -> HttpStatus.CONFLICT;
             case UNKNOWN_PERMISSION -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
         return new ApiException(

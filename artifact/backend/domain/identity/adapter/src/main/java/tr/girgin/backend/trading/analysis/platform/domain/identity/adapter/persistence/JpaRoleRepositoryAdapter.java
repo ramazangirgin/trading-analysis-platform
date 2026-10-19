@@ -2,6 +2,9 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.pers
 
 import java.util.List;
 import java.util.Optional;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.RoleEntityToRoleMapper;
@@ -56,6 +59,29 @@ class JpaRoleRepositoryAdapter implements RoleRepositoryPort {
     @Override
     @Transactional
     public Role save(Role role) {
-        return toRole.map(repository.saveAndFlush(toEntity.map(role)));
+        try {
+            return toRole.map(repository.saveAndFlush(toEntity.map(role)));
+        } catch (DataIntegrityViolationException e) {
+            if (isUniqueViolation(e)) {
+                throw new DuplicateKeyException("The role name is taken by another role", e);
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteById(RoleId id) {
+        repository.deleteByIdValue(id.value());
+    }
+
+    private static boolean isUniqueViolation(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation
+                    && violation.getKind() == ConstraintViolationException.ConstraintKind.UNIQUE) {
+                return true;
+            }
+        }
+        return false;
     }
 }

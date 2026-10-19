@@ -147,6 +147,7 @@ a comparison of two numbers.
 
 ### WP1: Identity domain and persistence
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/core/src/main/java/…/identity/core/inbound/ManageRolesUseCase.java` (new), `RoleSummary.java` (new), `ListRolesUseCase.java` (removed)
@@ -158,10 +159,10 @@ a comparison of two numbers.
   - `artifact/backend/domain/identity/adapter/src/main/resources/…/persistence/migration/V6__role_name_unique_ignoring_case.sql` (new)
   - Tests: `…/core/service/RoleManagementServiceTest.java` (new), `RoleQueryServiceTest.java` (removed), `…/core/model/RoleTest.java`; the fake repositories in `UserManagementServiceTest`, `AuthenticationServiceTest`, `PasswordChangeServiceTest` (new port methods); `…/adapter/persistence/JpaIdentityRepositoryTest.java`
 - **Steps**:
-  - [ ] Add the use case, `RoleSummary`, the error codes and `Role.withName` / `withDescription`.
-  - [ ] Implement `RoleManagementService` with the rules of the design; remove `RoleQueryService`
+  - [x] Add the use case, `RoleSummary`, the error codes and `Role.withName` / `withDescription`.
+  - [x] Implement `RoleManagementService` with the rules of the design; remove `RoleQueryService`
         and `ListRolesUseCase`.
-  - [ ] Extend the ports and the JPA adapters; write the `V6` migration.
+  - [x] Extend the ports and the JPA adapters; write the `V6` migration.
 - **Tests**:
   - `RoleManagementServiceTest`: list with user counts and sorted by name; create (valid, invalid
     name, too long description, name taken in another case, `DuplicateKeyException` from the port);
