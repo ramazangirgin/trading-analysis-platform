@@ -7,7 +7,7 @@ import { E2E_PASSWORD, E2E_USER } from './support'
 
 test('the user menu opens the change-password page', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: E2E_USER }).click()
+  await page.getByRole('button', { name: E2E_USER, exact: true }).click()
   await page.getByText('Change password').click()
 
   await expect(page).toHaveURL('/password')
