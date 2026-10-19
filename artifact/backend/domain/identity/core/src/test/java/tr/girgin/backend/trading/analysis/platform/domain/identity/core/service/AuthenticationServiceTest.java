@@ -73,6 +73,7 @@ class AuthenticationServiceTest {
                 true,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 null,
                 null,
                 Set.of(),
@@ -128,7 +129,7 @@ class AuthenticationServiceTest {
 
         service.authenticate("alice", "secret");
 
-        assertThat(users.saved).isEmpty();
+        assertThat(users.saved).allSatisfy(u -> assertThat(u.passwordHash()).isEqualTo(new PasswordHash("old:secret")));
     }
 
     @Test
@@ -232,12 +233,43 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void aNormalLoginWritesNothing() {
-        users.users.add(user("alice", "secret", true));
+    void aNormalLoginOnlyRecordsTheTimeOfTheLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
 
         service.authenticate("alice", "secret");
 
-        assertThat(users.saved).isEmpty();
+        assertThat(users.saved).hasSize(1);
+        assertThat(users.saved.getFirst()).isEqualTo(alice.withLastLogin(clock.instant()));
+    }
+
+    @Test
+    void aSuccessfulLoginSetsTheLastLoginToTheTimeOfTheClock() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        assertThat(alice.lastLoginAt()).isEmpty();
+
+        service.authenticate("alice", "secret");
+        assertThat(stored(alice).lastLoginAt()).contains(Instant.parse("2026-10-01T10:00:00Z"));
+
+        clock.advance(Duration.ofHours(2));
+        service.authenticate("alice", "secret");
+        assertThat(stored(alice).lastLoginAt()).contains(Instant.parse("2026-10-01T12:00:00Z"));
+    }
+
+    @Test
+    void aFailedLoginDoesNotSetTheLastLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+
+        failure("alice", "wrong");
+        users.users.add(user("bob", "secret", false));
+        failure("bob", "secret");
+
+        assertThat(stored(alice).lastLoginAt()).isEmpty();
+        assertThat(users.users)
+                .filteredOn(u -> u.username().value().equals("bob"))
+                .allSatisfy(u -> assertThat(u.lastLoginAt()).isEmpty());
     }
 
     @Test
@@ -348,6 +380,7 @@ class AuthenticationServiceTest {
                 false,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 Instant.parse("2026-10-01T10:00:00Z"),
                 Instant.parse("2026-10-01T10:00:00Z"),
                 Set.of(roleIds),
@@ -402,6 +435,13 @@ class AuthenticationServiceTest {
         @Override
         public long count() {
             return users.size();
+        }
+
+        @Override
+        public long countEnabledWithRole(RoleId role) {
+            return users.stream()
+                    .filter(u -> u.enabled() && u.roleIds().contains(role))
+                    .count();
         }
 
         @Override

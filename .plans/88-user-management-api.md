@@ -168,6 +168,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Identity core: user management use cases, guard rails, last login
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `domain/identity/core/src/main/java/…/core/inbound/ManageUsersUseCase.java`, `ListRolesUseCase.java`, `UserAccount.java`, `CreatedUserAccount.java` (new)
@@ -178,11 +179,11 @@ Packages without a dependency between them can be implemented in parallel.
   - `…/core/outbound/persistence/UserRepositoryPort.java` (`countEnabledWithRole`)
   - tests under `domain/identity/core/src/test/java/…/core/` (new and changed, including the fakes' `new User(...)` and `countEnabledWithRole`)
 - **Steps**:
-  - [ ] Add `lastLoginAt` to `User`, with a `withLoginSucceeded(Instant at)` that also sets it (or a `withLastLogin`), and update every constructor call in the core
-  - [ ] Set it in `AuthenticationService#recordSuccess` from the `Clock`
-  - [ ] Add the new `IdentityError` constants and the port method
-  - [ ] Share the generated-password length between `FirstAdminService` and the new service
-  - [ ] Implement `ManageUsersUseCase` in `UserManagementService` with the rules and the lock from the design, and `ListRolesUseCase` in `RoleQueryService`
+  - [x] Add `lastLoginAt` to `User`, with a `withLoginSucceeded(Instant at)` that also sets it (or a `withLastLogin`), and update every constructor call in the core
+  - [x] Set it in `AuthenticationService#recordSuccess` from the `Clock`
+  - [x] Add the new `IdentityError` constants and the port method
+  - [x] Share the generated-password length between `FirstAdminService` and the new service
+  - [x] Implement `ManageUsersUseCase` in `UserManagementService` with the rules and the lock from the design, and `ListRolesUseCase` in `RoleQueryService`
 - **Tests**:
   - `UserManagementServiceTest` (new), with fake ports and a fixed clock:
     - create with an entered password (stored hashed, flagged, the hash matches) and with a

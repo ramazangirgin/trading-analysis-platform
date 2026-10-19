@@ -15,7 +15,18 @@ class UserTest {
 
     private static User user(UserId id, Username username, Set<RoleId> roleIds) {
         return new User(
-                id, username, new PasswordHash("{noop}x"), true, false, 0, Optional.empty(), NOW, NOW, roleIds, 3L);
+                id,
+                username,
+                new PasswordHash("{noop}x"),
+                true,
+                false,
+                0,
+                Optional.empty(),
+                Optional.empty(),
+                NOW,
+                NOW,
+                roleIds,
+                3L);
     }
 
     @Test
@@ -36,6 +47,7 @@ class UserTest {
                 true,
                 false,
                 0,
+                Optional.empty(),
                 Optional.empty(),
                 null,
                 null,
@@ -66,7 +78,18 @@ class UserTest {
 
         assertThat(user.withPassword(hash, true))
                 .isEqualTo(new User(
-                        user.id(), user.username(), hash, true, true, 0, Optional.empty(), NOW, NOW, roles, 3L));
+                        user.id(),
+                        user.username(),
+                        hash,
+                        true,
+                        true,
+                        0,
+                        Optional.empty(),
+                        Optional.empty(),
+                        NOW,
+                        NOW,
+                        roles,
+                        3L));
     }
 
     @Test
@@ -84,6 +107,7 @@ class UserTest {
                         false,
                         4,
                         Optional.of(until),
+                        Optional.empty(),
                         NOW,
                         NOW,
                         roles,
@@ -105,9 +129,52 @@ class UserTest {
                         false,
                         0,
                         Optional.empty(),
+                        Optional.empty(),
                         NOW,
                         NOW,
                         roles,
+                        3L));
+    }
+
+    @Test
+    void withLastLoginReplacesOnlyTheTimeOfTheLastLogin() {
+        Set<RoleId> roles = Set.of(RoleId.newId());
+        User user = user(UserId.newId(), new Username("alice"), roles);
+        Instant at = NOW.plusSeconds(60);
+
+        assertThat(user.withLastLogin(at))
+                .isEqualTo(new User(
+                        user.id(),
+                        user.username(),
+                        user.passwordHash(),
+                        true,
+                        false,
+                        0,
+                        Optional.empty(),
+                        Optional.of(at),
+                        NOW,
+                        NOW,
+                        roles,
+                        3L));
+    }
+
+    @Test
+    void withEnabledReplacesOnlyTheFlag() {
+        User user = user(UserId.newId(), new Username("alice"), Set.of());
+
+        assertThat(user.withEnabled(false))
+                .isEqualTo(new User(
+                        user.id(),
+                        user.username(),
+                        user.passwordHash(),
+                        false,
+                        false,
+                        0,
+                        Optional.empty(),
+                        Optional.empty(),
+                        NOW,
+                        NOW,
+                        Set.of(),
                         3L));
     }
 
@@ -136,6 +203,7 @@ class UserTest {
                         true,
                         false,
                         0,
+                        Optional.empty(),
                         Optional.empty(),
                         NOW,
                         NOW,

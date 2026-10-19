@@ -84,6 +84,7 @@ final class TestSession {
                 mustChangePassword,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 null,
                 null,
                 Set.of(roles),

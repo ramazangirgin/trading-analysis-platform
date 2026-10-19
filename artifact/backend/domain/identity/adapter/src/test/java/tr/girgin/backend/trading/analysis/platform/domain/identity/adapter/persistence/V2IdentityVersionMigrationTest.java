@@ -68,6 +68,7 @@ class V2IdentityVersionMigrationTest {
                         false,
                         2,
                         Optional.of(Instant.parse("2026-10-03T12:00:00Z")),
+                        Optional.empty(),
                         Instant.parse("2026-10-01T09:00:00.25Z"),
                         Instant.parse("2026-10-02T09:30:00Z"),
                         Set.of(ROLE),

@@ -205,6 +205,7 @@ class FirstAdminServiceTest {
                 false,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 null,
                 null,
                 Set.of(),
@@ -268,6 +269,13 @@ class FirstAdminServiceTest {
         @Override
         public long count() {
             return users.size();
+        }
+
+        @Override
+        public long countEnabledWithRole(RoleId role) {
+            return users.stream()
+                    .filter(u -> u.enabled() && u.roleIds().contains(role))
+                    .count();
         }
 
         @Override

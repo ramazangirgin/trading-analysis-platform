@@ -150,6 +150,7 @@ class PasswordChangeServiceTest {
                 mustChangePassword,
                 2,
                 Optional.of(NOW),
+                Optional.empty(),
                 NOW,
                 NOW,
                 Set.of(roleIds),
@@ -197,6 +198,13 @@ class PasswordChangeServiceTest {
         @Override
         public long count() {
             return users.size();
+        }
+
+        @Override
+        public long countEnabledWithRole(RoleId role) {
+            return users.stream()
+                    .filter(u -> u.enabled() && u.roleIds().contains(role))
+                    .count();
         }
 
         @Override

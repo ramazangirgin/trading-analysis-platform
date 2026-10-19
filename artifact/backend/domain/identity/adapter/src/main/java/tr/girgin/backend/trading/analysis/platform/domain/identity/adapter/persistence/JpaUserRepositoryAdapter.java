@@ -13,6 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persi
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.UserEntityToUserMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.UserIdToUserIdEmbeddableMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.mapper.UserToUserEntityMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -58,6 +59,12 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
     @Override
     public long count() {
         return repository.count();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countEnabledWithRole(RoleId role) {
+        return repository.countEnabledWithRole(role);
     }
 
     /**

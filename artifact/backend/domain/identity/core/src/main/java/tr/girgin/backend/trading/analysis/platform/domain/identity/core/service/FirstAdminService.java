@@ -27,7 +27,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 class FirstAdminService implements CreateFirstAdminUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(FirstAdminService.class);
-    private static final int GENERATED_LENGTH = 24;
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
@@ -79,7 +78,9 @@ class FirstAdminService implements CreateFirstAdminUseCase {
         if (configured) {
             checkConfiguredPassword(name);
         }
-        String plain = configured ? password : generator.generate(Math.max(GENERATED_LENGTH, policy.minLength()));
+        String plain = configured
+                ? password
+                : generator.generate(Math.max(OneTimePasswordGenerator.DEFAULT_LENGTH, policy.minLength()));
         User admin = new User(
                 UserId.newId(),
                 name,
@@ -87,6 +88,7 @@ class FirstAdminService implements CreateFirstAdminUseCase {
                 true,
                 !configured,
                 0,
+                Optional.empty(),
                 Optional.empty(),
                 null,
                 null,

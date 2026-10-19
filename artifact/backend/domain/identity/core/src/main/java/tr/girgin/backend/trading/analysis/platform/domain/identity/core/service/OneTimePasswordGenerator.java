@@ -8,6 +8,9 @@ import java.security.SecureRandom;
  */
 class OneTimePasswordGenerator {
 
+    /** The length of a generated password, unless the password policy asks for more. */
+    static final int DEFAULT_LENGTH = 24;
+
     private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final SecureRandom random = new SecureRandom();

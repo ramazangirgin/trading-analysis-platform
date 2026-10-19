@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.entity.UserEntity;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.entity.UserIdEmbeddable;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 
 /** The finders load the role assignments with the user, so a read is one query per call. */
 interface UserJpaRepository extends JpaRepository<UserEntity, UserIdEmbeddable> {
@@ -24,4 +25,7 @@ interface UserJpaRepository extends JpaRepository<UserEntity, UserIdEmbeddable> 
     @EntityGraph(attributePaths = "roleIds")
     @Query("select u from UserEntity u order by lower(u.username)")
     List<UserEntity> findAllOrderedByUsername();
+
+    @Query("select count(u) from UserEntity u join u.roleIds r where u.enabled = true and r = :roleId")
+    long countEnabledWithRole(@Param("roleId") RoleId roleId);
 }
