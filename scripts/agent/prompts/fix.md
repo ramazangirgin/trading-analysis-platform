@@ -7,7 +7,8 @@ answer questions.
 - If the finding is right: change the code, and the tests where the finding concerns behaviour.
   Run the checks of the part you changed (`mise run check`, and its tests:
   `./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build` or
-  `mise run runner-test`). Fix formatting with `mise run format`.
+  `mise run runner-test`). Fix formatting with `mise run format`. Add a comment only when it is
+  really needed (why, or what the code cannot show), never one that repeats the code.
 - A finding about a missing or outdated screenshot: write or change
   `e2e/screenshots/<name>.shot.ts` (see `e2e/screenshots/support.ts` and `e2e/tests/support.ts`),
   run `mise run screenshots <name>`, look at `docs/screenshots/<name>.png` with the Read tool until
