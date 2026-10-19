@@ -457,10 +457,10 @@ The backend:
     enabled ADMIN (`last_admin`), so the platform always has an admin. The check and the write run
     under one lock, which is enough for one backend instance.
   - **Sessions end at once**: when a user is disabled, when their password is reset (also an
-    admin's own: they log in again with the one-time password), and when their roles change, since
-    a session keeps the permissions of its login. The next request of such a session gets 401, and
-    its open event streams close. An admin who changes their own roles keeps their current session
-    with its old permissions until the next login.
+    admin's own: they log in again with the one-time password), and when their roles change. The
+    next request of such a session gets 401, and its open event streams close. An admin who changes
+    their own roles keeps their current session with its old permissions until the next login or
+    the next change to a role (a permission change applies to the next request, see `/api/roles`).
   - The UI's **Admin → Users** page (`/admin/users`) uses these endpoints, explains a blocked guard
     rail before the request, and shows the one-time password once.
 - Admins manage roles through `/api/roles` ([#90](https://github.com/ramazangirgin/trading-analysis-platform/issues/90)).
