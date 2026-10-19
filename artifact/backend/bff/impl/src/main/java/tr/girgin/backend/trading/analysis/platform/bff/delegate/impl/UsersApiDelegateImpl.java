@@ -151,7 +151,6 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
         return account.roles().stream().map(Role::id).collect(Collectors.toSet());
     }
 
-    /** A blank or missing password means "generate one". */
     private static Optional<String> password(String password) {
         return Optional.ofNullable(password).filter(value -> !value.isBlank());
     }
@@ -161,7 +160,7 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
         return session == null ? null : session.getId();
     }
 
-    /** The caller's user ID: the principal of the session is the ID string, as in {@code AuthApiDelegateImpl}. */
+    // The principal of a session is the user ID string.
     private static UserId currentUserId() {
         Authentication current = SecurityContextHolder.getContext().getAuthentication();
         return new UserId((String) current.getPrincipal());

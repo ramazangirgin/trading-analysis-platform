@@ -12,10 +12,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
  *
  * @param roles the user's roles, sorted by name
  * @param locked whether the account is locked now; an expired lock reads as not locked
- * @param lockedUntil when the lock ends, empty when there is none
- * @param lastLoginAt when the user last logged in successfully, empty until then
- * @param createdAt when the user was created
- * @param updatedAt when the user was last changed
  * @param version the optimistic lock, to hand back with an update
  */
 public record UserAccount(

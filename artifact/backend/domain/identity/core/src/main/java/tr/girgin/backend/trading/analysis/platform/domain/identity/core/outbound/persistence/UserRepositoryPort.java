@@ -19,7 +19,6 @@ public interface UserRepositoryPort {
 
     long count();
 
-    /** Counts the enabled users that hold the role. */
     long countEnabledWithRole(RoleId role);
 
     /**

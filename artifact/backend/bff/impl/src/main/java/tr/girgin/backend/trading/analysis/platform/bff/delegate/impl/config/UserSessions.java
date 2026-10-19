@@ -19,12 +19,10 @@ public class UserSessions {
         this.sessionEventStreams = sessionEventStreams;
     }
 
-    /** Ends every session of the user. */
     public void endAll(UserId user) {
         endExcept(user, null);
     }
 
-    /** Ends every session of the user but the one with the given ID. */
     public void endAllExcept(UserId user, String sessionId) {
         endExcept(user, sessionId);
     }

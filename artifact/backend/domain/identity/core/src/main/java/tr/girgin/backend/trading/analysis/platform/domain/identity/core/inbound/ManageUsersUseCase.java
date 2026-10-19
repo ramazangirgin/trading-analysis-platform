@@ -13,7 +13,7 @@ public interface ManageUsersUseCase {
     List<UserAccount> list();
 
     /**
-     * One user.
+     * Finds one user.
      *
      * @throws tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException
      *     {@code USER_NOT_FOUND}

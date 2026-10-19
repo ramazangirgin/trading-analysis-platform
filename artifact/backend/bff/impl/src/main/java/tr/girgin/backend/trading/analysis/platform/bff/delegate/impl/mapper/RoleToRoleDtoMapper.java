@@ -10,7 +10,6 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Role
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
 
-/** The permissions are sorted by key. */
 @Mapper(uses = PermissionToPermissionDtoMapper.class)
 public interface RoleToRoleDtoMapper {
 
@@ -20,7 +19,6 @@ public interface RoleToRoleDtoMapper {
 
     List<PermissionDto> map(List<Permission> source);
 
-    /** The permissions as a list sorted by key, for the overload above to map. */
     default List<Permission> map(Set<Permission> source) {
         return source.stream().sorted(Comparator.comparing(Permission::key)).toList();
     }

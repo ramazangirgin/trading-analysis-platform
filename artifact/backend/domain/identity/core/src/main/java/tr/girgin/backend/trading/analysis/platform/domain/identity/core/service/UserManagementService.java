@@ -39,7 +39,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
  * check and its write under one lock. That is enough because the platform runs as one instance: the sessions and
  * the login-attempt counts live in memory as well.
  *
- * <p>Passwords are never logged.
  */
 @Service
 class UserManagementService implements ManageUsersUseCase {
@@ -167,7 +166,6 @@ class UserManagementService implements ManageUsersUseCase {
         }
     }
 
-    // An actor can neither disable themselves nor remove their own ADMIN role.
     private static void checkNotSelfLockout(UserId actor, User user, Set<RoleId> newRoles, boolean newEnabled) {
         if (!actor.equals(user.id())) {
             return;
@@ -186,7 +184,6 @@ class UserManagementService implements ManageUsersUseCase {
         }
     }
 
-    // Fails when the change would disable or demote the only enabled ADMIN.
     private void checkAnAdminRemains(User user, Set<RoleId> newRoles, boolean newEnabled) {
         boolean leavesAdmins = user.enabled() && (!newEnabled || losesAdmin(user, newRoles));
         if (leavesAdmins && user.roleIds().contains(RoleId.ADMIN) && users.countEnabledWithRole(RoleId.ADMIN) - 1 < 1) {

@@ -5,7 +5,6 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.User
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.UserRoleDto;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserAccount;
 
-/** The core hands the roles out sorted by name, and the empty lock and last login become null. */
 @Mapper
 public interface UserAccountToUserDtoMapper {
 
