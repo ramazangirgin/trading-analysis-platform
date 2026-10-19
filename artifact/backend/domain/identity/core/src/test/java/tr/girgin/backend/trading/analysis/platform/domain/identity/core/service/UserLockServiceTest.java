@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -121,6 +122,16 @@ class UserLockServiceTest {
         @Override
         public long countEnabledWithRole(RoleId role) {
             return user != null && user.enabled() && user.roleIds().contains(role) ? 1 : 0;
+        }
+
+        @Override
+        public long countWithRole(RoleId role) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<RoleId, Long> countUsersByRole() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

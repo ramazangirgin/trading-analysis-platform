@@ -9,6 +9,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
 class UserManagementServiceTest {
@@ -34,7 +34,7 @@ class UserManagementServiceTest {
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
     private final FakeUserRepository users = new FakeUserRepository();
-    private final FakeRoleRepository roles = new FakeRoleRepository();
+    private final InMemoryRoleRepository roles = new InMemoryRoleRepository();
     private final FixedGenerator generator = new FixedGenerator();
     private final UserManagementService service = new UserManagementService(
             users,
@@ -49,7 +49,7 @@ class UserManagementServiceTest {
     private final Role viewer = role(RoleId.VIEWER, "VIEWER", Permission.ANALYSIS_READ);
 
     UserManagementServiceTest() {
-        roles.roles.addAll(List.of(viewer, admin, analyst));
+        List.of(viewer, admin, analyst).forEach(roles::add);
     }
 
     @Test
@@ -540,6 +540,16 @@ class UserManagementServiceTest {
         }
 
         @Override
+        public long countWithRole(RoleId role) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<RoleId, Long> countUsersByRole() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public User save(User user) {
             if (failSaves > 0) {
                 failSaves--;
@@ -567,32 +577,6 @@ class UserManagementServiceTest {
             users.removeIf(u -> u.id().equals(stored.id()));
             users.add(stored);
             return stored;
-        }
-    }
-
-    private static final class FakeRoleRepository implements RoleRepositoryPort {
-
-        private final List<Role> roles = new ArrayList<>();
-
-        @Override
-        public Optional<Role> findById(RoleId id) {
-            return roles.stream().filter(r -> r.id().equals(id)).findFirst();
-        }
-
-        @Override
-        public Optional<Role> findByName(String name) {
-            return roles.stream().filter(r -> r.name().equals(name)).findFirst();
-        }
-
-        @Override
-        public List<Role> findAll() {
-            return List.copyOf(roles);
-        }
-
-        @Override
-        public Role save(Role role) {
-            roles.add(role);
-            return role;
         }
     }
 }

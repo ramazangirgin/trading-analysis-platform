@@ -20,7 +20,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.entity.RoleIdEmbeddable;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence.entity.UserIdEmbeddable;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
@@ -52,9 +51,6 @@ class JpaIdentityRepositoryTest {
 
     @Autowired
     private UserJpaRepository userRepository;
-
-    @Autowired
-    private RoleJpaRepository roleRepository;
 
     @BeforeEach
     void resetClock() {
@@ -365,13 +361,62 @@ class JpaIdentityRepositoryTest {
     }
 
     @Test
+    void findByNameIgnoresCase() {
+        Role role = saveRole("Mixed Case Role", Set.of());
+
+        assertThat(roles.findByName("mixed case role")).contains(role);
+        assertThat(roles.findByName("MIXED CASE ROLE")).contains(role);
+    }
+
+    @Test
+    void aSecondRoleWhoseNameDiffersOnlyInCaseIsRejected() {
+        saveRole("Taken Role Name", Set.of());
+
+        assertThatThrownBy(() -> saveRole("taken role name", Set.of())).isInstanceOf(DuplicateKeyException.class);
+    }
+
+    @Test
+    void renamingARoleToATakenNameInAnotherCaseIsRejected() {
+        saveRole("Held Role Name", Set.of());
+        Role other = saveRole("other role name", Set.of());
+
+        assertThatThrownBy(() -> roles.save(other.withName("HELD ROLE NAME")))
+                .isInstanceOf(DuplicateKeyException.class);
+    }
+
+    @Test
     void aRoleStillAssignedToAUserCannotBeDeleted() {
         Role role = saveRole("assigned-role", Set.of(Permission.ANALYSIS_RUN));
         users.save(user("role-holder", Set.of(role.id())));
 
-        assertThatThrownBy(() -> roleRepository.deleteById(roleKey(role.id())))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> roles.deleteById(role.id())).isInstanceOf(DataIntegrityViolationException.class);
         assertThat(roles.findById(role.id())).contains(role);
+    }
+
+    @Test
+    void aRoleWithoutUsersIsDeleted() {
+        Role role = saveRole("deletable-role", Set.of());
+
+        roles.deleteById(role.id());
+
+        assertThat(roles.findById(role.id())).isEmpty();
+    }
+
+    @Test
+    void countWithRoleAndCountUsersByRoleCountEnabledAndDisabledUsers() {
+        Role role = saveRole("all-count-role", Set.of());
+        Role other = saveRole("all-count-other-role", Set.of());
+        Role unused = saveRole("all-count-unused-role", Set.of());
+        users.save(user("all-count-enabled", Set.of(role.id())));
+        users.save(user("all-count-disabled", Set.of(role.id(), other.id())).withEnabled(false));
+
+        assertThat(users.countWithRole(role.id())).isEqualTo(2);
+        assertThat(users.countWithRole(other.id())).isEqualTo(1);
+        assertThat(users.countWithRole(unused.id())).isZero();
+        assertThat(users.countUsersByRole())
+                .containsEntry(role.id(), 2L)
+                .containsEntry(other.id(), 1L)
+                .doesNotContainKey(unused.id());
     }
 
     @Test
@@ -486,12 +531,6 @@ class JpaIdentityRepositoryTest {
                 updatedAt,
                 user.roleIds(),
                 version);
-    }
-
-    private static RoleIdEmbeddable roleKey(RoleId id) {
-        RoleIdEmbeddable key = new RoleIdEmbeddable();
-        key.setValue(id.value());
-        return key;
     }
 
     private static UserIdEmbeddable userKey(UserId id) {

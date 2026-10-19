@@ -109,8 +109,18 @@ final class TestSession {
             body = "{\"enabled\":true}";
         } else if (path.startsWith("/api/presets")) {
             body = "{\"name\":\"preset\",\"values\":{}}";
+        } else if (path.startsWith("/api/roles")) {
+            body = validRoleBody(method);
         }
         return body;
+    }
+
+    private static String validRoleBody(String method) {
+        return switch (method) {
+            case "POST" -> "{\"name\":\"someone\",\"permissions\":[]}";
+            case "PATCH" -> "{\"description\":\"changed\"}";
+            default -> "{}";
+        };
     }
 
     HttpResponse<String> login(String username, String password) throws IOException, InterruptedException {

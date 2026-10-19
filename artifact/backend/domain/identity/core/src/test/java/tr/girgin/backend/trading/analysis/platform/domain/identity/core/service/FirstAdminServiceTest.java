@@ -9,6 +9,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -276,6 +277,16 @@ class FirstAdminServiceTest {
             return users.stream()
                     .filter(u -> u.enabled() && u.roleIds().contains(role))
                     .count();
+        }
+
+        @Override
+        public long countWithRole(RoleId role) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<RoleId, Long> countUsersByRole() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

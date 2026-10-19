@@ -181,8 +181,8 @@ Suppressions in the code today:
 | Check | Where | Why |
 |---|---|---|
 | `IllegalCatch` | runner loops, background threads, event delivery, health checks, Docker probes in tests | fault isolation: one failure must not stop a run, a thread or other subscribers |
-| `ParameterNumber` | constructors of `AnalysesApiDelegateImpl`, `DockerRunnerAdapter`, `ImportExistingRunsService` | constructor injection of collaborators and `@Value` settings |
-| `ClassFanOutComplexity` | `AnalysesApiDelegateImpl` | the analyses API's delegate, with a use case and a mapper per endpoint |
+| `ParameterNumber` | constructors of `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `DockerRunnerAdapter`, `ImportExistingRunsService`; `SecurityConfig.securityFilterChain` | constructor injection of collaborators and `@Value` settings; the security chain's collaborators |
+| `ClassFanOutComplexity` | `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `SecurityConfig` | an API delegate with a use case and a mapper per endpoint; the security chain's wiring and the filters' collaborators |
 | `ConstantName`, `DeclarationOrder`, `HideUtilityClassConstructor` | `ArchitectureTest` | ArchUnit rule names, rules grouped by topic, JUnit instantiates the class |
 | `HideUtilityClassConstructor` | `TradingPlatformApplication` | Spring instantiates the `@SpringBootApplication` class |
 | `VisibilityModifier` | test doubles (`Fakes`, `RecordingSink`) | tests read and set their state directly |

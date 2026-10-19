@@ -639,6 +639,123 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "tags": [
+                    "roles-api-controller"
+                ],
+                "operationId": "createRole",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateRoleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoleDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/roles/{id}": {
+            "get": {
+                "tags": [
+                    "roles-api-controller"
+                ],
+                "operationId": "getRole",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoleDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "roles-api-controller"
+                ],
+                "operationId": "deleteRole",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "roles-api-controller"
+                ],
+                "operationId": "updateRole",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRoleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RoleDto"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/health": {
@@ -1367,6 +1484,79 @@
                     }
                 }
             },
+            "CreateRoleRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "analysis:run",
+                                "analysis:read",
+                                "analysis:read:all",
+                                "analysis:delete",
+                                "preset:read",
+                                "preset:manage",
+                                "preset:read:all",
+                                "settings:read",
+                                "settings:keys:write",
+                                "user:read",
+                                "user:manage",
+                                "role:manage",
+                                "audit:read"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "permissions"
+                ]
+            },
+            "UpdateRoleRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "analysis:run",
+                                "analysis:read",
+                                "analysis:read:all",
+                                "analysis:delete",
+                                "preset:read",
+                                "preset:manage",
+                                "preset:read:all",
+                                "settings:read",
+                                "settings:keys:write",
+                                "user:read",
+                                "user:manage",
+                                "role:manage",
+                                "audit:read"
+                            ]
+                        }
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
             "UpdateUserRequest": {
                 "type": "object",
                 "properties": {
@@ -1421,6 +1611,14 @@
                                 "audit:read"
                             ]
                         }
+                    },
+                    "userCount": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
                     }
                 }
             },

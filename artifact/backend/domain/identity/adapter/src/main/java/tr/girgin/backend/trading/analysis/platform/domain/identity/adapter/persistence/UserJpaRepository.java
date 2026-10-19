@@ -28,4 +28,11 @@ interface UserJpaRepository extends JpaRepository<UserEntity, UserIdEmbeddable> 
 
     @Query("select count(u) from UserEntity u join u.roleIds r where u.enabled = true and r = :roleId")
     long countEnabledWithRole(@Param("roleId") RoleId roleId);
+
+    @Query("select count(u) from UserEntity u join u.roleIds r where r = :roleId")
+    long countWithRole(@Param("roleId") RoleId roleId);
+
+    /** Rows of {@code [RoleId, Long]}. */
+    @Query("select r, count(u) from UserEntity u join u.roleIds r group by r")
+    List<Object[]> countUsersByRole();
 }

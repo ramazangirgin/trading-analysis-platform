@@ -20,6 +20,16 @@ public record Role(
         permissions = Set.copyOf(permissions);
     }
 
+    /** The same role with another name. */
+    public Role withName(String newName) {
+        return new Role(id, newName, builtIn, description, permissions, version);
+    }
+
+    /** The same role with another description. */
+    public Role withDescription(String newDescription) {
+        return new Role(id, name, builtIn, newDescription, permissions, version);
+    }
+
     /** The same role with another set of permissions. */
     public Role withPermissions(Set<Permission> newPermissions) {
         return new Role(id, name, builtIn, description, newPermissions, version);

@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
@@ -20,6 +21,12 @@ public interface UserRepositoryPort {
     long count();
 
     long countEnabledWithRole(RoleId role);
+
+    /** Counts the users, enabled or not, that hold the role. */
+    long countWithRole(RoleId role);
+
+    /** Counts the users, enabled or not, per role; a role without users is missing. */
+    Map<RoleId, Long> countUsersByRole();
 
     /**
      * Inserts or updates the user and replaces its role assignments with {@link User#roleIds()}, in
