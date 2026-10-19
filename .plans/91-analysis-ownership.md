@@ -188,12 +188,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: First admin and usernames in identity
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/core/src/main/java/.../identity/core/inbound/UserDirectoryUseCase.java` (new)
   - `.../identity/core/service/UserDirectoryService.java` (new)
 - **Steps**:
-  - [ ] `firstAdmin()` and `usernames(...)` over `UserRepositoryPort.findAll()` / `findById`.
+  - [x] `firstAdmin()` and `usernames(...)` over `UserRepositoryPort.findAll()` / `findById`.
 - **Tests**: `UserDirectoryServiceTest` (new): the earliest enabled ADMIN is the first admin, a disabled or non-admin user is not, none gives empty; `usernames` returns the known users and leaves out unknown IDs.
 
 ### WP3: Orchestration
