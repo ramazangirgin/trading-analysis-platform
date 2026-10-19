@@ -53,6 +53,9 @@ public class UserEntity {
     @Column(name = "LOCKED_UNTIL")
     private Instant lockedUntil;
 
+    @Column(name = "LAST_LOGIN_AT")
+    private Instant lastLoginAt;
+
     // Not updatable as a guard: auditing sets it on insert and a save of an existing user keeps it.
     @CreatedDate
     @Column(name = "CREATED_AT", nullable = false, updatable = false)
@@ -132,6 +135,14 @@ public class UserEntity {
 
     public void setLockedUntil(Instant lockedUntil) {
         this.lockedUntil = lockedUntil;
+    }
+
+    public Instant getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(Instant lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 
     public Instant getCreatedAt() {

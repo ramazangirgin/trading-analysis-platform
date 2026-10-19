@@ -1,7 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.bff.controller.api;
 
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,8 +16,8 @@ public class HealthApiController {
         this.delegate = delegate;
     }
 
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SystemHealthDto> getHealth() {
+    @GetMapping
+    public SystemHealthDto getHealth() {
         return delegate.getHealth();
     }
 }

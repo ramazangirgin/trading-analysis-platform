@@ -206,6 +206,7 @@ class AuthApiIntegrationTest {
                 stored.mustChangePassword(),
                 stored.failedLoginCount(),
                 stored.lockedUntil(),
+                stored.lastLoginAt(),
                 stored.createdAt(),
                 stored.updatedAt(),
                 stored.roleIds(),

@@ -85,6 +85,7 @@ class LoginLockoutIntegrationTest {
                 false,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 null,
                 null,
                 Set.of(roles.findByName("ADMIN").orElseThrow().id()),

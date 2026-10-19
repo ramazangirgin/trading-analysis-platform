@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
@@ -73,6 +74,7 @@ class AuthenticationServiceTest {
                 true,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 null,
                 null,
                 Set.of(),
@@ -128,7 +130,7 @@ class AuthenticationServiceTest {
 
         service.authenticate("alice", "secret");
 
-        assertThat(users.saved).isEmpty();
+        assertThat(users.saved).allSatisfy(u -> assertThat(u.passwordHash()).isEqualTo(new PasswordHash("old:secret")));
     }
 
     @Test
@@ -232,12 +234,43 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void aNormalLoginWritesNothing() {
-        users.users.add(user("alice", "secret", true));
+    void aNormalLoginOnlyRecordsTheTimeOfTheLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
 
         service.authenticate("alice", "secret");
 
-        assertThat(users.saved).isEmpty();
+        assertThat(users.saved).hasSize(1);
+        assertThat(users.saved.getFirst()).isEqualTo(alice.withLastLogin(clock.instant()));
+    }
+
+    @Test
+    void aSuccessfulLoginSetsTheLastLoginToTheTimeOfTheClock() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        assertThat(alice.lastLoginAt()).isEmpty();
+
+        service.authenticate("alice", "secret");
+        assertThat(stored(alice).lastLoginAt()).contains(Instant.parse("2026-10-01T10:00:00Z"));
+
+        clock.advance(Duration.ofHours(2));
+        service.authenticate("alice", "secret");
+        assertThat(stored(alice).lastLoginAt()).contains(Instant.parse("2026-10-01T12:00:00Z"));
+    }
+
+    @Test
+    void aFailedLoginDoesNotSetTheLastLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+
+        failure("alice", "wrong");
+        users.users.add(user("bob", "secret", false));
+        failure("bob", "secret");
+
+        assertThat(stored(alice).lastLoginAt()).isEmpty();
+        assertThat(users.users)
+                .filteredOn(u -> u.username().value().equals("bob"))
+                .allSatisfy(u -> assertThat(u.lastLoginAt()).isEmpty());
     }
 
     @Test
@@ -306,6 +339,54 @@ class AuthenticationServiceTest {
         assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
     }
 
+    @Test
+    void aLoginFailsWhenTheUserIsDisabledDuringTheLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 1;
+        users.concurrentChange = current -> current.withEnabled(false);
+
+        IdentityException e = failure("alice", "secret");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void aLoginFailsWhenThePasswordIsResetDuringTheLogin() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 1;
+        users.concurrentChange = current -> current.withPassword(new PasswordHash("new:other"), true);
+
+        IdentityException e = failure("alice", "secret");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+        assertThat(users.saved).isEmpty();
+    }
+
+    @Test
+    void aLoginFailsWhenEverySaveConflictsAndTheUserWasDisabled() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 3;
+        users.concurrentChange = current -> current.withEnabled(false);
+
+        IdentityException e = failure("alice", "secret");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+    }
+
+    @Test
+    void aLoginSucceedsWhenAConcurrentLoginOnlyRehashedThePassword() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 1;
+        users.concurrentChange = current -> current.withPassword(new PasswordHash("new:secret"), false);
+
+        assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
+    }
+
     private User stored(User user) {
         return users.findById(user.id()).orElseThrow();
     }
@@ -348,6 +429,7 @@ class AuthenticationServiceTest {
                 false,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 Instant.parse("2026-10-01T10:00:00Z"),
                 Instant.parse("2026-10-01T10:00:00Z"),
                 Set.of(roleIds),
@@ -381,6 +463,8 @@ class AuthenticationServiceTest {
         private final List<User> users = new ArrayList<>();
         private final List<User> saved = new ArrayList<>();
         private int failSaves;
+        /** What another transaction does to the stored user before the next conflicting save. */
+        private UnaryOperator<User> concurrentChange = UnaryOperator.identity();
 
         @Override
         public Optional<User> findById(UserId id) {
@@ -405,9 +489,17 @@ class AuthenticationServiceTest {
         }
 
         @Override
+        public long countEnabledWithRole(RoleId role) {
+            return users.stream()
+                    .filter(u -> u.enabled() && u.roleIds().contains(role))
+                    .count();
+        }
+
+        @Override
         public User save(User user) {
             if (failSaves > 0) {
                 failSaves--;
+                users.replaceAll(u -> u.id().equals(user.id()) ? concurrentChange.apply(u) : u);
                 throw new OptimisticLockingFailureException("stale");
             }
             saved.add(user);

@@ -84,6 +84,7 @@ final class TestSession {
                 mustChangePassword,
                 0,
                 Optional.empty(),
+                Optional.empty(),
                 null,
                 null,
                 Set.of(roles),
@@ -96,17 +97,20 @@ final class TestSession {
      * check: bean validation runs before the delegate method (and its permission) is called.
      */
     static String validBody(String method, String path) {
+        String body = "{}";
         if (method.equals("POST") && path.equals("/api/analyses")) {
-            return "{\"ticker\":\"AAPL\",\"tradeDate\":\"2026-01-02\",\"analysts\":[\"MARKET\"],"
+            body = "{\"ticker\":\"AAPL\",\"tradeDate\":\"2026-01-02\",\"analysts\":[\"MARKET\"],"
                     + "\"llmProvider\":\"openai\",\"deepThinkLlm\":\"deep\",\"quickThinkLlm\":\"quick\"}";
+        } else if (method.equals("PUT") && path.startsWith("/api/secrets/")) {
+            body = "{\"value\":\"secret\"}";
+        } else if (method.equals("POST") && path.equals("/api/users")) {
+            body = "{\"username\":\"someone\",\"roleIds\":[]}";
+        } else if (method.equals("PATCH") && path.startsWith("/api/users/")) {
+            body = "{\"enabled\":true}";
+        } else if (path.startsWith("/api/presets")) {
+            body = "{\"name\":\"preset\",\"values\":{}}";
         }
-        if (method.equals("PUT") && path.startsWith("/api/secrets/")) {
-            return "{\"value\":\"secret\"}";
-        }
-        if (path.equals("/api/presets") || path.startsWith("/api/presets/")) {
-            return "{\"name\":\"preset\",\"values\":{}}";
-        }
-        return "{}";
+        return body;
     }
 
     HttpResponse<String> login(String username, String password) throws IOException, InterruptedException {

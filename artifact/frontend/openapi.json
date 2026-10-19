@@ -133,6 +133,120 @@
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "listUsers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "createUser",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUserRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreatedUserDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/unlock": {
+            "post": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "unlock",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/password-reset": {
+            "post": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "resetPassword",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OneTimePasswordDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/reports/rescan": {
             "post": {
                 "tags": [
@@ -204,6 +318,36 @@
                 }
             }
         },
+        "/api/auth/password": {
+            "post": {
+                "tags": [
+                    "auth-api-controller"
+                ],
+                "operationId": "changePassword",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentUserDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/logout": {
             "post": {
                 "tags": [
@@ -228,36 +372,6 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/LoginRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CurrentUserDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/password": {
-            "post": {
-                "tags": [
-                    "auth-api-controller"
-                ],
-                "operationId": "changePassword",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ChangePasswordRequest"
                             }
                         }
                     },
@@ -413,12 +527,12 @@
                 }
             }
         },
-        "/api/users/{id}/unlock": {
-            "post": {
+        "/api/users/{id}": {
+            "get": {
                 "tags": [
                     "users-api-controller"
                 ],
-                "operationId": "unlock",
+                "operationId": "getUser",
                 "parameters": [
                     {
                         "name": "id",
@@ -431,7 +545,52 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "updateUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDto"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -451,6 +610,29 @@
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/SecretStatusDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/roles": {
+            "get": {
+                "tags": [
+                    "roles-api-controller"
+                ],
+                "operationId": "listRoles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RoleDto"
                                     }
                                 }
                             }
@@ -770,6 +952,113 @@
                     }
                 }
             },
+            "CreateUserRequest": {
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "roleIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "roleIds",
+                    "username"
+                ]
+            },
+            "CreatedUserDto": {
+                "type": "object",
+                "properties": {
+                    "user": {
+                        "$ref": "#/components/schemas/UserDto"
+                    },
+                    "oneTimePassword": {
+                        "type": "string"
+                    }
+                }
+            },
+            "UserDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UserRoleDto"
+                        }
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "mustChangePassword": {
+                        "type": "boolean"
+                    },
+                    "locked": {
+                        "type": "boolean"
+                    },
+                    "lockedUntil": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "lastLoginAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
+            "UserRoleDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ResetPasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "password": {
+                        "type": "string"
+                    }
+                }
+            },
+            "OneTimePasswordDto": {
+                "type": "object",
+                "properties": {
+                    "oneTimePassword": {
+                        "type": "string"
+                    }
+                }
+            },
             "ImportResultDto": {
                 "type": "object",
                 "properties": {
@@ -790,23 +1079,6 @@
                         "format": "int32"
                     }
                 }
-            },
-            "LoginRequest": {
-                "type": "object",
-                "properties": {
-                    "username": {
-                        "type": "string",
-                        "minLength": 1
-                    },
-                    "password": {
-                        "type": "string",
-                        "minLength": 1
-                    }
-                },
-                "required": [
-                    "password",
-                    "username"
-                ]
             },
             "ChangePasswordRequest": {
                 "type": "object",
@@ -865,6 +1137,23 @@
                         "type": "boolean"
                     }
                 }
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "password",
+                    "username"
+                ]
             },
             "StartAnalysisRequest": {
                 "type": "object",
@@ -1075,6 +1364,63 @@
                     "elapsedMs": {
                         "type": "integer",
                         "format": "int64"
+                    }
+                }
+            },
+            "UpdateUserRequest": {
+                "type": "object",
+                "properties": {
+                    "roleIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
+            "RoleDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "builtIn": {
+                        "type": "boolean"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "analysis:run",
+                                "analysis:read",
+                                "analysis:read:all",
+                                "analysis:delete",
+                                "preset:read",
+                                "preset:manage",
+                                "preset:read:all",
+                                "settings:read",
+                                "settings:keys:write",
+                                "user:read",
+                                "user:manage",
+                                "role:manage",
+                                "audit:read"
+                            ]
+                        }
                     }
                 }
             },

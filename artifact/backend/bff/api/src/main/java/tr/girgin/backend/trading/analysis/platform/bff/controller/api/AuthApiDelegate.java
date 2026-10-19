@@ -9,12 +9,11 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Logi
 
 public interface AuthApiDelegate {
 
-    ResponseEntity<CurrentUserDto> login(LoginRequest request, HttpServletRequest http, HttpServletResponse response);
+    CurrentUserDto login(LoginRequest request, HttpServletRequest http, HttpServletResponse response);
 
-    ResponseEntity<CurrentUserDto> me(HttpServletRequest http, HttpServletResponse response);
+    CurrentUserDto me(HttpServletRequest http, HttpServletResponse response);
 
-    ResponseEntity<CurrentUserDto> changePassword(
-            ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response);
+    CurrentUserDto changePassword(ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response);
 
     ResponseEntity<Void> logout(HttpServletRequest http, HttpServletResponse response);
 }

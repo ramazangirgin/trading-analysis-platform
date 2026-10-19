@@ -1,6 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.ReportsApiDelegate;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ImportResultDto;
@@ -23,7 +22,7 @@ class ReportsApiDelegateImpl implements ReportsApiDelegate {
     @Override
     // It creates and updates analyses from the data folder, as runs do.
     @RequiresPermission(Permission.ANALYSIS_RUN)
-    public ResponseEntity<ImportResultDto> rescan() {
-        return ResponseEntity.ok(mapper.map(importExistingRuns.importExistingRuns()));
+    public ImportResultDto rescan() {
+        return mapper.map(importExistingRuns.importExistingRuns());
     }
 }

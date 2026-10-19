@@ -31,47 +31,47 @@ public class AnalysesApiController {
         this.delegate = delegate;
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping
     public ResponseEntity<AnalysisDto> startAnalysis(@Valid @RequestBody StartAnalysisRequest request) {
         return delegate.startAnalysis(request);
     }
 
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<AnalysisDto>> listAnalyses(
+    @GetMapping
+    public List<AnalysisDto> listAnalyses(
             @RequestParam(required = false) AnalysisStatusDto status, @RequestParam(required = false) String ticker) {
         return delegate.listAnalyses(status, ticker);
     }
 
-    @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AnalysisDto> getAnalysis(@PathVariable String id) {
+    @GetMapping("/{id}")
+    public AnalysisDto getAnalysis(@PathVariable String id) {
         return delegate.getAnalysis(id);
     }
 
-    @PostMapping(path = "/{id}/stop", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AnalysisDto> stopAnalysis(@PathVariable String id) {
+    @PostMapping("/{id}/stop")
+    public AnalysisDto stopAnalysis(@PathVariable String id) {
         return delegate.stopAnalysis(id);
     }
 
-    @PostMapping(path = "/{id}/rerun", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("/{id}/rerun")
     public ResponseEntity<AnalysisDto> rerunAnalysis(@PathVariable String id) {
         return delegate.rerunAnalysis(id);
     }
 
     /** The report files in the data dir for this analysis' ticker and date. */
-    @GetMapping(path = "/{id}/report", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AnalysisReportDto> getReport(@PathVariable String id) {
+    @GetMapping("/{id}/report")
+    public AnalysisReportDto getReport(@PathVariable String id) {
         return delegate.getReport(id);
     }
 
     /** About a year of daily prices with moving averages up to the trade date, from upstream's price cache. */
-    @GetMapping(path = "/{id}/prices", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<PriceHistoryDto> getPrices(@PathVariable String id) {
+    @GetMapping("/{id}/prices")
+    public PriceHistoryDto getPrices(@PathVariable String id) {
         return delegate.getPrices(id);
     }
 
     /** The end of the runner's stderr log, API keys masked. */
-    @GetMapping(path = "/{id}/logs", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<RunLogDto> getLogs(@PathVariable String id, @RequestParam(defaultValue = "1000") int tail) {
+    @GetMapping("/{id}/logs")
+    public RunLogDto getLogs(@PathVariable String id, @RequestParam(defaultValue = "1000") int tail) {
         return delegate.getLogs(id, tail);
     }
 

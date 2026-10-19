@@ -17,7 +17,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
@@ -32,9 +31,8 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Curr
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.PasswordChangeRequiredFilter;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.UserSessions;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.IdentityExceptionToApiExceptionMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
@@ -58,9 +56,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     private final AuthenticateUseCase authentication;
     private final ChangePasswordUseCase changePassword;
-    private final SessionRegistry sessionRegistry;
-    private final SessionEventStreams sessionEventStreams;
-    private final IdentityExceptionToApiExceptionMapper errorMapper;
+    private final UserSessions userSessions;
     private final PermissionToPermissionDtoMapper permissionMapper;
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SecurityContextRepository contextRepository;
@@ -73,18 +69,14 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     AuthApiDelegateImpl(
             AuthenticateUseCase authentication,
             ChangePasswordUseCase changePassword,
-            SessionRegistry sessionRegistry,
-            SessionEventStreams sessionEventStreams,
-            IdentityExceptionToApiExceptionMapper errorMapper,
+            UserSessions userSessions,
             PermissionToPermissionDtoMapper permissionMapper,
             SessionAuthenticationStrategy sessionStrategy,
             SecurityContextRepository contextRepository,
             CsrfTokenRepository csrfTokenRepository) {
         this.authentication = authentication;
         this.changePassword = changePassword;
-        this.sessionRegistry = sessionRegistry;
-        this.sessionEventStreams = sessionEventStreams;
-        this.errorMapper = errorMapper;
+        this.userSessions = userSessions;
         this.permissionMapper = permissionMapper;
         this.sessionStrategy = sessionStrategy;
         this.contextRepository = contextRepository;
@@ -93,21 +85,15 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     @Override
     @NoPermissionRequired("the login itself: the caller has no session yet")
-    public ResponseEntity<CurrentUserDto> login(
-            LoginRequest request, HttpServletRequest http, HttpServletResponse response) {
-        AuthenticatedUser user;
-        try {
-            user = authentication.authenticate(request.username(), request.password());
-        } catch (IdentityException e) {
-            throw errorMapper.map(e);
-        }
+    public CurrentUserDto login(LoginRequest request, HttpServletRequest http, HttpServletResponse response) {
+        AuthenticatedUser user = authentication.authenticate(request.username(), request.password());
         startSession(user, http, response);
-        return ResponseEntity.ok(toDto(user));
+        return toDto(user);
     }
 
     @Override
     @NoPermissionRequired("every user changes their own password: a session only")
-    public ResponseEntity<CurrentUserDto> changePassword(
+    public CurrentUserDto changePassword(
             ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response) {
         Optional<UserId> id = currentUserId();
         if (id.isEmpty()) {
@@ -122,19 +108,12 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
                 endSession(http, response);
                 throw unauthorized();
             }
-            throw errorMapper.map(e);
+            throw e;
         }
-        String currentSessionId = http.getSession().getId();
-        sessionRegistry.getAllSessions(id.get().value(), false).stream()
-                .filter(session -> !session.getSessionId().equals(currentSessionId))
-                .forEach(session -> {
-                    // An open stream never makes another request, so expireNow alone would not end it.
-                    sessionEventStreams.close(session.getSessionId());
-                    session.expireNow();
-                });
+        userSessions.endAllExcept(id.get(), http.getSession().getId());
         // The same steps as a login: a new session ID and CSRF token, and the authorities without the mark.
         startSession(user, http, response);
-        return ResponseEntity.ok(toDto(user));
+        return toDto(user);
     }
 
     private void startSession(AuthenticatedUser user, HttpServletRequest http, HttpServletResponse response) {
@@ -153,7 +132,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     @Override
     @NoPermissionRequired("tells the client whether it has a session: 401 without one")
-    public ResponseEntity<CurrentUserDto> me(HttpServletRequest http, HttpServletResponse response) {
+    public CurrentUserDto me(HttpServletRequest http, HttpServletResponse response) {
         Optional<UserId> id = currentUserId();
         if (id.isEmpty()) {
             // Keeps the CSRF cookie that the filter chain just set, so a client can log in next.
@@ -165,7 +144,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
             endSession(http, response);
             throw unauthorized();
         }
-        return ResponseEntity.ok(toDto(user.get()));
+        return toDto(user.get());
     }
 
     @Override

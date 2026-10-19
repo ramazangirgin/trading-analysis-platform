@@ -10,7 +10,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +32,6 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Repo
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RunEventToRunEventDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToAnalysisSpecMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StringToAnalysisIdMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.AnalysisExceptionToApiExceptionMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
@@ -73,7 +70,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final RunEventToRunEventDtoMapper eventMapper;
     private final StringToAnalysisIdMapper idMapper;
     private final AnalysisStatusDtoToAnalysisStatusMapper statusMapper;
-    private final AnalysisExceptionToApiExceptionMapper errorMapper;
     private final ReportToAnalysisReportDtoMapper reportMapper;
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
     private final SessionEventStreams sessionEventStreams;
@@ -94,7 +90,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             RunEventToRunEventDtoMapper eventMapper,
             StringToAnalysisIdMapper idMapper,
             AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
-            AnalysisExceptionToApiExceptionMapper errorMapper,
             ReportToAnalysisReportDtoMapper reportMapper,
             PriceHistoryToPriceHistoryDtoMapper pricesMapper,
             SessionEventStreams sessionEventStreams) {
@@ -112,7 +107,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.eventMapper = eventMapper;
         this.idMapper = idMapper;
         this.statusMapper = statusMapper;
-        this.errorMapper = errorMapper;
         this.reportMapper = reportMapper;
         this.pricesMapper = pricesMapper;
         this.sessionEventStreams = sessionEventStreams;
@@ -121,43 +115,42 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request) {
-        return created(call(() -> startAnalysis.start(specMapper.map(request))));
+        return created(startAnalysis.start(specMapper.map(request)));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
-    public ResponseEntity<List<AnalysisDto>> listAnalyses(AnalysisStatusDto status, String ticker) {
+    public List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker) {
         String normalizedTicker =
                 ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
         AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker);
-        return ResponseEntity.ok(
-                listAnalyses.list(filter).stream().map(analysisMapper::map).toList());
+        return listAnalyses.list(filter).stream().map(analysisMapper::map).toList();
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
-    public ResponseEntity<AnalysisDto> getAnalysis(String id) {
-        return ResponseEntity.ok(analysisMapper.map(call(() -> getAnalysis.get(idMapper.map(id)))));
+    public AnalysisDto getAnalysis(String id) {
+        return analysisMapper.map(getAnalysis.get(idMapper.map(id)));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
-    public ResponseEntity<AnalysisDto> stopAnalysis(String id) {
-        return ResponseEntity.ok(analysisMapper.map(call(() -> stopAnalysis.stop(idMapper.map(id)))));
+    public AnalysisDto stopAnalysis(String id) {
+        return analysisMapper.map(stopAnalysis.stop(idMapper.map(id)));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> rerunAnalysis(String id) {
-        return created(call(() -> rerunAnalysis.rerun(idMapper.map(id))));
+        return created(rerunAnalysis.rerun(idMapper.map(id)));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
-    public ResponseEntity<AnalysisReportDto> getReport(String id) {
-        return call(() -> getReport.getReport(idMapper.map(id)))
+    public AnalysisReportDto getReport(String id) {
+        return getReport
+                .getReport(idMapper.map(id))
                 .map(reportMapper::map)
-                .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "report_not_found",
@@ -167,10 +160,10 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
-    public ResponseEntity<PriceHistoryDto> getPrices(String id) {
-        return call(() -> getPrices.getPrices(idMapper.map(id)))
+    public PriceHistoryDto getPrices(String id) {
+        return getPrices
+                .getPrices(idMapper.map(id))
                 .map(pricesMapper::map)
-                .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "prices_not_found",
@@ -180,8 +173,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
-    public ResponseEntity<RunLogDto> getLogs(String id, int tail) {
-        return ResponseEntity.ok(new RunLogDto(call(() -> readLogs.tailLogs(idMapper.map(id), tail))));
+    public RunLogDto getLogs(String id, int tail) {
+        return new RunLogDto(readLogs.tailLogs(idMapper.map(id), tail));
     }
 
     @Override
@@ -204,7 +197,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         // client sees it open while the run has yet to send an event (and can be closed meanwhile).
         send(emitter, SseEmitter.event().comment("open"));
         // Events sent before this method returns are buffered by the emitter.
-        subscription.set(call(() -> subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
+        subscription.set(subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
             @Override
             public void onEvent(RunEvent event) {
                 send(
@@ -220,7 +213,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                 ended.set(true);
                 emitter.complete();
             }
-        })));
+        }));
         // The stream belongs to the session that opened it and ends with it. It is registered only
         // once the subscription holds: a failed one never returns the emitter to Spring MVC, so
         // nothing would ever remove it again. The security chain guarantees a session here; without
@@ -241,14 +234,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         return ResponseEntity.created(
                         URI.create("/api/analyses/" + analysis.id().value()))
                 .body(analysisMapper.map(analysis));
-    }
-
-    private <T> T call(Supplier<T> action) {
-        try {
-            return action.get();
-        } catch (AnalysisException e) {
-            throw errorMapper.map(e);
-        }
     }
 
     private static void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
