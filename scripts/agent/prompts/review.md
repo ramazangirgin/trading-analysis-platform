@@ -21,6 +21,13 @@ documents of every part the change touches before judging it.
   ArchUnit, import-linter) is checked by CI; mention it only if CI cannot catch it. A comment that
   only repeats the code (a name, a signature, a type, what the README already says) is `MINOR`:
   comments are added only when really needed.
+- **REST endpoints** (`docs/coding-convention/backend-java-rest-api.md`), checked for every
+  controller, delegate and exception the change adds or touches:
+  - a `ResponseEntity` around an answer that is only ever `200`: `MINOR`;
+  - a delegate that catches an exception to turn it into an HTTP answer (`try` / `catch` with a
+    mapper or a new `ApiException`) instead of letting `DomainExceptionHandler` answer it, or a
+    new domain exception without a mapper and handler method there: `MAJOR` (an unmapped
+    exception answers `500`). A catch that acts first and rethrows (ends a session) is fine.
 - **Tests**: missing tests for new behaviour, tests that do not prove what they claim, weakened or
   deleted tests.
 - **Docs and screenshots**: the change is documented in this pull request. Every item under the

@@ -57,6 +57,13 @@ do not read other plans in `.plans/` as models.
 - **No comments in the plan**: never ask for comments or Javadoc ("with Javadoc in the style of
   …"). The developer agent adds a comment only when it is really needed, and Checkstyle asks for
   the Javadoc it requires.
+- **REST endpoints** ([REST endpoints](../../../docs/coding-convention/backend-java-rest-api.md)):
+  for every new or changed BFF endpoint, the plan names its success status and return type, and
+  where each error is answered. An endpoint that only answers `200` returns its DTO, never
+  `ResponseEntity` (that is for `201`, `204` or a varying status). A domain error is thrown and
+  answered by `DomainExceptionHandler`: a new domain exception gets an
+  `*ExceptionToApiExceptionMapper` and a handler method there. Never plan a `try` / `catch` in a
+  delegate that maps an exception.
 - **Work packages**: list the files each one creates or changes, so packages without a dependency
   can be implemented in parallel. Every package names its tests.
 - **Conventions**: for each affected part, name the conventions that apply and where the new code
