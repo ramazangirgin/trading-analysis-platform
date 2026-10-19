@@ -163,6 +163,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Owner in the analysis domain
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/analysis/core/src/main/java/.../domain/analysis/core/model/`: `OwnerId.java`, `AnalysisAccess.java` (new); `Analysis.java`, `AnalysisFilter.java`
@@ -172,10 +173,10 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/domain/analysis/adapter/src/main/java/.../analysis/adapter/persistence/`: `JpaAnalysisRepositoryAdapter.java`, `AnalysisJpaRepository.java`, `entity/AnalysisEntity.java`, `entity/OwnerIdAttributeConverter.java` (new), the two analysis mappers in `mapper/`
   - `artifact/backend/domain/analysis/adapter/src/main/resources/.../persistence/migration/V3__add_owner.sql` (new)
 - **Steps**:
-  - [ ] The model types, the owner on `Analysis` and `AnalysisFilter`.
-  - [ ] The new use case signatures and the `canSee` checks in the services, NOT_FOUND for an analysis the caller cannot see.
-  - [ ] `assignUnowned` in `AnalysisService`; the owner passed to `register` in `ExternalAnalysisService`, kept on a refresh.
-  - [ ] Migration, entity column with its converter, mappers, the owner `Specification`, `assignOwnerWhereMissing`.
+  - [x] The model types, the owner on `Analysis` and `AnalysisFilter`.
+  - [x] The new use case signatures and the `canSee` checks in the services, NOT_FOUND for an analysis the caller cannot see.
+  - [x] `assignUnowned` in `AnalysisService`; the owner passed to `register` in `ExternalAnalysisService`, kept on a refresh.
+  - [x] Migration, entity column with its converter, mappers, the owner `Specification`, `assignOwnerWhereMissing`.
 - **Tests**:
   - `AnalysisServiceTest`: a run belongs to its starter; `list` without `allUsers` returns only the caller's runs, with it everyone's; `get`, `stop`, `rerun` of another user's run fail with NOT_FOUND and with `allUsers` succeed; a rerun belongs to the rerunning user; `assignUnowned` touches only analyses without an owner.
   - `AnalysisEventHubTest`: subscribing to another user's run fails with NOT_FOUND before any event is delivered; with `allUsers` it replays.

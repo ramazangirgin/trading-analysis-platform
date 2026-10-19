@@ -18,4 +18,6 @@ interface AnalysisJpaRepository
     Optional<AnalysisEntity> findByIdAndSource(AnalysisIdEmbeddable id, AnalysisSource source);
 
     List<AnalysisEntity> findByStatusIn(Collection<AnalysisStatus> statuses);
+
+    List<AnalysisEntity> findByOwnerIsNull();
 }

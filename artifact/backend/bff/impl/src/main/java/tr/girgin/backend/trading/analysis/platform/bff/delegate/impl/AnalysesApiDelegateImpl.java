@@ -23,6 +23,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.CurrentUser;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisStatusDtoToAnalysisStatusMapper;
@@ -42,7 +43,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisPricesUseCase;
@@ -73,6 +76,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final ReportToAnalysisReportDtoMapper reportMapper;
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
     private final SessionEventStreams sessionEventStreams;
+    private final CurrentUser currentUser;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
@@ -92,7 +96,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
             ReportToAnalysisReportDtoMapper reportMapper,
             PriceHistoryToPriceHistoryDtoMapper pricesMapper,
-            SessionEventStreams sessionEventStreams) {
+            SessionEventStreams sessionEventStreams,
+            CurrentUser currentUser) {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
@@ -110,12 +115,13 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.reportMapper = reportMapper;
         this.pricesMapper = pricesMapper;
         this.sessionEventStreams = sessionEventStreams;
+        this.currentUser = currentUser;
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request) {
-        return created(startAnalysis.start(specMapper.map(request)));
+        return created(startAnalysis.start(specMapper.map(request), owner()));
     }
 
     @Override
@@ -123,33 +129,34 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     public List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker) {
         String normalizedTicker =
                 ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
-        AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker);
-        return listAnalyses.list(filter).stream().map(analysisMapper::map).toList();
+        AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker, null);
+        AnalysisAccess own = new AnalysisAccess(owner(), false);
+        return listAnalyses.list(filter, own).stream().map(analysisMapper::map).toList();
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto getAnalysis(String id) {
-        return analysisMapper.map(getAnalysis.get(idMapper.map(id)));
+        return analysisMapper.map(getAnalysis.get(idMapper.map(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public AnalysisDto stopAnalysis(String id) {
-        return analysisMapper.map(stopAnalysis.stop(idMapper.map(id)));
+        return analysisMapper.map(stopAnalysis.stop(idMapper.map(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> rerunAnalysis(String id) {
-        return created(rerunAnalysis.rerun(idMapper.map(id)));
+        return created(rerunAnalysis.rerun(idMapper.map(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisReportDto getReport(String id) {
         return getReport
-                .getReport(idMapper.map(id))
+                .getReport(idMapper.map(id), access())
                 .map(reportMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
@@ -162,7 +169,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @RequiresPermission(Permission.ANALYSIS_READ)
     public PriceHistoryDto getPrices(String id) {
         return getPrices
-                .getPrices(idMapper.map(id))
+                .getPrices(idMapper.map(id), access())
                 .map(pricesMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
@@ -174,7 +181,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public RunLogDto getLogs(String id, int tail) {
-        return new RunLogDto(readLogs.tailLogs(idMapper.map(id), tail));
+        return new RunLogDto(readLogs.tailLogs(idMapper.map(id), access(), tail));
     }
 
     @Override
@@ -197,7 +204,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         // client sees it open while the run has yet to send an event (and can be closed meanwhile).
         send(emitter, SseEmitter.event().comment("open"));
         // Events sent before this method returns are buffered by the emitter.
-        subscription.set(subscribeEvents.subscribe(idMapper.map(id), afterSeq, new RunEventListener() {
+        subscription.set(subscribeEvents.subscribe(idMapper.map(id), afterSeq, access(), new RunEventListener() {
             @Override
             public void onEvent(RunEvent event) {
                 send(
@@ -228,6 +235,14 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             }
         }
         return emitter;
+    }
+
+    private OwnerId owner() {
+        return new OwnerId(currentUser.id().value());
+    }
+
+    private AnalysisAccess access() {
+        return new AnalysisAccess(owner(), currentUser.has(Permission.ANALYSIS_READ_ALL));
     }
 
     private ResponseEntity<AnalysisDto> created(Analysis analysis) {

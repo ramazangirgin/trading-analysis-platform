@@ -15,12 +15,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
@@ -35,6 +37,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 
 /** In-memory stand-ins for the analysis domain's outbound ports. */
 final class Fakes {
+
+    static final OwnerId OWNER = new OwnerId("user-a");
+    static final OwnerId OTHER = new OwnerId("user-b");
+    static final AnalysisAccess OWN = new AnalysisAccess(OWNER, false);
+    static final AnalysisAccess OTHERS = new AnalysisAccess(OTHER, false);
+    static final AnalysisAccess EVERYONE = new AnalysisAccess(OTHER, true);
 
     private Fakes() {}
 
@@ -140,8 +148,35 @@ final class Fakes {
             return rows.values().stream()
                     .filter(a -> filter.status() == null || a.status() == filter.status())
                     .filter(a -> filter.ticker() == null || a.spec().ticker().equals(filter.ticker()))
+                    .filter(a -> filter.owner() == null || filter.owner().equals(a.owner()))
                     .sorted(Comparator.comparing(Analysis::createdAt).reversed())
                     .toList();
+        }
+
+        @Override
+        public int assignOwnerWhereMissing(OwnerId owner) {
+            List<Analysis> unowned =
+                    rows.values().stream().filter(a -> a.owner() == null).toList();
+            unowned.forEach(a -> rows.put(
+                    a.id(),
+                    new Analysis(
+                            a.id(),
+                            a.spec(),
+                            a.status(),
+                            a.source(),
+                            a.rating(),
+                            a.decision(),
+                            a.stats(),
+                            a.createdAt(),
+                            a.startedAt(),
+                            a.endedAt(),
+                            a.errorCode(),
+                            a.errorMessage(),
+                            a.externalRef(),
+                            a.runnerRef(),
+                            owner,
+                            a.version())));
+            return unowned.size();
         }
 
         @Override

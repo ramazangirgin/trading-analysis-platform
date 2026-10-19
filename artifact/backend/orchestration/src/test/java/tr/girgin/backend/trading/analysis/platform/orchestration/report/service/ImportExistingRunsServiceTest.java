@@ -62,10 +62,11 @@ class ImportExistingRunsServiceTest {
         ImportExistingRunsService service = new ImportExistingRunsService(
                 () -> List.of(goog, mu),
                 List::of,
-                external -> {
+                (external, owner) -> {
                     registered.add(external);
                     Outcome outcome = external.ticker().equals("GOOG") ? Outcome.CREATED : Outcome.UNCHANGED;
-                    return new ExternalRegistration(Analysis.imported(AnalysisId.newId(), null, external), outcome);
+                    return new ExternalRegistration(
+                            Analysis.imported(AnalysisId.newId(), null, owner, external), outcome);
                 },
                 NO_WATCH,
                 false,
@@ -114,10 +115,10 @@ class ImportExistingRunsServiceTest {
         ImportExistingRunsService service = new ImportExistingRunsService(
                 () -> List.of(report),
                 () -> history,
-                external -> {
+                (external, owner) -> {
                     registered.add(external);
                     return new ExternalRegistration(
-                            Analysis.imported(AnalysisId.newId(), null, external), Outcome.CREATED);
+                            Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
                 },
                 NO_WATCH,
                 false,
@@ -170,10 +171,10 @@ class ImportExistingRunsServiceTest {
         ImportExistingRunsService service = new ImportExistingRunsService(
                 () -> List.of(running, crashed, finished),
                 List::of,
-                external -> {
+                (external, owner) -> {
                     registered.add(external);
                     return new ExternalRegistration(
-                            Analysis.imported(AnalysisId.newId(), null, external), Outcome.CREATED);
+                            Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
                 },
                 NO_WATCH,
                 false,

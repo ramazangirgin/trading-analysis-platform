@@ -19,6 +19,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration.Outcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRun;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
@@ -33,9 +34,35 @@ class ExternalAnalysisServiceTest {
     private final Fakes.Repository repository = new Fakes.Repository();
     private final ExternalAnalysisService service = new ExternalAnalysisService(repository);
 
+    private ExternalRegistration register(ExternalAnalysis external) {
+        return service.register(external, Fakes.OWNER);
+    }
+
+    @Test
+    void aNewImportGetsTheGivenOwnerAndARefreshKeepsTheStoredOne() {
+        Analysis created = service.register(external("GOOG", null, null, FINISHED), Fakes.OTHER)
+                .analysis();
+        assertThat(created.owner()).isEqualTo(Fakes.OTHER);
+
+        Analysis refreshed = service.register(
+                        external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)), Fakes.OWNER)
+                .analysis();
+
+        assertThat(refreshed.id()).isEqualTo(created.id());
+        assertThat(refreshed.owner()).isEqualTo(Fakes.OTHER);
+    }
+
+    @Test
+    void aNewImportMayHaveNoOwnerYet() {
+        assertThat(service.register(external("GOOG", null, null, FINISHED), null)
+                        .analysis()
+                        .owner())
+                .isNull();
+    }
+
     @Test
     void importsACompletedRun() {
-        var registration = service.register(external("GOOG", Rating.HOLD, "**Rating**: Hold", FINISHED));
+        var registration = register(external("GOOG", Rating.HOLD, "**Rating**: Hold", FINISHED));
 
         Analysis analysis = registration.analysis();
         assertThat(registration.outcome()).isEqualTo(Outcome.CREATED);
@@ -49,8 +76,7 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void importsARunWithoutDecisionAsIncomplete() {
-        Analysis analysis =
-                service.register(external("NVDA", null, null, FINISHED)).analysis();
+        Analysis analysis = register(external("NVDA", null, null, FINISHED)).analysis();
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.FAILED);
         assertThat(analysis.errorCode()).isEqualTo(Analysis.INCOMPLETE_REPORT);
@@ -58,11 +84,10 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void isIdempotentAndFollowsChangedFiles() {
-        service.register(external("GOOG", null, null, FINISHED));
+        register(external("GOOG", null, null, FINISHED));
 
-        assertThat(service.register(external("GOOG", null, null, FINISHED)).outcome())
-                .isEqualTo(Outcome.UNCHANGED);
-        var updated = service.register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)));
+        assertThat(register(external("GOOG", null, null, FINISHED)).outcome()).isEqualTo(Outcome.UNCHANGED);
+        var updated = register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)));
 
         assertThat(updated.outcome()).isEqualTo(Outcome.UPDATED);
         assertThat(repository.findAll(AnalysisFilter.ALL))
@@ -73,10 +98,10 @@ class ExternalAnalysisServiceTest {
     @Test
     void carriesTheStoredVersionSoUnchangedFilesStayUnchanged() {
         ExternalAnalysis files = external("GOOG", Rating.HOLD, "Hold", FINISHED);
-        Analysis stored = Analysis.imported(AnalysisId.newId(), 3L, files);
+        Analysis stored = Analysis.imported(AnalysisId.newId(), 3L, Fakes.OWNER, files);
         repository.rows.put(stored.id(), stored);
 
-        var registration = service.register(files);
+        var registration = register(files);
 
         assertThat(registration.outcome()).isEqualTo(Outcome.UNCHANGED);
         assertThat(registration.analysis()).isEqualTo(stored);
@@ -84,20 +109,20 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void reportsAStaleReplaceAsConcurrentUpdate() {
-        service.register(external("GOOG", null, null, FINISHED));
+        register(external("GOOG", null, null, FINISHED));
         repository.failOnWrite = new OptimisticLockingFailureException("stale");
 
-        assertThatThrownBy(() -> service.register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60))))
+        assertThatThrownBy(() -> register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60))))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.CONCURRENT_UPDATE));
     }
 
     @Test
     void leavesTickersAndDatesThePlatformRanAlone() {
-        Analysis platformRun = Analysis.queued(AnalysisId.newId(), Fakes.spec("MU", DATE), Instant.now());
+        Analysis platformRun = Analysis.queued(AnalysisId.newId(), Fakes.spec("MU", DATE), Fakes.OWNER, Instant.now());
         repository.insert(platformRun);
 
-        var registration = service.register(external("MU", Rating.BUY, "Buy", FINISHED));
+        var registration = register(external("MU", Rating.BUY, "Buy", FINISHED));
 
         assertThat(registration.outcome()).isEqualTo(Outcome.UNCHANGED);
         assertThat(registration.analysis().id()).isEqualTo(platformRun.id());
@@ -108,7 +133,7 @@ class ExternalAnalysisServiceTest {
     void takesModelsUsageAndTimesFromTheRunHistory() {
         ExternalRun run = run("a2cd", AnalysisStatus.COMPLETED, null);
 
-        Analysis analysis = service.register(ExternalAnalysis.reportFiles(
+        Analysis analysis = register(ExternalAnalysis.reportFiles(
                         "GOOG", DATE, List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, FINISHED))
                 .analysis();
 
@@ -125,13 +150,13 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void importsEachFailedRunOfTheHistoryOnItsOwn() {
-        service.register(external("NVDA", Rating.BUY, "Buy", FINISHED));
-        var failed = service.register(ExternalAnalysis.runHistory(
+        register(external("NVDA", Rating.BUY, "Buy", FINISHED));
+        var failed = register(ExternalAnalysis.runHistory(
                 "NVDA",
                 DATE,
                 List.of(Analyst.MARKET),
                 run("6d10", AnalysisStatus.FAILED, "OpenAIError: Missing credentials.")));
-        service.register(ExternalAnalysis.runHistory(
+        register(ExternalAnalysis.runHistory(
                 "NVDA",
                 DATE,
                 List.of(Analyst.MARKET),
@@ -143,7 +168,7 @@ class ExternalAnalysisServiceTest {
         assertThat(failed.analysis().errorMessage()).isEqualTo("OpenAIError: Missing credentials.");
         assertThat(failed.analysis().externalRef()).isEqualTo("run:6d10");
         assertThat(repository.findAll(AnalysisFilter.ALL)).hasSize(3);
-        assertThat(service.register(ExternalAnalysis.runHistory(
+        assertThat(register(ExternalAnalysis.runHistory(
                                 "NVDA",
                                 DATE,
                                 List.of(Analyst.MARKET),
@@ -154,9 +179,9 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void importsFailedRunsEvenWhenThePlatformRanTheTickerAndDate() {
-        repository.insert(Analysis.queued(AnalysisId.newId(), Fakes.spec("MU", DATE), Instant.now()));
+        repository.insert(Analysis.queued(AnalysisId.newId(), Fakes.spec("MU", DATE), Fakes.OWNER, Instant.now()));
 
-        var failed = service.register(ExternalAnalysis.runHistory(
+        var failed = register(ExternalAnalysis.runHistory(
                 "MU", DATE, List.of(Analyst.MARKET), run("fe90", AnalysisStatus.FAILED, "boom")));
 
         assertThat(failed.outcome()).isEqualTo(Outcome.CREATED);

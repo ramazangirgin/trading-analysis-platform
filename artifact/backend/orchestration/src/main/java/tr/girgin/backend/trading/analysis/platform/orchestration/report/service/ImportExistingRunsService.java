@@ -192,7 +192,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
 
         Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
         for (ExternalAnalysis external : externals) {
-            outcomes.merge(registerExternal.register(external).outcome(), 1, Integer::sum);
+            outcomes.merge(registerExternal.register(external, null).outcome(), 1, Integer::sum);
         }
         ImportResult result = new ImportResult(
                 externals.size(),

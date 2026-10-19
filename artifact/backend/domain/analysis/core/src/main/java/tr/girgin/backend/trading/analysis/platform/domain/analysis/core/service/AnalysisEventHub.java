@@ -14,6 +14,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
@@ -40,9 +41,10 @@ class AnalysisEventHub implements SubscribeAnalysisEventsUseCase {
     }
 
     @Override
-    public EventSubscription subscribe(AnalysisId id, long afterSeq, RunEventListener listener) {
+    public EventSubscription subscribe(AnalysisId id, long afterSeq, AnalysisAccess access, RunEventListener listener) {
         repository
                 .findById(id)
+                .filter(access::canSee)
                 .orElseThrow(() -> new AnalysisException(
                         AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value())));
         Subscriber subscriber = new Subscriber(listener, afterSeq);

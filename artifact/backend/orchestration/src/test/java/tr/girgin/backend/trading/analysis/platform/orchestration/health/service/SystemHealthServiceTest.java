@@ -72,7 +72,7 @@ class SystemHealthServiceTest {
                 },
                 List::of,
                 secrets(List.of()),
-                _ -> List.of());
+                (_, _) -> List.of());
 
         assertThat(service.checkHealth().checks().getFirst().code()).isEqualTo("runner_unavailable");
     }
@@ -84,7 +84,7 @@ class SystemHealthServiceTest {
                 catalog,
                 () -> java.util.Collections.nCopies(reports, null),
                 secrets(secrets),
-                _ -> List.of());
+                (_, _) -> List.of());
     }
 
     private static ManageSecretsUseCase secrets(List<SecretStatus> statuses) {

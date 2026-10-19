@@ -14,6 +14,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration.Outcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 /**
@@ -31,7 +32,7 @@ class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
     }
 
     @Override
-    public synchronized ExternalRegistration register(ExternalAnalysis external) {
+    public synchronized ExternalRegistration register(ExternalAnalysis external, OwnerId owner) {
         if (external.origin() == ExternalAnalysis.Origin.REPORT_FILES) {
             Optional<Analysis> platformRun = platformRun(external);
             if (platformRun.isPresent()) {
@@ -40,12 +41,12 @@ class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
         }
         Optional<Analysis> existing = repository.findByExternalRef(external.ref());
         if (existing.isEmpty()) {
-            Analysis created = Analysis.imported(AnalysisId.newId(), null, external);
+            Analysis created = Analysis.imported(AnalysisId.newId(), null, owner, external);
             repository.insert(created);
             return new ExternalRegistration(created, Outcome.CREATED);
         }
         Analysis current = existing.get();
-        Analysis refreshed = Analysis.imported(current.id(), current.version(), external);
+        Analysis refreshed = Analysis.imported(current.id(), current.version(), current.owner(), external);
         if (refreshed.equals(current)) {
             return new ExternalRegistration(current, Outcome.UNCHANGED);
         }
@@ -60,7 +61,7 @@ class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
     }
 
     private Optional<Analysis> platformRun(ExternalAnalysis external) {
-        return repository.findAll(new AnalysisFilter(null, external.ticker())).stream()
+        return repository.findAll(new AnalysisFilter(null, external.ticker(), null)).stream()
                 .filter(a -> a.source() == AnalysisSource.PLATFORM)
                 .filter(a -> a.spec().tradeDate().equals(external.tradeDate()))
                 .findFirst();

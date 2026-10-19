@@ -18,16 +18,19 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
@@ -50,6 +53,7 @@ class AnalysisService
                 RerunAnalysisUseCase,
                 GetAnalysisUseCase,
                 ListAnalysesUseCase,
+                AssignUnownedAnalysesUseCase,
                 SmartInitializingSingleton {
 
     // Error codes stored on failed runs; the frontend translates them.
@@ -144,9 +148,9 @@ class AnalysisService
     }
 
     @Override
-    public Analysis start(AnalysisSpec spec) {
+    public Analysis start(AnalysisSpec spec, OwnerId owner) {
         AnalysisSpecValidator.validate(spec, LocalDate.now(clock));
-        Analysis analysis = Analysis.queued(AnalysisId.newId(), spec, clock.instant());
+        Analysis analysis = Analysis.queued(AnalysisId.newId(), spec, owner, clock.instant());
         synchronized (lock) {
             ensureNotActive(spec);
             repository.insert(analysis);
@@ -159,13 +163,13 @@ class AnalysisService
     }
 
     @Override
-    public Analysis rerun(AnalysisId id) {
-        return start(get(id).spec());
+    public Analysis rerun(AnalysisId id, AnalysisAccess access) {
+        return start(get(id, access).spec(), access.user());
     }
 
     @Override
-    public Analysis stop(AnalysisId id) {
-        Analysis analysis = get(id);
+    public Analysis stop(AnalysisId id, AnalysisAccess access) {
+        Analysis analysis = get(id, access);
         RunHandle handle;
         synchronized (lock) {
             if (queue.remove(id)) {
@@ -187,16 +191,33 @@ class AnalysisService
     }
 
     @Override
-    public Analysis get(AnalysisId id) {
-        return repository
-                .findById(id)
-                .orElseThrow(() -> new AnalysisException(
-                        AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value())));
+    public Analysis get(AnalysisId id, AnalysisAccess access) {
+        Analysis analysis = get(id);
+        if (!access.canSee(analysis)) {
+            throw notFound(id);
+        }
+        return analysis;
+    }
+
+    private Analysis get(AnalysisId id) {
+        return repository.findById(id).orElseThrow(() -> notFound(id));
     }
 
     @Override
-    public List<Analysis> list(AnalysisFilter filter) {
-        return repository.findAll(filter);
+    public List<Analysis> list(AnalysisFilter filter, AnalysisAccess access) {
+        if (access.allUsers()) {
+            return repository.findAll(filter);
+        }
+        return repository.findAll(new AnalysisFilter(filter.status(), filter.ticker(), access.user()));
+    }
+
+    @Override
+    public int assignUnowned(OwnerId owner) {
+        return repository.assignOwnerWhereMissing(owner);
+    }
+
+    private static AnalysisException notFound(AnalysisId id) {
+        return new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value()));
     }
 
     private void ensureNotActive(AnalysisSpec spec) {
