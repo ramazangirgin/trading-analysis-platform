@@ -123,7 +123,7 @@ lines or as a comment on the pull request, or here in the session. Until the use
    question gets an answer, and the plan changes when the answer belongs in it.
 3. Answer every comment from step 1, with what changed (the commit) or why not:
    `plan-comments.sh --reply <comment id> <file>` on a review thread,
-   `plan-comments.sh --comment <file>` for the pull request comments and reviews. Both mark the
+   `plan-comments.sh --comment <pr> <file>` for the pull request comments and reviews. Both mark the
    reply, so the comment is not listed again. Never resolve a thread: that is the user's.
 4. Show what changed, and ask again.
 

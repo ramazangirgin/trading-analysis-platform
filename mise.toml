@@ -173,7 +173,7 @@ run = "scripts/agent/plan-branch.sh"
 
 [tasks."agent:plan-comments"]
 description = "Unanswered comments on a plan PR, or answer them: mise run agent:plan-comments <pr | plan/<issue>-<slug>> | --reply <comment id> <file> | --comment <pr | branch> <file>"
-run = "bash scripts/agent/plan-comments.sh"
+run = "scripts/agent/plan-comments.sh"
 
 [tasks."agent:run"]
 description = "Agents take an approved plan (its draft PR labelled plan carries on) to a PR ready for review: mise run agent:run plan/<issue>-<slug>"
