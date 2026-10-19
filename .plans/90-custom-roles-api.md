@@ -224,13 +224,14 @@ a comparison of two numbers.
 
 ### WP4: Integration tests
 
+- **Status**: done
 - **Depends on**: WP2, WP3
 - **Files**:
   - `artifact/backend/src/test/java/…/platform/RolesApiIntegrationTest.java` (new, extends `UsersApiTestBase`)
   - `…/platform/EndpointPermissionsIntegrationTest.java`
   - `…/platform/UsersApiTestBase.java` (helpers to create a role, when needed)
 - **Steps**:
-  - [ ] Write the tests below.
+  - [x] Write the tests below.
 - **Tests**:
   - `RolesApiIntegrationTest`:
     - permission checks: a user with `user:read` only lists and gets roles but gets 403 on POST,
