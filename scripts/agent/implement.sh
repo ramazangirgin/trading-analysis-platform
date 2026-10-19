@@ -315,6 +315,9 @@ plan_pr=$(pr_of_branch "$branch")
 if [ -n "$plan_pr" ] && [ "$(pr_stage "$plan_pr")" = plan ]; then
   pr=$plan_pr
   url=$(gh pr view "$pr" --json url --jq .url)
+  if [ "$(gh pr view "$pr" --json isDraft --jq .isDraft)" = false ]; then
+    gh pr ready "$pr" --undo >/dev/null
+  fi
   gh pr edit "$pr" --title "${title:-$branch}" --body-file "$AGENT_TMP/pr.md" \
     --add-label "$AGENT_LABEL" --remove-label "$AGENT_PLAN_LABEL" >/dev/null
   milestone "pull request #$pr taken from plan review to implementation: $url"
