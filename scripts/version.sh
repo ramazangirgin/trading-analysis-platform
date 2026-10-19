@@ -73,12 +73,12 @@ check_sync() {
 }
 
 check_bump() {
-  local base_ref=$1 version base latest_tag
+  local base_ref=$1 version base latest_tag changed
   check_sync
   version=$(gradle_version)
 
-  if ! git diff --name-only "$base_ref...HEAD" | grep -qv '^\.plans/' &&
-    [ -n "$(git diff --name-only "$base_ref...HEAD")" ]; then
+  changed=$(git diff --name-only "$base_ref...HEAD")
+  if [ -n "$changed" ] && ! grep -qv '^\.plans/' <<<"$changed"; then
     echo "only .plans/ changed: no version bump needed"
     return 0
   fi
