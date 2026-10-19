@@ -1,7 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.bff.controller.api;
 
 import java.util.List;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +17,7 @@ public class RolesApiController {
         this.delegate = delegate;
     }
 
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping
     public ResponseEntity<List<RoleDto>> listRoles() {
         return delegate.listRoles();
     }

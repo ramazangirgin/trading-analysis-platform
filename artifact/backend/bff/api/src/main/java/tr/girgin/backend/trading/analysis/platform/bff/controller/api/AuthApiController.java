@@ -3,7 +3,6 @@ package tr.girgin.backend.trading.analysis.platform.bff.controller.api;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,24 +23,18 @@ public class AuthApiController {
         this.delegate = delegate;
     }
 
-    @PostMapping(
-            path = "/login",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("/login")
     public ResponseEntity<CurrentUserDto> login(
             @Valid @RequestBody LoginRequest request, HttpServletRequest http, HttpServletResponse response) {
         return delegate.login(request, http, response);
     }
 
-    @GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping("/me")
     public ResponseEntity<CurrentUserDto> me(HttpServletRequest http, HttpServletResponse response) {
         return delegate.me(http, response);
     }
 
-    @PostMapping(
-            path = "/password",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("/password")
     public ResponseEntity<CurrentUserDto> changePassword(
             @Valid @RequestBody ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response) {
         return delegate.changePassword(request, http, response);

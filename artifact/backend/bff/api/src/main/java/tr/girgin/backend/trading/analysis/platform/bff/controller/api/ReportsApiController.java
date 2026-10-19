@@ -1,6 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.bff.controller.api;
 
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +17,7 @@ public class ReportsApiController {
     }
 
     /** Scans the data dir again and imports runs the platform did not start. */
-    @PostMapping(path = "/rescan", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("/rescan")
     public ResponseEntity<ImportResultDto> rescan() {
         return delegate.rescan();
     }
