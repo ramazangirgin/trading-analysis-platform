@@ -10,11 +10,11 @@ the developer reviewed, so their work can be checked against it.
 ```mermaid
 flowchart TD
     issue(["GitHub issue"]) --> skill["Planning skill (Claude Code)<br/>/plan-from-issue #lt;issue#gt;"]
-    skill --> plan["Development plan<br/>.plans/#lt;issue#gt;-#lt;slug#gt;.md<br/>alone on branch plan/#lt;issue#gt;-#lt;slug#gt;"]
+    skill --> plan["Development plan<br/>.plans/#lt;issue#gt;-#lt;slug#gt;.md<br/>alone on branch plan/#lt;issue#gt;-#lt;slug#gt;,<br/>draft pull request, label plan"]
     plan --> approvePlan{"Developer:<br/>plan right?"}
-    approvePlan -- "no: edit the plan on its branch" --> plan
+    approvePlan -- "no: comment on the pull request or in the session,<br/>the plan is changed on its branch" --> plan
     approvePlan -- "yes: mise run agent:run" --> implement["Developer agent (Sonnet)<br/>one run per work package: tests, commits,<br/>plan updated, push; then mise run check, version bump"]
-    implement --> draft["Draft pull request<br/>Closes #issue (last plan) or Part of #issue, label agent"]
+    implement --> draft["Same draft pull request<br/>Closes #issue (last plan) or Part of #issue,<br/>label plan changed to agent"]
     draft --> ci{"CI passed?"}
     ci -- "red" --> fixCi["Developer agent (Sonnet)<br/>fix CI from the failed job's log<br/>(up to 3 attempts)"]
     fixCi --> ci
@@ -45,10 +45,10 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | # | Step | Who | Output |
 |---|---|---|---|
 | 1 | Plan: read the issue and the documents of every part it touches; one plan per reviewable pull request | Claude Code skill `plan-from-issue` | `.plans/<issue>-<slug>.md` |
-| 2 | One branch per plan, holding only that plan file | `scripts/agent/plan-branch.sh` (the skill runs it) | `plan/<issue>-<slug>` pushed, linked on the issue |
-| 3 | Plan review: edit the plan on its branch, or approve it | Developer | — |
-| 4 | Start the agents | Developer: `mise run agent:run plan/<issue>-<slug>` | — |
-| 5 | Implement one work package per agent run, with tests, and push after each; `mise run check`, version bump; open a **draft** pull request; fix a red CI | Developer agent: `implement.sh`, `fix-ci.sh` | Draft PR labelled `agent`, **CI passed** green |
+| 2 | One branch per plan, holding only that plan file, and a **draft** pull request for it | `scripts/agent/plan-branch.sh` (the skill runs it) | `plan/<issue>-<slug>` pushed, draft PR labelled `plan`, linked on the issue |
+| 3 | Plan review: comment on the pull request (inline on the plan's lines, or a comment) or in the session; the session reads both (`plan-comments.sh`), changes the plan on its branch and answers each comment; or approve it | Developer, the skill | Plan commits, replies |
+| 4 | Start the agents (the approval) | Developer: `mise run agent:run plan/<issue>-<slug>` | — |
+| 5 | Implement one work package per agent run, with tests, and push after each; `mise run check`, version bump; the plan's pull request becomes the implementation's (label `plan` → `agent`); fix a red CI | Developer agent: `implement.sh`, `fix-ci.sh` | Draft PR labelled `agent`, **CI passed** green |
 | 6 | Review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | Review agent: `review.sh` | PR review + summary comment |
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
@@ -78,8 +78,10 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
 - **The pull request is the state.** Every step leaves one comment with a hidden marker
   (`<!-- agent-step step=review round=1 tokens=… -->`). `next.sh` reads the next step from these
   markers and CI's result; nothing else is stored, so an interrupted run continues where it was.
-  Comments by other accounts are ignored. This covers the review → fix loop; before the pull request
-  exists, the plan branch is the state (next bullets).
+  Comments by other accounts are ignored. The pull request's stage is its label: `plan` (a draft
+  under plan review, opened with the plan branch), then `agent` (the implementation and the review
+  → fix loop). `next.sh` on a pull request in the plan stage only says it waits for the plan's
+  approval. During the implementation, the plan branch is the state (next bullets).
 - **Progress is in the plan.** Every work package has a `- **Status**:` line in the plan: `open`,
   `done` (every step ticked, `- [x]`) or `not done: <reason>`. The developer agent sets it and ticks
   the steps in the plan file, in the same commit as the code, and the script reads it back
@@ -164,9 +166,10 @@ The skill ([`.claude/skills/plan-from-issue/SKILL.md`](../.claude/skills/plan-fr
 reads the issue, the issues it links to and the documents of every part it touches, and writes
 `.plans/<issue>-<slug>.md` from [`plan-template.md`](../.claude/skills/plan-from-issue/plan-template.md),
 or several plans when the issue does not fit one pull request. Discuss it with Claude in the same
-session until it is right; then the skill pushes one branch per plan
-(`mise run agent:plan-branch .plans/<issue>-<slug>.md`) and links it on the issue. The local plan
-file is removed once its branch is pushed, so the working tree is clean for step 5.
+session; when it is ready for review, the skill pushes one branch per plan
+(`mise run agent:plan-branch .plans/<issue>-<slug>.md`), opens a draft pull request labelled `plan`
+for it and links that on the issue. The local plan file is removed once its branch is pushed, so
+the working tree is clean for step 4.
 
 The scripts read the plan's work packages, so their format is fixed: a `### WP<id>: <name>` heading,
 a `- **Status**: open` line (the agent sets `done` or `not done: <reason>` and ticks the steps), a
@@ -176,7 +179,8 @@ reason in parentheses, and `- [ ]` steps. A plan without `Status` lines counts e
 
 ### 3. Review the plan
 
-This is the first of the two decisions that are yours. Read the plan on its branch and check:
+This is the first of the two decisions that are yours. Read the plan on the draft pull request
+(its only change is the plan file) and check:
 
 - the goal matches the issue, and "Out of scope" leaves out what it should;
 - each part names the right conventions, and the design puts the code where they say;
@@ -189,10 +193,19 @@ This is the first of the two decisions that are yours. Read the plan on its bran
   the docs and screenshots, and a missing one is a `MAJOR` finding;
 - the open questions: answer them in the plan.
 
-Change the plan on its branch (edit, commit, push) until you would accept a pull request that does
-exactly that. The agents follow it literally, and the review agent checks the code against it.
+Say what to change where you prefer: inline on the plan's lines or as a comment on the pull request,
+or to Claude in the session. The session reads the pull request's comments that have no answer yet
+(`mise run agent:plan-comments <pr | branch>`; the session's replies carry a hidden `plan-reply`
+marker), changes the plan on its branch (commit `Plan: …`, push) and answers every comment with
+`plan-comments.sh --reply <comment id> <file>` or `--comment <file>`, saying what changed or why
+not. It never resolves a thread: you do. You can also edit, commit and push the plan yourself. Go on
+until you would accept a pull request that does exactly that. The agents follow the plan literally,
+and the review agent checks the code against it. A plan-only pull request needs no version bump
+(CI's *Version* job passes).
 
 ### 4. Start the agents
+
+Approve the plan in the session, or:
 
 ```sh
 mise run agent:run plan/32-compare-runs
@@ -202,8 +215,9 @@ From a clean working tree (the scripts switch to the plan branch). It runs steps
 the developer agent (Sonnet) implements the plan one work package at a time, each with its tests,
 commits and update of the plan, and the script pushes the branch after every package (that starts
 CI, which cancels the run of the previous push). Then the script checks the whole, the last package
-bumps the version, and it opens a **draft** pull request labelled `agent` (`Closes #<issue>`, or
-`Part of #<issue>` while other plans of the issue are not merged yet); after **CI passed**, the
+bumps the version, and it takes over the plan's draft pull request: new title and body
+(`Closes #<issue>`, or `Part of #<issue>` while other plans of the issue are not merged yet), label
+`plan` changed to `agent` (a branch without a plan pull request gets a new draft one); after **CI passed**, the
 review agent (Opus) reviews it, the developer agent fixes the findings, CI runs again, and once
 more; then the pull request gets a final comment and is marked ready for review. It waits for CI
 after every push, so it takes a while: leave the terminal open. Follow it on the pull request,

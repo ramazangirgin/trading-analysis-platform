@@ -163,20 +163,20 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Docs
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**: `docs/agentic-development.md`, `README.md`, `gradle.properties`,
   `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] `docs/agentic-development.md`:
+  - [x] `docs/agentic-development.md`:
     - the flow diagram, with the draft pull request labelled `plan` before the developer's plan
       decision, and the label change on approval;
     - the steps table (steps 2 to 5);
     - the decision bullet "The pull request is the state" (the plan stage);
     - the walkthrough's steps 2 to 4: where to comment, `mise run agent:plan-comments`, approving.
-  - [ ] `README.md`, *Agentic development*: the sample flow's steps 1 and 2 (draft pull request for
+  - [x] `README.md`, *Agentic development*: the sample flow's steps 1 and 2 (draft pull request for
         the plan, comment there or in the session), and the `develop-issue` paragraph.
-  - [ ] `mise run version:bump minor`.
+  - [x] `mise run version:bump minor`.
 - **Tests**: none (docs).
 
 ## Tests
