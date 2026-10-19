@@ -45,7 +45,7 @@ test('an admin creates a user who logs in with the one-time password, then disab
   try {
     await userPage.goto('/login')
     await logIn(userPage, username, oneTimePassword)
-    await expect(userPage).toHaveURL('/password')
+    await expect(userPage).toHaveURL(/\/password\?redirect=\/$/)
     await userPage.getByPlaceholder('Current password').fill(oneTimePassword)
     await userPage.getByPlaceholder('New password', { exact: true }).fill(newPassword)
     await userPage.getByPlaceholder('Repeat new password').fill(newPassword)
@@ -54,11 +54,14 @@ test('an admin creates a user who logs in with the one-time password, then disab
     await expect(userPage.getByRole('button', { name: username })).toBeVisible()
     await expect(userPage.getByRole('button', { name: 'Admin', exact: true })).toHaveCount(0)
 
+    await page.reload()
+    await expect(row).toContainText('Active')
+    await expect(row).not.toContainText('One-time password')
     await row.getByRole('button', { name: 'Disable' }).click()
     await page.getByRole('button', { name: 'Confirm' }).click()
     await expect(row).toContainText('Disabled')
 
-    await userPage.goto('/analyses')
+    await userPage.getByText('Analyses', { exact: true }).first().click()
     await expect(userPage).toHaveURL(/\/login/)
     await logIn(userPage, username, newPassword)
     await expect(userPage.getByText('Wrong username or password.')).toBeVisible()
