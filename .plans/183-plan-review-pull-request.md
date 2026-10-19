@@ -138,12 +138,12 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: CI: no version bump for a plan-only pull request
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/version.sh`, `docs/coding-convention/repository-versioning-and-releases.md`
 - **Steps**:
-  - [ ] `check-bump` passes when every changed file against the merge base is under `.plans/`.
-  - [ ] The exception in the versioning document: the rules list and the *Version* job's row.
+  - [x] `check-bump` passes when every changed file against the merge base is under `.plans/`.
+  - [x] The exception in the versioning document: the rules list and the *Version* job's row.
 - **Tests**: run `scripts/version.sh check-bump origin/main` on two branches: one that only adds a
   `.plans/` file (passes without a bump), and one that also changes another file (fails as before).
   Write the result in the package's summary.

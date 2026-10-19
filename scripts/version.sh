@@ -12,7 +12,8 @@
 #   scripts/version.sh check-sync            fail if the files disagree
 #   scripts/version.sh check-bump <ref>      fail unless the version is higher than in <ref> (the
 #                                            pull request's base) and than the latest vX.Y.Z tag,
-#                                            and its tag does not exist yet (CI, pull requests)
+#                                            and its tag does not exist yet (CI, pull requests);
+#                                            passes when the branch only changes files in .plans/
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -75,6 +76,12 @@ check_bump() {
   local base_ref=$1 version base latest_tag
   check_sync
   version=$(gradle_version)
+
+  if ! git diff --name-only "$base_ref...HEAD" | grep -qv '^\.plans/' &&
+    [ -n "$(git diff --name-only "$base_ref...HEAD")" ]; then
+    echo "only .plans/ changed: no version bump needed"
+    return 0
+  fi
 
   base=$(git show "$base_ref:$GRADLE" | gradle_version /dev/stdin)
   base=${base%-SNAPSHOT}
