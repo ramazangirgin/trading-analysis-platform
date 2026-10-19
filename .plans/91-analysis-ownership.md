@@ -287,16 +287,14 @@ the existing shape).
   "all users").
 - Moving `UsersApiDelegateImpl#currentUserId` onto `CurrentUser`.
 
-## Open questions
+## Decisions from the plan review
 
-- **Imported runs**: the plan gives runs found in the data dir to the first admin, also when an
-  ANALYST presses **Scan data dir**, since no platform user started them (the data dir is shared, and
-  the watch imports without any user). The alternative is the user who pressed rescan, with the
-  first admin for the startup import and the watch. Is the first admin right?
-- **All users default**: the switch is off by default, so an admin sees only their own runs until
-  they turn it on (kept in the URL). Should it be on by default for users with
-  `analysis:read:all` instead?
-- **Owner usernames in the BFF**: the plan has `AnalysesApiDelegateImpl` call the identity
-  `UserDirectoryUseCase` next to the analysis use cases (a delegate already calls analysis and
-  orchestration ports), instead of a new orchestration use case that joins analyses with usernames.
-  Is that acceptable?
+The open questions of the plan, answered when it was approved:
+
+- **Imported runs** belong to the first admin, also when an ANALYST presses **Scan data dir**: no
+  platform user started them, the data dir is shared, and the watch imports without any user.
+- **All users** is off by default, so an admin sees their own runs until they turn it on; the choice
+  is kept in the URL.
+- **Owner usernames** are looked up in the BFF: `AnalysesApiDelegateImpl` calls the identity
+  `UserDirectoryUseCase` next to the analysis use cases, with no orchestration use case that joins
+  analyses with usernames.
