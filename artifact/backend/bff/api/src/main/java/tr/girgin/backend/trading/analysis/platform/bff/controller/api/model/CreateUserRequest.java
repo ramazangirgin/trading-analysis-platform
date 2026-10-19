@@ -6,4 +6,4 @@ import java.util.List;
 
 /** {@code password} is the one-time password; blank or missing means "generate one". */
 public record CreateUserRequest(
-        @NotBlank String username, @NotNull List<String> roleIds, String password) {}
+        @NotBlank String username, @NotNull List<@NotBlank String> roleIds, String password) {}

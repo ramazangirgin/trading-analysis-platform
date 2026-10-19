@@ -189,6 +189,10 @@ class UsersApiIntegrationTest extends UsersApiTestBase {
         HttpResponse<String> missing = admin.send("POST", "/api/users", "{\"username\":\"someone-else\"}");
         assertThat(missing.statusCode()).isEqualTo(400);
         assertThat(errorCode(missing)).isEqualTo("invalid_request");
+
+        HttpResponse<String> nullRole = admin.send("POST", "/api/users", createBody(newUsername(), "[null]", null));
+        assertThat(nullRole.statusCode()).isEqualTo(400);
+        assertThat(errorCode(nullRole)).isEqualTo("invalid_request");
     }
 
     @Test
@@ -319,6 +323,17 @@ class UsersApiIntegrationTest extends UsersApiTestBase {
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(errorCode(response)).isEqualTo("unknown_role");
+    }
+
+    @Test
+    void aPatchWithANullRoleIs400() throws Exception {
+        TestSession admin = admin();
+        String id = newAccount().id();
+
+        HttpResponse<String> response = admin.send("PATCH", "/api/users/" + id, "{\"roleIds\":[\"ADMIN\",null]}");
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(errorCode(response)).isEqualTo("invalid_request");
     }
 
     @Test

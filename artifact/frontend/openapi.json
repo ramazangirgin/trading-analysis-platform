@@ -888,7 +888,8 @@
                     "roleIds": {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "type": "string",
+                            "minLength": 1
                         }
                     },
                     "enabled": {
@@ -983,7 +984,8 @@
                     "roleIds": {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "type": "string",
+                            "minLength": 1
                         }
                     },
                     "password": {
