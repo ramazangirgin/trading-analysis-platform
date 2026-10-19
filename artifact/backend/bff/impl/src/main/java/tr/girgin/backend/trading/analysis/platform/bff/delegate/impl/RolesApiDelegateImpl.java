@@ -16,6 +16,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Perm
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RoleDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.UpdateRoleRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionAuthorities;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionDtoToPermissionMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RoleSummaryToRoleDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageRolesUseCase;
@@ -28,11 +29,14 @@ class RolesApiDelegateImpl implements RolesApiDelegate {
     private final ManageRolesUseCase manageRoles;
     private final RoleSummaryToRoleDtoMapper roleMapper;
     private final PermissionDtoToPermissionMapper permissionMapper;
+    private final SessionAuthorities sessionAuthorities;
 
     RolesApiDelegateImpl(
             ManageRolesUseCase manageRoles,
             RoleSummaryToRoleDtoMapper roleMapper,
-            PermissionDtoToPermissionMapper permissionMapper) {
+            PermissionDtoToPermissionMapper permissionMapper,
+            SessionAuthorities sessionAuthorities) {
+        this.sessionAuthorities = sessionAuthorities;
         this.manageRoles = manageRoles;
         this.roleMapper = roleMapper;
         this.permissionMapper = permissionMapper;
@@ -68,12 +72,14 @@ class RolesApiDelegateImpl implements RolesApiDelegate {
                     "Give name, description, permissions or any of them",
                     Map.of("fields", List.of("name", "description", "permissions")));
         }
-        return roleMapper.map(manageRoles.update(
+        RoleDto updated = roleMapper.map(manageRoles.update(
                 new RoleId(id),
                 Optional.ofNullable(request.name()),
                 Optional.ofNullable(request.description()),
                 Optional.ofNullable(request.permissions()).map(this::permissions),
                 request.version()));
+        sessionAuthorities.rolesChanged();
+        return updated;
     }
 
     @Override

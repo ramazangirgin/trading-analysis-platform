@@ -202,16 +202,17 @@ a comparison of two numbers.
 
 ### WP3: Session authorities follow role changes
 
+- **Status**: done
 - **Depends on**: WP2 (the delegate calls it)
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/…/bff/delegate/impl/config/SessionAuthorities.java` (new), `RoleAuthoritiesRefreshFilter.java` (new), `SecurityConfig.java`
   - `…/bff/delegate/impl/AuthApiDelegateImpl.java`, `RolesApiDelegateImpl.java`
   - Tests: `artifact/backend/bff/impl/src/test/java/…/bff/delegate/impl/config/SessionAuthoritiesTest.java` (new), `RoleAuthoritiesRefreshFilterTest.java` (new)
 - **Steps**:
-  - [ ] Move the authority building from `AuthApiDelegateImpl` to `SessionAuthorities`; stamp the
+  - [x] Move the authority building from `AuthApiDelegateImpl` to `SessionAuthorities`; stamp the
         session at login and at a password change.
-  - [ ] Add the filter to the chain before `AuthorizationFilter`.
-  - [ ] Call `rolesChanged()` after a successful role update.
+  - [x] Add the filter to the chain before `AuthorizationFilter`.
+  - [x] Call `rolesChanged()` after a successful role update.
 - **Tests**:
   - `SessionAuthoritiesTest`: the authorities of a user (roles, permission keys, the password
     mark); a session stamped before `rolesChanged()` is stale, one stamped after is not, one
