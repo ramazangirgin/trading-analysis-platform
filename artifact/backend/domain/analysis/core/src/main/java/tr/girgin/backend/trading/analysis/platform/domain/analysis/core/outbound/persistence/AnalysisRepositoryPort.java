@@ -7,6 +7,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 
 /**
  * Stores analysis runs. An {@link Analysis#version()} is the optimistic lock: {@link #update} and
@@ -35,4 +36,7 @@ public interface AnalysisRepositoryPort {
     List<Analysis> findAll(AnalysisFilter filter);
 
     List<Analysis> findByStatusIn(Collection<AnalysisStatus> statuses);
+
+    /** Gives {@code owner} to every record without one, raising its version; returns how many. */
+    int assignOwnerWhereMissing(OwnerId owner);
 }

@@ -70,6 +70,7 @@ class V2AnalysisVersionMigrationTest {
                 null,
                 null,
                 "4242",
+                null,
                 0L);
 
         assertThat(repository.findById(new AnalysisId("r_seed_a"))).contains(expected);

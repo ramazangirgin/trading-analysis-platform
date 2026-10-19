@@ -18,6 +18,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 @Component
@@ -122,6 +123,17 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         return repository.findByStatusIn(statuses).stream().map(toAnalysis::map).toList();
     }
 
+    @Override
+    @Transactional
+    public int assignOwnerWhereMissing(OwnerId owner) {
+        List<AnalysisEntity> unowned = repository.findByOwnerIsNull();
+        unowned.forEach(entity -> {
+            entity.setOwner(owner);
+            repository.saveAndFlush(entity);
+        });
+        return unowned.size();
+    }
+
     private static Specification<AnalysisEntity> matching(AnalysisFilter filter) {
         Specification<AnalysisEntity> matching = (_, _, builder) -> builder.conjunction();
         if (filter.status() != null) {
@@ -130,7 +142,14 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         if (filter.ticker() != null) {
             matching = matching.and(hasTicker(filter.ticker()));
         }
+        if (filter.owner() != null) {
+            matching = matching.and(hasOwner(filter.owner()));
+        }
         return matching;
+    }
+
+    private static Specification<AnalysisEntity> hasOwner(OwnerId owner) {
+        return (root, _, builder) -> builder.equal(root.get("owner"), owner);
     }
 
     private static Specification<AnalysisEntity> hasStatus(AnalysisStatus status) {

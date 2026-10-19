@@ -4,6 +4,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetPriceHistoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportUseCase;
@@ -28,17 +29,17 @@ class AnalysisReportService implements GetAnalysisReportUseCase, GetAnalysisPric
     }
 
     @Override
-    public Optional<Report> getReport(AnalysisId id) {
-        return key(id).flatMap(getReport::get);
+    public Optional<Report> getReport(AnalysisId id, AnalysisAccess access) {
+        return key(id, access).flatMap(getReport::get);
     }
 
     @Override
-    public Optional<PriceHistory> getPrices(AnalysisId id) {
-        return key(id).flatMap(getPrices::get);
+    public Optional<PriceHistory> getPrices(AnalysisId id, AnalysisAccess access) {
+        return key(id, access).flatMap(getPrices::get);
     }
 
-    private Optional<ReportKey> key(AnalysisId id) {
-        Analysis analysis = getAnalysis.get(id);
+    private Optional<ReportKey> key(AnalysisId id, AnalysisAccess access) {
+        Analysis analysis = getAnalysis.get(id, access);
         return ReportKey.isValidTicker(analysis.spec().ticker())
                 ? Optional.of(
                         new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()))

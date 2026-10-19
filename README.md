@@ -160,10 +160,12 @@ and report tables that are series over periods (quarterly or yearly figures) get
 
 ### 7. Past analyses
 
-**Analyses** lists every run with its analysis date and start time, decision, model and duration,
-filterable by ticker and status.
+**Analyses** lists your own runs with their analysis date and start time, decision, model and
+duration, filterable by ticker and status. A user with `analysis:read:all` (ADMIN) also gets an
+**All users** switch, off by default, that lists everyone's runs with an **Owner** column.
 Runs made outside the platform are imported (read-only) and show up by themselves within about
-10 seconds, as the data dir is watched; **Scan data dir** forces a rescan:
+10 seconds, as the data dir is watched; they belong to the first admin. **Scan data dir** forces a
+rescan:
 
 - reports the TradingAgents CLI (or another UI) left in `~/.tradingagents/logs`;
 - a third-party UI's run history, `~/.tradingagents/runs.json`: its failed runs with their errors,
@@ -174,7 +176,7 @@ Runs made outside the platform are imported (read-only) and show up by themselve
 A run whose report files are still being written is not shown as failed; it appears once it
 finishes.
 
-![Analyses list, two runs ticked for comparing](docs/screenshots/analyses.png)
+![Analyses list of all users with the Owner column, two runs ticked for comparing](docs/screenshots/analyses.png)
 
 To compare runs, tick two to four of them and press **Compare**: the compare view shows them side
 by side, one column per run, with the settings (ticker, date, provider and models, analysts,
@@ -516,7 +518,7 @@ The backend:
   |---|---|
   | `POST /api/auth/password` | a session only (everyone changes their own password) |
   | `POST /api/analyses`, `…/{id}/stop`, `…/{id}/rerun`, `POST /api/reports/rescan` | `analysis:run` |
-  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read` |
+  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all` |
   | `GET /api/catalog`, `GET /api/health` | `analysis:run` or `settings:read` |
   | `GET /api/secrets` | `settings:read` |
   | `PUT` and `DELETE /api/secrets/{name}` | `settings:keys:write` |
@@ -529,15 +531,20 @@ The backend:
 
   Three roles are built in. ADMIN has every permission, and the first admin has it. ANALYST runs
   analyses, reads and deletes analyses, manages presets and reads the settings. VIEWER reads
-  analyses and presets. The analyses and presets are those of every user until the ownership
-  issues ([#91](https://github.com/ramazangirgin/trading-analysis-platform/issues/91),
-  [#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) make "their own"
-  true. Admins can add custom roles with any set of permissions. The permissions of ANALYST and
-  VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or deleted. The UI
-  hides the links, buttons and pages the user has no permission for; the backend rules are what
-  protect.
+  analyses and presets. Analyses are the user's own: the user who started a run owns it (a rerun
+  belongs to whoever reran it, imported runs to the first admin), and another user's analysis
+  answers 404 like a missing one, unless the user has `analysis:read:all` (ADMIN). The presets are
+  those of every user until the ownership issue
+  ([#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) makes "their own"
+  true. On the first start after the upgrade, analyses without an owner are given to the first
+  admin. `GET /api/analyses?allUsers=true` lists everyone's analyses with `analysis:read:all` and
+  is ignored without it. Admins can add custom roles with any set of permissions. The permissions
+  of ANALYST and VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or
+  deleted. The UI hides the links, buttons and pages the user has no permission for; the backend
+  rules are what protect.
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
-  `analysis:read` like the other analysis reads, and a stream that is open when its session ends (logout, idle timeout,
+  `analysis:read` like the other analysis reads (another user's run answers 404 unless the user has
+  `analysis:read:all`), and a stream that is open when its session ends (logout, idle timeout,
   a password change in another session, a disable or password reset by an admin) is closed by the server.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
   `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.

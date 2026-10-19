@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.persistence.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Persistable;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.persistence.AnalysisPersistenceConfiguration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 
 /**
@@ -77,6 +79,10 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
     @Column(name = "RUNNER_REF")
     private String runnerRef;
 
+    @Convert(converter = OwnerIdAttributeConverter.class)
+    @Column(name = "OWNER_ID")
+    private OwnerId owner;
+
     // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.
     @Version
     @Column(name = "VERSION", nullable = false)
@@ -87,7 +93,7 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     public AnalysisEntity() {}
 
-    /** Copies the state a run changes onto this entity; the spec, creation time, source and external ref stay. */
+    /** Copies the state a run changes onto this entity; the spec, creation time, source, external ref, owner stay. */
     public void applyRunState(AnalysisEntity other) {
         this.status = other.status;
         this.rating = other.rating;
@@ -100,7 +106,7 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
         this.runnerRef = other.runnerRef;
     }
 
-    /** Copies everything an import follows from the data dir: all but the ID, the source and the runner ref. */
+    /** Copies everything an import follows from the data dir: all but the ID, source, runner ref and owner. */
     public void replaceImported(AnalysisEntity other) {
         this.spec = other.spec;
         this.status = other.status;
@@ -237,6 +243,14 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     public void setRunnerRef(String runnerRef) {
         this.runnerRef = runnerRef;
+    }
+
+    public OwnerId getOwner() {
+        return owner;
+    }
+
+    public void setOwner(OwnerId owner) {
+        this.owner = owner;
     }
 
     public Long getVersion() {

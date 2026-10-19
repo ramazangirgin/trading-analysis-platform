@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runlog.RunLogPort;
 
@@ -26,8 +27,8 @@ class AnalysisLogService implements ReadAnalysisLogsUseCase {
     }
 
     @Override
-    public List<String> tailLogs(AnalysisId id, int maxLines) {
-        getAnalysis.get(id);
+    public List<String> tailLogs(AnalysisId id, AnalysisAccess access, int maxLines) {
+        getAnalysis.get(id, access);
         int lines = Math.clamp(maxLines, 1, MAX_LINES);
         return runLog.tail(id, lines).stream().map(AnalysisLogService::mask).toList();
     }

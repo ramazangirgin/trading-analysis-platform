@@ -533,6 +533,11 @@ export interface components {
             endedAt?: string;
             errorCode?: string;
             errorMessage?: string;
+            owner?: components["schemas"]["AnalysisOwnerDto"];
+        };
+        AnalysisOwnerDto: {
+            id?: string;
+            username?: string;
         };
         AnalysisSpecDto: {
             ticker?: string;
@@ -998,6 +1003,7 @@ export interface operations {
             query?: {
                 status?: "QUEUED" | "RUNNING" | "COMPLETED" | "STOPPED" | "FAILED";
                 ticker?: string;
+                allUsers?: boolean;
             };
             header?: never;
             path?: never;

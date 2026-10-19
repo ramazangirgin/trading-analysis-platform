@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { NAlert, NButton, NCard, NEmpty, NInput, NSelect, NSpace, useMessage } from 'naive-ui'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  NAlert,
+  NButton,
+  NCard,
+  NEmpty,
+  NInput,
+  NSelect,
+  NSpace,
+  NSwitch,
+  useMessage,
+} from 'naive-ui'
 import { ACTIVE_STATUSES, analysisApi, AnalysisTable } from '@/features/analysis'
 import type { Analysis, AnalysisStatus } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
@@ -18,6 +28,19 @@ const ticker = ref('')
 const status = ref<AnalysisStatus | null>(null)
 const scanning = ref(false)
 const message = useMessage()
+const router = useRouter()
+const route = useRoute()
+
+const canReadAll = computed(() => session.can(PERMISSIONS.analysisReadAll))
+const allUsers = computed({
+  get: () => canReadAll.value && route.query.allUsers === 'true',
+  set: (on: boolean) => {
+    const query = { ...route.query }
+    if (on) query.allUsers = 'true'
+    else delete query.allUsers
+    void router.replace({ query })
+  },
+})
 
 const statusOptions = computed(() =>
   (['QUEUED', 'RUNNING', 'COMPLETED', 'STOPPED', 'FAILED'] as const).map((value) => ({
@@ -31,6 +54,7 @@ async function refresh() {
     analyses.value = await analysisApi.listAnalyses({
       status: status.value ?? undefined,
       ticker: ticker.value.trim() || undefined,
+      allUsers: allUsers.value,
     })
     failure.value = null
   } catch (e) {
@@ -58,13 +82,12 @@ const checked = ref<string[]>([])
 const canCompare = computed(
   () => checked.value.length >= MIN_COMPARE && checked.value.length <= MAX_COMPARE,
 )
-const router = useRouter()
 
 function compare() {
   void router.push({ name: 'compare', query: { ids: checked.value.join(',') } })
 }
 
-watch([status, ticker], refresh)
+watch([status, ticker, allUsers], refresh)
 usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.status)))
 </script>
 
@@ -105,6 +128,10 @@ usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.
           :placeholder="t('runs.filterStatus')"
           clearable
         />
+        <NSwitch v-if="canReadAll" v-model:value="allUsers">
+          <template #checked>{{ t('runs.allUsers') }}</template>
+          <template #unchecked>{{ t('runs.allUsers') }}</template>
+        </NSwitch>
       </div>
       <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
       <AnalysisTable
@@ -113,6 +140,7 @@ usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.
         :analyses="analyses"
         :loading="loading"
         selectable
+        :show-owner="allUsers"
       />
       <NEmpty v-else :description="t('runs.empty')" />
     </NSpace>

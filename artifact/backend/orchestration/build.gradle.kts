@@ -7,8 +7,11 @@ description = "Use cases spanning more than one domain"
 dependencies {
     implementation(libs.spring.beans)
     implementation(libs.spring.context)
+    implementation(libs.spring.boot)
+    implementation(libs.spring.tx)
     implementation(libs.slf4j.api)
     implementation(project(":backend:domain:analysis:core"))
+    implementation(project(":backend:domain:identity:core"))
     implementation(project(":backend:domain:report:core"))
     implementation(project(":backend:domain:catalog:core"))
     implementation(project(":backend:domain:settings:core"))

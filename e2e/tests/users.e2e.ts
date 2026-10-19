@@ -53,6 +53,12 @@ test('an admin creates a user who logs in with the one-time password, then disab
     await expect(userPage).toHaveURL('/')
     await expect(userPage.getByRole('button', { name: username })).toBeVisible()
     await expect(userPage.getByRole('button', { name: 'Admin', exact: true })).toHaveCount(0)
+    // Load the Analyses page's chunk while the session is valid: the disabled session is refused the
+    // asset too, and the 401 that sends the user to the login page is the page's own API call.
+    await userPage.getByText('Analyses', { exact: true }).first().click()
+    await expect(userPage).toHaveURL('/analyses')
+    await userPage.getByText('Dashboard', { exact: true }).click()
+    await expect(userPage).toHaveURL('/')
 
     await page.reload()
     await expect(row).toContainText('Active')
