@@ -29,7 +29,7 @@ const { t, error: errorLabel, dateTime } = useLabels()
 const message = useMessage()
 const users = ref<User[]>([])
 const roles = ref<Role[]>([])
-const busy = ref<string | null>(null)
+const busy = ref<{ id: string; action: 'enable' | 'disable' | 'unlock' } | null>(null)
 const failure = ref<unknown>(null)
 
 const creating = ref(false)
@@ -53,8 +53,12 @@ async function failed(e: unknown) {
   if (e instanceof ApiError && e.errorCode === 'concurrent_update') await load()
 }
 
+function isBusy(user: User, action: 'enable' | 'disable' | 'unlock') {
+  return busy.value?.id === user.id && busy.value.action === action
+}
+
 async function setEnabled(user: User, enabled: boolean) {
-  busy.value = user.id
+  busy.value = { id: user.id, action: enabled ? 'enable' : 'disable' }
   try {
     await usersApi.update(user.id, { enabled, version: user.version })
     await load()
@@ -66,7 +70,7 @@ async function setEnabled(user: User, enabled: boolean) {
 }
 
 async function unlock(user: User) {
-  busy.value = user.id
+  busy.value = { id: user.id, action: 'unlock' }
   try {
     await usersApi.unlock(user.id)
     await load()
@@ -139,7 +143,7 @@ function disableAction(user: User) {
       trigger: () =>
         h(
           NButton,
-          { size: 'small', secondary: true, type: 'warning', loading: busy.value === user.id },
+          { size: 'small', secondary: true, type: 'warning', loading: isBusy(user, 'disable') },
           label,
         ),
       default: () => t('users.disableConfirm', { username: user.username }),
@@ -207,7 +211,7 @@ const columns = computed<DataTableColumns<User>>(() => [
                       trigger: () =>
                         h(
                           NButton,
-                          { size: 'small', secondary: true, loading: busy.value === user.id },
+                          { size: 'small', secondary: true, loading: isBusy(user, 'enable') },
                           () => t('users.actions.enable'),
                         ),
                       default: () => t('users.enableConfirm', { username: user.username }),
@@ -221,7 +225,7 @@ const columns = computed<DataTableColumns<User>>(() => [
                     NButton,
                     {
                       size: 'small',
-                      loading: busy.value === user.id,
+                      loading: isBusy(user, 'unlock'),
                       onClick: () => unlock(user),
                     },
                     () => t('users.actions.unlock'),
