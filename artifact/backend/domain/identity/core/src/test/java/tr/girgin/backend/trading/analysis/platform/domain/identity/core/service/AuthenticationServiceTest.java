@@ -496,6 +496,16 @@ class AuthenticationServiceTest {
         }
 
         @Override
+        public long countWithRole(RoleId role) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<RoleId, Long> countUsersByRole() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public User save(User user) {
             if (failSaves > 0) {
                 failSaves--;
@@ -560,6 +570,11 @@ class AuthenticationServiceTest {
         public Role save(Role role) {
             roles.put(role.id(), role);
             return role;
+        }
+
+        @Override
+        public void deleteById(RoleId id) {
+            throw new UnsupportedOperationException();
         }
     }
 }
