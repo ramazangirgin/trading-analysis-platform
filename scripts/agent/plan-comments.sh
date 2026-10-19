@@ -4,17 +4,20 @@
 #
 #   scripts/agent/plan-comments.sh <pr | branch>                     (mise run agent:plan-comments …)
 #   scripts/agent/plan-comments.sh --reply <comment id> <file>       reply on a review thread
-#   scripts/agent/plan-comments.sh --comment <pr | branch> <file>    comment on the pull request
+#   scripts/agent/plan-comments.sh --comment <pr | branch> <file> <id>...
+#                                      comment on the pull request, answering the comments or reviews <id>...
 #
 # Without an option it prints what has no answer yet (plan_comments.py): the review threads that are
 # not resolved and do not end in a reply of the session, and the pull request comments and review
-# bodies that came after its latest reply. The replies carry a hidden marker, which is how the next
-# call knows they are answers; so the session answers through --reply / --comment only. It never
-# resolves a thread: the developer does.
+# bodies (with their IDs) that no --comment names. The replies carry a hidden marker, which is how
+# the next call knows they are answers; so the session answers through --reply / --comment only. It
+# never resolves a thread: the developer does.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
 REPLY_MARKER='<!-- plan-reply -->'
+# Ids of the pull request comments and reviews a --comment answers, comma separated; empty for none.
+answered_ids=
 
 # The pull request number of a number or a plan branch.
 pr_number() {
@@ -31,7 +34,9 @@ pr_number() {
 # The text of file $1 followed by the marker.
 reply_body() {
   [ -f "$1" ] || die "no such file: $1"
-  printf '%s\n\n%s\n' "$(cat "$1")" "$REPLY_MARKER"
+  local marker=$REPLY_MARKER
+  [ -z "$answered_ids" ] || marker="<!-- plan-reply to=$answered_ids -->"
+  printf '%s\n\n%s\n' "$(cat "$1")" "$marker"
 }
 
 case ${1:-} in
@@ -44,8 +49,14 @@ case ${1:-} in
     gh api -X POST "$pr_url/comments/$id/replies" -F body=@"$AGENT_TMP/reply.md" --jq .html_url
     ;;
   --comment)
-    pr=$(pr_number "${2:?usage: $0 --comment <pr | branch> <file>}")
-    file=${3:?usage: $0 --comment <pr | branch> <file>}
+    pr=$(pr_number "${2:?usage: $0 --comment <pr | branch> <file> <id>...}")
+    file=${3:?usage: $0 --comment <pr | branch> <file> <id>...}
+    (($# > 3)) || die "name the comments or reviews it answers: --comment <pr | branch> <file> <id>..."
+    shift 3
+    answered_ids=$(
+      IFS=,
+      echo "$*"
+    )
     reply_body "$file" >"$AGENT_TMP/reply.md"
     gh pr comment "$pr" --body-file "$AGENT_TMP/reply.md"
     ;;

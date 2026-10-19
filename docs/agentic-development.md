@@ -197,7 +197,7 @@ Say what to change where you prefer: inline on the plan's lines or as a comment 
 or to Claude in the session. The session reads the pull request's comments that have no answer yet
 (`mise run agent:plan-comments <pr | branch>`; the session's replies carry a hidden `plan-reply`
 marker), changes the plan on its branch (commit `Plan: …`, push) and answers every comment with
-`plan-comments.sh --reply <comment id> <file>` or `--comment <pr> <file>`, saying what changed or why
+`plan-comments.sh --reply <comment id> <file>` or `--comment <pr> <file> <id>...` (the IDs of the comments or reviews it answers), saying what changed or why
 not. It never resolves a thread: you do. You can also edit, commit and push the plan yourself. Go on
 until you would accept a pull request that does exactly that. The agents follow the plan literally,
 and the review agent checks the code against it. A plan-only pull request needs no version bump

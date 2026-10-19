@@ -48,8 +48,8 @@ local copy removed) is unchanged.
   developer said on the plan pull request that has no answer yet:
   - each review thread that is not resolved and whose last comment is not a reply of the session,
     with its comment ID, `path:line`, author and text;
-  - each pull request comment and each review body that is not empty and came after the session's
-    latest reply.
+  - each pull request comment and each review body that is not empty and that no reply of the
+    session names (with its ID).
   It reads the review threads with `gh api graphql` (`reviewThreads`: `isResolved`, comments with
   `databaseId`, `path`, `line`, `author`, `body`, `createdAt`) and the comments and reviews with
   `gh pr view --json comments,reviews`.
@@ -57,7 +57,8 @@ local copy removed) is unchanged.
   (`<!-- agent-step … -->`) and the progress comment are never listed. The filtering is pure Python,
   `scripts/agent/plan_comments.py` (JSON in, lines out), so it is tested without GitHub.
 - `plan-comments.sh --reply <comment id> <file>` replies on a review thread, and
-  `--comment <file>` adds a pull request comment. Both add the marker. The session uses them, so
+  `--comment <pr | branch> <file> <id>...` adds a pull request comment answering the comments or
+  reviews with those IDs (`<!-- plan-reply to=<id>,<id> -->`). Both add the marker. The session uses them, so
   the marker is written in one place.
 
 ### Implementation on the plan pull request
@@ -131,7 +132,8 @@ Packages without a dependency between them can be implemented in parallel.
   - a thread whose last comment is a `plan-reply` is not listed, but one with a developer comment
     after the reply is;
   - comments with the agent-step or progress marker are not listed;
-  - pull request comments and review bodies before the latest reply are not listed, later ones are;
+  - pull request comments and review bodies are listed until a reply names their ID, whatever their
+    age, and a reply in a review thread answers none of them;
   - empty review bodies are not listed.
 
   `mise run agent:test` passes.

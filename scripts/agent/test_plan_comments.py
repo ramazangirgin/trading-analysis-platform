@@ -7,7 +7,7 @@ import unittest
 
 import plan_comments
 
-REPLY = "Changed. " + plan_comments.REPLY_MARKER
+REPLY = "Changed. <!-- plan-reply -->"
 
 
 def comment(id, body, at, author="dev"):
@@ -31,12 +31,16 @@ def pr(comments=(), reviews=()):
     return {"comments": list(comments), "reviews": list(reviews)}
 
 
-def pr_comment(body, at, author="dev"):
-    return {"author": {"login": author}, "body": body, "createdAt": at}
+def pr_comment(body, at, author="dev", id="IC_x"):
+    return {"id": id, "author": {"login": author}, "body": body, "createdAt": at}
 
 
-def review(body, at, author="dev"):
-    return {"author": {"login": author}, "body": body, "submittedAt": at}
+def review(body, at, author="dev", id="PRR_x"):
+    return {"id": id, "author": {"login": author}, "body": body, "submittedAt": at}
+
+
+def reply_to(ids):
+    return f"Changed. <!-- plan-reply to={ids} -->"
 
 
 class UnansweredThreads(unittest.TestCase):
@@ -79,19 +83,39 @@ class UnansweredThreads(unittest.TestCase):
 
 
 class UnansweredPullRequestComments(unittest.TestCase):
-    def test_comments_before_the_latest_reply_are_not_listed_later_ones_are(self):
+    def test_only_comments_and_reviews_named_by_a_reply_are_answered(self):
         p = pr(
             comments=[
-                pr_comment("First", "2026-01-01T10:00:00Z"),
-                pr_comment(REPLY, "2026-01-01T11:00:00Z", "bot"),
-                pr_comment("Second", "2026-01-01T12:00:00Z"),
+                pr_comment("First", "2026-01-01T10:00:00Z", id="IC_1"),
+                pr_comment(reply_to("IC_1,PRR_1"), "2026-01-01T11:00:00Z", "bot", id="IC_2"),
+                pr_comment("Second", "2026-01-01T12:00:00Z", id="IC_3"),
             ],
-            reviews=[review("Old review", "2026-01-01T09:00:00Z"), review("New review", "2026-01-01T13:00:00Z")],
+            reviews=[review("Old review", "2026-01-01T09:00:00Z", id="PRR_1"), review("New review", "2026-01-01T13:00:00Z", id="PRR_2")],
         )
         out = plan_comments.unanswered(threads(), p)
         self.assertEqual(len(out), 2)
         self.assertIn("Second", out[0])
+        self.assertIn("IC_3", out[0])
         self.assertIn("New review", out[1])
+        self.assertIn("PRR_2", out[1])
+
+    def test_a_comment_older_than_a_reply_that_does_not_name_it_is_still_listed(self):
+        p = pr(
+            comments=[
+                pr_comment("Posted meanwhile", "2026-01-01T10:02:00Z", id="IC_1"),
+                pr_comment(reply_to("IC_0"), "2026-01-01T10:03:00Z", "bot", id="IC_2"),
+            ]
+        )
+        out = plan_comments.unanswered(threads(), p)
+        self.assertEqual(len(out), 1)
+        self.assertIn("Posted meanwhile", out[0])
+
+    def test_a_reply_in_a_thread_does_not_answer_a_review_body(self):
+        t = threads((False, [comment(7, "q", "2026-01-01T10:00:00Z"), comment(8, REPLY, "2026-01-01T12:00:00Z", "bot")]))
+        p = pr(reviews=[review("Review body", "2026-01-01T09:00:00Z", id="PRR_1")])
+        out = plan_comments.unanswered(t, p)
+        self.assertEqual(len(out), 1)
+        self.assertIn("Review body", out[0])
 
     def test_without_a_reply_every_comment_is_listed(self):
         p = pr(comments=[pr_comment("First", "2026-01-01T10:00:00Z")])
@@ -109,11 +133,6 @@ class UnansweredPullRequestComments(unittest.TestCase):
     def test_empty_review_bodies_are_not_listed(self):
         p = pr(reviews=[review("", "2026-01-01T10:00:00Z"), review("  \n", "2026-01-01T10:01:00Z")])
         self.assertEqual(plan_comments.unanswered(threads(), p), [])
-
-    def test_a_reply_inside_a_thread_counts_as_the_latest_reply(self):
-        t = threads((False, [comment(7, "q", "2026-01-01T10:00:00Z"), comment(8, REPLY, "2026-01-01T12:00:00Z", "bot")]))
-        p = pr(comments=[pr_comment("Earlier", "2026-01-01T11:00:00Z")])
-        self.assertEqual(plan_comments.unanswered(t, p), [])
 
 
 if __name__ == "__main__":

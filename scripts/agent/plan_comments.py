@@ -4,14 +4,16 @@
 
 <threads.json> is the GraphQL answer for the pull request's review threads, <pr.json> the output of
 `gh pr view --json comments,reviews`. Prints the open review threads whose last comment is not a
-reply of the session, and the pull request comments and review bodies that came after the session's
-latest reply.
+reply of the session, and the pull request comments and review bodies that no reply of the session
+names (`<!-- plan-reply to=<id>,<id> -->`).
 """
 
 import json
+import re
 import sys
 
-REPLY_MARKER = "<!-- plan-reply -->"
+REPLY_MARKER = "<!-- plan-reply"
+REPLY_TARGETS = re.compile(r"<!-- plan-reply to=(\S+) -->")
 IGNORED_MARKERS = ("<!-- agent-step", "<!-- agent-progress")
 
 
@@ -53,28 +55,30 @@ def unanswered_threads(threads):
     return found
 
 
-def latest_reply(threads, pr):
-    times = [c["createdAt"] for c in pr.get("comments", []) if is_reply(c["body"])]
-    for _, comments in thread_comments(threads):
-        times += [c["createdAt"] for c in comments if is_reply(c["body"])]
-    return max(times, default="")
+def answered_ids(pr):
+    ids = set()
+    for comment in pr.get("comments", []):
+        match = REPLY_TARGETS.search(comment["body"])
+        if match:
+            ids.update(match.group(1).split(","))
+    return ids
 
 
-def unanswered_pr_comments(threads, pr):
-    since = latest_reply(threads, pr)
+def unanswered_pr_comments(pr):
+    answered = answered_ids(pr)
     entries = [("Comment", c["createdAt"], c) for c in pr.get("comments", [])]
     entries += [("Review", r.get("submittedAt") or "", r) for r in pr.get("reviews", [])]
     found = []
-    for kind, at, item in sorted(entries, key=lambda e: e[1]):
+    for kind, _, item in sorted(entries, key=lambda e: e[1]):
         body = item["body"]
-        if not body.strip() or is_reply(body) or is_agent_comment(body) or at <= since:
+        if not body.strip() or is_reply(body) or is_agent_comment(body) or item["id"] in answered:
             continue
-        found.append(f"{kind} on the pull request, @{login(item.get('author'))}:\n" + indent(body))
+        found.append(f"{kind} {item['id']} on the pull request, @{login(item.get('author'))}:\n" + indent(body))
     return found
 
 
 def unanswered(threads, pr):
-    return unanswered_threads(threads) + unanswered_pr_comments(threads, pr)
+    return unanswered_threads(threads) + unanswered_pr_comments(pr)
 
 
 def main(argv):
