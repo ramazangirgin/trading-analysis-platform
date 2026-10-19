@@ -10,7 +10,7 @@ archunit = "1.5.1"
 # newer slf4j-api, and the main and test classpaths must resolve the same one, or the dependency
 # analysis takes the test classpath's for a declared but unused dependency. Remove when Spring Boot's
 # BOM brings the version ArchUnit needs.
-slf4j = "2.0.19"
+slf4j = "2.0.20"
 # Static checks on backend sources (config/checkstyle/). 11+ parses Java 25 syntax.
 checkstyle = "14.3.0"
 # Java formatting (Spotless with Palantir Java Format: 120 columns, matching Checkstyle's LineLength).
@@ -24,7 +24,7 @@ dockerJava = "3.7.1"
 # Frontend toolchain, downloaded by the node-gradle plugin: no global Node needed for a build.
 nodeGradle = "7.1.0"
 node = "24.21.0"
-pnpm = "12.7.0"
+pnpm = "12.9.1"
 # Fails the build on used-but-undeclared and declared-but-unused dependencies of the backend modules.
 dependencyAnalyze = "2.0.0"
 

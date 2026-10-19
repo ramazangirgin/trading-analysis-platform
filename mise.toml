@@ -20,8 +20,8 @@ lefthook = "2.1"
 # --no-build-package cryptography: take the newest cryptography with a ready-made wheel for this
 # machine instead of compiling one (which needs Rust and OpenSSL's headers). From 49.0 on there are
 # no wheels for Intel Macs, so they get 48.0.1; Linux and Apple Silicon get the newest.
-"pipx:ansible-core" = { version = "2.20", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
-"pipx:ansible-lint" = { version = "26.8", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
+"pipx:ansible-core" = { version = "2.20", uvx_args = "--with ansible~=14.4 --no-build-package cryptography" }
+"pipx:ansible-lint" = { version = "26.9.0", uvx_args = "--with ansible~=14.4 --no-build-package cryptography" }
 
 [tasks.setup]
 description = "Install ta-runner (TradingAgents + deps), the frontend's packages, the Git hooks, and a container engine when there is none (Docker on Ubuntu/Debian, Podman on macOS; PLATFORM_INSTALL_ENGINE=0 skips it)"
