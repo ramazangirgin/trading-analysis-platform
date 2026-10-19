@@ -1256,7 +1256,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "langchain-core" },
-    { name = "tradingagents", url = "https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz" },
+    { name = "tradingagents", url = "https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.6.0.tar.gz" },
 ]
 
 [package.metadata.requires-dev]
@@ -1315,8 +1315,8 @@ wheels = [
 
 [[package]]
 name = "tradingagents"
-version = "0.5.1"
-source = { url = "https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.5.1.tar.gz" }
+version = "0.6.0"
+source = { url = "https://github.com/TauricResearch/TradingAgents/archive/refs/tags/v0.6.0.tar.gz" }
 dependencies = [
     { name = "langchain-anthropic" },
     { name = "langchain-core" },
@@ -1324,6 +1324,7 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-sqlite" },
+    { name = "markdown-it-py" },
     { name = "pandas" },
     { name = "python-dotenv" },
     { name = "pytz" },
@@ -1335,18 +1336,19 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "yfinance" },
 ]
-sdist = { hash = "sha256:3e387bf964a94dedec24971395177ad8af1c6be6da7924eb120bb3154a526436" }
+sdist = { hash = "sha256:c5be2240a2050354f9399afe86d076a3115389f0178a7295718a5be5e05889b6" }
 
 [package.metadata]
 requires-dist = [
-    { name = "langchain-anthropic", specifier = ">=0.3.15" },
-    { name = "langchain-aws", marker = "extra == 'bedrock'", specifier = ">=1.5.0" },
-    { name = "langchain-core", specifier = ">=0.3.81" },
-    { name = "langchain-google-genai", specifier = ">=4.0.0" },
-    { name = "langchain-openai", specifier = ">=0.3.23" },
-    { name = "langgraph", specifier = ">=0.4.8" },
-    { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.0" },
-    { name = "pandas", specifier = ">=2.3.0" },
+    { name = "langchain-anthropic", specifier = ">=1.7.4" },
+    { name = "langchain-aws", marker = "extra == 'bedrock'", specifier = ">=1.7.9" },
+    { name = "langchain-core", specifier = ">=1.6.5" },
+    { name = "langchain-google-genai", specifier = ">=4.4.0" },
+    { name = "langchain-openai", specifier = ">=1.6.6" },
+    { name = "langgraph", specifier = ">=1.2.12" },
+    { name = "langgraph-checkpoint-sqlite", specifier = ">=3.1.1" },
+    { name = "markdown-it-py", specifier = ">=4.0" },
+    { name = "pandas", specifier = ">=3.0.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-subtests", marker = "extra == 'dev'", specifier = ">=0.13" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
@@ -1354,11 +1356,11 @@ requires-dist = [
     { name = "questionary", specifier = ">=2.1.0" },
     { name = "requests", specifier = ">=2.32.4" },
     { name = "rich", specifier = ">=14.0.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.16" },
     { name = "stockstats", specifier = ">=0.6.5" },
     { name = "typer", specifier = ">=0.21.0" },
     { name = "typing-extensions", specifier = ">=4.14.0" },
-    { name = "yfinance", specifier = ">=1.4.1" },
+    { name = "yfinance", specifier = ">=1.7.0" },
 ]
 provides-extras = ["dev", "bedrock"]
 

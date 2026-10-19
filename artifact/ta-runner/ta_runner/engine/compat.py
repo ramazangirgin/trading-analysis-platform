@@ -1,9 +1,9 @@
 """Every call into TradingAgents lives here, and nowhere else.
 
-Some of these are semi-internal upstream APIs (``_log_state``, ``_resuming``,
-``propagator``). Keeping them in one module means an upstream upgrade touches one file,
-and the contract tests exercise exactly this surface.
-Mirrors the upstream CLI's run path (cli/run.py in v0.5.1) so a platform run behaves
+Some of these are semi-internal upstream APIs (``_resuming``, ``propagator``). Keeping
+them in one module means an upstream upgrade touches one file, and the contract tests
+exercise exactly this surface.
+Mirrors the upstream CLI's run path (cli/run.py in v0.6.0) so a platform run behaves
 like a CLI run: settled decision log, past context, instrument identity, checkpoints.
 """
 
@@ -15,7 +15,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
-from tradingagents.agents.rating import parse_rating
+from tradingagents.agents.rating import run_rating
 from tradingagents.dataflows.config import run_config
 from tradingagents.dataflows.symbols import safe_ticker_component
 from tradingagents.default_config import DEFAULT_CONFIG
@@ -84,8 +84,10 @@ class UpstreamRun:
         return Path(self._graph.config["results_dir"])
 
     def run(self, on_chunk: Callable[[dict[str, Any]], None]) -> dict[str, Any]:
-        """Stream the graph, hand every state chunk to ``on_chunk``, return the final state.
+        """Stream the graph, hand the state merged so far to ``on_chunk``, return the final state.
 
+        The analysts run in graphs of their own: their messages and reports arrive from those
+        as they happen, the rest from the run's state. ``on_chunk`` gets the step's messages.
         On success the decision is logged for reflection, the full state is written to
         ``full_states_log_<date>.json`` and the checkpoint is cleared; a failure or stop
         keeps the checkpoint so a rerun can resume.
@@ -101,10 +103,10 @@ class UpstreamRun:
                 )
             try:
                 final_state: dict[str, Any] = {}
-                for chunk in graph.graph.stream(graph.checkpoint_input(init_state), **args):
-                    final_state.update(chunk)
-                    on_chunk(final_state)
-                graph._log_state(s.trade_date, final_state)
+                for messages, chunk in graph.stream_run(graph.checkpoint_input(init_state), **args):
+                    if chunk is not None:
+                        final_state.update(chunk)
+                    on_chunk({**final_state, "messages": messages})
                 graph.record_decision(s.ticker, s.trade_date, final_state)
                 graph.clear_checkpoint_on_success(s.ticker, s.trade_date, s.asset_type)
                 return final_state
@@ -119,8 +121,8 @@ class UpstreamRun:
         return write_reports(self._spec, self.results_dir, final_state)
 
     @staticmethod
-    def rating(final_trade_decision: str) -> str:
-        return rating(final_trade_decision)
+    def rating(final_state: dict[str, Any]) -> str:
+        return rating(final_state)
 
 
 def results_dir(spec: RunSpec) -> Path:
@@ -135,6 +137,7 @@ def write_reports(spec: RunSpec, results_dir: Path, final_state: dict[str, Any])
     return write_report_tree(final_state, spec.ticker, target)
 
 
-def rating(final_trade_decision: str) -> str:
-    """Buy / Overweight / Hold / Underweight / Sell, or REVIEW when unparseable."""
-    return parse_rating(final_trade_decision or "")
+def rating(final_state: dict[str, Any]) -> str:
+    """The Portfolio Manager's Buy / Overweight / Hold / Underweight / Sell, or REVIEW when it
+    has none."""
+    return run_rating(final_state)

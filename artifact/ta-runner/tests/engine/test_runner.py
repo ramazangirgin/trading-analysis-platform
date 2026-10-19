@@ -25,7 +25,7 @@ def scripted_states():
     }
     yield {**base, "market_report": "# Market\nUptrend."}
     yield {**base, "market_report": "# Market\nUptrend.", "news_report": "# News\nQuiet."}
-    invest = {"bull_history": "Bull: buy.", "bear_history": "", "judge_decision": "", "count": 1}
+    invest = {"bull_history": "Bull: buy.", "bear_history": "", "count": 1}
     state = {
         **base,
         "market_report": "# Market\nUptrend.",
@@ -36,7 +36,6 @@ def scripted_states():
     invest = {
         **invest,
         "bull_history": "Bull: buy.\nBull: more.",
-        "judge_decision": "Go long.",
         "count": 2,
     }
     state = {**state, "investment_debate_state": invest, "investment_plan": "Plan: buy."}
@@ -47,10 +46,14 @@ def scripted_states():
         "aggressive_history": "All in.",
         "conservative_history": "Careful.",
         "neutral_history": "Balanced.",
-        "judge_decision": "Overweight.",
         "count": 3,
     }
-    yield {**state, "risk_debate_state": risk, "final_trade_decision": "Rating: Overweight"}
+    yield {
+        **state,
+        "risk_debate_state": risk,
+        "final_trade_decision": "Rating: Overweight",
+        "final_rating": "Overweight",
+    }
 
 
 class FakeUpstream:
@@ -75,8 +78,8 @@ class FakeUpstream:
         self.saved = final_state
         return Path("/data/logs/NVDA/2026-09-25/reports/complete_report.md")
 
-    def rating(self, decision):
-        return "Overweight" if "Overweight" in decision else "REVIEW"
+    def rating(self, final_state):
+        return final_state.get("final_rating") or "REVIEW"
 
 
 def run(captured, spec_dict, upstream):
@@ -128,8 +131,8 @@ def test_agent_statuses_follow_the_pipeline(captured, spec_dict):
         ("Market Analyst", "completed")
     )
     assert transitions.index(("News Analyst", "in_progress")) < transitions.index(
-        ("News Analyst", "completed")
-    )
+        ("Market Analyst", "completed")
+    )  # the analysts run at the same time
     assert ("Sentiment Analyst", "pending") not in transitions  # not selected
     final = {}
     for agent, status in transitions:

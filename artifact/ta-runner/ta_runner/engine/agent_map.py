@@ -29,9 +29,13 @@ REPORT_SECTIONS = {
 DEBATE_FIELDS = (
     ("investment_debate_state", "bull_history", "bull"),
     ("investment_debate_state", "bear_history", "bear"),
-    ("investment_debate_state", "judge_decision", "judge"),
     ("risk_debate_state", "aggressive_history", "aggressive"),
     ("risk_debate_state", "conservative_history", "conservative"),
     ("risk_debate_state", "neutral_history", "neutral"),
-    ("risk_debate_state", "judge_decision", "judge"),
+)
+
+# (debate state key, top-level key holding the judge's decision) for the two debates.
+DEBATE_JUDGES = (
+    ("investment_debate_state", "investment_plan"),
+    ("risk_debate_state", "final_trade_decision"),
 )

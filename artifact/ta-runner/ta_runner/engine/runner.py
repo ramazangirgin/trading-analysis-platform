@@ -13,7 +13,13 @@ from ta_runner.pricing.pricing import CostMeter, PriceTable
 from ta_runner.protocol.events import EventWriter, truncate
 from ta_runner.protocol.spec import RunSpec
 
-from .agent_map import ANALYST_AGENTS, ANALYST_REPORTS, DEBATE_FIELDS, REPORT_SECTIONS
+from .agent_map import (
+    ANALYST_AGENTS,
+    ANALYST_REPORTS,
+    DEBATE_FIELDS,
+    DEBATE_JUDGES,
+    REPORT_SECTIONS,
+)
 from .callbacks import EventCallbackHandler
 
 EXIT_COMPLETED, EXIT_ERROR, EXIT_STOPPED = 0, 1, 2
@@ -46,7 +52,7 @@ class Upstream(Protocol):
 
     def run(self, on_chunk: Callable[[dict[str, Any]], None]) -> dict[str, Any]: ...
     def save_reports(self, final_state: dict[str, Any]) -> Path: ...
-    def rating(self, final_trade_decision: str) -> str: ...
+    def rating(self, final_state: dict[str, Any]) -> str: ...
 
 
 UpstreamFactory = Callable[[RunSpec, list[Any]], Upstream]
@@ -87,7 +93,7 @@ def execute(
         tracker.finish(final_state)
         report_file = upstream.save_reports(final_state)
         decision = final_state.get("final_trade_decision") or ""
-        writer.emit("decision", rating=upstream.rating(decision), raw=truncate(decision))
+        writer.emit("decision", rating=upstream.rating(final_state), raw=truncate(decision))
         writer.emit("stats", **stats())
         writer.emit(
             "run_finished",
@@ -125,10 +131,10 @@ class StateTracker:
         self._seen_messages: set[str] = set()
 
     def start(self) -> None:
-        for agent in (*self._analysts, *TEAM_AGENTS):
+        for agent in TEAM_AGENTS:
             self._set(agent, "pending")
-        if self._analysts:
-            self._set(self._analysts[0], "in_progress")
+        for agent in self._analysts:
+            self._set(agent, "in_progress")
 
     def on_state(self, state: dict[str, Any]) -> None:
         self._messages(state)
@@ -176,9 +182,16 @@ class StateTracker:
                 )
 
     def _debate_turns(self, state: dict[str, Any]) -> None:
-        for state_key, field, speaker in DEBATE_FIELDS:
+        turns = [
+            (state_key, field, speaker, (state.get(state_key) or {}).get(field))
+            for state_key, field, speaker in DEBATE_FIELDS
+        ]
+        turns += [
+            (state_key, field, "judge", state.get(field)) for state_key, field in DEBATE_JUDGES
+        ]
+        for state_key, field, speaker, text in turns:
             debate_state = state.get(state_key) or {}
-            text = debate_state.get(field) or ""
+            text = text or ""
             previous = self._debates.get((state_key, field), "")
             if not text.strip() or text == previous:
                 continue
@@ -194,14 +207,13 @@ class StateTracker:
             )
 
     def _statuses(self, state: dict[str, Any]) -> None:
-        active_found = False
+        analysts_done = True
         for agent in self._analysts:
             if state.get(self._analyst_reports[agent]):
                 self._set(agent, "completed")
-            elif not active_found:
-                self._set(agent, "in_progress")
-                active_found = True
-        if active_found:
+            else:
+                analysts_done = False
+        if not analysts_done:
             return
 
         invest = state.get("investment_debate_state") or {}
@@ -212,7 +224,7 @@ class StateTracker:
         ):
             if invest.get(field) and self._status.get(agent) == "pending":
                 self._set(agent, "in_progress")
-        if invest.get("judge_decision"):
+        if state.get("investment_plan"):
             for agent in ("Bull Researcher", "Bear Researcher", "Research Manager"):
                 self._set(agent, "completed")
             if not state.get("trader_investment_plan"):
@@ -226,7 +238,7 @@ class StateTracker:
         ):
             if risk.get(field) and self._status.get(agent) == "pending":
                 self._set(agent, "in_progress")
-        if risk.get("judge_decision"):
+        if state.get("final_trade_decision"):
             for agent in ("Aggressive Analyst", "Conservative Analyst", "Neutral Analyst"):
                 self._set(agent, "completed")
             self._set("Portfolio Manager", "completed")
