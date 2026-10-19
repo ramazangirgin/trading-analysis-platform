@@ -11,6 +11,7 @@ import {
   useMessage,
   type DataTableColumns,
 } from 'naive-ui'
+import { useSessionStore } from '@/features/auth'
 import { ApiError } from '@/shared/api/error'
 import type { Role, User } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
@@ -35,6 +36,8 @@ const creating = ref(false)
 const editing = ref<User | null>(null)
 const resetting = ref<User | null>(null)
 const issued = ref<{ username: string; password: string | null } | null>(null)
+const endsSession = ref(false)
+const session = useSessionStore()
 
 async function load() {
   try {
@@ -83,7 +86,19 @@ async function created(user: User, oneTimePassword: string | null) {
 async function passwordReset(user: User, oneTimePassword: string | null) {
   resetting.value = null
   issued.value = { username: user.username, password: oneTimePassword }
-  await load()
+  // The reset ended the caller's own session: reloading would log them out before they see the password.
+  if (user.id === props.currentUserId) endsSession.value = true
+  else await load()
+}
+
+async function closeIssued() {
+  issued.value = null
+  if (!endsSession.value) return
+  try {
+    await session.logout()
+  } catch {
+    window.location.assign('/login')
+  }
 }
 
 async function rolesSaved() {
@@ -261,7 +276,7 @@ onMounted(load)
       :show="issued !== null"
       :username="issued?.username ?? ''"
       :password="issued?.password ?? null"
-      @close="issued = null"
+      @close="closeIssued"
     />
   </NSpace>
 </template>
