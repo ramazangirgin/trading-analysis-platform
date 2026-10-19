@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   settingsKeysWrite: 'settings:keys:write',
   userRead: 'user:read',
   userManage: 'user:manage',
+  roleManage: 'role:manage',
 } as const satisfies Record<string, Permission>
 
 declare module 'vue-router' {

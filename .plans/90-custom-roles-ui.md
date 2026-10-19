@@ -61,6 +61,8 @@ permissions, and deleting a role that users still hold.
 
 ### WP1: Roles feature, page and route
 
+- **Status**: done
+
 - **Depends on**: none (plan 1 is merged)
 - **Files**:
   - `artifact/frontend/src/features/roles/api.ts`, `index.ts`, `components/RoleManager.vue`, `components/RoleDialog.vue`, `components/PermissionChecklist.vue`, `model/permissionGroups.ts`, `model/permissionGroups.spec.ts`, `model/roleGuards.ts`, `model/roleGuards.spec.ts` (all new)
@@ -69,9 +71,9 @@ permissions, and deleting a role that users still hold.
   - `artifact/frontend/src/features/auth/model/permissions.ts`
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
 - **Steps**:
-  - [ ] Add the feature, the page and the route; show **Roles** in the Admin menu with
+  - [x] Add the feature, the page and the route; show **Roles** in the Admin menu with
         `role:manage`.
-  - [ ] Add the translations in both locales.
+  - [x] Add the translations in both locales.
 - **Tests**:
   - `permissionGroups.spec.ts`: every permission is in exactly one group, the groups come in the
     order analysis, preset, settings, user, audit, and `role:manage` is in the user group.

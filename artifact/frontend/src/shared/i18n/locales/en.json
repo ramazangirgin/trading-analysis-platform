@@ -12,6 +12,7 @@
     "settings": "Settings",
     "admin": "Admin",
     "users": "Users",
+    "roles": "Roles",
     "changePassword": "Change password",
     "logout": "Log out"
   },
@@ -257,6 +258,12 @@
     "invalid_username": "This username is not valid. Choose another one.",
     "username_taken": "This username is already taken.",
     "unknown_role": "One of the chosen roles does not exist.",
+    "role_not_found": "Role not found.",
+    "invalid_role_name": "This role name is not valid. Choose another one.",
+    "invalid_role_description": "This description is not valid.",
+    "role_name_taken": "This role name is already taken.",
+    "built_in_role": "Built-in roles cannot be renamed or deleted.",
+    "role_in_use": "{userCount} users still hold this role. Take it from them first.",
     "cannot_disable_self": "You cannot disable your own account. Ask another admin to do it.",
     "cannot_remove_own_admin": "You cannot remove your own ADMIN role. Ask another admin to do it.",
     "last_admin": "This is the only enabled ADMIN. Give another enabled user the ADMIN role first.",
@@ -345,6 +352,66 @@
       "shownOnce": "This password is shown only this once. Pass it on to {username}; they must change it at the first login.",
       "entered": "{username} must change the password you entered at the first login.",
       "close": "Done"
+    }
+  },
+  "roles": {
+    "title": "Roles",
+    "newRole": "New role",
+    "loadFailed": "Could not load the roles.",
+    "builtIn": "Built-in",
+    "noPermissions": "No permissions",
+    "columns": {
+      "name": "Name",
+      "description": "Description",
+      "permissions": "Permissions",
+      "users": "Users",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "deleteConfirm": "Delete the role {name}?",
+    "guard": {
+      "built_in_role": "Built-in roles cannot be renamed or deleted.",
+      "role_in_use": "{userCount} users still hold this role. Take it from them first."
+    },
+    "dialog": {
+      "createTitle": "New role",
+      "editTitle": "Edit role {name}",
+      "name": "Name",
+      "nameRequired": "Enter a name.",
+      "description": "Description",
+      "permissions": "Permissions",
+      "builtInNote": "This is a built-in role: its name and description cannot be changed.",
+      "adminLocked": "The permissions of ADMIN cannot be changed.",
+      "appliesNote": "A change applies to logged-in users on their next request.",
+      "create": "Create",
+      "save": "Save"
+    }
+  },
+  "permissions": {
+    "groups": {
+      "analysis": "Analysis",
+      "preset": "Presets",
+      "settings": "Settings",
+      "user": "Users and roles",
+      "audit": "Audit"
+    },
+    "keys": {
+      "analysis:run": "Start analyses",
+      "analysis:read": "See own analyses and reports",
+      "analysis:read:all": "See everyone's analyses",
+      "analysis:delete": "Delete analyses",
+      "preset:read": "See presets",
+      "preset:manage": "Manage presets",
+      "preset:read:all": "See everyone's presets",
+      "settings:read": "See settings",
+      "settings:keys:write": "Save API keys",
+      "user:read": "See users",
+      "user:manage": "Manage users",
+      "role:manage": "Manage roles",
+      "audit:read": "Read the audit log"
     }
   },
   "notFound": {

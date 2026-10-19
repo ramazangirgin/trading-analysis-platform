@@ -12,6 +12,7 @@
     "settings": "Ayarlar",
     "admin": "Yönetim",
     "users": "Kullanıcılar",
+    "roles": "Roller",
     "changePassword": "Parolayı değiştir",
     "logout": "Çıkış yap"
   },
@@ -257,6 +258,12 @@
     "invalid_username": "Bu kullanıcı adı geçerli değil. Başka bir ad seçin.",
     "username_taken": "Bu kullanıcı adı zaten alınmış.",
     "unknown_role": "Seçilen rollerden biri yok.",
+    "role_not_found": "Rol bulunamadı.",
+    "invalid_role_name": "Bu rol adı geçerli değil. Başka bir ad seçin.",
+    "invalid_role_description": "Bu açıklama geçerli değil.",
+    "role_name_taken": "Bu rol adı zaten alınmış.",
+    "built_in_role": "Yerleşik roller yeniden adlandırılamaz veya silinemez.",
+    "role_in_use": "{userCount} kullanıcı bu role hâlâ sahip. Önce rolü onlardan alın.",
     "cannot_disable_self": "Kendi hesabınızı devre dışı bırakamazsınız. Başka bir yöneticiden isteyin.",
     "cannot_remove_own_admin": "Kendi ADMIN rolünüzü kaldıramazsınız. Başka bir yöneticiden isteyin.",
     "last_admin": "Bu, etkin tek ADMIN. Önce etkin başka bir kullanıcıya ADMIN rolünü verin.",
@@ -345,6 +352,66 @@
       "shownOnce": "Bu parola yalnızca bu kez gösterilir. {username} kullanıcısına iletin; ilk girişte değiştirmesi gerekir.",
       "entered": "{username}, girdiğiniz parolayı ilk girişte değiştirmek zorundadır.",
       "close": "Tamam"
+    }
+  },
+  "roles": {
+    "title": "Roller",
+    "newRole": "Yeni rol",
+    "loadFailed": "Roller yüklenemedi.",
+    "builtIn": "Yerleşik",
+    "noPermissions": "İzin yok",
+    "columns": {
+      "name": "Ad",
+      "description": "Açıklama",
+      "permissions": "İzinler",
+      "users": "Kullanıcılar",
+      "actions": "İşlemler"
+    },
+    "actions": {
+      "edit": "Düzenle",
+      "delete": "Sil"
+    },
+    "deleteConfirm": "{name} rolü silinsin mi?",
+    "guard": {
+      "built_in_role": "Yerleşik roller yeniden adlandırılamaz veya silinemez.",
+      "role_in_use": "{userCount} kullanıcı bu role hâlâ sahip. Önce rolü onlardan alın."
+    },
+    "dialog": {
+      "createTitle": "Yeni rol",
+      "editTitle": "{name} rolünü düzenle",
+      "name": "Ad",
+      "nameRequired": "Bir ad girin.",
+      "description": "Açıklama",
+      "permissions": "İzinler",
+      "builtInNote": "Bu yerleşik bir roldür: adı ve açıklaması değiştirilemez.",
+      "adminLocked": "ADMIN rolünün izinleri değiştirilemez.",
+      "appliesNote": "Bir değişiklik, oturum açmış kullanıcılara sonraki isteklerinde uygulanır.",
+      "create": "Oluştur",
+      "save": "Kaydet"
+    }
+  },
+  "permissions": {
+    "groups": {
+      "analysis": "Analiz",
+      "preset": "Hazır ayarlar",
+      "settings": "Ayarlar",
+      "user": "Kullanıcılar ve roller",
+      "audit": "Denetim"
+    },
+    "keys": {
+      "analysis:run": "Analiz başlat",
+      "analysis:read": "Kendi analizlerini ve raporlarını gör",
+      "analysis:read:all": "Herkesin analizlerini gör",
+      "analysis:delete": "Analiz sil",
+      "preset:read": "Hazır ayarları gör",
+      "preset:manage": "Hazır ayarları yönet",
+      "preset:read:all": "Herkesin hazır ayarlarını gör",
+      "settings:read": "Ayarları gör",
+      "settings:keys:write": "API anahtarlarını kaydet",
+      "user:read": "Kullanıcıları gör",
+      "user:manage": "Kullanıcıları yönet",
+      "role:manage": "Rolleri yönet",
+      "audit:read": "Denetim kaydını oku"
     }
   },
   "notFound": {
