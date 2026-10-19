@@ -365,6 +365,28 @@ class AuthenticationServiceTest {
         assertThat(users.saved).isEmpty();
     }
 
+    @Test
+    void aLoginFailsWhenEverySaveConflictsAndTheUserWasDisabled() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 3;
+        users.concurrentChange = current -> current.withEnabled(false);
+
+        IdentityException e = failure("alice", "secret");
+
+        assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
+    }
+
+    @Test
+    void aLoginSucceedsWhenAConcurrentLoginOnlyRehashedThePassword() {
+        User alice = user("alice", "secret", true);
+        users.users.add(alice);
+        users.failSaves = 1;
+        users.concurrentChange = current -> current.withPassword(new PasswordHash("new:secret"), false);
+
+        assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
+    }
+
     private User stored(User user) {
         return users.findById(user.id()).orElseThrow();
     }

@@ -126,24 +126,37 @@ class AuthenticationService implements AuthenticateUseCase {
 
     /**
      * Sets the time of the login, clears the count and lock, and stores an outdated hash again, in one save.
-     * Fails the login when the user was disabled or got another password hash while the password was checked.
+     * Fails the login when the user was disabled or the password no longer matches while it was checked. When
+     * nothing could be saved, the user is loaded once more and must pass the same check.
      */
     private User recordSuccess(User user, CharSequence password) {
         PasswordHash checked = user.passwordHash();
         return saveWithRetry(user, current -> {
-                    if (!current.enabled() || !current.passwordHash().equals(checked)) {
-                        throw badCredentials();
-                    }
+                    requireStillValid(current, checked, password);
                     User updated = current.withLastLogin(clock.instant());
                     if (current.failedLoginCount() > 0 || current.lockedUntil().isPresent()) {
                         updated = updated.withLoginSucceeded();
                     }
-                    if (current.passwordHash().equals(checked) && hasher.needsRehash(checked)) {
+                    if (hasher.needsRehash(current.passwordHash())) {
                         updated = updated.withPassword(hasher.hash(password), current.mustChangePassword());
                     }
                     return updated;
                 })
-                .orElse(user);
+                .orElseGet(() -> {
+                    User latest = users.findById(user.id()).orElseThrow(AuthenticationService::badCredentials);
+                    requireStillValid(latest, checked, password);
+                    return latest;
+                });
+    }
+
+    /** A different hash is only paid for with a BCrypt check: a rehash keeps the password, a reset does not. */
+    private void requireStillValid(User current, PasswordHash checked, CharSequence password) {
+        if (!current.enabled()) {
+            throw badCredentials();
+        }
+        if (!current.passwordHash().equals(checked) && !hasher.matches(password, current.passwordHash())) {
+            throw badCredentials();
+        }
     }
 
     /**
