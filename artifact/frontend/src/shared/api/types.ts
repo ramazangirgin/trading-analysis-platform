@@ -59,6 +59,15 @@ export type Permission = NonNullable<Schemas['CurrentUserDto']['permissions']>[n
 export type CurrentUser = Present<Schemas['CurrentUserDto']>
 export type ChangePasswordRequest = Present<Schemas['ChangePasswordRequest']>
 export type SecretStatus = Present<Schemas['SecretStatusDto']>
+export type UserRole = Present<Schemas['UserRoleDto']>
+export type User = Omit<Present<Schemas['UserDto'], 'lockedUntil' | 'lastLoginAt'>, 'roles'> & {
+  roles: UserRole[]
+}
+export type Role = Present<Schemas['RoleDto'], 'description'>
+export type CreateUserRequest = Schemas['CreateUserRequest']
+export type UpdateUserRequest = Schemas['UpdateUserRequest']
+export type CreatedUser = { user: User; oneTimePassword: string | null }
+export type OneTimePassword = { oneTimePassword: string | null }
 export type Preset = Omit<Present<Schemas['PresetDto']>, 'values'> & {
   values: Record<string, unknown>
 }

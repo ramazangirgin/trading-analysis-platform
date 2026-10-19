@@ -3,6 +3,7 @@
 export { onPasswordChangeRequired, onSessionEnded } from './api'
 export { useSessionStore } from './store'
 export { safeRedirect } from './model/redirect'
+export { weakPasswordMessages } from './model/passwordPolicy'
 export { passwordGateRedirect } from './model/passwordGate'
 export { PERMISSIONS, permissionGateRedirect } from './model/permissions'
 export { default as LoginForm } from './components/LoginForm.vue'

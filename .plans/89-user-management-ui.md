@@ -110,6 +110,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Users feature: API, types, model and translations
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/frontend/src/shared/api/types.ts`,
   `artifact/frontend/src/features/users/api.ts`, `artifact/frontend/src/features/users/index.ts`,
@@ -119,12 +120,12 @@ Packages without a dependency between them can be implemented in parallel.
   `artifact/frontend/src/features/auth/index.ts`,
   `artifact/frontend/src/shared/i18n/locales/en.json`, `artifact/frontend/src/shared/i18n/locales/tr.json`
 - **Steps**:
-  - [ ] Add the user and role types to `types.ts`.
-  - [ ] Add `usersApi` in `features/users/api.ts`.
-  - [ ] Add `userStatus` and the guard-rail functions in `features/users/model/`.
-  - [ ] Add `userRead` and `userManage` to `PERMISSIONS`; export `weakPasswordMessages` from the
+  - [x] Add the user and role types to `types.ts`.
+  - [x] Add `usersApi` in `features/users/api.ts`.
+  - [x] Add `userStatus` and the guard-rail functions in `features/users/model/`.
+  - [x] Add `userRead` and `userManage` to `PERMISSIONS`; export `weakPasswordMessages` from the
         auth feature's `index.ts`.
-  - [ ] Add the translations (English and Turkish), including the six error codes.
+  - [x] Add the translations (English and Turkish), including the six error codes.
 - **Tests**: `userStatus.spec.ts` (each status, disabled wins over locked); `guardRails.spec.ts`
   (own disable, last enabled ADMIN disabled, a second enabled ADMIN lifts it, a disabled second ADMIN
   does not, own ADMIN removal, ADMIN removed from the last enabled ADMIN, a role change without ADMIN
