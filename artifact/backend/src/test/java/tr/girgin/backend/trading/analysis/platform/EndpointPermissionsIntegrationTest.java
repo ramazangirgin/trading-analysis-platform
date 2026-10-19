@@ -100,12 +100,13 @@ class EndpointPermissionsIntegrationTest {
 
         Set<String> notRefused = new TreeSet<>();
         for (Endpoint endpoint : endpoints()) {
-            if (statusOf(session, endpoint, true) != 403) {
+            // The auth routes would end or change the session, and are open anyway.
+            if (!endpoint.path().startsWith("/api/auth/") && statusOf(session, endpoint, true) != 403) {
                 notRefused.add(endpoint.method() + " " + endpoint.path().replaceAll(UUID_PATTERN, "{id}"));
             }
         }
 
-        Set<String> expected = new TreeSet<>(OPEN);
+        Set<String> expected = new TreeSet<>(List.of("GET /api/openapi", "GET /api/openapi.yaml"));
         expected.addAll(List.of(
                 "GET /api/analyses",
                 "GET /api/analyses/{id}",
