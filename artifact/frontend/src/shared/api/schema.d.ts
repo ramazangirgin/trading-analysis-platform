@@ -36,6 +36,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listUsers"];
+        put?: never;
+        post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reports/rescan": {
         parameters: {
             query?: never;
@@ -68,6 +116,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/logout": {
         parameters: {
             query?: never;
@@ -94,22 +158,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["changePassword"];
         delete?: never;
         options?: never;
         head?: never;
@@ -164,22 +212,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listUsers"];
-        put?: never;
-        post: operations["createUser"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/{id}": {
         parameters: {
             query?: never;
@@ -196,16 +228,16 @@ export interface paths {
         patch: operations["updateUser"];
         trace?: never;
     };
-    "/api/users/{id}/password-reset": {
+    "/api/secrets": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["listSecrets"];
         put?: never;
-        post: operations["resetPassword"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -220,38 +252,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["listRoles"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/users/{id}/unlock": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["unlock"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/secrets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listSecrets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -392,11 +392,41 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        UpdateUserRequest: {
-            roleIds?: string[];
-            enabled?: boolean;
+        SetSecretRequest: {
+            value: string;
+        };
+        SecretStatusDto: {
+            name?: string;
+            source?: string;
+            maskedValue?: string;
+        };
+        SavePresetRequest: {
+            name: string;
+            values: {
+                [key: string]: unknown;
+            };
             /** Format: int64 */
             version?: number;
+        };
+        PresetDto: {
+            id?: string;
+            name?: string;
+            values?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            updatedAt?: string;
+            /** Format: int64 */
+            version?: number;
+        };
+        CreateUserRequest: {
+            username: string;
+            roleIds: string[];
+            password?: string;
+        };
+        CreatedUserDto: {
+            user?: components["schemas"]["UserDto"];
+            oneTimePassword?: string;
         };
         UserDto: {
             id?: string;
@@ -426,49 +456,6 @@ export interface components {
         OneTimePasswordDto: {
             oneTimePassword?: string;
         };
-        CreateUserRequest: {
-            username: string;
-            roleIds: string[];
-            password?: string;
-        };
-        CreatedUserDto: {
-            user?: components["schemas"]["UserDto"];
-            oneTimePassword?: string;
-        };
-        RoleDto: {
-            id?: string;
-            name?: string;
-            builtIn?: boolean;
-            description?: string;
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
-        };
-        SetSecretRequest: {
-            value: string;
-        };
-        SecretStatusDto: {
-            name?: string;
-            source?: string;
-            maskedValue?: string;
-        };
-        SavePresetRequest: {
-            name: string;
-            values: {
-                [key: string]: unknown;
-            };
-            /** Format: int64 */
-            version?: number;
-        };
-        PresetDto: {
-            id?: string;
-            name?: string;
-            values?: {
-                [key: string]: unknown;
-            };
-            /** Format: date-time */
-            updatedAt?: string;
-            /** Format: int64 */
-            version?: number;
-        };
         ImportResultDto: {
             /** Format: int32 */
             scanned?: number;
@@ -478,10 +465,6 @@ export interface components {
             updated?: number;
             /** Format: int32 */
             unchanged?: number;
-        };
-        LoginRequest: {
-            username: string;
-            password: string;
         };
         ChangePasswordRequest: {
             currentPassword: string;
@@ -493,6 +476,10 @@ export interface components {
             roles?: string[];
             permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
             mustChangePassword?: boolean;
+        };
+        LoginRequest: {
+            username: string;
+            password: string;
         };
         StartAnalysisRequest: {
             ticker: string;
@@ -560,6 +547,19 @@ export interface components {
             costUsd?: number;
             /** Format: int64 */
             elapsedMs?: number;
+        };
+        UpdateUserRequest: {
+            roleIds?: string[];
+            enabled?: boolean;
+            /** Format: int64 */
+            version?: number;
+        };
+        RoleDto: {
+            id?: string;
+            name?: string;
+            builtIn?: boolean;
+            description?: string;
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
         };
         HealthCheckDto: {
             name?: string;
@@ -741,6 +741,96 @@ export interface operations {
             };
         };
     };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDto"][];
+                };
+            };
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedUserDto"];
+                };
+            };
+        };
+    };
+    unlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneTimePasswordDto"];
+                };
+            };
+        };
+    };
     rescan: {
         parameters: {
             query?: never;
@@ -805,6 +895,30 @@ export interface operations {
             };
         };
     };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUserDto"];
+                };
+            };
+        };
+    };
     logout: {
         parameters: {
             query?: never;
@@ -833,30 +947,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CurrentUserDto"];
-                };
-            };
-        };
-    };
-    changePassword: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChangePasswordRequest"];
             };
         };
         responses: {
@@ -962,50 +1052,6 @@ export interface operations {
             };
         };
     };
-    listUsers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserDto"][];
-                };
-            };
-        };
-    };
-    createUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateUserRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreatedUserDto"];
-                };
-            };
-        };
-    };
     getUser: {
         parameters: {
             query?: never;
@@ -1054,20 +1100,14 @@ export interface operations {
             };
         };
     };
-    resetPassword: {
+    listSecrets: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                id: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResetPasswordRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -1075,7 +1115,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OneTimePasswordDto"];
+                    "application/json": components["schemas"]["SecretStatusDto"][];
                 };
             };
         };
@@ -1096,46 +1136,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleDto"][];
-                };
-            };
-        };
-    };
-    unlock: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listSecrets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretStatusDto"][];
                 };
             };
         };

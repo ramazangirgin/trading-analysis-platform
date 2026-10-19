@@ -133,6 +133,120 @@
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "listUsers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "createUser",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUserRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreatedUserDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/unlock": {
+            "post": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "unlock",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/password-reset": {
+            "post": {
+                "tags": [
+                    "users-api-controller"
+                ],
+                "operationId": "resetPassword",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OneTimePasswordDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/reports/rescan": {
             "post": {
                 "tags": [
@@ -204,6 +318,36 @@
                 }
             }
         },
+        "/api/auth/password": {
+            "post": {
+                "tags": [
+                    "auth-api-controller"
+                ],
+                "operationId": "changePassword",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentUserDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/logout": {
             "post": {
                 "tags": [
@@ -228,36 +372,6 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/LoginRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CurrentUserDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/password": {
-            "post": {
-                "tags": [
-                    "auth-api-controller"
-                ],
-                "operationId": "changePassword",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ChangePasswordRequest"
                             }
                         }
                     },
@@ -413,57 +527,6 @@
                 }
             }
         },
-        "/api/users": {
-            "get": {
-                "tags": [
-                    "users-api-controller"
-                ],
-                "operationId": "listUsers",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/UserDto"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "users-api-controller"
-                ],
-                "operationId": "createUser",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/CreateUserRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CreatedUserDto"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/users/{id}": {
             "get": {
                 "tags": [
@@ -532,39 +595,22 @@
                 }
             }
         },
-        "/api/users/{id}/password-reset": {
-            "post": {
+        "/api/secrets": {
+            "get": {
                 "tags": [
-                    "users-api-controller"
+                    "settings-api-controller"
                 ],
-                "operationId": "resetPassword",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ResetPasswordRequest"
-                            }
-                        }
-                    },
-                    "required": true
-                },
+                "operationId": "listSecrets",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OneTimePasswordDto"
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SecretStatusDto"
+                                    }
                                 }
                             }
                         }
@@ -587,52 +633,6 @@
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/RoleDto"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/users/{id}/unlock": {
-            "post": {
-                "tags": [
-                    "users-api-controller"
-                ],
-                "operationId": "unlock",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/api/secrets": {
-            "get": {
-                "tags": [
-                    "settings-api-controller"
-                ],
-                "operationId": "listSecrets",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/SecretStatusDto"
                                     }
                                 }
                             }
@@ -882,9 +882,83 @@
     },
     "components": {
         "schemas": {
-            "UpdateUserRequest": {
+            "SetSecretRequest": {
                 "type": "object",
                 "properties": {
+                    "value": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "value"
+                ]
+            },
+            "SecretStatusDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "maskedValue": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SavePresetRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "values": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "required": [
+                    "name",
+                    "values"
+                ]
+            },
+            "PresetDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "values": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
+            "CreateUserRequest": {
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 1
+                    },
                     "roleIds": {
                         "type": "array",
                         "items": {
@@ -892,12 +966,23 @@
                             "minLength": 1
                         }
                     },
-                    "enabled": {
-                        "type": "boolean"
+                    "password": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "roleIds",
+                    "username"
+                ]
+            },
+            "CreatedUserDto": {
+                "type": "object",
+                "properties": {
+                    "user": {
+                        "$ref": "#/components/schemas/UserDto"
                     },
-                    "version": {
-                        "type": "integer",
-                        "format": "int64"
+                    "oneTimePassword": {
+                        "type": "string"
                     }
                 }
             },
@@ -974,148 +1059,6 @@
                     }
                 }
             },
-            "CreateUserRequest": {
-                "type": "object",
-                "properties": {
-                    "username": {
-                        "type": "string",
-                        "minLength": 1
-                    },
-                    "roleIds": {
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                            "minLength": 1
-                        }
-                    },
-                    "password": {
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "roleIds",
-                    "username"
-                ]
-            },
-            "CreatedUserDto": {
-                "type": "object",
-                "properties": {
-                    "user": {
-                        "$ref": "#/components/schemas/UserDto"
-                    },
-                    "oneTimePassword": {
-                        "type": "string"
-                    }
-                }
-            },
-            "RoleDto": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "builtIn": {
-                        "type": "boolean"
-                    },
-                    "description": {
-                        "type": "string"
-                    },
-                    "permissions": {
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                            "enum": [
-                                "analysis:run",
-                                "analysis:read",
-                                "analysis:read:all",
-                                "analysis:delete",
-                                "preset:read",
-                                "preset:manage",
-                                "preset:read:all",
-                                "settings:read",
-                                "settings:keys:write",
-                                "user:read",
-                                "user:manage",
-                                "role:manage",
-                                "audit:read"
-                            ]
-                        }
-                    }
-                }
-            },
-            "SetSecretRequest": {
-                "type": "object",
-                "properties": {
-                    "value": {
-                        "type": "string",
-                        "minLength": 1
-                    }
-                },
-                "required": [
-                    "value"
-                ]
-            },
-            "SecretStatusDto": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "source": {
-                        "type": "string"
-                    },
-                    "maskedValue": {
-                        "type": "string"
-                    }
-                }
-            },
-            "SavePresetRequest": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "minLength": 1
-                    },
-                    "values": {
-                        "type": "object",
-                        "additionalProperties": {}
-                    },
-                    "version": {
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                },
-                "required": [
-                    "name",
-                    "values"
-                ]
-            },
-            "PresetDto": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "values": {
-                        "type": "object",
-                        "additionalProperties": {}
-                    },
-                    "updatedAt": {
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "version": {
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                }
-            },
             "ImportResultDto": {
                 "type": "object",
                 "properties": {
@@ -1136,23 +1079,6 @@
                         "format": "int32"
                     }
                 }
-            },
-            "LoginRequest": {
-                "type": "object",
-                "properties": {
-                    "username": {
-                        "type": "string",
-                        "minLength": 1
-                    },
-                    "password": {
-                        "type": "string",
-                        "minLength": 1
-                    }
-                },
-                "required": [
-                    "password",
-                    "username"
-                ]
             },
             "ChangePasswordRequest": {
                 "type": "object",
@@ -1211,6 +1137,23 @@
                         "type": "boolean"
                     }
                 }
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "password",
+                    "username"
+                ]
             },
             "StartAnalysisRequest": {
                 "type": "object",
@@ -1421,6 +1364,63 @@
                     "elapsedMs": {
                         "type": "integer",
                         "format": "int64"
+                    }
+                }
+            },
+            "UpdateUserRequest": {
+                "type": "object",
+                "properties": {
+                    "roleIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
+            "RoleDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "builtIn": {
+                        "type": "boolean"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "permissions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "analysis:run",
+                                "analysis:read",
+                                "analysis:read:all",
+                                "analysis:delete",
+                                "preset:read",
+                                "preset:manage",
+                                "preset:read:all",
+                                "settings:read",
+                                "settings:keys:write",
+                                "user:read",
+                                "user:manage",
+                                "role:manage",
+                                "audit:read"
+                            ]
+                        }
                     }
                 }
             },
