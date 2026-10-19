@@ -201,14 +201,17 @@ const columns = computed<DataTableColumns<User>>(() => [
               user.enabled
                 ? disableAction(user)
                 : h(
-                    NButton,
+                    NPopconfirm,
+                    { onPositiveClick: () => setEnabled(user, true) },
                     {
-                      size: 'small',
-                      secondary: true,
-                      loading: busy.value === user.id,
-                      onClick: () => setEnabled(user, true),
+                      trigger: () =>
+                        h(
+                          NButton,
+                          { size: 'small', secondary: true, loading: busy.value === user.id },
+                          () => t('users.actions.enable'),
+                        ),
+                      default: () => t('users.enableConfirm', { username: user.username }),
                     },
-                    () => t('users.actions.enable'),
                   ),
               h(NButton, { size: 'small', onClick: () => (resetting.value = user) }, () =>
                 t('users.actions.resetPassword'),

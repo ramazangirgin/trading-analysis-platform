@@ -304,6 +304,7 @@
       "unlock": "Unlock"
     },
     "disableConfirm": "Disable {username}? Their sessions end and they cannot log in until you enable them again.",
+    "enableConfirm": "Enable {username}? They can log in again.",
     "guard": {
       "cannot_disable_self": "You cannot disable your own account. Ask another admin to do it.",
       "cannot_remove_own_admin": "You cannot remove your own ADMIN role. Ask another admin to do it.",

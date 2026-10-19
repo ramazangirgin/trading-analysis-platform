@@ -304,6 +304,7 @@
       "unlock": "Kilidi aç"
     },
     "disableConfirm": "{username} devre dışı bırakılsın mı? Oturumları sona erer ve yeniden etkinleştirene kadar giriş yapamaz.",
+    "enableConfirm": "{username} etkinleştirilsin mi? Yeniden giriş yapabilir.",
     "guard": {
       "cannot_disable_self": "Kendi hesabınızı devre dışı bırakamazsınız. Başka bir yöneticiden isteyin.",
       "cannot_remove_own_admin": "Kendi ADMIN rolünüzü kaldıramazsınız. Başka bir yöneticiden isteyin.",
