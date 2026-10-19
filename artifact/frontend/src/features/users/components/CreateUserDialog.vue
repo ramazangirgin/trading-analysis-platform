@@ -78,6 +78,9 @@ async function submit() {
 <template>
   <NModal :show="show" @update:show="emit('close')">
     <NCard
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('users.create.title')"
       :title="t('users.create.title')"
       closable
       style="max-width: 480px"
