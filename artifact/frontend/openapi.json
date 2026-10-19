@@ -420,6 +420,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "allUsers",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
                     }
                 ],
                 "responses": {
@@ -1398,6 +1407,20 @@
                         "type": "string"
                     },
                     "errorMessage": {
+                        "type": "string"
+                    },
+                    "owner": {
+                        "$ref": "#/components/schemas/AnalysisOwnerDto"
+                    }
+                }
+            },
+            "AnalysisOwnerDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "username": {
                         "type": "string"
                     }
                 }

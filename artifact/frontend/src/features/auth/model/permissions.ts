@@ -8,6 +8,7 @@ import type { Permission } from '@/shared/api/types'
 export const PERMISSIONS = {
   analysisRun: 'analysis:run',
   analysisRead: 'analysis:read',
+  analysisReadAll: 'analysis:read:all',
   presetRead: 'preset:read',
   presetManage: 'preset:manage',
   settingsRead: 'settings:read',

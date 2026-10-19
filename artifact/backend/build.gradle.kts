@@ -59,6 +59,8 @@ dependencies {
     testImplementation(libs.spring.webmvc)
     testImplementation(libs.spring.security.core)
     testImplementation(project(":backend:domain:identity:core"))
+    testImplementation(project(":backend:domain:analysis:core"))
+    testImplementation(project(":backend:orchestration"))
     testImplementation(libs.spring.data.commons)
     testImplementation(libs.spring.data.jpa)
     testImplementation(libs.jakarta.persistence.api)

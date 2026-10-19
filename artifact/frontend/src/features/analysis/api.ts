@@ -2,10 +2,13 @@ import { request } from '@/shared/api/client'
 import type { Analysis, AnalysisStatus, StartAnalysisRequest } from '@/shared/api/types'
 
 export const analysisApi = {
-  listAnalyses(filter: { status?: AnalysisStatus; ticker?: string } = {}): Promise<Analysis[]> {
+  listAnalyses(
+    filter: { status?: AnalysisStatus; ticker?: string; allUsers?: boolean } = {},
+  ): Promise<Analysis[]> {
     const query = new URLSearchParams()
     if (filter.status) query.set('status', filter.status)
     if (filter.ticker) query.set('ticker', filter.ticker)
+    if (filter.allUsers) query.set('allUsers', 'true')
     const suffix = query.size ? `?${query}` : ''
     return request(`/api/analyses${suffix}`)
   },

@@ -137,6 +137,8 @@
     "filterTicker": "Sembole göre filtrele",
     "filterStatus": "Durum",
     "empty": "Henüz analiz yok.",
+    "allUsers": "Tüm kullanıcılar",
+    "owner": "Sahip",
     "rescan": "Veri klasörünü tara",
     "rescanned": "{scanned} rapor tarandı: {created} yeni, {updated} güncellendi.",
     "imported": "İçe aktarıldı",

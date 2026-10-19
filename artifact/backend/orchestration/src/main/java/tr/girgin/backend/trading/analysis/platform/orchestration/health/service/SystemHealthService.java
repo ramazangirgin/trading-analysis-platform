@@ -6,8 +6,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetEngineVersionUseCase;
@@ -26,6 +28,9 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.Sy
 class SystemHealthService implements SystemHealthUseCase {
 
     static final int SUPPORTED_PROTOCOL = 1;
+
+    // The queue is the platform's, not one user's: the counts cover every owner.
+    private static final AnalysisAccess PLATFORM = new AnalysisAccess(new OwnerId("platform"), true);
 
     private final GetEngineVersionUseCase engineVersion;
     private final GetCatalogUseCase catalog;
@@ -113,10 +118,10 @@ class SystemHealthService implements SystemHealthUseCase {
     }
 
     private HealthCheck queue() {
-        long running =
-                analyses.list(new AnalysisFilter(AnalysisStatus.RUNNING, null)).size();
-        long queued =
-                analyses.list(new AnalysisFilter(AnalysisStatus.QUEUED, null)).size();
+        long running = analyses.list(new AnalysisFilter(AnalysisStatus.RUNNING, null, null), PLATFORM)
+                .size();
+        long queued = analyses.list(new AnalysisFilter(AnalysisStatus.QUEUED, null, null), PLATFORM)
+                .size();
         return new HealthCheck("queue", HealthStatus.UP, "queue_ok", Map.of("running", running, "queued", queued));
     }
 }

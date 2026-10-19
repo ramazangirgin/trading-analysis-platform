@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test'
 import { replayedRun } from './runs'
 import { shot } from './support'
 
-// README, "6. Past analyses": the Analyses list with two runs ticked for comparing.
+// README, "7. Past analyses": the Analyses list of all users, with the Owner column and two runs
+// ticked for comparing.
 test('analyses list with two runs ticked', async ({ page, request }) => {
   // Four replayed runs, one after the other.
   test.setTimeout(240_000)
@@ -11,7 +12,8 @@ test('analyses list with two runs ticked', async ({ page, request }) => {
   await replayedRun(request, 'NVDA', '2026-09-24', 'gpt-5.4')
   await replayedRun(request, 'NVDA', '2026-09-25')
 
-  await page.goto('/analyses')
+  await page.goto('/analyses?allUsers=true')
+  await expect(page.getByRole('columnheader', { name: 'Owner' })).toBeVisible()
   for (const row of [0, 1]) {
     await page.getByRole('row', { name: /NVDA/ }).nth(row).getByRole('checkbox').click()
   }

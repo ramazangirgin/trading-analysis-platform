@@ -38,8 +38,10 @@ public class AnalysesApiController {
 
     @GetMapping
     public List<AnalysisDto> listAnalyses(
-            @RequestParam(required = false) AnalysisStatusDto status, @RequestParam(required = false) String ticker) {
-        return delegate.listAnalyses(status, ticker);
+            @RequestParam(required = false) AnalysisStatusDto status,
+            @RequestParam(required = false) String ticker,
+            @RequestParam(defaultValue = "false") boolean allUsers) {
+        return delegate.listAnalyses(status, ticker, allUsers);
     }
 
     @GetMapping("/{id}")

@@ -9,6 +9,8 @@ import java.util.Objects;
  * {@code externalRef} is where an EXTERNAL record came from in the data dir (see {@link ExternalAnalysis#ref()});
  * {@code runnerRef} is the runner's handle on a started run (a process or container), kept so a
  * restarted platform can find the run again.
+ * {@code owner} is the user the run belongs to; {@code null} only on a record from before owners existed, or an
+ * import made before the first admin, until an owner is assigned.
  * {@code version} is the optimistic lock. Owned by persistence: {@code null} on a record the core builds before
  * its first save, set on every record the repository returns, and carried along unchanged by every transition.
  * A write of a record whose version differs from the stored one fails.
@@ -28,6 +30,7 @@ public record Analysis(
         String errorMessage,
         String externalRef,
         String runnerRef,
+        OwnerId owner,
         Long version) {
 
     /** Upstream's model choices are not in its report files, so a run without run history says "unknown". */
@@ -45,7 +48,7 @@ public record Analysis(
         Objects.requireNonNull(createdAt, "createdAt");
     }
 
-    public static Analysis queued(AnalysisId id, AnalysisSpec spec, Instant now) {
+    public static Analysis queued(AnalysisId id, AnalysisSpec spec, OwnerId owner, Instant now) {
         return new Analysis(
                 id,
                 spec,
@@ -61,6 +64,7 @@ public record Analysis(
                 null,
                 null,
                 null,
+                owner,
                 null);
     }
 
@@ -69,7 +73,7 @@ public record Analysis(
      * that importing the same files again yields an equal record. {@code version} is {@code null} for a new
      * import, and the stored record's version for a refresh.
      */
-    public static Analysis imported(AnalysisId id, Long version, ExternalAnalysis external) {
+    public static Analysis imported(AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external) {
         ExternalRun run = external.run();
         AnalysisSpec spec = run == null
                 ? new AnalysisSpec(
@@ -125,6 +129,7 @@ public record Analysis(
                 errorMessage,
                 external.ref(),
                 null,
+                owner,
                 version);
     }
 
@@ -148,6 +153,7 @@ public record Analysis(
                 errorMessage,
                 externalRef,
                 newRunnerRef,
+                owner,
                 version);
     }
 
@@ -167,6 +173,7 @@ public record Analysis(
                 errorMessage,
                 externalRef,
                 runnerRef,
+                owner,
                 version);
     }
 
@@ -186,6 +193,7 @@ public record Analysis(
                 errorMessage,
                 externalRef,
                 runnerRef,
+                owner,
                 version);
     }
 
@@ -208,6 +216,7 @@ public record Analysis(
                 message,
                 externalRef,
                 runnerRef,
+                owner,
                 version);
     }
 }
