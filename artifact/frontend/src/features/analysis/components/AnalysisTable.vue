@@ -13,6 +13,7 @@ const props = defineProps<{
   compact?: boolean
   /** Adds a checkbox column; the ticked run ids are the `v-model:checked`. */
   selectable?: boolean
+  showOwner?: boolean
 }>()
 const checked = defineModel<string[]>('checked', { default: () => [] })
 const router = useRouter()
@@ -42,6 +43,13 @@ const columns = computed<DataTableColumns<Analysis>>(() => {
       render: (row) => h(RatingTag, { rating: row.rating }),
     },
   ]
+  if (props.showOwner) {
+    all.push({
+      title: t('runs.owner'),
+      key: 'owner',
+      render: (row) => row.owner?.username ?? '—',
+    })
+  }
   if (!props.compact) {
     all.push(
       {

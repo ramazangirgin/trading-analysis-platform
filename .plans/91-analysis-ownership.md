@@ -232,6 +232,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP5: Frontend
 
+- **Status**: done
 - **Depends on**: WP4
 - **Files**:
   - `artifact/frontend/src/features/auth/model/permissions.ts`
@@ -239,7 +240,7 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/frontend/src/pages/RunsPage.vue`
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
 - **Steps**:
-  - [ ] The permission key, the `allUsers` call, the Owner column, the All users switch in the route query.
+  - [x] The permission key, the `allUsers` call, the Owner column, the All users switch in the route query.
 - **Tests**: `features/analysis/api.spec.ts` (new, the client mocked): `allUsers` reaches the query only when set; `permissions.spec.ts` covers the new key if it lists them.
 
 ### WP6: e2e, screenshot and docs

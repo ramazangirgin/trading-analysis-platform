@@ -137,6 +137,8 @@
     "filterTicker": "Filter by ticker",
     "filterStatus": "Status",
     "empty": "No analyses yet.",
+    "allUsers": "All users",
+    "owner": "Owner",
     "rescan": "Scan data dir",
     "rescanned": "Scanned {scanned} reports: {created} new, {updated} updated.",
     "imported": "Imported",
