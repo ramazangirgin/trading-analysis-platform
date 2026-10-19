@@ -225,6 +225,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: BFF: users and roles endpoints, session ending
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `bff/api/src/main/java/…/controller/api/UsersApiController.java`, `UsersApiDelegate.java` (changed)
@@ -238,11 +239,11 @@ Packages without a dependency between them can be implemented in parallel.
   - `bff/impl/src/test/java/…/mapper/error/IdentityExceptionToApiExceptionMapperTest.java`
   - `bff/impl/src/test/java/…/config/UserSessionsTest.java` (new)
 - **Steps**:
-  - [ ] Add the DTOs, with Javadoc in the style of `PresetDto`
-  - [ ] Add the controller methods (`consumes` and `produces` JSON, `@Valid @RequestBody`) and the `RolesApiController`
-  - [ ] Add `UserSessions` and switch `AuthApiDelegateImpl#changePassword` to it
-  - [ ] Implement the delegates with `@RequiresPermission` per the table, ending sessions as the design says
-  - [ ] Map the new error codes
+  - [x] Add the DTOs, with Javadoc in the style of `PresetDto`
+  - [x] Add the controller methods (`consumes` and `produces` JSON, `@Valid @RequestBody`) and the `RolesApiController`
+  - [x] Add `UserSessions` and switch `AuthApiDelegateImpl#changePassword` to it
+  - [x] Implement the delegates with `@RequiresPermission` per the table, ending sessions as the design says
+  - [x] Map the new error codes
 - **Tests**:
   - `IdentityExceptionToApiExceptionMapperTest` covers every new code and the new 400 for
     `INVALID_USERNAME`.

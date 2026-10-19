@@ -17,7 +17,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
@@ -32,7 +31,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Curr
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.PasswordChangeRequiredFilter;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.UserSessions;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.IdentityExceptionToApiExceptionMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
@@ -58,8 +57,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     private final AuthenticateUseCase authentication;
     private final ChangePasswordUseCase changePassword;
-    private final SessionRegistry sessionRegistry;
-    private final SessionEventStreams sessionEventStreams;
+    private final UserSessions userSessions;
     private final IdentityExceptionToApiExceptionMapper errorMapper;
     private final PermissionToPermissionDtoMapper permissionMapper;
     private final SessionAuthenticationStrategy sessionStrategy;
@@ -73,8 +71,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     AuthApiDelegateImpl(
             AuthenticateUseCase authentication,
             ChangePasswordUseCase changePassword,
-            SessionRegistry sessionRegistry,
-            SessionEventStreams sessionEventStreams,
+            UserSessions userSessions,
             IdentityExceptionToApiExceptionMapper errorMapper,
             PermissionToPermissionDtoMapper permissionMapper,
             SessionAuthenticationStrategy sessionStrategy,
@@ -82,8 +79,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
             CsrfTokenRepository csrfTokenRepository) {
         this.authentication = authentication;
         this.changePassword = changePassword;
-        this.sessionRegistry = sessionRegistry;
-        this.sessionEventStreams = sessionEventStreams;
+        this.userSessions = userSessions;
         this.errorMapper = errorMapper;
         this.permissionMapper = permissionMapper;
         this.sessionStrategy = sessionStrategy;
@@ -124,14 +120,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
             }
             throw errorMapper.map(e);
         }
-        String currentSessionId = http.getSession().getId();
-        sessionRegistry.getAllSessions(id.get().value(), false).stream()
-                .filter(session -> !session.getSessionId().equals(currentSessionId))
-                .forEach(session -> {
-                    // An open stream never makes another request, so expireNow alone would not end it.
-                    sessionEventStreams.close(session.getSessionId());
-                    session.expireNow();
-                });
+        userSessions.endAllExcept(id.get(), http.getSession().getId());
         // The same steps as a login: a new session ID and CSRF token, and the authorities without the mark.
         startSession(user, http, response);
         return ResponseEntity.ok(toDto(user));
