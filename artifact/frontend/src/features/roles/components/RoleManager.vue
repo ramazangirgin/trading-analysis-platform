@@ -114,6 +114,7 @@ const columns = computed<DataTableColumns<Role>>(() => [
   {
     title: t('roles.columns.name'),
     key: 'name',
+    minWidth: 160,
     render: (role) =>
       h(NSpace, { size: 6, wrap: false }, () => [
         h('span', role.name),
@@ -137,7 +138,7 @@ const columns = computed<DataTableColumns<Role>>(() => [
             ),
           ),
   },
-  { title: t('roles.columns.users'), key: 'userCount' },
+  { title: t('roles.columns.users'), key: 'userCount', minWidth: 70 },
   {
     title: t('roles.columns.actions'),
     key: 'actions',
