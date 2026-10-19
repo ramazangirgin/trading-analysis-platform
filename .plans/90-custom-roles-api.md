@@ -181,6 +181,7 @@ a comparison of two numbers.
 
 ### WP2: Roles REST API
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/…/bff/controller/api/RolesApiController.java`, `RolesApiDelegate.java`
@@ -192,9 +193,9 @@ a comparison of two numbers.
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated with `mise run api-types`)
   - `artifact/frontend/src/shared/api/types.ts` (export `CreateRoleRequest` and `UpdateRoleRequest`; `Role` gains the new fields from the schema)
 - **Steps**:
-  - [ ] Add the endpoints, DTOs and mappers of the table above.
-  - [ ] Map the new error codes.
-  - [ ] Regenerate `openapi.json` and `schema.d.ts`; `mise run check` must pass (the frontend
+  - [x] Add the endpoints, DTOs and mappers of the table above.
+  - [x] Map the new error codes.
+  - [x] Regenerate `openapi.json` and `schema.d.ts`; `mise run check` must pass (the frontend
         type-check sees the new `RoleDto` fields).
 - **Tests**: `RoleSummaryToRoleDtoMapperTest` (id, name, built-in, description, permissions sorted
   by key, user count, version). The endpoints are covered by the integration tests of WP4.

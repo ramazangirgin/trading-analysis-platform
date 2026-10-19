@@ -3,9 +3,33 @@ import type { Role, User } from '@/shared/api/types'
 import { disableBlocked, roleChangeBlocked } from './guardRails'
 
 const roles: Role[] = [
-  { id: 'r-admin', name: 'ADMIN', builtIn: true, description: null, permissions: [] },
-  { id: 'r-viewer', name: 'VIEWER', builtIn: true, description: null, permissions: [] },
-  { id: 'r-custom', name: 'ADMIN', builtIn: false, description: null, permissions: [] },
+  {
+    id: 'r-admin',
+    name: 'ADMIN',
+    builtIn: true,
+    description: null,
+    permissions: [],
+    userCount: 0,
+    version: 0,
+  },
+  {
+    id: 'r-viewer',
+    name: 'VIEWER',
+    builtIn: true,
+    description: null,
+    permissions: [],
+    userCount: 0,
+    version: 0,
+  },
+  {
+    id: 'r-custom',
+    name: 'ADMIN',
+    builtIn: false,
+    description: null,
+    permissions: [],
+    userCount: 0,
+    version: 0,
+  },
 ]
 
 function user(id: string, roleIds: string[], enabled = true): User {

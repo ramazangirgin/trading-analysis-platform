@@ -253,11 +253,27 @@ export interface paths {
         };
         get: operations["listRoles"];
         put?: never;
-        post?: never;
+        post: operations["createRole"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getRole"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        patch: operations["updateRole"];
         trace?: never;
     };
     "/api/health": {
@@ -548,6 +564,18 @@ export interface components {
             /** Format: int64 */
             elapsedMs?: number;
         };
+        CreateRoleRequest: {
+            name: string;
+            description?: string;
+            permissions: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
+        };
+        UpdateRoleRequest: {
+            name?: string;
+            description?: string;
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
+            /** Format: int64 */
+            version?: number;
+        };
         UpdateUserRequest: {
             roleIds?: string[];
             enabled?: boolean;
@@ -560,6 +588,10 @@ export interface components {
             builtIn?: boolean;
             description?: string;
             permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
+            /** Format: int64 */
+            userCount?: number;
+            /** Format: int64 */
+            version?: number;
         };
         HealthCheckDto: {
             name?: string;
@@ -1136,6 +1168,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleDto"][];
+                };
+            };
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleDto"];
+                };
+            };
+        };
+    };
+    getRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleDto"];
+                };
+            };
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleDto"];
                 };
             };
         };
