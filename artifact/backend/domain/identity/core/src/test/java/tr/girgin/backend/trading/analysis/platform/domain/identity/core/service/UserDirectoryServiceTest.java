@@ -98,6 +98,16 @@ class UserDirectoryServiceTest {
         }
 
         @Override
+        public long countWithRole(RoleId role) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<RoleId, Long> countUsersByRole() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public User save(User user) {
             throw new UnsupportedOperationException();
         }

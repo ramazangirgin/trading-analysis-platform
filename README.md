@@ -520,25 +520,17 @@ The backend:
 
   Three roles are built in. ADMIN has every permission, and the first admin has it. ANALYST runs
   analyses, reads and deletes analyses, manages presets and reads the settings. VIEWER reads
-<<<<<<< HEAD
   analyses and presets. Analyses are the user's own: the user who started a run owns it (a rerun
   belongs to whoever reran it, imported runs to the first admin), and another user's analysis
   answers 404 like a missing one, unless the user has `analysis:read:all` (ADMIN). The presets are
   those of every user until the ownership issue
   ([#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) makes "their own"
   true. On the first start after the upgrade, analyses without an owner are given to the first
-  admin. `GET /api/analyses?allUsers=true` lists everyone's analyses with `analysis:read:all` and is
-  ignored without it. The UI hides the links, buttons and pages the user has no permission for; the backend
+  admin. `GET /api/analyses?allUsers=true` lists everyone's analyses with `analysis:read:all` and
+  is ignored without it. Admins can add custom roles with any set of permissions. The permissions
+  of ANALYST and VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or
+  deleted. The UI hides the links, buttons and pages the user has no permission for; the backend
   rules are what protect.
-=======
-  analyses and presets. The analyses and presets are those of every user until the ownership
-  issues ([#91](https://github.com/ramazangirgin/trading-analysis-platform/issues/91),
-  [#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) make "their own"
-  true. Admins can add custom roles with any set of permissions. The permissions of ANALYST and
-  VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or deleted. The UI
-  hides the links, buttons and pages the user has no permission for; the backend rules are what
-  protect.
->>>>>>> origin/main
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
   `analysis:read` like the other analysis reads (another user's run answers 404 unless the user has
   `analysis:read:all`), and a stream that is open when its session ends (logout, idle timeout,
