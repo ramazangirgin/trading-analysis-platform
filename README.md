@@ -416,9 +416,43 @@ The backend:
   | `PLATFORM_LOGIN_IP_MAX_FAILED_ATTEMPTS` | `20` | 1 to 10,000 |
   | `PLATFORM_LOGIN_IP_WINDOW` | `5m` | 1 minute to 24 hours |
 
-- `POST /api/users/{id}/unlock` unlocks an account early. It needs the `user:manage` permission and
-  answers 204 (also when the account is not locked), 404 `user_not_found`, or 403 `forbidden`
-  without the permission.
+- Admins manage accounts through `/api/users`. Reading needs `user:read`, every change
+  `user:manage`; without the permission the answer is 403 `forbidden`. A user has no hard delete: an
+  admin disables the account instead. A `UserDto` has the `id`, `username`, `roles` (`id` and `name`,
+  sorted by name), `enabled`, `mustChangePassword`, `locked` (an expired lock reads as not locked),
+  `lockedUntil`, `lastLoginAt` (null until the first successful login), `createdAt`, `updatedAt` and
+  `version`.
+  - `GET /api/users` lists the users sorted by username, ignoring case; `GET /api/users/{id}`
+    gives one (404 `user_not_found`).
+  - `POST /api/users` with `{"username", "roleIds", "password"}` creates an enabled user and answers
+    201 `{"user", "oneTimePassword"}`. A blank or missing `password` means "generate one": it is
+    returned once, in `oneTimePassword`, and never again. An entered password is not echoed
+    (`oneTimePassword` is null). Either way the user must change it at the first login
+    (`mustChangePassword`, 403 `password_change_required` on other routes). Errors: 400
+    `invalid_username`, `weak_password` (with `params.reasons`), `unknown_role` (`params.roleId`) or
+    `invalid_request`; 409 `username_taken` (also in another case).
+  - `PATCH /api/users/{id}` with `{"roleIds", "enabled", "version"}` changes the roles, the status
+    or both; a field that is left out stays as it is, and one of `roleIds` and `enabled` is
+    required (400 `invalid_request`). `version` is optional: without it the write applies to what is
+    stored, with a stale one the answer is 409 `concurrent_update`. It answers 200 with the `UserDto`,
+    400 `unknown_role`, 404, or one of the guard rails below.
+  - `POST /api/users/{id}/password-reset` with `{"password"}` (blank or missing: generate one) gives
+    the user a new one-time password and answers 200 `{"oneTimePassword"}` (null when the admin
+    entered it); 400 `weak_password`; 404. The user must change it at the next login, and a reset
+    also clears a lockout. It does not enable a disabled user.
+  - `POST /api/users/{id}/unlock` unlocks an account early. It answers 204 (also when the account
+    is not locked) or 404 `user_not_found`.
+  - `GET /api/roles` lists the roles by name, with `id`, `name`, `builtIn`, `description` and
+    `permissions`, for the role choice of the user forms. It needs `user:read` or `role:manage`.
+  - **Guard rails** (409): an admin cannot disable themselves (`cannot_disable_self`) or remove
+    their own ADMIN role (`cannot_remove_own_admin`), and nobody can disable or demote the last
+    enabled ADMIN (`last_admin`), so the platform always has an admin. The check and the write run
+    under one lock, which is enough for one backend instance.
+  - **Sessions end at once**: when a user is disabled, when their password is reset (also an
+    admin's own: they log in again with the one-time password), and when their roles change, since
+    a session keeps the permissions of its login. The next request of such a session gets 401, and
+    its open event streams close. An admin who changes their own roles keeps their current session
+    with its old permissions until the next login.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
   (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
   delegate method. The build fails (Checkstyle rule `TAP-A1`) while a delegate method has neither
@@ -436,7 +470,9 @@ The backend:
   | `PUT` and `DELETE /api/secrets/{name}` | `settings:keys:write` |
   | `GET /api/presets` | `preset:read` |
   | `POST`, `PUT` and `DELETE /api/presets…` | `preset:manage` |
-  | `POST /api/users/{id}/unlock` | `user:manage` |
+  | `GET /api/users`, `GET /api/users/{id}` | `user:read` |
+  | `GET /api/roles` | `user:read` or `role:manage` |
+  | `POST` and `PATCH /api/users…` (create, update, `…/password-reset`, `…/unlock`) | `user:manage` |
 
   Three roles are built in. ADMIN has every permission, and the first admin has it. ANALYST runs
   analyses, reads and deletes analyses, manages presets and reads the settings. VIEWER reads
@@ -447,7 +483,7 @@ The backend:
   rules are what protect.
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
   `analysis:read` like the other analysis reads, and a stream that is open when its session ends (logout, idle timeout,
-  a password change in another session) is closed by the server.
+  a password change in another session, a disable or password reset by an admin) is closed by the server.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
   `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.
 - Sessions live in the server's memory, so a restart logs everyone out. The idle timeout is

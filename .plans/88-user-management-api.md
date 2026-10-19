@@ -252,6 +252,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Integration tests, API types and docs
 
+- **Status**: done
 - **Depends on**: WP2, WP3
 - **Files**:
   - `artifact/backend/src/test/java/…/UsersApiIntegrationTest.java` (new)
@@ -261,10 +262,10 @@ Packages without a dependency between them can be implemented in parallel.
   - `README.md`, `docs/coding-convention/backend-java-persistence.md`
   - `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py` (`mise run version:bump minor`)
 - **Steps**:
-  - [ ] Extend `TestSession.validBody` with valid bodies for `POST /api/users`, `PATCH /api/users/{id}` and `…/password-reset`, so the permission check, not validation, answers for a user without roles
-  - [ ] Write `UsersApiIntegrationTest` (below)
-  - [ ] Regenerate `openapi.json` and `schema.d.ts` (`mise run api-types` against a running backend)
-  - [ ] Update the docs (see "Docs to update") and bump the version
+  - [x] Extend `TestSession.validBody` with valid bodies for `POST /api/users`, `PATCH /api/users/{id}` and `…/password-reset`, so the permission check, not validation, answers for a user without roles
+  - [x] Write `UsersApiIntegrationTest` (below)
+  - [x] Regenerate `openapi.json` and `schema.d.ts` (`mise run api-types` against a running backend)
+  - [x] Update the docs (see "Docs to update") and bump the version
 - **Tests**: `UsersApiIntegrationTest` (Spring Boot, random port, `TestDatabaseConfiguration`, as
   `LoginLockoutIntegrationTest`):
   - Every endpoint answers 401 without a session.
