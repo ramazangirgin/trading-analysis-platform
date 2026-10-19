@@ -150,12 +150,12 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Skills: plan-from-issue and develop-issue (by hand, this session)
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1 (the commands it names)
 - **Files**: `.claude/skills/plan-from-issue/SKILL.md`, `.claude/skills/develop-issue/SKILL.md`
 - **Steps**:
-  - [ ] `plan-from-issue` as in the design: push for review, the comment loop, the approval.
-  - [ ] `develop-issue` as in the design: step 0, step 2 with the push and the comments, step 4,
+  - [x] `plan-from-issue` as in the design: push for review, the comment loop, the approval.
+  - [x] `develop-issue` as in the design: step 0, step 2 with the push and the comments, step 4,
         the progress table.
 - **Tests**: none (Markdown). The developer agent does not do this package: the agents may not
   edit `.claude/`. The develop-issue session does it on the plan branch before the agents start, and
