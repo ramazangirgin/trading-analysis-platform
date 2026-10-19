@@ -3,7 +3,7 @@ import { computed, h } from 'vue'
 import { NSelect, NTooltip, type SelectOption } from 'naive-ui'
 import type { Role } from '@/shared/api/types'
 
-const props = defineProps<{ roles: Role[]; status?: 'error' }>()
+const props = defineProps<{ roles: Role[] }>()
 const selected = defineModel<string[]>({ required: true })
 
 const options = computed<SelectOption[]>(() =>
@@ -23,11 +23,5 @@ function renderOption({ node, option }: { node: ReturnType<typeof h>; option: Se
 </script>
 
 <template>
-  <NSelect
-    v-model:value="selected"
-    multiple
-    :options="options"
-    :render-option="renderOption"
-    :status="status"
-  />
+  <NSelect v-model:value="selected" multiple :options="options" :render-option="renderOption" />
 </template>
