@@ -208,6 +208,16 @@ class PasswordChangeServiceTest {
         }
 
         @Override
+        public long countWithRole(RoleId role) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Map<RoleId, Long> countUsersByRole() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public User save(User user) {
             saved.add(user);
             users.removeIf(u -> u.id().equals(user.id()));
@@ -239,6 +249,11 @@ class PasswordChangeServiceTest {
         public Role save(Role role) {
             roles.put(role.id(), role);
             return role;
+        }
+
+        @Override
+        public void deleteById(RoleId id) {
+            throw new UnsupportedOperationException();
         }
     }
 }

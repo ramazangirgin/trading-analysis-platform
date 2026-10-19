@@ -34,6 +34,22 @@ class RoleTest {
     }
 
     @Test
+    void withNameReplacesOnlyTheName() {
+        Role role = new Role(RoleId.newId(), "ANALYST", false, "d", Set.of(Permission.ANALYSIS_READ), 2L);
+
+        assertThat(role.withName("OTHER"))
+                .isEqualTo(new Role(role.id(), "OTHER", false, "d", Set.of(Permission.ANALYSIS_READ), 2L));
+    }
+
+    @Test
+    void withDescriptionReplacesOnlyTheDescription() {
+        Role role = new Role(RoleId.newId(), "ANALYST", false, "d", Set.of(Permission.ANALYSIS_READ), 2L);
+
+        assertThat(role.withDescription("other"))
+                .isEqualTo(new Role(role.id(), "ANALYST", false, "other", Set.of(Permission.ANALYSIS_READ), 2L));
+    }
+
+    @Test
     void withPermissionsReplacesOnlyThePermissions() {
         Role role = new Role(RoleId.newId(), "ANALYST", false, "d", Set.of(), 2L);
 

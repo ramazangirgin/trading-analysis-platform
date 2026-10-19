@@ -454,19 +454,48 @@ The backend:
     also clears a lockout. It does not enable a disabled user.
   - `POST /api/users/{id}/unlock` unlocks an account early. It answers 204 (also when the account
     is not locked) or 404 `user_not_found`.
-  - `GET /api/roles` lists the roles by name, with `id`, `name`, `builtIn`, `description` and
-    `permissions`, for the role choice of the user forms. It needs `user:read` or `role:manage`.
   - **Guard rails** (409): an admin cannot disable themselves (`cannot_disable_self`) or remove
     their own ADMIN role (`cannot_remove_own_admin`), and nobody can disable or demote the last
     enabled ADMIN (`last_admin`), so the platform always has an admin. The check and the write run
     under one lock, which is enough for one backend instance.
   - **Sessions end at once**: when a user is disabled, when their password is reset (also an
-    admin's own: they log in again with the one-time password), and when their roles change, since
-    a session keeps the permissions of its login. The next request of such a session gets 401, and
-    its open event streams close. An admin who changes their own roles keeps their current session
-    with its old permissions until the next login.
+    admin's own: they log in again with the one-time password), and when their roles change. The
+    next request of such a session gets 401, and its open event streams close. An admin who changes
+    their own roles keeps their current session with its old permissions until the next login or
+    the next change to a role (a permission change applies to the next request, see `/api/roles`).
   - The UI's **Admin → Users** page (`/admin/users`) uses these endpoints, explains a blocked guard
     rail before the request, and shows the one-time password once.
+- Admins manage roles through `/api/roles` ([#90](https://github.com/ramazangirgin/trading-analysis-platform/issues/90)).
+  Reading needs `user:read` or `role:manage` (the user forms read the roles), every change
+  `role:manage`; without the permission the answer is 403 `forbidden`. A `RoleDto` has the `id`,
+  `name`, `builtIn`, `description`, `permissions` (keys, sorted), `userCount` (the users, enabled or
+  not, that hold the role) and `version`.
+  - `GET /api/roles` lists the roles sorted by name; `GET /api/roles/{id}` gives one (404
+    `role_not_found`).
+  - `POST /api/roles` with `{"name", "description", "permissions"}` creates a custom role and
+    answers 201 with the `RoleDto` and `Location: /api/roles/{id}`. `permissions` may be empty, so a
+    role can be prepared before it grants anything. Errors: 400 `invalid_role_name`,
+    `invalid_role_description` or `invalid_request` (also an unknown permission key); 409
+    `role_name_taken`.
+  - `PATCH /api/roles/{id}` with `{"name", "description", "permissions", "version"}` changes the
+    given parts; a part that is left out stays as it is, and one of `name`, `description` and
+    `permissions` is required (400 `invalid_request`). `version` is optional: with a stale one the
+    answer is 409 `concurrent_update`. It answers 200 with the `RoleDto`, the 400 and 404 errors of
+    the above, or 409 `built_in_role` or `role_name_taken`.
+  - `DELETE /api/roles/{id}` answers 204, 404, or 409 `built_in_role` or `role_in_use`
+    (`params.userCount`).
+  - **Names** are trimmed and have 2 to 40 characters: ASCII letters, digits, space, `_` and `-`.
+    They are unique ignoring case, so a custom `admin` cannot sit next to `ADMIN`. A description has
+    at most 200 characters.
+  - **Built-in roles**: ADMIN, ANALYST and VIEWER keep their name and description and
+    cannot be deleted (409 `built_in_role`, `params.change`). The permissions of ANALYST and VIEWER
+    can change; ADMIN's cannot, so the platform always has a role with every permission. Sending
+    the current name or description of a built-in role is not a change.
+  - **An assigned role cannot be deleted**: while any user, also a disabled one, holds it, the
+    answer is 409 `role_in_use`. An admin removes the role from the users first.
+  - **A permission change applies to the next request** of every logged-in holder of the role,
+    without a new login. An open event stream is not a request: it keeps running until it ends or
+    its session ends, even when the role lost `analysis:read`.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
   (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
   delegate method. The build fails (Checkstyle rule `TAP-A1`) while a delegate method has neither
@@ -485,11 +514,13 @@ The backend:
   | `GET /api/presets` | `preset:read` |
   | `POST`, `PUT` and `DELETE /api/presets…` | `preset:manage` |
   | `GET /api/users`, `GET /api/users/{id}` | `user:read` |
-  | `GET /api/roles` | `user:read` or `role:manage` |
+  | `GET /api/roles`, `GET /api/roles/{id}` | `user:read` or `role:manage` |
+  | `POST`, `PATCH` and `DELETE /api/roles…` | `role:manage` |
   | `POST` and `PATCH /api/users…` (create, update, `…/password-reset`, `…/unlock`) | `user:manage` |
 
   Three roles are built in. ADMIN has every permission, and the first admin has it. ANALYST runs
   analyses, reads and deletes analyses, manages presets and reads the settings. VIEWER reads
+<<<<<<< HEAD
   analyses and presets. Analyses are the user's own: the user who started a run owns it (a rerun
   belongs to whoever reran it, imported runs to the first admin), and another user's analysis
   answers 404 like a missing one, unless the user has `analysis:read:all` (ADMIN). The presets are
@@ -499,6 +530,15 @@ The backend:
   admin. `GET /api/analyses?allUsers=true` lists everyone's analyses with `analysis:read:all` and is
   ignored without it. The UI hides the links, buttons and pages the user has no permission for; the backend
   rules are what protect.
+=======
+  analyses and presets. The analyses and presets are those of every user until the ownership
+  issues ([#91](https://github.com/ramazangirgin/trading-analysis-platform/issues/91),
+  [#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) make "their own"
+  true. Admins can add custom roles with any set of permissions. The permissions of ANALYST and
+  VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or deleted. The UI
+  hides the links, buttons and pages the user has no permission for; the backend rules are what
+  protect.
+>>>>>>> origin/main
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
   `analysis:read` like the other analysis reads (another user's run answers 404 unless the user has
   `analysis:read:all`), and a stream that is open when its session ends (logout, idle timeout,

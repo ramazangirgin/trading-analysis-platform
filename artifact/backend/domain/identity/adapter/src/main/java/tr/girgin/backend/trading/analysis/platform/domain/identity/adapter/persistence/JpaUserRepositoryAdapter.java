@@ -1,8 +1,10 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.adapter.persistence;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
@@ -65,6 +67,19 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
     @Transactional(readOnly = true)
     public long countEnabledWithRole(RoleId role) {
         return repository.countEnabledWithRole(role);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countWithRole(RoleId role) {
+        return repository.countWithRole(role);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<RoleId, Long> countUsersByRole() {
+        return repository.countUsersByRole().stream()
+                .collect(Collectors.toMap(row -> (RoleId) row[0], row -> (Long) row[1]));
     }
 
     /**

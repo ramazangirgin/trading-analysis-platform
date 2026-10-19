@@ -10,6 +10,7 @@ public interface RoleRepositoryPort {
 
     Optional<Role> findById(RoleId id);
 
+    /** Finds a role by name, ignoring case. */
     Optional<Role> findByName(String name);
 
     List<Role> findAll();
@@ -18,7 +19,11 @@ public interface RoleRepositoryPort {
      * Inserts or updates the role and replaces its permissions with {@link Role#permissions()}, in one
      * transaction. A role whose {@link Role#version()} differs from the stored one fails with Spring's
      * {@code OptimisticLockingFailureException} and leaves the row unchanged; a {@code null} version means
-     * "insert", so it fails on an existing ID as well. Returns the stored role, with its new version.
+     * "insert", so it fails on an existing ID as well. A name taken by another role, in any case, fails with
+     * Spring's {@code DuplicateKeyException}. Returns the stored role, with its new version.
      */
     Role save(Role role);
+
+    /** Deletes the role; one that a user still holds fails with Spring's {@code DataIntegrityViolationException}. */
+    void deleteById(RoleId id);
 }
