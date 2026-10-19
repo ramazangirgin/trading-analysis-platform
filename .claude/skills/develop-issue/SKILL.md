@@ -8,7 +8,8 @@ description: Take a GitHub issue of this repository through the whole agentic de
 The whole [agentic development flow](../../../docs/agentic-development.md) for one issue, driven
 from this Claude Code session. The developer approves the plan; every later step runs without
 asking, and the run ends with a notification that the pull request is ready for the developer's
-review. It adds no new behaviour of its own: planning is the
+review. It adds no new behaviour of its own beyond a run summary comment on the pull request
+(step 7): planning is the
 [`plan-from-issue`](../plan-from-issue/SKILL.md) skill, invoked from here, and every other step runs
 one of the scripts in [`scripts/agent/`](../../../scripts/agent) that `mise run agent:run` would run
 in one go. So the result is the same pull request, with the same state comments, and
@@ -275,8 +276,28 @@ The pull request is ready for review, up to date with `main`, and **CI passed** 
 head. Print the final comment's essentials: whether the review agent approved the latest commit,
 the open and declined findings, and the usage. Point at the pull request, at the issue's folder (to
 try the change there) and at
-[the walkthrough's step 6](../../../docs/agentic-development.md#6-review-the-pull-request). Then
-notify (see [Notifications](#notifications)) and end with the summary (step 9).
+[the walkthrough's step 6](../../../docs/agentic-development.md#6-review-the-pull-request).
+
+Then, always and before the notification, post the run summary on the pull request, so the
+reviewer finds this session's view next to the agents' comments:
+`gh pr comment <pr> --body-file <file>`, the file in the session's scratchpad. It starts with
+`### Run summary (develop-issue session)` and is written for the reviewer, not for this session
+("the plan was approved", not "you approved"):
+
+- where it stands: CI passed on `<short sha>`, up to date with `main`, not merged;
+- the review outcome: every finding with its priority and what its fix changed, or why it was
+  declined; and when the final comment says the review agent did not approve the latest commit,
+  why (for example: the last fix came after the last round) and whether this session read it;
+- **worth checking**: what this session saw and the agents did not settle: a gap that a fix left,
+  a "not done or done differently" item, a file written by hand instead of generated, tests that
+  only CI ran, and the checks this session ran itself (which tests, on which commit, the result);
+- the steps run, in order, and the ones skipped;
+- the progress comment's link, with its total time, tokens and cost;
+- what can come next: another agent round or the merge, whether the merge closes the issue, and
+  `/develop-issue <n>` to continue.
+
+Print the comment's link, then notify (see [Notifications](#notifications)) and end with the summary
+(step 9).
 
 Say what the developer can ask for next in this session: another agent round, or the merge.
 
@@ -323,6 +344,7 @@ At the end, or when stopping, print:
 
 - the issue, every plan branch and pull request with where it stands;
 - the issue's folder;
+- the run summary comment on the pull request (step 7), when there is one;
 - the steps run in this session, and the ones skipped;
 - the progress comment on the issue (`scripts/agent/progress.sh post <pr>` brings it up to date and
   prints its link), with the total time, tokens and cost from it, and its "Worth a look" lines;
