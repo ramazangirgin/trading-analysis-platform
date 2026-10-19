@@ -695,7 +695,7 @@ To go through the same flow from Claude Code, use the `develop-issue` skill inst
 `/develop-issue 32` or `/develop-issue <issue link>`. It works in a folder of its own (a worktree
 `../<checkout>-32` from `origin/main`) and leaves your checkout alone. It pushes the plan as a
 draft pull request, reads your comments on it (or in the session) until you approve the plan,
-runs every later step without asking (plan branch, implementation, every CI fix, review
+runs every later step without asking (implementation, every CI fix, review
 and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
 for your review. It never merges unless you ask it to. It continues where the issue stands when
 started again. It reports each milestone of a long step (package, tests, check, review findings,
