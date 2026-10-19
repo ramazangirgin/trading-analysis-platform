@@ -133,6 +133,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Users page: components, route and navigation
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `artifact/frontend/src/features/users/components/UserManager.vue`,
   `CreateUserDialog.vue`, `EditRolesDialog.vue`, `ResetPasswordDialog.vue`, `PasswordChoice.vue`,
@@ -140,10 +141,10 @@ Packages without a dependency between them can be implemented in parallel.
   `artifact/frontend/src/features/users/index.ts`, `artifact/frontend/src/pages/UsersPage.vue`,
   `artifact/frontend/src/app/router/index.ts`, `artifact/frontend/src/app/App.vue`
 - **Steps**:
-  - [ ] Build the components as in the design; export `UserManager` from `index.ts`.
-  - [ ] Add `UsersPage.vue` and the `/admin/users` route.
-  - [ ] Add the **Admin → Users** navigation, shown with `user:read`.
-  - [ ] `mise run check` passes (type-check, ESLint boundaries, Prettier, Knip).
+  - [x] Build the components as in the design; export `UserManager` from `index.ts`.
+  - [x] Add `UsersPage.vue` and the `/admin/users` route.
+  - [x] Add the **Admin → Users** navigation, shown with `user:read`.
+  - [x] `mise run check` passes (type-check, ESLint boundaries, Prettier, Knip).
 - **Tests**: the components are covered by the e2e test of WP3 (the repository has no component
   tests; the logic lives in the model of WP1).
 
