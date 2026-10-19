@@ -321,11 +321,15 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void importsRunsFoundInTheDataDirAndServesTheirReport() throws Exception {
+        // Imported runs belong to the first admin: only a user who reads every analysis sees them.
+        session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
         HttpResponse<String> rescan = post("/api/reports/rescan", "");
 
         assertThat(rescan.statusCode()).isEqualTo(200);
         assertThat(JSON.readTree(rescan.body()).get("scanned").asInt()).isGreaterThanOrEqualTo(1);
-        JsonNode imported = JSON.readTree(get("/api/analyses?ticker=BE").body()).get(0);
+        JsonNode imported = JSON.readTree(
+                        get("/api/analyses?ticker=BE&allUsers=true").body())
+                .get(0);
         assertThat(imported.get("source").asString()).isEqualTo("EXTERNAL");
         assertThat(imported.get("status").asString()).isEqualTo("COMPLETED");
         assertThat(imported.get("rating").asString()).isEqualTo("UNDERWEIGHT");
@@ -333,8 +337,9 @@ class AnalysesApiIntegrationTest {
         assertThat(imported.at("/spec/llmProvider").asString()).isEqualTo("deepseek");
         assertThat(imported.at("/spec/outputLanguage").asString()).isEqualTo("Turkish");
         assertThat(imported.at("/stats/tokensIn").asLong()).isEqualTo(68_794);
-        JsonNode failed =
-                JSON.readTree(get("/api/analyses?ticker=ZZFAIL").body()).get(0);
+        JsonNode failed = JSON.readTree(
+                        get("/api/analyses?ticker=ZZFAIL&allUsers=true").body())
+                .get(0);
         assertThat(failed.get("status").asString()).isEqualTo("FAILED");
         assertThat(failed.get("errorMessage").asString()).isEqualTo("OpenAIError: Missing credentials.");
 
@@ -349,7 +354,9 @@ class AnalysesApiIntegrationTest {
         JsonNode again = JSON.readTree(post("/api/reports/rescan", "").body());
         assertThat(again.get("created").asInt()).isZero();
         assertThat(again.get("updated").asInt()).isZero();
-        assertThat(JSON.readTree(get("/api/analyses?ticker=BE").body()).size()).isEqualTo(1);
+        assertThat(JSON.readTree(get("/api/analyses?ticker=BE&allUsers=true").body())
+                        .size())
+                .isEqualTo(1);
     }
 
     @Test

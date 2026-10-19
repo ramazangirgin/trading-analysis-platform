@@ -15,7 +15,7 @@ public interface AnalysesApiDelegate {
 
     ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request);
 
-    List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker);
+    List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker, boolean allUsers);
 
     AnalysisDto getAnalysis(String id);
 

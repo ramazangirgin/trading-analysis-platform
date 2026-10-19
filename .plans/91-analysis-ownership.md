@@ -215,6 +215,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: BFF and the API
 
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/config/CurrentUser.java` (new)
@@ -222,8 +223,8 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/`: the analyses controller and delegate interface (`allUsers` parameter), `model/AnalysisDto.java`, `model/AnalysisOwnerDto.java` (new)
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated)
 - **Steps**:
-  - [ ] `CurrentUser`, the access per call, `allUsers`, the owner in the DTO.
-  - [ ] Regenerate `openapi.json` and `mise run api-types`.
+  - [x] `CurrentUser`, the access per call, `allUsers`, the owner in the DTO.
+  - [x] Regenerate `openapi.json` and `mise run api-types`.
 - **Tests**:
   - `AnalysisOwnershipIntegrationTest` (new, `artifact/backend/src/test/...`, as `AnalysesApiIntegrationTest`, with an ANALYST user A, an ANALYST user B and the admin): B's run is missing from A's list (also with `allUsers=true`), and A gets **404** on B's `GET /api/analyses/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events`, `POST …/stop` and `…/rerun`; the admin lists both with `allUsers=true` (only their own without it), reads B's run, report, log and stream, and sees `owner` with B's username; a run A starts has A as `owner`.
   - The same test seeds analyses without an owner (through the repository, before the application is ready, or by calling `AssignAnalysisOwnersUseCase` after inserting them) and checks that every analysis then belongs to the first admin.
