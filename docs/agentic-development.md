@@ -233,7 +233,8 @@ started or done, tests, `mise run check` and its result, a commit, a push, the d
 CI waiting, passed or failed (with the failed jobs), a review round and its findings, a fix round and
 each finding's outcome, finalise, and a stop with its reason. `grep '^agent: >> ' run.log` lists
 them. `mise run agent:status plan/32-compare-runs` (or a pull request number) shows where a run is:
-the active process, the work package, the latest milestones and the end of `run.log`.
+the active process, the pull request and its stage (plan review, agent loop, ready for review),
+the work package, the latest milestones and the end of `run.log`.
 `scripts/agent/status.sh --follow <branch | pr>` prints only the milestones written from now on.
 A second run on the same branch is refused while one is active (the lock,
 `run.pid` in the same directory).
