@@ -29,12 +29,12 @@ public class UsersApiController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserDto>> listUsers() {
+    public List<UserDto> listUsers() {
         return delegate.listUsers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUser(@PathVariable String id) {
+    public UserDto getUser(@PathVariable String id) {
         return delegate.getUser(id);
     }
 
@@ -44,14 +44,13 @@ public class UsersApiController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<UserDto> updateUser(
+    public UserDto updateUser(
             @PathVariable String id, @Valid @RequestBody UpdateUserRequest request, HttpServletRequest http) {
         return delegate.updateUser(id, request, http);
     }
 
     @PostMapping("/{id}/password-reset")
-    public ResponseEntity<OneTimePasswordDto> resetPassword(
-            @PathVariable String id, @Valid @RequestBody ResetPasswordRequest request) {
+    public OneTimePasswordDto resetPassword(@PathVariable String id, @Valid @RequestBody ResetPasswordRequest request) {
         return delegate.resetPassword(id, request);
     }
 

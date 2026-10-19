@@ -315,5 +315,11 @@
             <property name="ignoreComments" value="true"/>
             <property name="message" value="TAP-D5: JSON is the default media type of a mapping; leave out produces / consumes = application/json."/>
         </module>
+        <module name="RegexpSinglelineJava">
+            <property name="id" value="TAP-D6"/>
+            <property name="format" value="\bResponseEntity\s*(\.\s*ok\s*\(|::\s*ok\b)"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="TAP-D6: an endpoint that only answers 200 returns its body type, not ResponseEntity.ok(...); errors are exceptions."/>
+        </module>
     </module>
 </module>

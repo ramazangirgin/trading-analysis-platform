@@ -24,18 +24,18 @@ public class AuthApiController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<CurrentUserDto> login(
+    public CurrentUserDto login(
             @Valid @RequestBody LoginRequest request, HttpServletRequest http, HttpServletResponse response) {
         return delegate.login(request, http, response);
     }
 
     @GetMapping("/me")
-    public ResponseEntity<CurrentUserDto> me(HttpServletRequest http, HttpServletResponse response) {
+    public CurrentUserDto me(HttpServletRequest http, HttpServletResponse response) {
         return delegate.me(http, response);
     }
 
     @PostMapping("/password")
-    public ResponseEntity<CurrentUserDto> changePassword(
+    public CurrentUserDto changePassword(
             @Valid @RequestBody ChangePasswordRequest request, HttpServletRequest http, HttpServletResponse response) {
         return delegate.changePassword(request, http, response);
     }

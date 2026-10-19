@@ -69,6 +69,7 @@ class ArchitectureTest {
     private static final String SERVICE = "..service..";
     private static final String CORE_EXCEPTION = BASE + ".domain.*.core.exception..";
     private static final String BFF_API_ERROR = BASE + ".bff.controller.api.error..";
+    private static final String BFF_IMPL_ERROR = BASE + ".bff.delegate.impl.error..";
     private static final String ORCHESTRATION_SERVICE = BASE + ".orchestration.*.service..";
 
     /** Shared helper packages under {@code adapter} that serve several ports and implement none. */
@@ -277,6 +278,29 @@ class ArchitectureTest {
             .resideInAPackage(BFF_IMPL_ROOT + ".mapper.error")
             .should()
             .haveNameMatching(".*ExceptionToApiExceptionMapper(Impl)?");
+
+    @ArchTest
+    static final ArchRule exception_mappers_are_used_only_by_exception_handlers = classes()
+            .that()
+            .resideInAPackage(BFF_IMPL_ROOT + ".mapper.error")
+            .should()
+            .onlyHaveDependentClassesThat()
+            .resideInAnyPackage(BFF_IMPL_ROOT + ".mapper.error", BFF_IMPL_ERROR)
+            .because("a delegate lets a domain exception through and DomainExceptionHandler maps it");
+
+    @ArchTest
+    static final ArchRule exception_handlers_live_in_error_packages = classes()
+            .that()
+            .areAnnotatedWith(RestControllerAdvice.class)
+            .should()
+            .resideInAnyPackage(BFF_API_ERROR, BFF_IMPL_ERROR);
+
+    @ArchTest
+    static final ArchRule bff_impl_error_holds_only_exception_handlers = topLevelClasses()
+            .and()
+            .resideInAPackage(BFF_IMPL_ERROR)
+            .should()
+            .beAnnotatedWith(RestControllerAdvice.class);
 
     @ArchTest
     static final ArchRule delegate_impls_live_at_the_delegate_root = classes()

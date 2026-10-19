@@ -1,7 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
 import java.util.List;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.RolesApiDelegate;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RoleDto;
@@ -23,7 +22,7 @@ class RolesApiDelegateImpl implements RolesApiDelegate {
 
     @Override
     @RequiresPermission({Permission.USER_READ, Permission.ROLE_MANAGE})
-    public ResponseEntity<List<RoleDto>> listRoles() {
-        return ResponseEntity.ok(listRoles.list().stream().map(roleMapper::map).toList());
+    public List<RoleDto> listRoles() {
+        return listRoles.list().stream().map(roleMapper::map).toList();
     }
 }

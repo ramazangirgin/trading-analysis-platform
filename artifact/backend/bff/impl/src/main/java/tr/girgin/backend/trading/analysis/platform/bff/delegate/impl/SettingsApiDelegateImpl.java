@@ -2,7 +2,6 @@ package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
 import java.net.URI;
 import java.util.List;
-import java.util.function.Supplier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.SettingsApiDelegate;
@@ -13,9 +12,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.Requ
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.MapToJsonStringMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PresetToPresetDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.SecretStatusToSecretStatusDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.SettingsExceptionToApiExceptionMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
@@ -29,83 +26,64 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     private final SecretStatusToSecretStatusDtoMapper secretMapper;
     private final PresetToPresetDtoMapper presetMapper;
     private final MapToJsonStringMapper jsonMapper;
-    private final SettingsExceptionToApiExceptionMapper errorMapper;
 
     SettingsApiDelegateImpl(
             ManageSecretsUseCase secrets,
             ManagePresetsUseCase presets,
             SecretStatusToSecretStatusDtoMapper secretMapper,
             PresetToPresetDtoMapper presetMapper,
-            MapToJsonStringMapper jsonMapper,
-            SettingsExceptionToApiExceptionMapper errorMapper) {
+            MapToJsonStringMapper jsonMapper) {
         this.secrets = secrets;
         this.presets = presets;
         this.secretMapper = secretMapper;
         this.presetMapper = presetMapper;
         this.jsonMapper = jsonMapper;
-        this.errorMapper = errorMapper;
     }
 
     @Override
     @RequiresPermission(Permission.SETTINGS_READ)
-    public ResponseEntity<List<SecretStatusDto>> listSecrets() {
-        return ResponseEntity.ok(
-                secrets.listSecrets().stream().map(secretMapper::map).toList());
+    public List<SecretStatusDto> listSecrets() {
+        return secrets.listSecrets().stream().map(secretMapper::map).toList();
     }
 
     @Override
     @RequiresPermission(Permission.SETTINGS_KEYS_WRITE)
-    public ResponseEntity<SecretStatusDto> setSecret(String name, String value) {
-        return ResponseEntity.ok(secretMapper.map(call(() -> secrets.setSecret(name, value))));
+    public SecretStatusDto setSecret(String name, String value) {
+        return secretMapper.map(secrets.setSecret(name, value));
     }
 
     @Override
     @RequiresPermission(Permission.SETTINGS_KEYS_WRITE)
     public ResponseEntity<Void> removeSecret(String name) {
-        call(() -> {
-            secrets.removeSecret(name);
-            return null;
-        });
+        secrets.removeSecret(name);
         return ResponseEntity.noContent().build();
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_READ)
-    public ResponseEntity<List<PresetDto>> listPresets() {
-        return ResponseEntity.ok(
-                presets.listPresets().stream().map(presetMapper::map).toList());
+    public List<PresetDto> listPresets() {
+        return presets.listPresets().stream().map(presetMapper::map).toList();
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<PresetDto> createPreset(SavePresetRequest request) {
-        Preset preset = call(() -> presets.createPreset(request.name(), jsonMapper.map(request.values())));
+        Preset preset = presets.createPreset(request.name(), jsonMapper.map(request.values()));
         return ResponseEntity.created(URI.create("/api/presets/" + preset.id().value()))
                 .body(presetMapper.map(preset));
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
-    public ResponseEntity<PresetDto> updatePreset(String id, SavePresetRequest request) {
-        return ResponseEntity.ok(presetMapper.map(call(() -> presets.updatePreset(
-                new PresetId(id), request.name(), jsonMapper.map(request.values()), request.version()))));
+    public PresetDto updatePreset(String id, SavePresetRequest request) {
+        return presetMapper.map(presets.updatePreset(
+                new PresetId(id), request.name(), jsonMapper.map(request.values()), request.version()));
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<Void> deletePreset(String id) {
-        call(() -> {
-            presets.deletePreset(new PresetId(id));
-            return null;
-        });
+        presets.deletePreset(new PresetId(id));
         return ResponseEntity.noContent().build();
-    }
-
-    private <T> T call(Supplier<T> action) {
-        try {
-            return action.get();
-        } catch (SettingsException e) {
-            throw errorMapper.map(e);
-        }
     }
 }

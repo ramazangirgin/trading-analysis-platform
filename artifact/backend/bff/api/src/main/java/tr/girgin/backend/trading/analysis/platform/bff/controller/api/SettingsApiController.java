@@ -27,13 +27,12 @@ public class SettingsApiController {
     }
 
     @GetMapping("/secrets")
-    public ResponseEntity<List<SecretStatusDto>> listSecrets() {
+    public List<SecretStatusDto> listSecrets() {
         return delegate.listSecrets();
     }
 
     @PutMapping("/secrets/{name}")
-    public ResponseEntity<SecretStatusDto> setSecret(
-            @PathVariable String name, @Valid @RequestBody SetSecretRequest request) {
+    public SecretStatusDto setSecret(@PathVariable String name, @Valid @RequestBody SetSecretRequest request) {
         return delegate.setSecret(name, request.value());
     }
 
@@ -43,7 +42,7 @@ public class SettingsApiController {
     }
 
     @GetMapping("/presets")
-    public ResponseEntity<List<PresetDto>> listPresets() {
+    public List<PresetDto> listPresets() {
         return delegate.listPresets();
     }
 
@@ -53,8 +52,7 @@ public class SettingsApiController {
     }
 
     @PutMapping("/presets/{id}")
-    public ResponseEntity<PresetDto> updatePreset(
-            @PathVariable String id, @Valid @RequestBody SavePresetRequest request) {
+    public PresetDto updatePreset(@PathVariable String id, @Valid @RequestBody SavePresetRequest request) {
         return delegate.updatePreset(id, request);
     }
 

@@ -15,19 +15,19 @@ public interface AnalysesApiDelegate {
 
     ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request);
 
-    ResponseEntity<List<AnalysisDto>> listAnalyses(AnalysisStatusDto status, String ticker);
+    List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker);
 
-    ResponseEntity<AnalysisDto> getAnalysis(String id);
+    AnalysisDto getAnalysis(String id);
 
-    ResponseEntity<AnalysisDto> stopAnalysis(String id);
+    AnalysisDto stopAnalysis(String id);
 
     ResponseEntity<AnalysisDto> rerunAnalysis(String id);
 
-    ResponseEntity<AnalysisReportDto> getReport(String id);
+    AnalysisReportDto getReport(String id);
 
-    ResponseEntity<PriceHistoryDto> getPrices(String id);
+    PriceHistoryDto getPrices(String id);
 
-    ResponseEntity<RunLogDto> getLogs(String id, int tail);
+    RunLogDto getLogs(String id, int tail);
 
     SseEmitter streamEvents(String id, long afterSeq, HttpServletRequest http);
 }

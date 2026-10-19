@@ -17,6 +17,10 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiErrorDto> handleApiException(ApiException ex) {
+        return response(ex);
+    }
+
+    public static ResponseEntity<ApiErrorDto> response(ApiException ex) {
         return ResponseEntity.status(ex.status()).body(new ApiErrorDto(ex.errorCode(), ex.getMessage(), ex.params()));
     }
 

@@ -37,18 +37,18 @@ public class AnalysesApiController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AnalysisDto>> listAnalyses(
+    public List<AnalysisDto> listAnalyses(
             @RequestParam(required = false) AnalysisStatusDto status, @RequestParam(required = false) String ticker) {
         return delegate.listAnalyses(status, ticker);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AnalysisDto> getAnalysis(@PathVariable String id) {
+    public AnalysisDto getAnalysis(@PathVariable String id) {
         return delegate.getAnalysis(id);
     }
 
     @PostMapping("/{id}/stop")
-    public ResponseEntity<AnalysisDto> stopAnalysis(@PathVariable String id) {
+    public AnalysisDto stopAnalysis(@PathVariable String id) {
         return delegate.stopAnalysis(id);
     }
 
@@ -59,19 +59,19 @@ public class AnalysesApiController {
 
     /** The report files in the data dir for this analysis' ticker and date. */
     @GetMapping("/{id}/report")
-    public ResponseEntity<AnalysisReportDto> getReport(@PathVariable String id) {
+    public AnalysisReportDto getReport(@PathVariable String id) {
         return delegate.getReport(id);
     }
 
     /** About a year of daily prices with moving averages up to the trade date, from upstream's price cache. */
     @GetMapping("/{id}/prices")
-    public ResponseEntity<PriceHistoryDto> getPrices(@PathVariable String id) {
+    public PriceHistoryDto getPrices(@PathVariable String id) {
         return delegate.getPrices(id);
     }
 
     /** The end of the runner's stderr log, API keys masked. */
     @GetMapping("/{id}/logs")
-    public ResponseEntity<RunLogDto> getLogs(@PathVariable String id, @RequestParam(defaultValue = "1000") int tail) {
+    public RunLogDto getLogs(@PathVariable String id, @RequestParam(defaultValue = "1000") int tail) {
         return delegate.getLogs(id, tail);
     }
 

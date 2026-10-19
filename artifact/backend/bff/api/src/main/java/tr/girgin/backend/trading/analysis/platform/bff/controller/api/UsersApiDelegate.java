@@ -12,15 +12,15 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.User
 
 public interface UsersApiDelegate {
 
-    ResponseEntity<List<UserDto>> listUsers();
+    List<UserDto> listUsers();
 
-    ResponseEntity<UserDto> getUser(String id);
+    UserDto getUser(String id);
 
     ResponseEntity<CreatedUserDto> createUser(CreateUserRequest request);
 
-    ResponseEntity<UserDto> updateUser(String id, UpdateUserRequest request, HttpServletRequest http);
+    UserDto updateUser(String id, UpdateUserRequest request, HttpServletRequest http);
 
-    ResponseEntity<OneTimePasswordDto> resetPassword(String id, ResetPasswordRequest request);
+    OneTimePasswordDto resetPassword(String id, ResetPasswordRequest request);
 
     ResponseEntity<Void> unlock(String id);
 }

@@ -23,8 +23,6 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.User
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.UserSessions;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.UserAccountToUserDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.error.IdentityExceptionToApiExceptionMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreatedUserAccount;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageUsersUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UnlockUserUseCase;
@@ -41,56 +39,44 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
     private final UnlockUserUseCase unlockUser;
     private final UserSessions userSessions;
     private final UserAccountToUserDtoMapper userMapper;
-    private final IdentityExceptionToApiExceptionMapper errorMapper;
 
     UsersApiDelegateImpl(
             ManageUsersUseCase manageUsers,
             UnlockUserUseCase unlockUser,
             UserSessions userSessions,
-            UserAccountToUserDtoMapper userMapper,
-            IdentityExceptionToApiExceptionMapper errorMapper) {
+            UserAccountToUserDtoMapper userMapper) {
         this.manageUsers = manageUsers;
         this.unlockUser = unlockUser;
         this.userSessions = userSessions;
         this.userMapper = userMapper;
-        this.errorMapper = errorMapper;
     }
 
     @Override
     @RequiresPermission(Permission.USER_READ)
-    public ResponseEntity<List<UserDto>> listUsers() {
-        return ResponseEntity.ok(
-                manageUsers.list().stream().map(userMapper::map).toList());
+    public List<UserDto> listUsers() {
+        return manageUsers.list().stream().map(userMapper::map).toList();
     }
 
     @Override
     @RequiresPermission(Permission.USER_READ)
-    public ResponseEntity<UserDto> getUser(String id) {
-        try {
-            return ResponseEntity.ok(userMapper.map(manageUsers.get(new UserId(id))));
-        } catch (IdentityException e) {
-            throw errorMapper.map(e);
-        }
+    public UserDto getUser(String id) {
+        return userMapper.map(manageUsers.get(new UserId(id)));
     }
 
     @Override
     @RequiresPermission(Permission.USER_MANAGE)
     public ResponseEntity<CreatedUserDto> createUser(CreateUserRequest request) {
-        try {
-            CreatedUserAccount created =
-                    manageUsers.create(request.username(), roleIds(request.roleIds()), password(request.password()));
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new CreatedUserDto(
-                            userMapper.map(created.account()),
-                            created.generatedPassword().orElse(null)));
-        } catch (IdentityException e) {
-            throw errorMapper.map(e);
-        }
+        CreatedUserAccount created =
+                manageUsers.create(request.username(), roleIds(request.roleIds()), password(request.password()));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new CreatedUserDto(
+                        userMapper.map(created.account()),
+                        created.generatedPassword().orElse(null)));
     }
 
     @Override
     @RequiresPermission(Permission.USER_MANAGE)
-    public ResponseEntity<UserDto> updateUser(String id, UpdateUserRequest request, HttpServletRequest http) {
+    public UserDto updateUser(String id, UpdateUserRequest request, HttpServletRequest http) {
         if (request.roleIds() == null && request.enabled() == null) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
@@ -99,47 +85,35 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
                     Map.of("fields", List.of("roleIds", "enabled")));
         }
         UserId target = new UserId(id);
-        try {
-            Set<RoleId> rolesBefore = roleIdsOf(manageUsers.get(target));
-            UserAccount updated = manageUsers.update(
-                    currentUserId(),
-                    target,
-                    Optional.ofNullable(request.roleIds()).map(UsersApiDelegateImpl::roleIds),
-                    Optional.ofNullable(request.enabled()),
-                    request.version());
-            if (Boolean.FALSE.equals(request.enabled())) {
-                userSessions.endAll(target);
-            } else if (!roleIdsOf(updated).equals(rolesBefore)) {
-                // A session keeps the authorities of its login: end the target's, but not the caller's own.
-                userSessions.endAllExcept(target, sessionId(http));
-            }
-            return ResponseEntity.ok(userMapper.map(updated));
-        } catch (IdentityException e) {
-            throw errorMapper.map(e);
+        Set<RoleId> rolesBefore = roleIdsOf(manageUsers.get(target));
+        UserAccount updated = manageUsers.update(
+                currentUserId(),
+                target,
+                Optional.ofNullable(request.roleIds()).map(UsersApiDelegateImpl::roleIds),
+                Optional.ofNullable(request.enabled()),
+                request.version());
+        if (Boolean.FALSE.equals(request.enabled())) {
+            userSessions.endAll(target);
+        } else if (!roleIdsOf(updated).equals(rolesBefore)) {
+            // A session keeps the authorities of its login: end the target's, but not the caller's own.
+            userSessions.endAllExcept(target, sessionId(http));
         }
+        return userMapper.map(updated);
     }
 
     @Override
     @RequiresPermission(Permission.USER_MANAGE)
-    public ResponseEntity<OneTimePasswordDto> resetPassword(String id, ResetPasswordRequest request) {
+    public OneTimePasswordDto resetPassword(String id, ResetPasswordRequest request) {
         UserId target = new UserId(id);
-        try {
-            Optional<String> generated = manageUsers.resetPassword(target, password(request.password()));
-            userSessions.endAll(target);
-            return ResponseEntity.ok(new OneTimePasswordDto(generated.orElse(null)));
-        } catch (IdentityException e) {
-            throw errorMapper.map(e);
-        }
+        Optional<String> generated = manageUsers.resetPassword(target, password(request.password()));
+        userSessions.endAll(target);
+        return new OneTimePasswordDto(generated.orElse(null));
     }
 
     @Override
     @RequiresPermission(Permission.USER_MANAGE)
     public ResponseEntity<Void> unlock(String id) {
-        try {
-            unlockUser.unlock(new UserId(id));
-        } catch (IdentityException e) {
-            throw errorMapper.map(e);
-        }
+        unlockUser.unlock(new UserId(id));
         return ResponseEntity.noContent().build();
     }
 
