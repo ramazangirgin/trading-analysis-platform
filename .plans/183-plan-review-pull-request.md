@@ -111,20 +111,20 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Scripts: plan pull request, its comments, the implementation on it
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/agent/lib.sh`, `scripts/agent/plan-branch.sh`, `scripts/agent/implement.sh`,
   `scripts/agent/run.sh`, `scripts/agent/next.sh`, `scripts/agent/status.sh`,
   `scripts/agent/plan-comments.sh` (new), `scripts/agent/plan_comments.py` (new),
   `scripts/agent/test_plan_comments.py` (new), `mise.toml`
 - **Steps**:
-  - [ ] `AGENT_PLAN_LABEL` and `pr_stage` in `lib.sh`.
-  - [ ] `plan-branch.sh` opens the draft pull request labelled `plan` and links it on the issue.
-  - [ ] `plan-comments.sh` with `plan_comments.py`: list the unanswered comments, `--reply`, `--comment`.
-  - [ ] `implement.sh` takes over a plan pull request (title, body, labels), else opens one as
+  - [x] `AGENT_PLAN_LABEL` and `pr_stage` in `lib.sh`.
+  - [x] `plan-branch.sh` opens the draft pull request labelled `plan` and links it on the issue.
+  - [x] `plan-comments.sh` with `plan_comments.py`: list the unanswered comments, `--reply`, `--comment`.
+  - [x] `implement.sh` takes over a plan pull request (title, body, labels), else opens one as
         today; its refusal and `--dry-run` follow `pr_stage`.
-  - [ ] `run.sh`, `next.sh` and `status.sh` follow `pr_stage` as in the design.
-  - [ ] The `agent:plan-comments` task, and the descriptions of `agent:plan-branch`, `agent:run`
+  - [x] `run.sh`, `next.sh` and `status.sh` follow `pr_stage` as in the design.
+  - [x] The `agent:plan-comments` task, and the descriptions of `agent:plan-branch`, `agent:run`
         and `agent:implement`, in `mise.toml`.
 - **Tests**: `test_plan_comments.py`:
   - a resolved thread is not listed;

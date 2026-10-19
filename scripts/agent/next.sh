@@ -17,7 +17,8 @@
 #   CI green, the latest review approved the head  finalise.sh (no findings: no fix round, and no
 #                                                  further review of the same commit)
 #
-# Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
+# A pull request still in the plan stage (labelled "plan") prints "waiting for: plan approval" and
+# nothing runs. Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
 # the next step). Over AGENT_MAX_CI_FIXES or AGENT_MAX_TOKENS, it comments, removes the label and
 # stops. Milestone lines (agent: >> …, see lib.sh) say how far it is: the next step, CI waited
 # for / passed / failed (with the failed jobs) per head, and why it stopped. Interrupted (Ctrl+C), it continues where it was when started again. Its log, the agents'
@@ -43,6 +44,10 @@ fi
 use_state "$branch"
 if [ -z "$pr" ]; then
   log "$target has no open pull request; nothing to do"
+  exit 0
+fi
+if [ "$(pr_stage "$pr")" = plan ]; then
+  echo "waiting for: plan approval (mise run agent:run $branch)"
   exit 0
 fi
 $dry_run || lock_run

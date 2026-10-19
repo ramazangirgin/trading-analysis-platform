@@ -87,6 +87,9 @@ AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 AGENT_ISSUE_PROGRESS=${AGENT_ISSUE_PROGRESS:-1}
 # Label on an agent's pull request; removing it stops the loop.
 AGENT_LABEL=agent
+# Label on a plan's draft pull request while the plan is under review; the implementation changes it
+# to AGENT_LABEL.
+AGENT_PLAN_LABEL=plan
 
 # Scratch files (prompts, agent output), kept for a look after a failure. A script that knows its
 # plan branch moves them to the branch's state directory (use_state).
@@ -310,6 +313,16 @@ prompt() {
 # The open pull request whose head is $1, or nothing.
 pr_of_branch() {
   gh pr list --head "$1" --state open --json number --jq '.[0].number // empty'
+}
+
+# The stage of pull request $1: plan (an open draft labelled AGENT_PLAN_LABEL, the plan is under
+# review), agent (an open draft labelled AGENT_LABEL, the agent loop) or other.
+pr_stage() {
+  gh pr view "$1" --json state,isDraft,labels --jq "
+    if .state != \"OPEN\" or (.isDraft | not) then \"other\"
+    elif ([.labels[].name] | index(\"$AGENT_PLAN_LABEL\")) != null then \"plan\"
+    elif ([.labels[].name] | index(\"$AGENT_LABEL\")) != null then \"agent\"
+    else \"other\" end"
 }
 
 # --- Claude Code ---------------------------------------------------------------------------------

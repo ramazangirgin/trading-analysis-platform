@@ -5,7 +5,7 @@
 #   scripts/agent/status.sh --follow <branch | pr>
 #
 # <branch> is a plan branch (plan/<issue>-<slug>), <pr> the number of its pull request. Prints the
-# active run (the pid in run.pid, or that none is active), the work package the implementation is on
+# pull request and its stage (plan review, agent loop, ready for review), the active run (the pid in run.pid, or that none is active), the work package the implementation is on
 # (`current`), the latest 10 milestone lines of .git/agent/<issue>-<slug>/run.log and its last
 # [lines] lines (default 20). With --follow it prints only the milestone lines written from now on,
 # one per line as they happen, until it is stopped: that is what a Claude Code session watches.
@@ -45,6 +45,15 @@ if [ -n "$pid" ]; then
   echo "Active run: pid $pid"
 else
   echo "No run is active"
+fi
+pr=$(pr_of_branch "$branch")
+if [ -n "$pr" ]; then
+  case $(pr_stage "$pr") in
+    plan) stage="plan review" ;;
+    agent) stage="agent loop" ;;
+    *) stage="ready for review" ;;
+  esac
+  echo "Pull request: #$pr, $stage"
 fi
 package=$(sed -n 's/^package=//p' "$AGENT_STATE/current" 2>/dev/null || true)
 [ -z "$package" ] || echo "Work package: $package"
