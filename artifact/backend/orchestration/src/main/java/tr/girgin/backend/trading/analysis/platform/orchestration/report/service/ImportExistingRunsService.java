@@ -30,8 +30,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRun;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
@@ -65,6 +67,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
     private final ScanReportsUseCase scanReports;
     private final ScanRunHistoryUseCase scanHistory;
     private final RegisterExternalAnalysisUseCase registerExternal;
+    private final UserDirectoryUseCase userDirectory;
     private final WatchDataDirUseCase watchDataDir;
     private final boolean importOnStartup;
     private final boolean watch;
@@ -76,10 +79,12 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
     private ScheduledFuture<?> followUp;
 
     @Autowired
+    @SuppressWarnings("checkstyle:ParameterNumber") // the ports and the settings it is built from
     ImportExistingRunsService(
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
             RegisterExternalAnalysisUseCase registerExternal,
+            UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
             @Value("${platform.import.on-startup:true}") boolean importOnStartup,
             @Value("${platform.import.watch.enabled:true}") boolean watch,
@@ -88,6 +93,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
                 scanReports,
                 scanHistory,
                 registerExternal,
+                userDirectory,
                 watchDataDir,
                 importOnStartup,
                 watch,
@@ -100,6 +106,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
             RegisterExternalAnalysisUseCase registerExternal,
+            UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
             boolean importOnStartup,
             boolean watch,
@@ -108,6 +115,7 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
         this.scanReports = scanReports;
         this.scanHistory = scanHistory;
         this.registerExternal = registerExternal;
+        this.userDirectory = userDirectory;
         this.watchDataDir = watchDataDir;
         this.importOnStartup = importOnStartup;
         this.watch = watch;
@@ -191,8 +199,11 @@ class ImportExistingRunsService implements ImportExistingRunsUseCase, Disposable
                 .forEach(externals::add);
 
         Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
+        // No platform user started these runs, so they belong to the first admin (none yet on a fresh install).
+        OwnerId owner =
+                userDirectory.firstAdmin().map(id -> new OwnerId(id.value())).orElse(null);
         for (ExternalAnalysis external : externals) {
-            outcomes.merge(registerExternal.register(external, null).outcome(), 1, Integer::sum);
+            outcomes.merge(registerExternal.register(external, owner).outcome(), 1, Integer::sum);
         }
         ImportResult result = new ImportResult(
                 externals.size(),

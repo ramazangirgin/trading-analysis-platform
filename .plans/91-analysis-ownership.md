@@ -199,14 +199,15 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Orchestration
 
+- **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**:
   - `artifact/backend/orchestration/src/main/java/.../orchestration/ownership/inbound/AssignAnalysisOwnersUseCase.java`, `.../ownership/service/AnalysisOwnershipService.java` (new)
   - `.../orchestration/report/inbound/GetAnalysisReportUseCase.java`, `GetAnalysisPricesUseCase.java`, `.../report/service/AnalysisReportService.java`, `.../report/service/ImportExistingRunsService.java`
 - **Steps**:
-  - [ ] The startup assignment on `ApplicationReadyEvent`.
-  - [ ] Imports owned by the first admin.
-  - [ ] Report and prices through the access check.
+  - [x] The startup assignment on `ApplicationReadyEvent`.
+  - [x] Imports owned by the first admin.
+  - [x] Report and prices through the access check.
 - **Tests**:
   - `AnalysisOwnershipServiceTest` (new): assigns to the first admin; does nothing without one.
   - `ImportExistingRunsServiceTest`: imports are registered with the first admin as owner, and with `null` before one exists.

@@ -9,8 +9,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
@@ -20,6 +22,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration.Outcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
@@ -36,6 +42,19 @@ class ImportExistingRunsServiceTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-30T12:00:00Z"), ZoneOffset.UTC);
 
     private final List<ExternalAnalysis> registered = new ArrayList<>();
+    private final List<OwnerId> owners = new ArrayList<>();
+    private Optional<UserId> firstAdmin = Optional.of(new UserId("admin-1"));
+    private final UserDirectoryUseCase directory = new UserDirectoryUseCase() {
+        @Override
+        public Optional<UserId> firstAdmin() {
+            return firstAdmin;
+        }
+
+        @Override
+        public Map<UserId, Username> usernames(Collection<UserId> ids) {
+            return Map.of();
+        }
+    };
 
     @Test
     void registersEveryReportWithWhatItsFilesTell() {
@@ -65,9 +84,11 @@ class ImportExistingRunsServiceTest {
                 (external, owner) -> {
                     registered.add(external);
                     Outcome outcome = external.ticker().equals("GOOG") ? Outcome.CREATED : Outcome.UNCHANGED;
+                    owners.add(owner);
                     return new ExternalRegistration(
                             Analysis.imported(AnalysisId.newId(), null, owner, external), outcome);
                 },
+                directory,
                 NO_WATCH,
                 false,
                 false,
@@ -84,6 +105,7 @@ class ImportExistingRunsServiceTest {
         assertThat(registered.get(1).decision()).isNull();
         assertThat(registered.get(1).rating()).isNull();
         assertThat(registered).allSatisfy(external -> assertThat(external.run()).isNull());
+        assertThat(owners).containsExactly(new OwnerId("admin-1"), new OwnerId("admin-1"));
     }
 
     @Test
@@ -120,6 +142,7 @@ class ImportExistingRunsServiceTest {
                     return new ExternalRegistration(
                             Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
                 },
+                directory,
                 NO_WATCH,
                 false,
                 false,
@@ -176,6 +199,7 @@ class ImportExistingRunsServiceTest {
                     return new ExternalRegistration(
                             Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
                 },
+                directory,
                 NO_WATCH,
                 false,
                 false,
@@ -184,6 +208,38 @@ class ImportExistingRunsServiceTest {
 
         assertThat(service.importExistingRuns().scanned()).isEqualTo(2);
         assertThat(registered).extracting(ExternalAnalysis::ticker).containsExactly("INTC", "NVDA");
+    }
+
+    @Test
+    void importedRunsBelongToTheFirstAdminOrToNobodyBeforeThereIsOne() {
+        Report goog = new Report(
+                new ReportKey("GOOG", LocalDate.of(2026, 9, 28)),
+                Map.of(ReportSection.FINAL_TRADE_DECISION, "**Rating**: Hold"),
+                Map.of(),
+                Rating.HOLD,
+                Set.of(ReportSource.REPORT_TREE),
+                Instant.parse("2026-09-28T12:00:00Z"));
+        ImportExistingRunsService service = new ImportExistingRunsService(
+                () -> List.of(goog),
+                List::of,
+                (external, owner) -> {
+                    owners.add(owner);
+                    return new ExternalRegistration(
+                            Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
+                },
+                directory,
+                NO_WATCH,
+                false,
+                false,
+                SETTLE_TIME,
+                CLOCK);
+
+        firstAdmin = Optional.empty();
+        service.importExistingRuns();
+        firstAdmin = Optional.of(new UserId("admin-1"));
+        service.importExistingRuns();
+
+        assertThat(owners).containsExactly(null, new OwnerId("admin-1"));
     }
 
     private static RunHistoryEntry entry(
