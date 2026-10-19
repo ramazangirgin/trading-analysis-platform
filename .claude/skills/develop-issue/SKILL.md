@@ -1,6 +1,6 @@
 ---
 name: develop-issue
-description: Take a GitHub issue of this repository through the whole agentic development flow (a folder of its own checked out from main, plan, plan branch, developer agent, CI, review → fix rounds, finalise, update with main) in one run. It asks the developer only to approve the plan, runs every other step without asking, keeps a progress comment on the issue (each step's start, end, duration, tokens and result), and sends a notification when the pull request is ready for the developer's review. It never touches the current checkout and never merges unless asked. Use when the user asks to develop, implement or run the agents on an issue end to end, e.g. "/develop-issue 61", "/develop-issue https://github.com/<owner>/<repo>/issues/61" or "develop issue #61".
+description: Take a GitHub issue of this repository through the whole agentic development flow (a folder of its own checked out from main, plan, plan branch and draft pull request reviewed on GitHub or in the session, developer agent, CI, review → fix rounds, finalise, update with main) in one run. It asks the developer only to approve the plan, runs every other step without asking, keeps a progress comment on the issue (each step's start, end, duration, tokens and result), and sends a notification when the pull request is ready for the developer's review. It never touches the current checkout and never merges unless asked. Use when the user asks to develop, implement or run the agents on an issue end to end, e.g. "/develop-issue 61", "/develop-issue https://github.com/<owner>/<repo>/issues/61" or "develop issue #61".
 ---
 
 # Develop an issue
@@ -21,8 +21,9 @@ repository than this one (`gh repo view --json nameWithOwner`) is an error: stop
 
 ## One approval: the plan
 
-The plan (step 2) is the only step that waits for the developer. Everything after it (pushing the
-plan branch, implementing, CI fixes, reviews, fix rounds, finalising, the update with `main`) runs
+The plan (step 2) is the only step that waits for the developer: it is pushed as a draft pull
+request labelled `plan`, which the developer reviews there or in this session. Everything after the
+approval (implementing, CI fixes, reviews, fix rounds, finalising, the update with `main`) runs
 without asking. Before each step, say in one or two lines what it does and the command, then run
 it; after it, report what it did.
 
@@ -83,7 +84,7 @@ comment and prints its link:
 
 | Step | Before it | After it |
 |---|---|---|
-| 2. Plan, until approved | `plan_start=$(date +%s)`; keep the number | after step 3, per plan: `progress.sh begin plan/<n>-<slug> plan --at <plan_start>`, then `progress.sh end plan/<n>-<slug> plan "approved (<k> change rounds)"` |
+| 2. Plan, until approved | `plan_start=$(date +%s)`; keep the number | on the approval, per plan: `progress.sh begin plan/<n>-<slug> plan --at <plan_start>`, then `progress.sh end plan/<n>-<slug> plan "approved (<k> change rounds)"` |
 | 5.2 a CI wait | `progress.sh begin <pr> "CI <short sha>"` | `progress.sh end <pr> "CI <short sha>" "passed"`, `"failed: <jobs>"` or `"timed out"` |
 | 6. Update with `main` | `progress.sh begin <pr> "update with main"` | `progress.sh end <pr> "update with main" "<merged, N conflicts resolved, bumped to X.Y.Z \| unresolved conflict in <file>>"` |
 | 5.5 a stop | | `progress.sh note <pr> "stopping: <reason>"` |
@@ -129,10 +130,12 @@ gh pr list --state all --limit 200 --json number,headRefName,state,isDraft,label
 Stop if the issue is closed, or if `gh` is not logged in.
 
 Print one line per plan branch: the branch, its pull request, and where it stands (no pull request
-yet; draft labelled `agent`; ready for review; merged). Then pick where to start after step 1: step
-2 when there is no plan branch, step 4 for the first unmerged plan without a pull request, step 5
-for an open draft labelled `agent`, step 6 for a pull request ready for review. Say where you are
-starting and why.
+yet; draft labelled `plan`: the plan is under review; draft labelled `agent`; ready for review;
+merged). Then pick where to start after step 1: step 2 when there is no plan branch, or for an open
+draft labelled `plan` (the review goes on with its comments: step 2's loop, without writing the plan
+again); step 4 for the first unmerged plan without a pull request (a plan pushed before plan pull
+requests existed: `implement.sh` opens it); step 5 for an open draft labelled `agent`; step 6 for a
+pull request ready for review. Say where you are starting and why.
 
 ## 1. A folder of its own
 
@@ -168,26 +171,31 @@ branch.
 ## 2. Plan (the approval)
 
 Invoke the [`plan-from-issue`](../plan-from-issue/SKILL.md) skill with the Skill tool
-(`plan-from-issue`, argument: the issue number), and follow it through its section 3, in the
-issue's folder: it writes `<dir>/.plans/<n>-<slug>.md`. It reads the issue and the documents of
-every part it touches, writes the plan (several plans when the issue does not fit one pull
-request), shows them and changes them until the developer agrees.
+(`plan-from-issue`, argument: the issue number), and follow it through its section 5, in the
+issue's folder. It writes `<dir>/.plans/<n>-<slug>.md` (several plans when the issue does not fit
+one pull request), shows them, pushes each with `scripts/agent/plan-branch.sh` (a branch and a draft
+pull request labelled `plan`, linked on the issue), and reviews them with the developer. Leave out
+its section 6 ("Tell the user what is next").
 
-Show the plan(s) in full and ask with `AskUserQuestion`, header `Plan`, the options
-**Approve the plan**, **Change it** and **Stop here**. On **Change it**, or an answer in "Other",
-change the plan and ask again, until it is approved. Its open questions must be answered in the plan
-before it can be approved. This is the last question of the run: say so in the question ("after
-this, the run goes on to the pull request without asking"). Take `plan_start` before the skill
-starts and count the **Change it** rounds (see [Progress on the issue](#progress-on-the-issue)).
+Show the plan(s) in full with the pull request link(s), say that the developer can comment there
+(inline on the plan's lines, or as a comment) or answer here, and ask with `AskUserQuestion`, header
+`Plan`, the options **Approve the plan**, **Change it** (with the comments here, on the pull
+request, or both) and **Stop here**. On **Change it**, or an answer in "Other", run the skill's
+review loop: collect the terminal answer and `scripts/agent/plan-comments.sh <pr>`, change the plan
+on its branch and push, answer every comment, then ask again, until it is approved. Its open
+questions must be answered in the plan before it can be approved. This is the last question of the
+run: say so in the question ("after this, the run goes on to the pull request without asking").
+Take `plan_start` before the skill starts and count the **Change it** rounds (see
+[Progress on the issue](#progress-on-the-issue)). On **Stop here**, the plan pull request stays open
+for review, and `/develop-issue <n>` continues it.
 
-## 3. Push the plan branches
+## 3. After the approval
 
-Right after the approval, run `scripts/agent/plan-branch.sh .plans/<n>-<slug>.md` in the issue's
-folder for every plan of the issue (the `plan-from-issue` skill's section 4). It pushes the branch
-from `origin/main` with only the plan file, comments the branch link on the issue and removes the
-local file. Leave out its section 5 ("Tell the user what is next"): record the plan step on each
-plan branch ([Progress on the issue](#progress-on-the-issue)), print the comment's link, and
-continue with step 4.
+Record the plan step on each plan branch ([Progress on the issue](#progress-on-the-issue)), print
+the comment's link, and continue with step 4. Before it, make sure the plan branch is pushed with
+every change of the review (`git status --short` empty, nothing ahead of `origin/plan/<n>-<slug>`),
+and switch the folder back to a detached `origin/main` (`git switch --detach origin/main`): the
+scripts check the branch out themselves.
 
 For a split issue, steps 4 to 7 run once per plan, in the order of their dependencies, all in the
 same folder. A plan that depends on another one waits until that one is merged: run the plans that
@@ -202,7 +210,9 @@ folder, in the background, followed as in
 [Long-running steps](#long-running-steps-and-their-progress). The developer agent (`AGENT_MODEL`,
 Sonnet by default, `deepseek-v4-pro` on the DeepSeek endpoint) implements the plan with tests, runs
 `mise run check`, bumps the version and
-commits. The script pushes the branch and opens a **draft** pull request labelled `agent`. Expect
+commits. The script pushes the branch and turns the plan pull request into the implementation's:
+new title and body, the label `plan` replaced by `agent`, still a **draft** (a plan branch without
+a pull request gets a new draft pull request labelled `agent`). Expect
 tens of minutes. Mention the settings that apply when the developer has set any (`AGENT_*` in the
 environment).
 
@@ -250,6 +260,8 @@ Repeat until the pull request is ready for review:
    `agent` label (`gh pr edit <pr> --remove-label agent`). Record the stop on the issue
    (`progress.sh note`). Then stop and notify.
    **next step: none**: the pull request is not an open draft labelled `agent`. Go to step 6.
+   **waiting for: plan approval**: the pull request is still the plan's (labelled `plan`). Go back
+   to step 2's review loop; the implementation has not started.
 
 ## 6. Bring it up to date with `main` (only when needed)
 

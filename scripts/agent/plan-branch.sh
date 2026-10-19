@@ -5,7 +5,9 @@
 #   scripts/agent/plan-branch.sh .plans/<issue>-<slug>.md
 #
 # Creates plan/<issue>-<slug> from origin/$AGENT_BASE_BRANCH (main) with one commit that adds only the plan file, pushes
-# it and comments the branch link on the issue. Works in a temporary worktree, so the current
+# it, opens a draft pull request labelled "plan" for the plan's review (plan-comments.sh reads the
+# comments; the implementation later takes the pull request over) and comments its link on the
+# issue. Prints the pull request's URL. Works in a temporary worktree, so the current
 # checkout is left alone and the plan file may be untracked. Fails if the branch exists already.
 # An untracked plan file is removed once pushed: the branch holds it, and a leftover copy would
 # stop agent:run (it needs a clean working tree).
@@ -41,10 +43,24 @@ git -C "$worktree" push --quiet --set-upstream origin "$branch"
 # The worktree's branch is not needed locally; the remote one is the plan.
 git -C "$worktree" switch --quiet --detach
 
-url="https://github.com/$(repo_slug)/blob/$branch/.plans/$name.md"
-gh issue comment "$issue" --body "Plan for review: [\`.plans/$name.md\`]($url) on branch \`$branch\`.
+blob="https://github.com/$(repo_slug)/blob/$branch/.plans/$name.md"
+cat >"$AGENT_TMP/pr.md" <<EOF
+Plan for #$issue: [\`.plans/$name.md\`]($blob).
 
-Edit it on the branch, or start the implementation:
+Review the plan here: comment inline on the plan's lines (*Files changed*) or on this pull request, or
+tell the planning session in Claude Code. It changes the plan on this branch and answers each comment.
+
+Approve it in the planning session, or start the agents:
+\`mise run agent:run $branch\`
+
+The agents push the implementation to this pull request and change its label from \`$AGENT_PLAN_LABEL\` to \`$AGENT_LABEL\`.
+EOF
+gh label create "$AGENT_PLAN_LABEL" --color FBCA04 --description "A plan under review" 2>/dev/null || true
+url=$(gh pr create --draft --base "$AGENT_BASE_BRANCH" --head "$branch" --title "Plan: ${title:-$name}" \
+  --body-file "$AGENT_TMP/pr.md" --label "$AGENT_PLAN_LABEL")
+gh issue comment "$issue" --body "Plan for review: [\`.plans/$name.md\`]($blob) on branch \`$branch\`, draft pull request $url.
+
+Comment on the pull request, or start the implementation:
 \`mise run agent:run $branch\`" >/dev/null
 git branch --quiet -D "$branch"
 # The plan now lives on its branch; drop the untracked local copy. A tracked file is left alone.

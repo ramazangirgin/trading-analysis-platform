@@ -668,15 +668,18 @@ A sample flow, for issue #32 (compare runs):
 # 1. Plan it: in Claude Code, in this repository
 /plan-from-issue 32
 #    Claude reads the issue and the docs of every part it touches, writes .plans/32-compare-runs.md,
-#    and, once you agree, pushes it alone on branch plan/32-compare-runs and links it on #32.
+#    and, when it is ready for review, pushes it alone on branch plan/32-compare-runs, opens a
+#    draft pull request labelled plan for it and links that on #32.
 ```
 
 ```sh
-# 2. Review the plan on plan/32-compare-runs; edit, commit and push there until it is right.
+# 2. Review the plan on that pull request (inline on its lines, or as a comment) or in the Claude
+#    Code session; Claude changes the plan on its branch and answers each comment, until it is right.
 
 # 3. Let the agents implement it and take it to a pull request ready for review
 mise run agent:run plan/32-compare-runs
-#    developer agent: implements with tests, mise run check, version bump, opens a draft PR
+#    developer agent: implements with tests, mise run check, version bump; the plan's draft PR
+#    carries on (label plan → agent)
 #    after CI passed: review agent comments R1-1, R1-2, ... (CRITICAL / MAJOR / MINOR)
 #    developer agent: one "Address R1-n: ..." commit or a reasoned reply per finding; CI again
 #    a second review → fix round, then a final comment and the PR is marked ready for review
@@ -690,8 +693,9 @@ gh pr merge <pr> --merge --delete-branch     # --rebase when main was not merged
 
 To go through the same flow from Claude Code, use the `develop-issue` skill instead:
 `/develop-issue 32` or `/develop-issue <issue link>`. It works in a folder of its own (a worktree
-`../<checkout>-32` from `origin/main`) and leaves your checkout alone. It asks you only to approve
-the plan, runs every later step without asking (plan branch, implementation, every CI fix, review
+`../<checkout>-32` from `origin/main`) and leaves your checkout alone. It pushes the plan as a
+draft pull request, reads your comments on it (or in the session) until you approve the plan,
+runs every later step without asking (implementation, every CI fix, review
 and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
 for your review. It never merges unless you ask it to. It continues where the issue stands when
 started again. It reports each milestone of a long step (package, tests, check, review findings,

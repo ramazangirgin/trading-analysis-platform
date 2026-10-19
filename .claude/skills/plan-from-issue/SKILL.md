@@ -1,6 +1,6 @@
 ---
 name: plan-from-issue
-description: Turn a GitHub issue of this repository into one or more reviewed implementation plans (.plans/<issue>-<slug>.md), each pushed on its own plan/<issue>-<slug> branch, ready for the agent implementation loop. Use when the user asks to plan an issue, e.g. "/plan-from-issue 32" or "plan issue #61".
+description: Turn a GitHub issue of this repository into one or more reviewed implementation plans (.plans/<issue>-<slug>.md), each pushed on its own plan/<issue>-<slug> branch with a draft pull request labelled plan, reviewed with the user on that pull request and in the session, ready for the agent implementation loop. Use when the user asks to plan an issue, e.g. "/plan-from-issue 32" or "plan issue #61".
 ---
 
 # Plan from issue
@@ -86,19 +86,21 @@ do not read other plans in `.plans/` as models.
     screenshot, against the built jar with a replayed run, 1440×900, dark theme).
 - Write in English, in the plain style of the existing documents.
 
-Show the plan(s) to the user and adjust them until the user is content, before step 4.
+Show the plan(s) to the user. Adjust them while the user asks for changes here, then push them for
+review (step 4): the review itself happens on the pull request and in this session (step 5).
 
-## 4. Push one branch per plan
+## 4. Push one branch and draft pull request per plan
 
-For each plan file, after the user agrees:
+For each plan file:
 
 ```sh
 scripts/agent/plan-branch.sh .plans/<issue>-<slug>.md
 ```
 
 It creates `plan/<issue>-<slug>` from `origin/main` with exactly one commit that adds only that
-plan file, pushes it, and comments the branch link on the issue. It never touches `main`. Run it
-from a clean working tree; the plan file may be untracked. Once pushed, the script removes the
+plan file, pushes it, opens a **draft pull request** labelled `plan` (the plan as its only change,
+no closing keyword) and comments the pull request's link on the issue. It never touches `main`. Run
+it from a clean working tree; the plan file may be untracked. Once pushed, the script removes the
 untracked local copy: the branch holds the plan, and a leftover file would make `mise run agent:run`
 stop with "the working tree is not clean".
 
@@ -107,10 +109,34 @@ still there (for example one that was not pushed), compare it with its branch
 (`git show origin/plan/<issue>-<slug>:.plans/<issue>-<slug>.md | cmp - .plans/<issue>-<slug>.md`)
 and remove it only when it is identical; otherwise tell the user.
 
-## 5. Tell the user what is next
+## 5. Review the plan with the user
 
-Print the branch link(s) and the next steps: review the plan on the branch (edit it there and push,
-or ask for changes), then let the agents take it to a pull request ready for review:
+Print each plan pull request's link. The user comments where they prefer: inline on the plan's
+lines or as a comment on the pull request, or here in the session. Until the user approves:
+
+1. Collect what is unanswered: the user's answer in the session, and
+   `scripts/agent/plan-comments.sh <pr>` (`mise run agent:plan-comments`), which lists the open
+   review threads (comment ID, `path:line`, author, text) and the pull request comments and review
+   bodies (with their IDs) that no reply of the session names yet.
+2. Change the plan on its branch: `git switch plan/<issue>-<slug>` (in a clean checkout), edit
+   `.plans/<issue>-<slug>.md`, commit (`Plan: <what changed>`) and push. A comment that asks a
+   question gets an answer, and the plan changes when the answer belongs in it.
+3. Answer every comment from step 1, with what changed (the commit) or why not:
+   `plan-comments.sh --reply <comment id> <file>` on a review thread,
+   `plan-comments.sh --comment <pr> <file> <id>...` for the pull request comments and review bodies,
+   naming the IDs it answers (the listing prints them). Both mark the reply, so what it answers is
+   not listed again; a comment the reply does not name stays listed. Never resolve a thread: that is
+   the user's.
+4. Show what changed, and ask again.
+
+Open questions in the plan must be answered in it before it can be approved.
+
+## 6. Tell the user what is next
+
+Print the pull request link(s) and the next steps: comment on the plan or ask for changes (step 5),
+then approve it by letting the agents take it to a pull request ready for review. The same pull
+request carries on: the implementation is pushed to it, and its label changes from `plan` to
+`agent`.
 
 ```sh
 mise run agent:run plan/<issue>-<slug>

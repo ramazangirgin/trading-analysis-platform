@@ -168,15 +168,19 @@ run = "scripts/version.sh bump"
 # agent implementation → agent review → pull request, on this machine with Claude Code and your own
 # Claude Code login. Planning is the plan-from-issue Claude Code skill.
 [tasks."agent:plan-branch"]
-description = "Push a plan on its own branch: mise run agent:plan-branch .plans/<issue>-<slug>.md"
+description = "Push a plan on its own branch and open its draft PR labelled plan: mise run agent:plan-branch .plans/<issue>-<slug>.md"
 run = "scripts/agent/plan-branch.sh"
 
+[tasks."agent:plan-comments"]
+description = "Unanswered comments on a plan PR, or answer them: mise run agent:plan-comments <pr | plan/<issue>-<slug>> | --reply <comment id> <file> | --comment <pr | branch> <file> <id>..."
+run = "scripts/agent/plan-comments.sh"
+
 [tasks."agent:run"]
-description = "Agents take an approved plan to a pull request ready for review: mise run agent:run plan/<issue>-<slug>"
+description = "Agents take an approved plan (its draft PR labelled plan carries on) to a PR ready for review: mise run agent:run plan/<issue>-<slug>"
 run = "scripts/agent/run.sh"
 
 [tasks."agent:implement"]
-description = "Only the implementation and the draft PR: mise run agent:implement plan/<issue>-<slug>"
+description = "Only the implementation, on the plan's draft PR or a new one: mise run agent:implement plan/<issue>-<slug>"
 run = "scripts/agent/implement.sh"
 
 [tasks."agent:next"]
@@ -196,7 +200,7 @@ description = "Print the progress comment of an agent run (steps, durations, ite
 run = "scripts/agent/progress.sh show"
 
 [tasks."agent:test"]
-description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser, the usage figures and the progress comment"
+description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser, the plan comments, the usage figures and the progress comment"
 run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
 
 [tasks."skill:test"]

@@ -12,7 +12,9 @@
 # checks that, pushes the branch and goes on with the next package. A plan without work packages is
 # one package, "all". Then the final checks (clean tree, commits, version bump, mise run check) and
 # the draft pull request labelled "agent". The review → fix loop (next.sh) follows; run.sh runs
-# both. The plan file stays in the pull request. Its body closes the issue only when this is the
+# both. A plan pull request (plan-branch.sh, labelled "plan") carries on: its title and body are
+# replaced and its label becomes "agent"; a branch without one gets a draft pull request. A branch
+# whose pull request is past the plan stage is refused. The plan file stays in the pull request. Its body closes the issue only when this is the
 # issue's last plan (issue_reference in lib.sh).
 #
 # Milestone lines (agent: >> …, see lib.sh) say how far it is: a package started / done, the final
@@ -71,9 +73,11 @@ if $dry_run; then
     echo "No run is active (log: $AGENT_STATE/run.log)."
   fi
   pr=$(pr_of_branch "$branch")
+  stage=""
+  [ -z "$pr" ] || stage=$(pr_stage "$pr")
   echo
-  if [ -n "$pr" ]; then
-    echo "The branch has an open pull request (#$pr): continue it with next.sh."
+  if [ -n "$pr" ] && [ "$stage" != plan ]; then
+    echo "The branch has an open pull request (#$pr) past the plan stage: continue it with next.sh."
   elif [ -n "$next" ]; then
     position=$(plan_py packages "$file" | awk -F'\t' -v id="$next" '$1 == id { print NR }')
     done_count=$(plan_py packages "$file" | awk -F'\t' '$2 != "open" && $2 != "invalid"' | wc -l | tr -d ' ')
@@ -83,12 +87,22 @@ if $dry_run; then
       echo "A run would start with $next ($position of $total, $done_count done)."
     fi
   else
-    echo "Every package is finished: a run would do the final checks and open the draft pull request."
+    echo "Every package is finished: a run would do the final checks."
+  fi
+  if [ -z "$pr" ] || [ "$stage" = plan ]; then
+    if [ "$stage" = plan ]; then
+      echo "At the end it would edit the plan pull request #$pr: title, body, label $AGENT_PLAN_LABEL → $AGENT_LABEL."
+    else
+      echo "At the end it would open the draft pull request."
+    fi
   fi
   exit 0
 fi
 
-[ -z "$(pr_of_branch "$branch")" ] || die "$branch has an open pull request already; continue it with next.sh"
+plan_pr=$(pr_of_branch "$branch")
+if [ -n "$plan_pr" ]; then
+  [ "$(pr_stage "$plan_pr")" = plan ] || die "$branch has an open pull request (#$plan_pr) past the plan stage; continue it with next.sh"
+fi
 lock_run
 step_begin implement
 checkout_branch --keep-changes "$branch"
@@ -294,12 +308,26 @@ ${not_done:-Nothing.}
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
-log "opening the draft pull request"
 gh label create "$AGENT_LABEL" --color 5319E7 --description "Driven by the agent loop; remove to stop it" 2>/dev/null || true
-url=$(gh pr create --draft --base "$AGENT_BASE_BRANCH" --head "$branch" --title "${title:-$branch}" \
-  --body-file "$AGENT_TMP/pr.md" --label "$AGENT_LABEL")
-pr=${url##*/}
-milestone "draft pull request #$pr opened: $url"
+# The plan's pull request carries on; a branch without one (pushed before plans got a pull request, or
+# the pull request was deleted) gets its draft pull request now.
+plan_pr=$(pr_of_branch "$branch")
+if [ -n "$plan_pr" ] && [ "$(pr_stage "$plan_pr")" = plan ]; then
+  pr=$plan_pr
+  url=$(gh pr view "$pr" --json url --jq .url)
+  if [ "$(gh pr view "$pr" --json isDraft --jq .isDraft)" = false ]; then
+    gh pr ready "$pr" --undo >/dev/null
+  fi
+  gh pr edit "$pr" --title "${title:-$branch}" --body-file "$AGENT_TMP/pr.md" \
+    --add-label "$AGENT_LABEL" --remove-label "$AGENT_PLAN_LABEL" >/dev/null
+  milestone "pull request #$pr taken from plan review to implementation: $url"
+else
+  log "opening the draft pull request"
+  url=$(gh pr create --draft --base "$AGENT_BASE_BRANCH" --head "$branch" --title "${title:-$branch}" \
+    --body-file "$AGENT_TMP/pr.md" --label "$AGENT_LABEL")
+  pr=${url##*/}
+  milestone "draft pull request #$pr opened: $url"
+fi
 
 # Every run of the implementation counts: the packages' results and the streams of interrupted runs.
 runs=()
