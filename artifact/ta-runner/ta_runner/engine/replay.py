@@ -4,7 +4,7 @@ The end-to-end UI tests run the real runner on a recording: everything from the 
 on (events, report files, the decision, a stop) is the real code path; only the graph is not.
 
 A recording is a directory with ``chunks.jsonl``. Each line is one state chunk as
-``graph.stream`` yielded it (stream_mode="values"), stored as the change to the previous one:
+``compat.UpstreamRun.run`` handed it on, stored as the change to the previous one:
 
     {"at_s": 1.5, "set": {"market_report": "..."}, "add_messages": [{"id": "m2", ...}]}
 
@@ -62,8 +62,8 @@ class ReplayRun:
         return compat.write_reports(self._spec, compat.results_dir(self._spec), final_state)
 
     @staticmethod
-    def rating(final_trade_decision: str) -> str:
-        return compat.rating(final_trade_decision)
+    def rating(final_state: dict[str, Any]) -> str:
+        return compat.rating(final_state)
 
 
 def replaying(recording: Path, speed: float = 1.0) -> UpstreamFactory:
@@ -102,8 +102,8 @@ class _Recorder:
     def save_reports(self, final_state: dict[str, Any]) -> Path:
         return self._upstream.save_reports(final_state)
 
-    def rating(self, final_trade_decision: str) -> str:
-        return self._upstream.rating(final_trade_decision)
+    def rating(self, final_state: dict[str, Any]) -> str:
+        return self._upstream.rating(final_state)
 
 
 class _ChunkWriter:

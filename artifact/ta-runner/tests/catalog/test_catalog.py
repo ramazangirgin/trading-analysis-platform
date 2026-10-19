@@ -16,7 +16,7 @@ def test_catalog_lists_upstream_providers_models_and_analysts():
     assert providers["groq"]["custom_model_allowed"] is True
     assert [a["id"] for a in catalog["analysts"]] == ["market", "social", "news", "fundamentals"]
     assert catalog["asset_types"] == ["stock", "crypto"]
-    assert catalog["upstream_version"] == "0.5.1"
+    assert catalog["upstream_version"] == "0.6.0"
     assert catalog["defaults"]["llm_provider"]
 
 

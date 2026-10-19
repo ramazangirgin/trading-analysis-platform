@@ -24,7 +24,7 @@ def isolated_spec(tmp_path, spec_dict, monkeypatch):
 
 
 def test_upstream_version_is_the_pinned_release():
-    assert compat.upstream_version() == "0.5.1"
+    assert compat.upstream_version() == "0.6.0"
 
 
 def test_graph_exposes_the_methods_compat_uses():
@@ -37,7 +37,7 @@ def test_graph_exposes_the_methods_compat_uses():
         "end_checkpoint",
         "clear_checkpoint_on_success",
         "record_decision",
-        "_log_state",
+        "stream_run",
     ):
         assert callable(getattr(TradingAgentsGraph, name)), name
     params = inspect.signature(TradingAgentsGraph.create_run_state).parameters
@@ -57,9 +57,6 @@ def test_config_carries_the_spec(isolated_spec):
 def test_graph_builds_and_streams_full_state_values(isolated_spec):
     run = compat.UpstreamRun(isolated_spec, callbacks=[])
     graph = run._graph
-
-    args = graph.propagator.get_graph_args(callbacks=[])
-    assert args["stream_mode"] == "values"  # StateTracker expects accumulated state per chunk
 
     nodes = set(graph.graph.get_graph().nodes)
     for expected in (
@@ -83,20 +80,21 @@ def test_graph_builds_and_streams_full_state_values(isolated_spec):
         "risk_debate_state",
     ):
         assert key in state, key
-    for key in ("bull_history", "bear_history", "judge_decision", "count"):
+    for key in ("bull_history", "bear_history", "count"):
         assert key in state["investment_debate_state"], key
-    for key in ("aggressive_history", "conservative_history", "neutral_history", "judge_decision"):
+    for key in ("aggressive_history", "conservative_history", "neutral_history", "count"):
         assert key in state["risk_debate_state"], key
 
 
 @pytest.mark.parametrize(
-    ("text", "rating"),
+    ("final_state", "rating"),
     [
-        ("**Rating**: Buy", "Buy"),
-        ("Final rating: Overweight", "Overweight"),
-        ("FINAL TRANSACTION PROPOSAL: **SELL**", "Sell"),
-        ("no idea", "REVIEW"),
+        ({"final_rating": "Sell", "final_trade_decision": "**Rating**: Buy"}, "Sell"),
+        ({"final_trade_decision": "**Rating**: Buy"}, "Buy"),
+        ({"final_trade_decision": "Final rating: Overweight"}, "Overweight"),
+        ({"final_trade_decision": "FINAL TRANSACTION PROPOSAL: **SELL**"}, "REVIEW"),
+        ({"final_trade_decision": "no idea"}, "REVIEW"),
     ],
 )
-def test_rating_parsing(text, rating):
-    assert compat.UpstreamRun.rating(text) == rating
+def test_rating_is_the_portfolio_managers_own(final_state, rating):
+    assert compat.UpstreamRun.rating(final_state) == rating

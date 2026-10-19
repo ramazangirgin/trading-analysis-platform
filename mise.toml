@@ -13,15 +13,15 @@ lefthook = "2.1"
 # Deployment to a server over SSH (deploy/server/): Ansible sets it up. It serves deploy/server/
 # only; nothing else in the repository needs it.
 # ansible-core's commands (ansible-playbook) and ansible-lint, each in a tool environment that also
-# has the full `ansible` package (13.x), so the collections the roles use (community.general,
+# has the full `ansible` package (14.x), so the collections the roles use (community.general,
 # community.docker, ansible.posix) are there; its major pins ansible-core's minor.
 # Renovate does not read uvx_args: a custom manager in .github/renovate.json5 updates the `ansible~=`
 # range, and ansible-core is bumped by hand along with it.
 # --no-build-package cryptography: take the newest cryptography with a ready-made wheel for this
 # machine instead of compiling one (which needs Rust and OpenSSL's headers). From 49.0 on there are
 # no wheels for Intel Macs, so they get 48.0.1; Linux and Apple Silicon get the newest.
-"pipx:ansible-core" = { version = "2.20", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
-"pipx:ansible-lint" = { version = "26.8", uvx_args = "--with ansible~=13.0 --no-build-package cryptography" }
+"pipx:ansible-core" = { version = "2.21", uvx_args = "--with ansible~=14.4 --no-build-package cryptography" }
+"pipx:ansible-lint" = { version = "26.9.0", uvx_args = "--with ansible~=14.4 --no-build-package cryptography" }
 
 [tasks.setup]
 description = "Install ta-runner (TradingAgents + deps), the frontend's packages, the Git hooks, and a container engine when there is none (Docker on Ubuntu/Debian, Podman on macOS; PLATFORM_INSTALL_ENGINE=0 skips it)"
