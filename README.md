@@ -81,6 +81,16 @@ to be changed: after logging in with it, the UI asks for a new password before a
 you lost it while `admin` is still the only user, delete the user
 (`DELETE FROM "IDENTITY"."USERS";` in the database) and restart to get a new one.
 
+More users are added in the UI, under **Admin → Users**: **New user** takes a username, roles and
+a one-time password, generated or entered. A generated one is shown once, to pass on; the user
+must change it at the first login. Per row an admin edits the roles, disables or enables the
+account (there is no delete), resets the password and unlocks a locked account. The UI explains
+beforehand what the platform refuses: disabling yourself, removing your own ADMIN role, or
+disabling or demoting the last enabled ADMIN. The page needs the permission `user:read`, its
+changes `user:manage`.
+
+![Admin → Users: an admin, an active analyst and a disabled viewer](docs/screenshots/users.png)
+
 ### 4. Add an API key
 
 Open **Settings**, paste the key next to its provider and press **Save**. Keys are stored in
@@ -453,6 +463,8 @@ The backend:
     a session keeps the permissions of its login. The next request of such a session gets 401, and
     its open event streams close. An admin who changes their own roles keeps their current session
     with its old permissions until the next login.
+  - The UI's **Admin → Users** page (`/admin/users`) uses these endpoints, explains a blocked guard
+    rail before the request, and shows the one-time password once.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
   (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
   delegate method. The build fails (Checkstyle rule `TAP-A1`) while a delegate method has neither
@@ -539,7 +551,7 @@ included), on every pull request, and on demand (*Run workflow* on the Actions t
 | ta-runner image (arm64) | The same image built on an arm64 runner (`ubuntu-24.04-arm`) and run under the same lockdown flags, so a dependency without arm64 wheels shows up before anyone deploys to an arm64 server |
 | Server deploy (Ansible) | `mise run server:check` without a server: `ansible-lint` (production profile) and the playbook's syntax; then `mise run server:test-setup`: the setup scripts against a throwaway Ubuntu 24.04 container ([`deploy/server/`](deploy/server/README.md#testing)) |
 | Server deploy end-to-end | Only when `deploy/`, the ta-runner Dockerfile, `mise.toml` or the CI workflow changed (otherwise it passes in seconds): `mise run server:test`, with the runner as the server. The setup scripts, a deploy over SSH to `127.0.0.1`, a second deploy with `changed=0`, the UI through the SSH tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH |
-| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as a seeded `e2e` user: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
+| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as the first admin: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); user management (create a user, first login with the one-time password, disable); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
 A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so

@@ -25,7 +25,7 @@ test('a logged-out visitor is sent to the login page and back after logging in',
 
   await logIn(page, E2E_USER, E2E_PASSWORD)
   await expect(page).toHaveURL('/reports')
-  await expect(page.getByRole('button', { name: E2E_USER })).toBeVisible()
+  await expect(page.getByRole('button', { name: E2E_USER, exact: true })).toBeVisible()
 })
 
 // An unknown user gets the same answer as a wrong password, so the message never tells which part
@@ -49,12 +49,12 @@ test('logging out returns to the login page and the back button shows no data', 
   await logIn(page, E2E_USER, E2E_PASSWORD)
   await expect(page).toHaveURL('/')
 
-  await page.getByRole('button', { name: E2E_USER }).click()
+  await page.getByRole('button', { name: E2E_USER, exact: true }).click()
   await page.getByText('Log out').click()
   await expect(page).toHaveURL('/login')
 
   await page.goBack()
   await expect(page).toHaveURL(/\/login/)
   await expect(page.getByPlaceholder('Username')).toBeVisible()
-  await expect(page.getByRole('button', { name: E2E_USER })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: E2E_USER, exact: true })).toHaveCount(0)
 })

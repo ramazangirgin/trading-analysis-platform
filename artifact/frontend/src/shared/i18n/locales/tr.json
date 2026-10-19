@@ -10,6 +10,8 @@
     "newAnalysis": "Yeni analiz",
     "reports": "Raporlar",
     "settings": "Ayarlar",
+    "admin": "Yönetim",
+    "users": "Kullanıcılar",
     "changePassword": "Parolayı değiştir",
     "logout": "Çıkış yap"
   },
@@ -252,6 +254,12 @@
     "password_change_required": "Devam etmeden önce parolanızı değiştirin.",
     "too_many_login_attempts": "Bu adresten çok fazla başarısız giriş denemesi yapıldı. Birkaç dakika sonra tekrar deneyin.",
     "user_not_found": "Kullanıcı bulunamadı.",
+    "invalid_username": "Bu kullanıcı adı geçerli değil. Başka bir ad seçin.",
+    "username_taken": "Bu kullanıcı adı zaten alınmış.",
+    "unknown_role": "Seçilen rollerden biri yok.",
+    "cannot_disable_self": "Kendi hesabınızı devre dışı bırakamazsınız. Başka bir yöneticiden isteyin.",
+    "cannot_remove_own_admin": "Kendi ADMIN rolünüzü kaldıramazsınız. Başka bir yöneticiden isteyin.",
+    "last_admin": "Bu, etkin tek ADMIN. Önce etkin başka bir kullanıcıya ADMIN rolünü verin.",
     "unauthorized": "Oturumunuz sona erdi. Tekrar giriş yapın.",
     "forbidden": "Bunun için yetkiniz yok.",
     "network_error": "Sunucuya ulaşılamadı.",
@@ -268,6 +276,76 @@
     "invalid_preset": "Geçersiz hazır ayar.",
     "preset_not_found": "Hazır ayar bulunamadı.",
     "prices_not_found": "Bu analiz için önbellekte fiyat yok."
+  },
+  "users": {
+    "title": "Kullanıcılar",
+    "newUser": "Yeni kullanıcı",
+    "loadFailed": "Kullanıcılar alınamadı.",
+    "columns": {
+      "username": "Kullanıcı adı",
+      "roles": "Roller",
+      "status": "Durum",
+      "lastLogin": "Son giriş",
+      "created": "Oluşturulma",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "active": "Etkin",
+      "locked": "Kilitli",
+      "disabled": "Devre dışı"
+    },
+    "oneTimeTag": "Tek kullanımlık parola",
+    "neverLoggedIn": "Hiç",
+    "actions": {
+      "editRoles": "Rolleri düzenle",
+      "disable": "Devre dışı bırak",
+      "enable": "Etkinleştir",
+      "resetPassword": "Parolayı sıfırla",
+      "unlock": "Kilidi aç"
+    },
+    "disableConfirm": "{username} devre dışı bırakılsın mı? Oturumları sona erer ve yeniden etkinleştirene kadar giriş yapamaz.",
+    "enableConfirm": "{username} etkinleştirilsin mi? Yeniden giriş yapabilir.",
+    "guard": {
+      "cannot_disable_self": "Kendi hesabınızı devre dışı bırakamazsınız. Başka bir yöneticiden isteyin.",
+      "cannot_remove_own_admin": "Kendi ADMIN rolünüzü kaldıramazsınız. Başka bir yöneticiden isteyin.",
+      "last_admin": "Bu, etkin tek ADMIN. Önce etkin başka bir kullanıcıya ADMIN rolünü verin."
+    },
+    "create": {
+      "title": "Yeni kullanıcı",
+      "username": "Kullanıcı adı",
+      "roles": "Roller",
+      "rolesRequired": "En az bir rol seçin.",
+      "usernameRequired": "Bir kullanıcı adı girin.",
+      "submit": "Oluştur"
+    },
+    "password": {
+      "generate": "Oluşturulsun",
+      "enter": "Ben gireyim",
+      "label": "Tek kullanımlık parola",
+      "placeholder": "En az parola politikasındaki uzunlukta"
+    },
+    "editRoles": {
+      "title": "{username} kullanıcısının rolleri",
+      "sessionsEnd": "Kullanıcının oturumları sona erer; yeni rolleriyle yeniden giriş yapar.",
+      "ownSession": "Bu sizin kendi hesabınız; oturumunuz sürer.",
+      "submit": "Kaydet"
+    },
+    "resetPassword": {
+      "title": "{username} kullanıcısının parolasını sıfırla",
+      "sessionsEnd": "Kullanıcının oturumları sona erer ve bir sonraki girişte parolayı değiştirmesi gerekir.",
+      "ownAccount": "Bu sizin kendi hesabınız: oturumunuz kapanır ve bir sonraki girişte parolayı değiştirmeniz gerekir.",
+      "submit": "Sıfırla"
+    },
+    "oneTimePassword": {
+      "title": "Tek kullanımlık parola",
+      "user": "Kullanıcı",
+      "password": "Parola",
+      "copy": "Kopyala",
+      "copied": "Kopyalandı",
+      "shownOnce": "Bu parola yalnızca bu kez gösterilir. {username} kullanıcısına iletin; ilk girişte değiştirmesi gerekir.",
+      "entered": "{username}, girdiğiniz parolayı ilk girişte değiştirmek zorundadır.",
+      "close": "Tamam"
+    }
   },
   "notFound": {
     "heading": "Sayfa bulunamadı",

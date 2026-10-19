@@ -10,6 +10,8 @@
     "newAnalysis": "New analysis",
     "reports": "Reports",
     "settings": "Settings",
+    "admin": "Admin",
+    "users": "Users",
     "changePassword": "Change password",
     "logout": "Log out"
   },
@@ -252,6 +254,12 @@
     "password_change_required": "Change your password before you continue.",
     "too_many_login_attempts": "Too many failed logins from this address. Try again in a few minutes.",
     "user_not_found": "User not found.",
+    "invalid_username": "This username is not valid. Choose another one.",
+    "username_taken": "This username is already taken.",
+    "unknown_role": "One of the chosen roles does not exist.",
+    "cannot_disable_self": "You cannot disable your own account. Ask another admin to do it.",
+    "cannot_remove_own_admin": "You cannot remove your own ADMIN role. Ask another admin to do it.",
+    "last_admin": "This is the only enabled ADMIN. Give another enabled user the ADMIN role first.",
     "unauthorized": "Your session has ended. Log in again.",
     "forbidden": "You do not have permission for this.",
     "network_error": "Cannot reach the server.",
@@ -268,6 +276,76 @@
     "invalid_preset": "Invalid preset.",
     "preset_not_found": "Preset not found.",
     "prices_not_found": "No cached prices for this analysis."
+  },
+  "users": {
+    "title": "Users",
+    "newUser": "New user",
+    "loadFailed": "Could not load the users.",
+    "columns": {
+      "username": "Username",
+      "roles": "Roles",
+      "status": "Status",
+      "lastLogin": "Last login",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "locked": "Locked",
+      "disabled": "Disabled"
+    },
+    "oneTimeTag": "One-time password",
+    "neverLoggedIn": "Never",
+    "actions": {
+      "editRoles": "Edit roles",
+      "disable": "Disable",
+      "enable": "Enable",
+      "resetPassword": "Reset password",
+      "unlock": "Unlock"
+    },
+    "disableConfirm": "Disable {username}? Their sessions end and they cannot log in until you enable them again.",
+    "enableConfirm": "Enable {username}? They can log in again.",
+    "guard": {
+      "cannot_disable_self": "You cannot disable your own account. Ask another admin to do it.",
+      "cannot_remove_own_admin": "You cannot remove your own ADMIN role. Ask another admin to do it.",
+      "last_admin": "This is the only enabled ADMIN. Give another enabled user the ADMIN role first."
+    },
+    "create": {
+      "title": "New user",
+      "username": "Username",
+      "roles": "Roles",
+      "rolesRequired": "Choose at least one role.",
+      "usernameRequired": "Enter a username.",
+      "submit": "Create"
+    },
+    "password": {
+      "generate": "Generate one",
+      "enter": "Enter one",
+      "label": "One-time password",
+      "placeholder": "At least the minimum length of the password policy"
+    },
+    "editRoles": {
+      "title": "Edit roles of {username}",
+      "sessionsEnd": "The user's sessions end, and they log in again with the new roles.",
+      "ownSession": "This is your own account; your session stays.",
+      "submit": "Save"
+    },
+    "resetPassword": {
+      "title": "Reset the password of {username}",
+      "sessionsEnd": "The user's sessions end, and they must change the password at the next login.",
+      "ownAccount": "This is your own account: you will be logged out and must change the password at the next login.",
+      "submit": "Reset"
+    },
+    "oneTimePassword": {
+      "title": "One-time password",
+      "user": "User",
+      "password": "Password",
+      "copy": "Copy",
+      "copied": "Copied",
+      "shownOnce": "This password is shown only this once. Pass it on to {username}; they must change it at the first login.",
+      "entered": "{username} must change the password you entered at the first login.",
+      "close": "Done"
+    }
   },
   "notFound": {
     "heading": "Page not found",

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePreferredDark } from '@vueuse/core'
 import {
   NConfigProvider,
+  NDropdown,
   NLayout,
   NLayoutContent,
   NLayoutFooter,
@@ -26,6 +27,9 @@ const session = useSessionStore()
 const bare = computed(() => Boolean(route.meta.bare) || session.mustChangePassword)
 // /reports/:id is still the Reports page.
 const reportsActive = computed(() => route.name === 'report')
+const router = useRouter()
+const adminActive = computed(() => route.path.startsWith('/admin'))
+const adminOptions = computed(() => [{ label: t('nav.users'), key: 'users' }])
 const preferredDark = usePreferredDark()
 const version = __APP_VERSION__
 
@@ -64,6 +68,19 @@ watchEffect(() => {
             <RouterLink v-if="session.can(PERMISSIONS.settingsRead)" :to="{ name: 'settings' }">{{
               t('nav.settings')
             }}</RouterLink>
+            <NDropdown
+              v-if="session.can(PERMISSIONS.userRead)"
+              trigger="click"
+              :options="adminOptions"
+              @select="(name: string) => router.push({ name })"
+            >
+              <button
+                type="button"
+                :class="['app__nav-button', { 'app__nav-button--active': adminActive }]"
+              >
+                {{ t('nav.admin') }}
+              </button>
+            </NDropdown>
           </nav>
           <span v-else class="app__nav" />
           <UserMenu v-if="!route.meta.bare" />
@@ -115,6 +132,21 @@ body {
 }
 
 .app__nav a.router-link-exact-active {
+  opacity: 1;
+  font-weight: 600;
+}
+
+.app__nav-button {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.75;
+}
+
+.app__nav-button--active {
   opacity: 1;
   font-weight: 600;
 }
