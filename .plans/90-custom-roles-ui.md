@@ -83,13 +83,15 @@ permissions, and deleting a role that users still hold.
 
 ### WP2: End-to-end test and screenshot
 
+- **Status**: done
+
 - **Depends on**: WP1
 - **Files**:
   - `e2e/tests/roles.e2e.ts` (new)
   - `e2e/screenshots/roles.shot.ts` (new), `docs/screenshots/roles.png` (new, taken with `mise run screenshots`)
 - **Steps**:
-  - [ ] Write the e2e test and the screenshot script.
-  - [ ] Take the screenshot.
+  - [x] Write the e2e test and the screenshot script.
+  - [x] Take the screenshot.
 - **Tests**:
   - `roles.e2e.ts`, as the shared admin, with unique names per run (the tests run in parallel and
     are retried): open **Admin → Roles**, create a role with only `analysis:read`, create a user

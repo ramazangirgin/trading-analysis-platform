@@ -91,6 +91,16 @@ changes `user:manage`.
 
 ![Admin → Users: an admin, an active analyst and a disabled viewer](docs/screenshots/users.png)
 
+**Admin → Roles** (permission `role:manage`) lists every role with its permissions and its number
+of users. **New role** takes a name, a description and the permissions, chosen from a checklist
+grouped by area (analysis, presets, settings, users and roles, audit). **Edit** changes a custom
+role's name, description and permissions; **Delete** removes it. On the built-in roles the name and
+description cannot be changed, ADMIN keeps all its permissions, and none of them can be deleted; a
+role that users still hold cannot be deleted either. The page explains this beforehand. A change to
+a role applies to the users who are logged in on their next request, without logging in again.
+
+![Admin → Roles: the built-in roles and a custom read-only role](docs/screenshots/roles.png)
+
 ### 4. Add an API key
 
 Open **Settings**, paste the key next to its provider and press **Save**. Keys are stored in
@@ -482,6 +492,7 @@ The backend:
     the above, or 409 `built_in_role` or `role_name_taken`.
   - `DELETE /api/roles/{id}` answers 204, 404, or 409 `built_in_role` or `role_in_use`
     (`params.userCount`).
+  - The UI's **Admin → Roles** page (`/admin/roles`) uses these endpoints.
   - **Names** are trimmed and have 2 to 40 characters: ASCII letters, digits, space, `_` and `-`.
     They are unique ignoring case, so a custom `admin` cannot sit next to `ADMIN`. A description has
     at most 200 characters.
