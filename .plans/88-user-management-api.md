@@ -205,6 +205,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Identity adapter: last-login column and the enabled-admin count
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `domain/identity/adapter/src/main/resources/…/persistence/migration/V5__add_last_login.sql` (new)
@@ -213,9 +214,9 @@ Packages without a dependency between them can be implemented in parallel.
   - `…/adapter/persistence/UserJpaRepository.java`, `JpaUserRepositoryAdapter.java`
   - `domain/identity/adapter/src/test/java/…/persistence/JpaIdentityRepositoryTest.java`
 - **Steps**:
-  - [ ] Add the migration with its column comment
-  - [ ] Map the column in the entity and both mappers, and copy it in `save`
-  - [ ] Add the JPQL count and `countEnabledWithRole`
+  - [x] Add the migration with its column comment
+  - [x] Map the column in the entity and both mappers, and copy it in `save`
+  - [x] Add the JPQL count and `countEnabledWithRole`
 - **Tests**:
   - `JpaIdentityRepositoryTest`: `lastLoginAt` round-trips (null and set);
     `countEnabledWithRole` counts only enabled users with that role (a disabled ADMIN and an enabled

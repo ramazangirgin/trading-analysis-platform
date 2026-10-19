@@ -120,6 +120,7 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
         existing.setMustChangePassword(incoming.isMustChangePassword());
         existing.setFailedLoginCount(incoming.getFailedLoginCount());
         existing.setLockedUntil(incoming.getLockedUntil());
+        existing.setLastLoginAt(incoming.getLastLoginAt());
         existing.setUpdatedAt(null);
         existing.getRoleIds().clear();
         existing.getRoleIds().addAll(incoming.getRoleIds());

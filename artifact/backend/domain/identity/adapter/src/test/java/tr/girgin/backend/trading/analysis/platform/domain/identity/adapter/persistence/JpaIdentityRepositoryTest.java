@@ -117,6 +117,32 @@ class JpaIdentityRepositoryTest {
     }
 
     @Test
+    void theLastLoginRoundTripsAsNullAndAsATime() {
+        User saved = users.save(user("last-login", Set.of()));
+        assertThat(users.findById(saved.id()).orElseThrow().lastLoginAt()).isEmpty();
+
+        Instant at = Instant.parse("2026-10-04T08:30:00Z");
+        User loggedIn = users.save(saved.withLastLogin(at));
+
+        assertThat(loggedIn.lastLoginAt()).contains(at);
+        assertThat(users.findById(saved.id())).contains(loggedIn);
+    }
+
+    @Test
+    void countEnabledWithRoleCountsOnlyEnabledUsersWithThatRole() {
+        Role role = saveRole("count-role", Set.of());
+        Role other = saveRole("count-other-role", Set.of());
+        users.save(user("count-role-enabled-one", Set.of(role.id())));
+        users.save(user("count-role-enabled-two", Set.of(role.id(), other.id())));
+        users.save(user("count-role-disabled", Set.of(role.id())).withEnabled(false));
+        users.save(user("count-role-other", Set.of(other.id())));
+
+        assertThat(users.countEnabledWithRole(role.id())).isEqualTo(2);
+        assertThat(users.countEnabledWithRole(other.id())).isEqualTo(2);
+        assertThat(users.countEnabledWithRole(RoleId.newId())).isZero();
+    }
+
+    @Test
     void aNewUserGetsTheTimeOfTheClockAsCreatedAtAndUpdatedAt() {
         User saved = users.save(user("new-audit", Set.of()));
 
