@@ -131,7 +131,7 @@ built-in check such as `IllegalImport`, `TodoComment` or `RegexpSingleline`, lin
 `TAP-L1: Field 'System#out' is not allowed. Use an SLF4J logger: log.info(...).`
 
 **Ids** are `TAP-<group><n>`, with a group per topic (`L`, `D`, `T`, `C`, `J`, `S`, `X`, `A`; `L` is
-logging, `A` access control). Ids are not reused.
+logging, `D` Spring, `A` access control). Ids are not reused.
 
 **Suppressing** one is as for any check, with the id: `@SuppressWarnings("checkstyle:TAP-L1")` and a
 reason on the same line or the line above (see [Suppressing a finding](#suppressing-a-finding)).
@@ -147,6 +147,8 @@ the repository.
 |---|---|---|---|---|---|---|
 | `TAP-L1` | No `System.out`, `System.err` and no `printStackTrace()` without arguments; use SLF4J | main and test | [`ForbiddenMemberAccessCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenMemberAccessCheck.md) | `members = System#out, System#err, *#printStackTrace(0)` | Console output has no level, no logger name and no timestamp, and bypasses the log configuration; a stack trace belongs in the log with the message | `System.out.println("started");` / `log.info("started");` and `e.printStackTrace();` / `log.error("failed", e);` |
 | `TAP-A1` | Every public method of a `*ApiDelegateImpl` carries `@RequiresPermission(Permission...)` or `@NoPermissionRequired("reason")` | main and test | [`RequiredMethodAnnotationCheck`](../../build-logic/checkstyle-rules/docs/RequiredMethodAnnotationCheck.md) | `classes = *ApiDelegateImpl`, `annotations = ...config.RequiresPermission, ...config.NoPermissionRequired` | `SecurityConfig` only requires a session for `/api/**`, so a method without a permission is open to every logged-in user; the marker makes each exception visible, with its reason | `public ResponseEntity<Void> stop(...) {...}` / `@RequiresPermission(Permission.ANALYSIS_RUN) public ResponseEntity<Void> stop(...) {...}` |
+| `TAP-D5` | No `produces` or `consumes` set to `application/json` on a mapping | main and test | [`RegexpSinglelineJava`](https://checkstyle.org/checks/regexp/regexpsinglelinejava.html) | `format` matches `produces` / `consumes` `= MediaType.APPLICATION_JSON_VALUE` or `"application/json"`; comments are ignored | JSON is already what the controllers read and write, and `springdoc.default-produces-media-type` keeps it in the OpenAPI document, so the attribute only repeats the default. Another media type (`text/event-stream`) is still declared | `@PostMapping(path = "/presets", consumes = MediaType.APPLICATION_JSON_VALUE)` / `@PostMapping("/presets")` |
+| `TAP-D6` | No `ResponseEntity.ok(...)` or `ResponseEntity::ok`: an endpoint that only answers `200` returns its body type | main and test | [`RegexpSinglelineJava`](https://checkstyle.org/checks/regexp/regexpsinglelinejava.html) | `format` matches `ResponseEntity.ok(` and `ResponseEntity::ok`; comments are ignored | Errors are exceptions ([REST endpoints](backend-java-rest-api.md#errors)), so a `ResponseEntity` around a `200` sets nothing Spring would not; it is kept for `201`, `204` and statuses or headers that vary | `public ResponseEntity<UserDto> getUser(...) { return ResponseEntity.ok(dto); }` / `public UserDto getUser(...) { return dto; }` |
 
 ## Suppressing a finding
 

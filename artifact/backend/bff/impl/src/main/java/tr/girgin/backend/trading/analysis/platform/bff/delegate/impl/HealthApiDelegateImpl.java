@@ -1,6 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.HealthApiDelegate;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SystemHealthDto;
@@ -23,7 +22,7 @@ class HealthApiDelegateImpl implements HealthApiDelegate {
     @Override
     // Its alerts are about running (runner, Docker, missing keys).
     @RequiresPermission({Permission.ANALYSIS_RUN, Permission.SETTINGS_READ})
-    public ResponseEntity<SystemHealthDto> getHealth() {
-        return ResponseEntity.ok(mapper.map(systemHealth.checkHealth()));
+    public SystemHealthDto getHealth() {
+        return mapper.map(systemHealth.checkHealth());
     }
 }

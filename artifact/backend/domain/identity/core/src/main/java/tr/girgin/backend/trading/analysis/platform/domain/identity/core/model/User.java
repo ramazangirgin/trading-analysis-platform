@@ -8,6 +8,8 @@ import java.util.Set;
 /**
  * A person who signs in, with the roles assigned to them.
  *
+ * @param lastLoginAt when the user last logged in successfully; empty until then. A domain fact: the core sets it
+ *     from its clock.
  * @param createdAt when the user was first saved. An audit field: persistence sets it, so it is {@code null} on a
  *     user the core builds before its first save, and set on every user the repository returns.
  * @param updatedAt when the user was last saved. An audit field like {@code createdAt}.
@@ -23,6 +25,7 @@ public record User(
         boolean mustChangePassword,
         int failedLoginCount,
         Optional<Instant> lockedUntil,
+        Optional<Instant> lastLoginAt,
         Instant createdAt,
         Instant updatedAt,
         Set<RoleId> roleIds,
@@ -33,6 +36,7 @@ public record User(
         Objects.requireNonNull(username, "username");
         Objects.requireNonNull(passwordHash, "passwordHash");
         Objects.requireNonNull(lockedUntil, "lockedUntil");
+        Objects.requireNonNull(lastLoginAt, "lastLoginAt");
         roleIds = Set.copyOf(roleIds);
     }
 
@@ -46,9 +50,27 @@ public record User(
                 mustChangePassword,
                 failedLoginCount,
                 lockedUntil,
+                lastLoginAt,
                 createdAt,
                 updatedAt,
                 newRoleIds,
+                version);
+    }
+
+    /** The same user, enabled or disabled. */
+    public User withEnabled(boolean newEnabled) {
+        return new User(
+                id,
+                username,
+                passwordHash,
+                newEnabled,
+                mustChangePassword,
+                failedLoginCount,
+                lockedUntil,
+                lastLoginAt,
+                createdAt,
+                updatedAt,
+                roleIds,
                 version);
     }
 
@@ -62,6 +84,7 @@ public record User(
                 newMustChangePassword,
                 failedLoginCount,
                 lockedUntil,
+                lastLoginAt,
                 createdAt,
                 updatedAt,
                 roleIds,
@@ -78,6 +101,7 @@ public record User(
                 mustChangePassword,
                 newFailedLoginCount,
                 newLockedUntil,
+                lastLoginAt,
                 createdAt,
                 updatedAt,
                 roleIds,
@@ -87,6 +111,23 @@ public record User(
     /** The same user with no failed logins and no lock. */
     public User withLoginSucceeded() {
         return withFailedLogin(0, Optional.empty());
+    }
+
+    /** The same user, last logged in at the given time. */
+    public User withLastLogin(Instant at) {
+        return new User(
+                id,
+                username,
+                passwordHash,
+                enabled,
+                mustChangePassword,
+                failedLoginCount,
+                lockedUntil,
+                Optional.of(at),
+                createdAt,
+                updatedAt,
+                roleIds,
+                version);
     }
 
     /** Whether the account is locked at the given time: a lock is in force until its instant is reached. */

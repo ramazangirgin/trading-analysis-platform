@@ -2,6 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.outboun
 
 import java.util.List;
 import java.util.Optional;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -17,6 +18,8 @@ public interface UserRepositoryPort {
     List<User> findAll();
 
     long count();
+
+    long countEnabledWithRole(RoleId role);
 
     /**
      * Inserts or updates the user and replaces its role assignments with {@link User#roleIds()}, in

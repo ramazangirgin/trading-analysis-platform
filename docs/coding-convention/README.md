@@ -13,6 +13,7 @@ enforces each rule.
 | [backend-java-formatting.md](backend-java-formatting.md) | Backend (Java): formatting with Spotless and Palantir Java Format, why that formatter, how to fix a finding |
 | [backend-database-naming.md](backend-database-naming.md) | Backend (database): table, column, constraint, index and enum type names, quoting, migrations |
 | [backend-java-persistence.md](backend-java-persistence.md) | Backend (Java): Spring Data JPA / Hibernate only, no plain SQL; entities, embeddables, converters, repositories, enum and array columns, optimistic locking with `@Version`, the shared persistence library and its test fixtures |
+| [backend-java-rest-api.md](backend-java-rest-api.md) | Backend (Java): BFF endpoints: return the body type for a `200`, `ResponseEntity` only for `201` / `204` / varying statuses; JSON as the default media type; domain exceptions answered by `DomainExceptionHandler`, never caught and mapped in a delegate |
 | [repository-git-hooks.md](repository-git-hooks.md) | Whole repository: the pre-commit hook (lefthook), what it runs on which files, how to install, run or skip it |
 | [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
 | [repository-shared-types.md](repository-shared-types.md) | Whole repository: values shared by the backend domain, the BFF and the frontend (permissions as the example): one domain enum, a DTO mirror with a MapStruct mapping, OpenAPI to the generated frontend type |

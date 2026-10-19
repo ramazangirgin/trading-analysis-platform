@@ -309,5 +309,17 @@
                 tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired"/>
             <property name="suggestion" value="Declare who may call it: @RequiresPermission(Permission...), or @NoPermissionRequired(&quot;reason&quot;) for a route that needs no permission."/>
         </module>
+        <module name="RegexpSinglelineJava">
+            <property name="id" value="TAP-D5"/>
+            <property name="format" value="\b(produces|consumes)\s*=\s*\{?\s*((\w+\.)*MediaType\.APPLICATION_JSON_VALUE|&quot;application/json&quot;)"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="TAP-D5: JSON is the default media type of a mapping; leave out produces / consumes = application/json."/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="id" value="TAP-D6"/>
+            <property name="format" value="\bResponseEntity\s*(\.\s*ok\s*\(|::\s*ok\b)"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="TAP-D6: an endpoint that only answers 200 returns its body type, not ResponseEntity.ok(...); errors are exceptions."/>
+        </module>
     </module>
 </module>

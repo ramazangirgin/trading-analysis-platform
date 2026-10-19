@@ -37,6 +37,7 @@ bff/delegate/impl/
   *ApiDelegateImpl                 delegate implementations: call inbound ports, map
   mapper/                          DTO <-> domain mappers and their scalar converters
   mapper/error/                    *ExceptionToApiExceptionMapper
+  error/                           DomainExceptionHandler: answers the domains' exceptions
   config/                          security configuration: SecurityConfig, its filters and its
                                    401/403 handlers; SessionEventStreams, the registry that ties
                                    open event streams to their session
@@ -96,13 +97,14 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Class kind | Place | Rule |
 |---|---|---|
 | Controller, delegate interface | `bff.controller.api` (root) | `controller_root_holds_only_controllers_and_delegates` |
-| `ApiException`, `@RestControllerAdvice` | `bff.controller.api.error` | `exceptions_live_in_exception_packages`, `exception_packages_hold_only_exceptions_and_error_codes` |
+| `ApiException`, `@RestControllerAdvice` for web errors (`ApiExceptionHandler`) | `bff.controller.api.error` | `exceptions_live_in_exception_packages`, `exception_packages_hold_only_exceptions_and_error_codes` |
 | Spring Security code (filter chain, filters, entry point, access-denied handler) | `bff.delegate.impl.config`, never `bff.controller.api` | `bff_api_holds_no_security_code` |
 | Permission rule of an endpoint | `@RequiresPermission` on its delegate method in `bff.delegate.impl` (the annotation and its enforcement live in `bff.delegate.impl.config`), never an annotation on a controller nor a request matcher in `SecurityConfig`; a route that needs no permission carries `@NoPermissionRequired("reason")` (also in `bff.delegate.impl.config`); the Checkstyle rule `TAP-A1` fails the build when a delegate method has neither, and `EndpointPermissionsIntegrationTest` proves it at runtime | `bff_api_holds_no_security_code`, `TAP-A1` (Checkstyle) |
 | Delegate implementation `*ApiDelegateImpl` | `bff.delegate.impl` (root), nothing else there | `delegate_impls_live_at_the_delegate_root`, `delegate_root_holds_only_delegate_impls` |
 | MapStruct mapper | an adapter's `…mapper` package, `bff.delegate.impl.mapper` or `library.mapper` (the shared mapper library) | `mappers_live_at_layer_boundaries` |
 | Anything in a `mapper` package | is a MapStruct mapper (or its generated `*Impl`) | `mapper_packages_hold_only_mappers` |
-| `*ExceptionToApiExceptionMapper` | `bff.delegate.impl.mapper.error`, nothing else there | `exception_mappers_live_in_mapper_error`, `mapper_error_holds_only_exception_mappers` |
+| `*ExceptionToApiExceptionMapper` | `bff.delegate.impl.mapper.error`, nothing else there; used only by the exception handler, never by a delegate ([REST endpoints](backend-java-rest-api.md#errors)) | `exception_mappers_live_in_mapper_error`, `mapper_error_holds_only_exception_mappers`, `exception_mappers_are_used_only_by_exception_handlers` |
+| `@RestControllerAdvice` for the domains' exceptions (`DomainExceptionHandler`) | `bff.delegate.impl.error`, nothing else there | `exception_handlers_live_in_error_packages`, `bff_impl_error_holds_only_exception_handlers` |
 | `@Entity` `*Entity`, `@Embeddable` `*Embeddable`, `*AttributeConverter` | `domain.<d>.adapter.<port>.entity`, nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities`, `persistence_classes_are_named_by_kind` |
 | Spring Data repository `*JpaRepository` | `domain.<d>.adapter.persistence`, next to its adapter | `spring_data_repositories_live_in_persistence_roots`, `port_package_roots_hold_only_adapters` |
 | Any record in an adapter | `json` or `spec` | `adapter_records_live_in_data_packages` |

@@ -13,6 +13,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -84,6 +85,7 @@ class UserLockServiceTest {
                 false,
                 failedLoginCount,
                 lockedUntil,
+                Optional.empty(),
                 Instant.parse("2026-10-01T10:00:00Z"),
                 Instant.parse("2026-10-01T10:00:00Z"),
                 Set.of(),
@@ -114,6 +116,11 @@ class UserLockServiceTest {
         @Override
         public long count() {
             return user == null ? 0 : 1;
+        }
+
+        @Override
+        public long countEnabledWithRole(RoleId role) {
+            return user != null && user.enabled() && user.roleIds().contains(role) ? 1 : 0;
         }
 
         @Override

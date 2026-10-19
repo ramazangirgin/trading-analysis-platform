@@ -20,7 +20,13 @@ class IdentityExceptionToApiExceptionMapperTest {
         "PASSWORD_UNCHANGED, 400, password_unchanged",
         "WEAK_PASSWORD, 400, weak_password",
         "USER_NOT_FOUND, 404, user_not_found",
-        "INVALID_USERNAME, 500, invalid_username",
+        "INVALID_USERNAME, 400, invalid_username",
+        "UNKNOWN_ROLE, 400, unknown_role",
+        "USERNAME_TAKEN, 409, username_taken",
+        "CANNOT_DISABLE_SELF, 409, cannot_disable_self",
+        "CANNOT_REMOVE_OWN_ADMIN, 409, cannot_remove_own_admin",
+        "LAST_ADMIN, 409, last_admin",
+        "CONCURRENT_UPDATE, 409, concurrent_update",
         "UNKNOWN_PERMISSION, 500, unknown_permission"
     })
     void mapsEveryErrorCodeToItsStatusAndErrorCode(IdentityError error, int status, String errorCode) {

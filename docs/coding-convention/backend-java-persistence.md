@@ -185,6 +185,7 @@ written, and Spring Data JPA auditing sets it (`@CreatedDate`, `@LastModifiedDat
 | `ANALYSES.CREATED_AT` | Domain fact | An imported run takes the start time of the original run, and recovery orders queued analyses by it. Set by the analysis core from the `Clock` |
 | `USERS.CREATED_AT` | Audit field (`@CreatedDate`) | When the row was inserted; no rule reads it |
 | `USERS.UPDATED_AT` | Audit field (`@LastModifiedDate`) | When the row was last written; no rule reads it |
+| `USERS.LAST_LOGIN_AT` | Domain fact | When the user last logged in successfully. It is shown to admins and is not the time of the write; set by the identity core from the `Clock` on a successful login |
 | `PRESETS.UPDATED_AT` | Audit field (`@LastModifiedDate`) | When the preset was last saved. It is shown to the user, but it only records the write |
 
 - **One `Clock` bean.** `TradingPlatformApplication` defines `Clock.systemUTC()`; cores and adapters
@@ -243,9 +244,9 @@ A write based on a stale copy of a row fails instead of overwriting a newer one.
     flush. The compare is a private helper per adapter, moved to `:backend:library:persistence`
     once a third needs it.
 - **The services translate it** where they call a write: a domain error code `CONCURRENT_UPDATE`
-  (`AnalysisError`, `SettingsError`) with the ID as parameter, and the BFF maps it to HTTP 409
-  (`concurrent_update`). A domain whose ports promise the exception but no service writes yet
-  (identity) gets its code with the first service that writes.
+  (`AnalysisError`, `SettingsError`, `IdentityError`) with the ID as parameter, and the BFF maps it
+  to HTTP 409 (`concurrent_update`). A domain whose ports promise the exception but no service
+  writes yet gets its code with the first service that writes.
 - **Where the API exposes a write**, the request carries the version (`SavePresetRequest.version`,
   optional: without it the write applies to what is stored), and the frontend sends the one it read.
 
