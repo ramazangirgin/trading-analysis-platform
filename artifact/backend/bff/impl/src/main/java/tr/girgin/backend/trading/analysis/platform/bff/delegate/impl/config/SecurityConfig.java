@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -98,11 +97,7 @@ public class SecurityConfig {
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(-1)
                                 .sessionRegistry(sessionRegistry)
-                                .expiredSessionStrategy(event -> writer.write(
-                                        event.getResponse(),
-                                        HttpStatus.UNAUTHORIZED,
-                                        ApiAuthenticationEntryPoint.ERROR_CODE,
-                                        "Session ended"))))
+                                .expiredSessionStrategy(new ExpiredSessionStrategy(writer))))
                 .exceptionHandling(
                         handling -> handling.authenticationEntryPoint(new ApiAuthenticationEntryPoint(writer))
                                 .accessDeniedHandler(new ApiAccessDeniedHandler(writer)));

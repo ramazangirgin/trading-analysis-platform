@@ -470,7 +470,9 @@ The backend:
     under one lock, which is enough for one backend instance.
   - **Sessions end at once**: when a user is disabled, when their password is reset (also an
     admin's own: they log in again with the one-time password), and when their roles change. The
-    next request of such a session gets 401, and its open event streams close. An admin who changes
+    next API request of such a session gets 401, and its open event streams close; a request for
+    the UI (a page or a script) is redirected to itself and loads without the session, so the UI
+    goes to the login page instead of failing to load. An admin who changes
     their own roles keeps their current session with its old permissions until the next login or
     the next change to a role (a permission change applies to the next request, see `/api/roles`).
   - The UI's **Admin → Users** page (`/admin/users`) uses these endpoints, explains a blocked guard
