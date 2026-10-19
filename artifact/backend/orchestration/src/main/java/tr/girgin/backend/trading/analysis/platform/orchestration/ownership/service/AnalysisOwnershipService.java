@@ -24,7 +24,7 @@ class AnalysisOwnershipService implements AssignAnalysisOwnersUseCase {
         this.assignUnowned = assignUnowned;
     }
 
-    /** After every ContextRefreshedEvent listener: the first admin exists and the startup import has run. */
+    /** After every ContextRefreshedEvent listener the first admin exists; the startup import may still be running. */
     @EventListener(ApplicationReadyEvent.class)
     @Override
     public void assignUnownedToFirstAdmin() {

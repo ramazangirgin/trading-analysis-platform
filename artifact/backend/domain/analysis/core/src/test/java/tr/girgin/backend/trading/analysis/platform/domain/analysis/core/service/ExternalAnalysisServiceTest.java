@@ -61,6 +61,18 @@ class ExternalAnalysisServiceTest {
     }
 
     @Test
+    void aRefreshGivesAStoredUnownedImportTheGivenOwner() {
+        Analysis created =
+                service.register(external("GOOG", null, null, FINISHED), null).analysis();
+
+        var refreshed = register(external("GOOG", null, null, FINISHED));
+
+        assertThat(refreshed.outcome()).isEqualTo(Outcome.UPDATED);
+        assertThat(refreshed.analysis().id()).isEqualTo(created.id());
+        assertThat(refreshed.analysis().owner()).isEqualTo(Fakes.OWNER);
+    }
+
+    @Test
     void importsACompletedRun() {
         var registration = register(external("GOOG", Rating.HOLD, "**Rating**: Hold", FINISHED));
 
