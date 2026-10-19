@@ -289,8 +289,10 @@ Git worktree `../<checkout>-<issue>` checked out from `origin/main` (reused when
 never switches branches or writes in the checkout the session started in, and several issues can
 run side by side. It asks the developer only to approve the plan. Every later step runs without asking: pushing the plan branch, the implementation, each CI
 fix, review, fix round and the finalising, and the update with `main`. When the pull request is
-ready for review (up to date with `main`, **CI passed** green), or when the run stops early, it
-sends a notification. It never merges: merging stays the developer's decision, and the skill merges
+ready for review (up to date with `main`, **CI passed** green), it first posts a run summary on
+the pull request ("Run summary (develop-issue session)": the review outcome, what is worth checking,
+the checks it ran itself, the steps and the usage), then sends a notification; when the run stops
+early, it only notifies. It never merges: merging stays the developer's decision, and the skill merges
 only when asked to in the session.
 
 ```text
@@ -337,7 +339,8 @@ reads where the issue stands from its plan branches and pull requests and contin
 
 The second decision that is yours. Start with the final comment ("Done: ready for review"): whether
 the review agent approved the latest commit, the plan's work packages, the commits, every review
-finding with its outcome, and the usage. Then:
+finding with its outcome, and the usage. A run from Claude Code (`/develop-issue`) adds a "Run
+summary" comment after it: what the session checked itself and what is worth checking. Then:
 
 - **Open and declined findings** first: an open one was not addressed (a fix that failed the
   pre-commit hook, or a round that did not run); a declined one has the developer agent's reason in

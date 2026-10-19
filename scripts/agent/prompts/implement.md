@@ -10,6 +10,15 @@ in your final message.
   lists under "Affected parts and their conventions". Follow the documented architecture and
   conventions; do not invent new layers, tools or patterns. Read the existing code you build on and
   match its style, naming and comment density. Earlier packages are already committed: build on them.
+- Add a comment only when it is really needed: it says why, or what the code cannot show (a race, a
+  rule that is not obvious, a workaround). Never one that repeats a name, a signature, a type or
+  what the README and the API description already say. Javadoc only where Checkstyle requires it
+  (public types in `core/inbound` and `core/outbound`): one summary sentence, then only what a
+  caller must know (the errors thrown, an ordering, what null or empty means).
+- BFF endpoints follow `docs/coding-convention/backend-java-rest-api.md`: an endpoint that only
+  answers `200` returns its DTO (`UserDto getUser(...)`), not `ResponseEntity` (`TAP-D6`); a
+  delegate never catches a domain exception to map it: it lets it through, and
+  `DomainExceptionHandler` answers it (a new domain exception gets a mapper and a handler method).
 - You may hand independent steps to subagents (Task tool); you are responsible for the result.
 - Every change comes with tests (the package's "Tests", and the plan's "Tests" section where they
   apply to it). Do not delete or weaken existing tests to make them pass.
