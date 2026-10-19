@@ -2,9 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
@@ -12,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
@@ -30,7 +26,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Chan
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.CurrentUserDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.LoginRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.PasswordChangeRequiredFilter;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionAuthorities;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.UserSessions;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
@@ -52,11 +48,11 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 class AuthApiDelegateImpl implements AuthApiDelegate {
 
     private static final String SESSION_COOKIE = "JSESSIONID";
-    private static final String ROLE_PREFIX = "ROLE_";
 
     private final AuthenticateUseCase authentication;
     private final ChangePasswordUseCase changePassword;
     private final UserSessions userSessions;
+    private final SessionAuthorities sessionAuthorities;
     private final PermissionToPermissionDtoMapper permissionMapper;
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SecurityContextRepository contextRepository;
@@ -70,6 +66,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
             AuthenticateUseCase authentication,
             ChangePasswordUseCase changePassword,
             UserSessions userSessions,
+            SessionAuthorities sessionAuthorities,
             PermissionToPermissionDtoMapper permissionMapper,
             SessionAuthenticationStrategy sessionStrategy,
             SecurityContextRepository contextRepository,
@@ -77,6 +74,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         this.authentication = authentication;
         this.changePassword = changePassword;
         this.userSessions = userSessions;
+        this.sessionAuthorities = sessionAuthorities;
         this.permissionMapper = permissionMapper;
         this.sessionStrategy = sessionStrategy;
         this.contextRepository = contextRepository;
@@ -117,9 +115,11 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     }
 
     private void startSession(AuthenticatedUser user, HttpServletRequest http, HttpServletResponse response) {
-        Authentication token =
-                UsernamePasswordAuthenticationToken.authenticated(user.id().value(), null, authorities(user));
+        long builtAt = sessionAuthorities.generation();
+        Authentication token = UsernamePasswordAuthenticationToken.authenticated(
+                user.id().value(), null, sessionAuthorities.authorities(user));
         sessionStrategy.onAuthentication(token, http, response);
+        sessionAuthorities.stamp(http.getSession(), builtAt);
         // The strategy expires the old CSRF cookie and only defers the new token: read it so this response sets it.
         if (http.getAttribute(CsrfToken.class.getName()) instanceof CsrfToken csrf) {
             csrf.getToken();
@@ -175,16 +175,6 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     private static ApiException unauthorized() {
         return new ApiException(HttpStatus.UNAUTHORIZED, "unauthorized", "Authentication required", Map.of());
-    }
-
-    private static List<GrantedAuthority> authorities(AuthenticatedUser user) {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        user.roleNames().forEach(name -> authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + name)));
-        user.permissions().forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission.key())));
-        if (user.mustChangePassword()) {
-            authorities.add(new SimpleGrantedAuthority(PasswordChangeRequiredFilter.AUTHORITY));
-        }
-        return authorities;
     }
 
     private CurrentUserDto toDto(AuthenticatedUser user) {

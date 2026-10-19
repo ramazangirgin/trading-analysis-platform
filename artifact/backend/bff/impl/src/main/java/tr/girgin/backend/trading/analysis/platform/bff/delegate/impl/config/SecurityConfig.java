@@ -27,6 +27,7 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import tools.jackson.databind.json.JsonMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
 
 /**
  * Spring Security: the session login of {@code /api/auth} and the rules that every other {@code /api}
@@ -37,6 +38,8 @@ import tools.jackson.databind.json.JsonMapper;
  * <p>The repository, CSRF and session strategy beans are shared with the login endpoint, so a login
  * through it is stored and protected the way this chain expects.
  */
+// ClassFanOutComplexity: the one place that wires the whole security chain.
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -75,6 +78,7 @@ public class SecurityConfig {
                 new RegisterSessionAuthenticationStrategy(sessionRegistry)));
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // the chain's collaborators, injected by Spring
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -82,6 +86,8 @@ public class SecurityConfig {
             CsrfTokenRepository csrfTokenRepository,
             SessionRegistry sessionRegistry,
             LoginAttemptLimiter loginAttemptLimiter,
+            SessionAuthorities sessionAuthorities,
+            AuthenticateUseCase authentication,
             JsonMapper jsonMapper)
             throws Exception {
         ApiErrorWriter writer = new ApiErrorWriter(jsonMapper);
@@ -104,6 +110,9 @@ public class SecurityConfig {
                 // A blocked address is turned away before any other work.
                 .addFilterBefore(new LoginRateLimitFilter(loginAttemptLimiter, writer), CsrfFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+                .addFilterBefore(
+                        new RoleAuthoritiesRefreshFilter(sessionAuthorities, authentication, securityContextRepository),
+                        AuthorizationFilter.class)
                 .addFilterAfter(new PasswordChangeRequiredFilter(writer), AuthorizationFilter.class)
                 .authorizeHttpRequests(this::authorizeApi);
         return http.build();

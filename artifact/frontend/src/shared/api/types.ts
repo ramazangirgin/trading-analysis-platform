@@ -64,6 +64,8 @@ export type User = Omit<Present<Schemas['UserDto'], 'lockedUntil' | 'lastLoginAt
   roles: UserRole[]
 }
 export type Role = Present<Schemas['RoleDto'], 'description'>
+export type CreateRoleRequest = Schemas['CreateRoleRequest']
+export type UpdateRoleRequest = Schemas['UpdateRoleRequest']
 export type CreateUserRequest = Schemas['CreateUserRequest']
 export type UpdateUserRequest = Schemas['UpdateUserRequest']
 export type CreatedUser = { user: User; oneTimePassword: string | null }
