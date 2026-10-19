@@ -117,14 +117,16 @@ lines or as a comment on the pull request, or here in the session. Until the use
 1. Collect what is unanswered: the user's answer in the session, and
    `scripts/agent/plan-comments.sh <pr>` (`mise run agent:plan-comments`), which lists the open
    review threads (comment ID, `path:line`, author, text) and the pull request comments and review
-   bodies that have no reply of the session yet.
+   bodies (with their IDs) that no reply of the session names yet.
 2. Change the plan on its branch: `git switch plan/<issue>-<slug>` (in a clean checkout), edit
    `.plans/<issue>-<slug>.md`, commit (`Plan: <what changed>`) and push. A comment that asks a
    question gets an answer, and the plan changes when the answer belongs in it.
 3. Answer every comment from step 1, with what changed (the commit) or why not:
    `plan-comments.sh --reply <comment id> <file>` on a review thread,
-   `plan-comments.sh --comment <pr> <file>` for the pull request comments and reviews. Both mark the
-   reply, so the comment is not listed again. Never resolve a thread: that is the user's.
+   `plan-comments.sh --comment <pr> <file> <id>...` for the pull request comments and review bodies,
+   naming the IDs it answers (the listing prints them). Both mark the reply, so what it answers is
+   not listed again; a comment the reply does not name stays listed. Never resolve a thread: that is
+   the user's.
 4. Show what changed, and ask again.
 
 Open questions in the plan must be answered in it before it can be approved.
