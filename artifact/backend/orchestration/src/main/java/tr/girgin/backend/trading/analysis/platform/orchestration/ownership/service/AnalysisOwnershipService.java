@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
@@ -29,9 +30,15 @@ class AnalysisOwnershipService implements AssignAnalysisOwnersUseCase {
     @Override
     public void assignUnownedToFirstAdmin() {
         userDirectory.firstAdmin().ifPresent(admin -> {
-            int assigned = assignUnowned.assignUnowned(new OwnerId(admin.value()));
-            if (assigned > 0) {
-                log.info("Gave {} analyses without an owner to the first admin", assigned);
+            try {
+                int assigned = assignUnowned.assignUnowned(new OwnerId(admin.value()));
+                if (assigned > 0) {
+                    log.info("Gave {} analyses without an owner to the first admin", assigned);
+                }
+            } catch (OptimisticLockingFailureException e) {
+                log.warn(
+                        "The startup import changed analyses meanwhile; the next import or start gives them an owner",
+                        e);
             }
         });
     }
