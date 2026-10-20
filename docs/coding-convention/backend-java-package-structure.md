@@ -85,7 +85,7 @@ Today's adapter packages:
 | `domain.report.adapter.datadir` | `FileSystemDataDirAdapter`, `FileSystemDataDirWatchAdapter` | `json` |
 | `domain.report.adapter.history` | `JsonRunHistoryAdapter` | |
 | `domain.report.adapter.prices` | `CsvPriceCacheAdapter` | |
-| `domain.settings.adapter.persistence` | `JpaPresetRepositoryAdapter`, `PresetJpaRepository`, `SettingsPersistenceConfiguration` | `entity`, `mapper` |
+| `domain.settings.adapter.persistence` | `JpaPresetRepositoryAdapter`, `PresetJpaRepository`, `JpaAnalysisDefaultsRepositoryAdapter`, `AnalysisDefaultsJpaRepository`, `SettingsPersistenceConfiguration` | `entity`, `mapper` |
 | `domain.settings.adapter.secrets` | `DotenvSecretStoreAdapter` | |
 
 `eventline` is the one adapter package that implements no port: it parses runner output for both

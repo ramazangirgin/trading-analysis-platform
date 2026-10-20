@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings/analysis-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAnalysisDefaults"];
+        put: operations["saveAnalysisDefaults"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/roles": {
         parameters: {
             query?: never;
@@ -435,6 +451,28 @@ export interface components {
             /** Format: int64 */
             version?: number;
         };
+        SaveAnalysisDefaultsRequest: {
+            llmProvider: string;
+            deepThinkLlm: string;
+            quickThinkLlm: string;
+            /** Format: int32 */
+            maxDebateRounds: number;
+            /** Format: int32 */
+            maxRiskDiscussRounds: number;
+            /** Format: int64 */
+            version?: number;
+        };
+        AnalysisDefaultsDto: {
+            llmProvider?: string;
+            deepThinkLlm?: string;
+            quickThinkLlm?: string;
+            /** Format: int32 */
+            maxDebateRounds?: number;
+            /** Format: int32 */
+            maxRiskDiscussRounds?: number;
+            /** Format: int64 */
+            version?: number;
+        };
         CreateUserRequest: {
             username: string;
             roleIds: string[];
@@ -490,7 +528,7 @@ export interface components {
             id?: string;
             username?: string;
             roles?: string[];
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
             mustChangePassword?: boolean;
         };
         LoginRequest: {
@@ -572,12 +610,12 @@ export interface components {
         CreateRoleRequest: {
             name: string;
             description?: string;
-            permissions: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
+            permissions: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
         };
         UpdateRoleRequest: {
             name?: string;
             description?: string;
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
             /** Format: int64 */
             version?: number;
         };
@@ -592,7 +630,7 @@ export interface components {
             name?: string;
             builtIn?: boolean;
             description?: string;
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read")[];
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
             /** Format: int64 */
             userCount?: number;
             /** Format: int64 */
@@ -1154,6 +1192,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecretStatusDto"][];
+                };
+            };
+        };
+    };
+    getAnalysisDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDefaultsDto"];
+                };
+            };
+        };
+    };
+    saveAnalysisDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAnalysisDefaultsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDefaultsDto"];
                 };
             };
         };

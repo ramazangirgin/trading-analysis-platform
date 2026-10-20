@@ -214,7 +214,7 @@ written, and Spring Data JPA auditing sets it (`@CreatedDate`, `@LastModifiedDat
 A write based on a stale copy of a row fails instead of overwriting a newer one.
 
 - **A `VERSION BIGINT NOT NULL DEFAULT 0` column** on every table that is updated in place
-  (`ANALYSES`, `PRESETS`, `USERS`, `ROLES`), and `@Version @Column(name = "VERSION", nullable = false)
+  (`ANALYSES`, `PRESETS`, `USERS`, `ROLES`, `ANALYSIS_DEFAULTS`), and `@Version @Column(name = "VERSION", nullable = false)
   Long version` on its entity. A wrapper type, so Spring Data treats `version == null` as new. A
   collection table (`USER_ROLES`) has no column: Hibernate increments the owning row's version when
   the collection changes.
@@ -233,8 +233,12 @@ A write based on a stale copy of a row fails instead of overwriting a newer one.
 - **Writes return the stored record**, with its new version, so a caller never keeps an outdated
   one. `insert` stays `void`.
 - **How the adapters check it**:
-  - Merged entities (`JpaPresetRepositoryAdapter`, `JpaRoleRepositoryAdapter`): `saveAndFlush`;
-    Hibernate rejects a detached entity whose version differs from the stored one.
+  - Merged entities (`JpaPresetRepositoryAdapter`, `JpaRoleRepositoryAdapter`,
+    `JpaAnalysisDefaultsRepositoryAdapter`): `saveAndFlush`; Hibernate rejects a detached entity whose
+    version differs from the stored one. `ANALYSIS_DEFAULTS` is a one-row table with the fixed ID
+    `DEFAULTS`, so a `null` version on the existing row would hit the primary key; its adapter checks
+    for the row first and throws `OptimisticLockingFailureException`, also for the primary-key
+    violation of two concurrent first inserts.
   - Managed entities (`JpaUserRepositoryAdapter#save`, `JpaAnalysisRepositoryAdapter#update` and
     `#replaceImported`): the adapter loads the entity, compares the incoming version with the
     entity's and throws `OptimisticLockingFailureException` on a mismatch (a `null` version

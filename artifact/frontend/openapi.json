@@ -627,6 +627,54 @@
                 }
             }
         },
+        "/api/settings/analysis-defaults": {
+            "get": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "getAnalysisDefaults",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AnalysisDefaultsDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "settings-api-controller"
+                ],
+                "operationId": "saveAnalysisDefaults",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SaveAnalysisDefaultsRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AnalysisDefaultsDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/roles": {
             "get": {
                 "tags": [
@@ -1078,6 +1126,68 @@
                     }
                 }
             },
+            "SaveAnalysisDefaultsRequest": {
+                "type": "object",
+                "properties": {
+                    "llmProvider": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "deepThinkLlm": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "quickThinkLlm": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "maxDebateRounds": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "maxRiskDiscussRounds": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "required": [
+                    "deepThinkLlm",
+                    "llmProvider",
+                    "maxDebateRounds",
+                    "maxRiskDiscussRounds",
+                    "quickThinkLlm"
+                ]
+            },
+            "AnalysisDefaultsDto": {
+                "type": "object",
+                "properties": {
+                    "llmProvider": {
+                        "type": "string"
+                    },
+                    "deepThinkLlm": {
+                        "type": "string"
+                    },
+                    "quickThinkLlm": {
+                        "type": "string"
+                    },
+                    "maxDebateRounds": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "maxRiskDiscussRounds": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
             "CreateUserRequest": {
                 "type": "object",
                 "properties": {
@@ -1255,7 +1365,9 @@
                                 "user:read",
                                 "user:manage",
                                 "role:manage",
-                                "audit:read"
+                                "audit:read",
+                                "analysis:defaults:manage",
+                                "analysis:override-models"
                             ]
                         }
                     },
@@ -1534,7 +1646,9 @@
                                 "user:read",
                                 "user:manage",
                                 "role:manage",
-                                "audit:read"
+                                "audit:read",
+                                "analysis:defaults:manage",
+                                "analysis:override-models"
                             ]
                         }
                     }
@@ -1570,7 +1684,9 @@
                                 "user:read",
                                 "user:manage",
                                 "role:manage",
-                                "audit:read"
+                                "audit:read",
+                                "analysis:defaults:manage",
+                                "analysis:override-models"
                             ]
                         }
                     },
@@ -1631,7 +1747,9 @@
                                 "user:read",
                                 "user:manage",
                                 "role:manage",
-                                "audit:read"
+                                "audit:read",
+                                "analysis:defaults:manage",
+                                "analysis:override-models"
                             ]
                         }
                     },

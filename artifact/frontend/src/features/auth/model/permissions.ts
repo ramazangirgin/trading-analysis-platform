@@ -9,6 +9,8 @@ export const PERMISSIONS = {
   analysisRun: 'analysis:run',
   analysisRead: 'analysis:read',
   analysisReadAll: 'analysis:read:all',
+  analysisDefaultsManage: 'analysis:defaults:manage',
+  analysisOverrideModels: 'analysis:override-models',
   presetRead: 'preset:read',
   presetManage: 'preset:manage',
   settingsRead: 'settings:read',

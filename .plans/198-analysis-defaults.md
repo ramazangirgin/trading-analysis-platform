@@ -190,6 +190,7 @@ No page changes in this plan; only what the new keys need:
 
 ### WP4: BFF endpoints, OpenAPI, frontend housekeeping
 
+- **Status**: done
 - **Depends on**: WP1, WP3
 - **Files**: `bff/api/.../model/AnalysisDefaultsDto.java`, `SaveAnalysisDefaultsRequest.java`;
   `SettingsApiController.java`, `SettingsApiDelegate.java`; `bff/impl/.../SettingsApiDelegateImpl.java`;
@@ -201,10 +202,10 @@ No page changes in this plan; only what the new keys need:
   frontend `features/auth/model/permissions.ts`, `features/roles/model/permissionGroups.ts`,
   `shared/i18n/locales/en.json`, `shared/i18n/locales/tr.json`
 - **Steps**:
-  - [ ] the two endpoints with their `@RequiresPermission`
-  - [ ] the DTOs, the mapper and the `INVALID_ANALYSIS_DEFAULTS -> 400` case
-  - [ ] `mise run api-types`
-  - [ ] the frontend permission entries, `ALL_PERMISSIONS` and the i18n labels (en and tr)
+  - [x] the two endpoints with their `@RequiresPermission`
+  - [x] the DTOs, the mapper and the `INVALID_ANALYSIS_DEFAULTS -> 400` case
+  - [x] `mise run api-types`
+  - [x] the frontend permission entries, `ALL_PERMISSIONS` and the i18n labels (en and tr)
 - **Tests**:
   - new `AnalysisDefaultsApiIntegrationTest` (modelled on `PresetsApiIntegrationTest`:
     `@SpringBootTest`, real PostgreSQL, `TestSession` over HTTP). Its runner script answers
