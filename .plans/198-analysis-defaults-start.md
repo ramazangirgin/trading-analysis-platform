@@ -315,19 +315,19 @@ area (a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, 
 ### WP10: TAP-D7, no static methods in Spring beans: the check and the docs
 
 - **Depends on**: WP7, WP8, WP9
-- **Status**: open
+- **Status**: done
 - **Files**: `build-logic/checkstyle-rules` (a new check class, its tests and fixtures, its
   README), `config/checkstyle/checkstyle.xml`, `docs/coding-convention/backend-java-checkstyle.md`;
   `MethodSecurityConfig` (the one suppression)
 - **Steps**:
-  - [ ] A custom check in `build-logic/checkstyle-rules`, configurable by annotation names (like
+  - [x] A custom check in `build-logic/checkstyle-rules`, configurable by annotation names (like
     `RequiredMethodAnnotationCheck`): no `static` method in a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`. Static
     fields and nested types are not methods and stay allowed. Its tests keep the module's 100%
     coverage gate, and `ProjectRulesTest` gets a fixture that breaks it.
-  - [ ] Wired in `checkstyle.xml` as `TAP-D7` for main code, suppressible only with
+  - [x] Wired in `checkstyle.xml` as `TAP-D7` for main code, suppressible only with
     `@SuppressWarnings("checkstyle:TAP-D7")` and a reason, like the other `TAP-*` rules. The one
     suppression: `MethodSecurityConfig`'s `static @Bean` method interceptor.
-  - [ ] `backend-java-checkstyle.md`: the rule in the catalogue with its reason (beans are
+  - [x] `backend-java-checkstyle.md`: the rule in the catalogue with its reason (beans are
     singletons; a static method hides a dependency from the bean and from its tests) and the known
     exception (a `static @Bean` method that Spring needs before the configuration is created).
 - **Tests**: the check's own tests (with and without the annotations, a static field, a nested

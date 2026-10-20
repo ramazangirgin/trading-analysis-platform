@@ -35,6 +35,12 @@
         <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/].*[\\/]core[\\/](inbound|outbound)[\\/]).*$"/>
     </module>
 
+    <!-- TAP-D7 applies to main code only (not a suppression of a finding). -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-D7"/>
+        <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/]).*$"/>
+    </module>
+
     <!-- Files ===================================================================================== -->
     <module name="NewlineAtEndOfFile"/>
     <module name="FileTabCharacter">
@@ -308,6 +314,18 @@
                 tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission,
                 tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired"/>
             <property name="suggestion" value="Declare who may call it: @RequiresPermission(Permission...), or @NoPermissionRequired(&quot;reason&quot;) for a route that needs no permission."/>
+        </module>
+        <module name="tr.girgin.checkstyle.StaticMethodInAnnotatedClassCheck">
+            <property name="id" value="TAP-D7"/>
+            <property name="annotations" value="
+                org.springframework.stereotype.Service,
+                org.springframework.stereotype.Component,
+                org.springframework.stereotype.Repository,
+                org.springframework.stereotype.Controller,
+                org.springframework.web.bind.annotation.RestController,
+                org.springframework.web.bind.annotation.RestControllerAdvice,
+                org.springframework.context.annotation.Configuration"/>
+            <property name="suggestion" value="A Spring bean is a singleton: make it an instance method, or move it to a class that is not a bean."/>
         </module>
         <module name="RegexpSinglelineJava">
             <property name="id" value="TAP-D5"/>

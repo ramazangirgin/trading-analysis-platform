@@ -15,8 +15,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = false)
-// HideUtilityClassConstructor: the advisor is a static @Bean method, as Spring requires for an infrastructure bean.
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
+// HideUtilityClassConstructor, TAP-D7: the advisor is a static @Bean method, as Spring requires for an infrastructure
+// bean (it is created before this configuration).
+@SuppressWarnings({"checkstyle:HideUtilityClassConstructor", "checkstyle:TAP-D7"})
 public class MethodSecurityConfig {
 
     @Bean
