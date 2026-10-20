@@ -144,7 +144,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP1: Orchestration start use case
 
-- **Depends on**: plan 1 merged (`198-analysis-defaults`)
+- **Depends on**: none
 - **Files**: `orchestration/.../orchestration/analysisstart/model/RequestedAnalysis.java`,
   `inbound/StartAnalysisWithDefaultsUseCase.java`, `service/StartAnalysisWithDefaultsService.java`;
   analysis core `exception/AnalysisError.java` (`OVERRIDE_FORBIDDEN`);
@@ -187,7 +187,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP3: Frontend: Analysis defaults card
 
-- **Depends on**: none (plan 1's endpoints and generated types), parallel with WP1 and WP2
+- **Depends on**: none
 - **Files**: `features/settings/api.ts`, `features/settings/index.ts`,
   `features/settings/components/AnalysisDefaultsCard.vue`, `pages/SettingsPage.vue`,
   `shared/api/types.ts`, `shared/i18n/locales/en.json`, `tr.json`
@@ -197,7 +197,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP4: Frontend: New analysis page
 
-- **Depends on**: WP3 (the API methods), WP2 (the optional fields in the generated types)
+- **Depends on**: WP2, WP3
 - **Files**: `pages/NewAnalysisPage.vue`, `features/analysis/model/analysisOverrides.ts`,
   `analysisOverrides.spec.ts`, `features/analysis/index.ts` if the page needs the function through
   it, `shared/i18n/locales/en.json`, `tr.json`
