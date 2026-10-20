@@ -41,8 +41,7 @@ async function providers(request: APIRequestContext): Promise<Provider[]> {
   return ((await response.json()) as { providers: Provider[] }).providers
 }
 
-/** Two different models of the provider, for the deep and the quick role. */
-function twoModels(provider: Provider) {
+function modelIds(provider: Provider) {
   const deep = provider.deepModels.map((model) => model.id)
   const quick = provider.quickModels.map((model) => model.id)
   return { deep, quick }
@@ -144,7 +143,7 @@ test('the platform values are what an analyst sees, starts with and finds on the
 }) => {
   const original = await readDefaults(request)
   const openai = (await providers(request)).find((provider) => provider.id === 'openai')!
-  const { deep, quick } = twoModels(openai)
+  const { deep, quick } = modelIds(openai)
   const values = {
     llmProvider: 'openai',
     deepThinkLlm: deep[deep.length - 1],
@@ -225,7 +224,7 @@ test("an admin's override applies to one analysis and leaves the platform values
 }) => {
   const before = await readDefaults(request)
   const provider = (await providers(request)).find((candidate) => candidate.id === 'openai')!
-  const { deep, quick } = twoModels(provider)
+  const { deep, quick } = modelIds(provider)
   test.skip(deep.length < 2, 'the catalog lists one deep model only')
   const changed = deep[1]
   await saveDefaults(request, {
@@ -261,7 +260,7 @@ test('an analyst who applies a preset with other models keeps the platform value
 }) => {
   const original = await readDefaults(request)
   const openai = (await providers(request)).find((provider) => provider.id === 'openai')!
-  const { deep, quick } = twoModels(openai)
+  const { deep, quick } = modelIds(openai)
   const { context, page: analyst } = await loggedInAnalyst(browser, request)
   const name = `E2E models preset ${Date.now()}`
   const created = await request.post('/api/presets', {
