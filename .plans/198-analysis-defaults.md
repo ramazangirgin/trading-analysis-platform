@@ -173,13 +173,14 @@ No page changes in this plan; only what the new keys need:
 
 ### WP3: Orchestration use case
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `orchestration/.../orchestration/analysisdefaults/inbound/ManageAnalysisDefaultsUseCase.java`,
   `orchestration/.../orchestration/analysisdefaults/service/AnalysisDefaultsService.java`;
   settings core `exception/SettingsError.java` (`INVALID_ANALYSIS_DEFAULTS`)
 - **Steps**:
-  - [ ] `get()`: the stored row, else the catalog's `ModelDefaults` and `1 / 1` with `version` null
-  - [ ] `update()`: the catalog validation with the field param; the save with the version as
+  - [x] `get()`: the stored row, else the catalog's `ModelDefaults` and `1 / 1` with `version` null
+  - [x] `update()`: the catalog validation with the field param; the save with the version as
     given; `CONCURRENT_UPDATE` on `OptimisticLockingFailureException`
 - **Tests**: `AnalysisDefaultsServiceTest` (unit, fakes for the port and `GetCatalogUseCase`): the
   fallback while nothing is stored; the stored row returned without asking the catalog; each
