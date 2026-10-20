@@ -52,10 +52,11 @@ current page keeps working against the unchanged start endpoint in between.
   `null` while nothing is stored and set on every record the port returns, like `Preset.version`.
 - Settings core outbound port `AnalysisDefaultsRepositoryPort` in `outbound/persistence`:
   `Optional<AnalysisDefaults> find()` and `AnalysisDefaults save(AnalysisDefaults defaults)`. Its
-  Javadoc promises: a `null` version inserts the row; a version that differs from the stored row's,
-  **and a `null` version while the row exists**, fail with Spring's
-  `OptimisticLockingFailureException` and leave the row unchanged; `save` returns the stored record
-  with its new version.
+  Javadoc promises: a `null` version inserts the row; a version that differs from the stored row's
+  fails with Spring's `OptimisticLockingFailureException`, and a `null` version while the row exists
+  with a `DataIntegrityViolationException` (the primary key); both leave the row unchanged; `save`
+  returns the stored record with its new version. (Changed in the pull request review, WP5: the
+  adapter adds no handling of its own, Hibernate and the primary key decide.)
 - Settings adapter (`domain.settings.adapter.persistence`):
   - `entity/AnalysisDefaultsEntity` on `"SETTINGS"."ANALYSIS_DEFAULTS"`: a plain `@Id` `String` on
     `ID`, always `"DEFAULTS"` (a one-row table; the domain record has no ID, so there is no ID
@@ -63,18 +64,14 @@ current page keeps working against the unchanged start endpoint in between.
     `MAX_DEBATE_ROUNDS`, `MAX_RISK_DISCUSS_ROUNDS`, `@Version VERSION`.
   - `AnalysisDefaultsJpaRepository`, and `JpaAnalysisDefaultsRepositoryAdapter`: `find` maps the
     row or empty (`@Transactional(readOnly = true)`); `save` (`@Transactional`) merges with
-    `saveAndFlush` like `JpaPresetRepositoryAdapter`. A `null`-version save on an existing row would
-    otherwise fail with a generic `DataIntegrityViolationException` (the primary key, see
-    `JpaPresetRepositoryAdapterTest.savingWithoutAVersionFailsOnAnExistingId`): the adapter checks
-    for the row first and throws `OptimisticLockingFailureException`, and translates the primary-key
-    violation of a concurrent first insert into the same exception — the only constraint of the
-    table besides `NOT NULL`, which the core guarantees.
+    `saveAndFlush` like `JpaPresetRepositoryAdapter`, with nothing else: no check for the row and no
+    translation of exceptions. A `null`-version save on an existing row fails on the primary key, as
+    `JpaPresetRepositoryAdapterTest.savingWithoutAVersionFailsOnAnExistingId` shows for presets.
   - `mapper/AnalysisDefaultsToAnalysisDefaultsEntityMapper` (sets the constant ID) and
     `mapper/AnalysisDefaultsEntityToAnalysisDefaultsMapper`.
 - Settings migration `V3__create_analysis_defaults.sql`: the table with a named
-  `"ANALYSIS_DEFAULTS_PK"`, every column `NOT NULL`, `"VERSION" BIGINT NOT NULL DEFAULT 0`, and a
-  comment on the table explaining the one row with the fixed ID. (Settings Flyway versions are per
-  domain; presets used V1 and V2.)
+  `"ANALYSIS_DEFAULTS_PK"`, every column `NOT NULL`, `"VERSION" BIGINT NOT NULL DEFAULT 0`, no
+  comments (WP5). (Settings Flyway versions are per domain; presets used V1 and V2.)
 
 ### Orchestration: `ManageAnalysisDefaultsUseCase`
 
@@ -98,7 +95,10 @@ says. The orchestration module already depends on `settings:core` and `catalog:c
     row saved meanwhile makes it fail. That is what makes the second of two admins get 409 also on
     the very first save;
   - translate `OptimisticLockingFailureException` into `SettingsException(SettingsError.CONCURRENT_UPDATE, ...)`
-    as `PresetService.updatePreset` does.
+    as `PresetService.updatePreset` does, and `DataIntegrityViolationException` the same way: on
+    this one-row table it can only mean that the row was saved meanwhile (the core guarantees every
+    `NOT NULL` value), so the second of two first saves is a 409, not a 500. (Moved here from the
+    adapter in the pull request review, WP5.)
 - New code `INVALID_ANALYSIS_DEFAULTS` in `SettingsError`.
 
 ### BFF
@@ -227,6 +227,60 @@ No page changes in this plan; only what the new keys need:
     the two keys; `vue-tsc` (`mise run check`) proves `ALL_PERMISSIONS` and `PERMISSIONS` match the
     generated `Permission`.
 
+### WP5: Changes from the pull request review
+
+- **Depends on**: WP1, WP2, WP3, WP4
+- **Status**: open
+- **Files**: `JpaAnalysisDefaultsRepositoryAdapter.java`, `JpaAnalysisDefaultsRepositoryAdapterTest.java`,
+  `AnalysisDefaultsRepositoryPort.java`, `AnalysisDefaultsService.java`, `AnalysisDefaultsServiceTest.java`,
+  `AnalysisDefaultsEntity.java`; the new `docs/coding-convention/repository-code-comments.md`,
+  `docs/coding-convention/README.md`, `backend-database-naming.md`, `backend-java-persistence.md`;
+  `scripts/agent/prompts/implement.md`, `fix.md`, `fix-ci.md`, `review.md`; the files whose comments
+  go (below)
+- **Steps**:
+  - [ ] **Optimistic locking** (review comment on `JpaAnalysisDefaultsRepositoryAdapter`): the
+    adapter's `save` is `repository.saveAndFlush(...)` and the mapping only, no `existsById` check
+    and no `catch`. The port's Javadoc says what fails how (see Design). `AnalysisDefaultsService`
+    translates `OptimisticLockingFailureException` and `DataIntegrityViolationException` into
+    `CONCURRENT_UPDATE`.
+  - [ ] **`nullable = false`** (review comment on `AnalysisDefaultsEntity`): removed from
+    `AnalysisDefaultsEntity` only. The migration's `NOT NULL` is what enforces it; Hibernate's
+    `ddl-auto=validate` does not compare nullability. The other entities, the convention text and a
+    Checkstyle rule against it are #202.
+  - [ ] **Comments only when needed: the convention.** A new
+    `docs/coding-convention/repository-code-comments.md` (whole repository, every language and
+    SQL), listed in `docs/coding-convention/README.md`. The rule: a comment or Javadoc is written
+    only when it says what the code, its names, its types and the docs cannot (a reason that is not
+    obvious, a workaround, a race); never one that repeats a name, a signature, a type, an
+    annotation, what a statement does, a convention that is documented elsewhere, or what the README
+    and the API description say. Javadoc only where Checkstyle requires it (public types in
+    `core/inbound` and `core/outbound`), one summary sentence plus what a caller must know. No file
+    headers that restate the schema, the naming rules or the Flyway versioning. Say how it is
+    checked: no tool can, so the review agent reports a redundant comment as a finding and the
+    developer review is the backstop (state this as the documented exception to "a rule that is only
+    written down is not a convention"). `backend-database-naming.md` drops "each table and column
+    that is not obvious gets a comment" and "the migration comments which enum the type mirrors"
+    and links the new document instead.
+  - [ ] **The agents' prompts** (`scripts/agent/prompts/implement.md`, `fix.md`, `fix-ci.md`,
+    `review.md`) name the new document explicitly. `implement.md` no longer says to match the
+    surrounding code's "comment density": existing comments are no model to copy. `review.md`
+    reports every redundant comment, also one copied from existing code. (The skills under
+    `.claude/skills/` are changed by hand on this branch: the agents may not edit them.)
+  - [ ] **Remove the redundant comments, everywhere**: in this pull request's files (the DTO
+    Javadoc of `AnalysisDefaultsDto`, the V7 and V3 migration comments and V3's `COMMENT ON TABLE`,
+    the `// Optimistic lock` comment of `AnalysisDefaultsEntity`, and every other of the same kind)
+    and in the existing code under `artifact/` (backend main and test, frontend, ta-runner), `e2e/`
+    and `build-logic/`, by the rule above. Kept: the Javadoc Checkstyle requires; comments with a
+    reason that is not obvious from the code; `@SuppressWarnings` reasons; the usage headers of the
+    shell scripts under `scripts/`; and **every migration already merged into `main`**: Flyway
+    checksums applied migrations, so changing one fails the start of every existing database (V7
+    and V8 of identity and V3 of settings are new in this pull request and may change).
+- **Tests**: `JpaAnalysisDefaultsRepositoryAdapterTest`: a `null`-version save while the row exists
+  fails with `DataIntegrityViolationException` and changes nothing. `AnalysisDefaultsServiceTest`: a
+  `DataIntegrityViolationException` from the port is `CONCURRENT_UPDATE`. The integration test's
+  "second of two first saves gets 409" stays as it is. Every existing test passes unchanged after
+  the comment removal (`mise run check` and CI).
+
 ## Tests
 
 WP1's tests guarded by the database enum and ADMIN's permissions, WP2's repository tests with the
@@ -245,7 +299,10 @@ and `1 / 1` are answered. The start-flow and UI criteria belong to plan 2.
 | Text | README.md, the built-in roles paragraph after that table | the two new permissions: ADMIN holds them, ANALYST and VIEWER do not, custom roles can be given them |
 | Text | docs/coding-convention/repository-shared-types.md, "Adding a value", step 4 | the value and its grant are two migrations (`ADD VALUE`, then the grant), since a transaction cannot use an enum value it added; name V7 / V8 as the example |
 | Text | docs/coding-convention/backend-java-package-structure.md, "Today's adapter packages" | the `domain.settings.adapter.persistence` row gains `JpaAnalysisDefaultsRepositoryAdapter`, `AnalysisDefaultsJpaRepository` |
-| Text | docs/coding-convention/backend-java-persistence.md, "Optimistic locking" | `ANALYSIS_DEFAULTS` in the list of tables with `VERSION`, `JpaAnalysisDefaultsRepositoryAdapter` among the merged entities, with its `null`-version rule for the one-row table |
+| Text | docs/coding-convention/backend-java-persistence.md, "Optimistic locking" | `ANALYSIS_DEFAULTS` in the list of tables with `VERSION`, `JpaAnalysisDefaultsRepositoryAdapter` among the merged entities; its `null`-version case: the primary key fails, and the service, not the adapter, answers it with `CONCURRENT_UPDATE` (WP5) |
+| Text | docs/coding-convention/repository-code-comments.md (new), docs/coding-convention/README.md, backend-database-naming.md | the comments convention (WP5) |
+| Text | scripts/agent/prompts/implement.md, fix.md, fix-ci.md, review.md | name the comments convention (WP5) |
+| Text | .claude/skills/plan-from-issue, pr-ready, renovate-fix, merge-main-into-branch, dependabot-fix (by hand, not by the agents) | name the comments convention where the skill writes or changes code |
 | Generated | `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` | regenerated with `mise run api-types` |
 
 Screenshots: none. No page looks different in this plan; the roles screenshot shows the role list,
@@ -260,3 +317,6 @@ not the permission checklist.
   preset handling, e2e tests and screenshots: plan 2.
 - Per-user or per-role defaults, limiting which providers or models an overriding user may pick,
   cost estimates (#37).
+- Answering domain exceptions in `DomainExceptionHandler` without the `ApiException` step: #201
+  (raised in the review; it changes all four domains' mappers).
+- `nullable = false` in the other entities, its convention text and a Checkstyle rule: #202.
