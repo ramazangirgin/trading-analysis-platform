@@ -135,15 +135,16 @@ No page changes in this plan; only what the new keys need:
 
 ### WP1: Identity permissions
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/identity/core/.../model/Permission.java`; `bff/api/.../model/PermissionDto.java`;
   `domain/identity/adapter/src/main/resources/.../migration/V7__add_analysis_permissions.sql`,
   `V8__grant_analysis_permissions_to_admin.sql`
 - **Steps**:
-  - [ ] add the two constants to `Permission` (keys `analysis:defaults:manage`, `analysis:override-models`)
-  - [ ] add them to `PermissionDto` with the same `@JsonValue` keys
-  - [ ] V7: `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE` for each constant, in declaration order
-  - [ ] V8: append both to the role with ID `ADMIN` (ANALYST and VIEWER unchanged)
+  - [x] add the two constants to `Permission` (keys `analysis:defaults:manage`, `analysis:override-models`)
+  - [x] add them to `PermissionDto` with the same `@JsonValue` keys
+  - [x] V7: `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE` for each constant, in declaration order
+  - [x] V8: append both to the role with ID `ADMIN` (ANALYST and VIEWER unchanged)
 - **Tests**: `PermissionTest` (keys round-trip and are unique, unchanged); `JpaIdentityRepositoryTest`
   (the database enum mirrors `Permission`: green only with V7); `RolePermissionsIntegrationTest`
   (ADMIN's `me` returns every `Permission::key`: green only with V8; ANALYST's and VIEWER's exact
