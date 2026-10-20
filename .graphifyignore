@@ -1,0 +1,7 @@
+.plans/
+deploy/
+docs/screenshots/
+**/*.env
+**/*.env.*
+**/inventory.ini
+artifact/ta-runner/tests/fixtures/

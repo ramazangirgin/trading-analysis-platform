@@ -55,3 +55,6 @@ __pycache__/
 
 ### macOS ###
 .DS_Store
+
+# Graphify knowledge graph (trial/graphify): rebuilt locally with `graphify update .`
+graphify-out/
