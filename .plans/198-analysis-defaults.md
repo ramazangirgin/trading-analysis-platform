@@ -152,15 +152,16 @@ No page changes in this plan; only what the new keys need:
 
 ### WP2: Settings storage
 
+- **Status**: done
 - **Depends on**: none (parallel with WP1)
 - **Files**: settings core `model/AnalysisDefaults.java`, `outbound/persistence/AnalysisDefaultsRepositoryPort.java`;
   settings adapter `entity/AnalysisDefaultsEntity.java`, `AnalysisDefaultsJpaRepository.java`,
   `JpaAnalysisDefaultsRepositoryAdapter.java`, the two mappers in `mapper/`;
   `.../adapter/persistence/migration/V3__create_analysis_defaults.sql`
 - **Steps**:
-  - [ ] the model and the port, with the contract above
-  - [ ] the entity, the mappers and the adapter (the `null`-version check and translation)
-  - [ ] the migration
+  - [x] the model and the port, with the contract above
+  - [x] the entity, the mappers and the adapter (the `null`-version check and translation)
+  - [x] the migration
 - **Tests**: `JpaAnalysisDefaultsRepositoryAdapterTest` (`@JpaAdapterTest`, modelled on
   `JpaPresetRepositoryAdapterTest`): `find` on an empty table is empty; a `null`-version save
   inserts the row at version 0; a save at the stored version updates it and the version rises; the
