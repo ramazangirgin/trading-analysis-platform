@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/settings/analysis-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAnalysisDefaults"];
+        put: operations["saveAnalysisDefaults"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/secrets/{name}": {
         parameters: {
             query?: never;
@@ -78,6 +94,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listRoles"];
+        put?: never;
+        post: operations["createRole"];
         delete?: never;
         options?: never;
         head?: never;
@@ -228,54 +260,6 @@ export interface paths {
         patch: operations["updateUser"];
         trace?: never;
     };
-    "/api/secrets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listSecrets"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/settings/analysis-defaults": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getAnalysisDefaults"];
-        put: operations["saveAnalysisDefaults"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listRoles"];
-        put?: never;
-        post: operations["createRole"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/roles/{id}": {
         parameters: {
             query?: never;
@@ -290,6 +274,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/api/secrets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listSecrets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/health": {
@@ -424,6 +424,28 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        SaveAnalysisDefaultsRequest: {
+            llmProvider: string;
+            deepThinkLlm: string;
+            quickThinkLlm: string;
+            /** Format: int32 */
+            maxDebateRounds: number;
+            /** Format: int32 */
+            maxRiskDiscussRounds: number;
+            /** Format: int64 */
+            version?: number;
+        };
+        AnalysisDefaultsDto: {
+            llmProvider?: string;
+            deepThinkLlm?: string;
+            quickThinkLlm?: string;
+            /** Format: int32 */
+            maxDebateRounds?: number;
+            /** Format: int32 */
+            maxRiskDiscussRounds?: number;
+            /** Format: int64 */
+            version?: number;
+        };
         SetSecretRequest: {
             value: string;
         };
@@ -448,28 +470,6 @@ export interface components {
             };
             /** Format: date-time */
             updatedAt?: string;
-            /** Format: int64 */
-            version?: number;
-        };
-        SaveAnalysisDefaultsRequest: {
-            llmProvider: string;
-            deepThinkLlm: string;
-            quickThinkLlm: string;
-            /** Format: int32 */
-            maxDebateRounds: number;
-            /** Format: int32 */
-            maxRiskDiscussRounds: number;
-            /** Format: int64 */
-            version?: number;
-        };
-        AnalysisDefaultsDto: {
-            llmProvider?: string;
-            deepThinkLlm?: string;
-            quickThinkLlm?: string;
-            /** Format: int32 */
-            maxDebateRounds?: number;
-            /** Format: int32 */
-            maxRiskDiscussRounds?: number;
             /** Format: int64 */
             version?: number;
         };
@@ -509,6 +509,22 @@ export interface components {
         };
         OneTimePasswordDto: {
             oneTimePassword?: string;
+        };
+        CreateRoleRequest: {
+            name: string;
+            description?: string;
+            permissions: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
+        };
+        RoleDto: {
+            id?: string;
+            name?: string;
+            builtIn?: boolean;
+            description?: string;
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
+            /** Format: int64 */
+            userCount?: number;
+            /** Format: int64 */
+            version?: number;
         };
         ImportResultDto: {
             /** Format: int32 */
@@ -607,32 +623,16 @@ export interface components {
             /** Format: int64 */
             elapsedMs?: number;
         };
-        CreateRoleRequest: {
-            name: string;
-            description?: string;
-            permissions: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
-        };
-        UpdateRoleRequest: {
-            name?: string;
-            description?: string;
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
-            /** Format: int64 */
-            version?: number;
-        };
         UpdateUserRequest: {
             roleIds?: string[];
             enabled?: boolean;
             /** Format: int64 */
             version?: number;
         };
-        RoleDto: {
-            id?: string;
+        UpdateRoleRequest: {
             name?: string;
-            builtIn?: boolean;
             description?: string;
             permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
-            /** Format: int64 */
-            userCount?: number;
             /** Format: int64 */
             version?: number;
         };
@@ -724,6 +724,50 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAnalysisDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDefaultsDto"];
+                };
+            };
+        };
+    };
+    saveAnalysisDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAnalysisDefaultsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDefaultsDto"];
+                };
+            };
+        };
+    };
     setSecret: {
         parameters: {
             query?: never;
@@ -902,6 +946,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OneTimePasswordDto"];
+                };
+            };
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleDto"][];
+                };
+            };
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleDto"];
                 };
             };
         };
@@ -1176,114 +1264,6 @@ export interface operations {
             };
         };
     };
-    listSecrets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretStatusDto"][];
-                };
-            };
-        };
-    };
-    getAnalysisDefaults: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnalysisDefaultsDto"];
-                };
-            };
-        };
-    };
-    saveAnalysisDefaults: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SaveAnalysisDefaultsRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnalysisDefaultsDto"];
-                };
-            };
-        };
-    };
-    listRoles: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleDto"][];
-                };
-            };
-        };
-    };
-    createRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleDto"];
-                };
-            };
-        };
-    };
     getRole: {
         parameters: {
             query?: never;
@@ -1348,6 +1328,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleDto"];
+                };
+            };
+        };
+    };
+    listSecrets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretStatusDto"][];
                 };
             };
         };
