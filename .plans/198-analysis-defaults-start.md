@@ -258,63 +258,81 @@ their inbound interfaces and services (unchanged).
 - **Tests**: the moved unit tests, unchanged in what they assert; `ArchitectureTest`; every
   integration test unchanged.
 
-### WP7: TAP-D7, no static methods in Spring beans: the check and the docs
+### WP7: No static methods in Spring beans: the BFF
 
 From the pull request review: a Spring bean is a singleton already, so its methods are instance
-methods; a static method in one is forbidden by default.
+methods. The sweeps (WP7 to WP9) come **before** the check (WP10): with the check wired first,
+Checkstyle fails on every static method still there, and the pre-commit hook rejects the commit.
+So do this package without waiting for `TAP-D7`; prove it with
+`grep -rnE '^\s+(public |protected |private )?static [^=;]*\(' <file>` on every bean class of the
+area (a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`) returning nothing, except the documented exception below.
 
 - **Depends on**: WP6
 - **Status**: open
+- **Files**: `artifact/backend/bff`: today `UsersApiDelegateImpl`, `ApiExceptionHandler` (its caller `DomainExceptionHandler` gets it injected), `CurrentUser`, `AuthenticatedUserFactory`, `AuthApiDelegateImpl`, `AnalysesApiDelegateImpl`, `SpaWebConfig`, `MethodSecurityConfig` (its `static @Bean` method interceptor stays static: Spring needs it before the configuration exists; WP10 suppresses it with that reason), their callers and their tests
+- **Steps**:
+  - [ ] Every static method of a bean in `artifact/backend/bff` becomes an instance method; a caller that used it
+    statically gets the bean injected. Behaviour stays the same.
+- **Tests**: the existing tests of `artifact/backend/bff`, unchanged in what they assert; the grep above returns
+  nothing for the area.
+
+### WP8: No static methods in Spring beans: identity and settings
+
+From the pull request review: a Spring bean is a singleton already, so its methods are instance
+methods. The sweeps (WP7 to WP9) come **before** the check (WP10): with the check wired first,
+Checkstyle fails on every static method still there, and the pre-commit hook rejects the commit.
+So do this package without waiting for `TAP-D7`; prove it with
+`grep -rnE '^\s+(public |protected |private )?static [^=;]*\(' <file>` on every bean class of the
+area (a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`) returning nothing, except the documented exception below.
+
+- **Depends on**: WP6
+- **Status**: open
+- **Files**: `artifact/backend/domain/identity` and `artifact/backend/domain/settings`: today `RoleManagementService`, `UserManagementService`, `JpaUserRepositoryAdapter`, `JpaRoleRepositoryAdapter`, `AuthenticationService`, `PasswordPolicy`, `PresetService`, `SecretsService`, `DotenvSecretStoreAdapter`, their callers and their tests
+- **Steps**:
+  - [ ] Every static method of a bean in `artifact/backend/domain/identity` and `artifact/backend/domain/settings` becomes an instance method; a caller that used it
+    statically gets the bean injected. Behaviour stays the same.
+- **Tests**: the existing tests of `artifact/backend/domain/identity` and `artifact/backend/domain/settings`, unchanged in what they assert; the grep above returns
+  nothing for the area.
+
+### WP9: No static methods in Spring beans: analysis, report, catalog and orchestration
+
+From the pull request review: a Spring bean is a singleton already, so its methods are instance
+methods. The sweeps (WP7 to WP9) come **before** the check (WP10): with the check wired first,
+Checkstyle fails on every static method still there, and the pre-commit hook rejects the commit.
+So do this package without waiting for `TAP-D7`; prove it with
+`grep -rnE '^\s+(public |protected |private )?static [^=;]*\(' <file>` on every bean class of the
+area (a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`) returning nothing, except the documented exception below.
+
+- **Depends on**: WP6
+- **Status**: open
+- **Files**: `artifact/backend/domain/analysis`, `domain/report`, `domain/catalog` and `artifact/backend/orchestration`: today `JsonRunHistoryAdapter`, `FileSystemDataDirAdapter`, `JpaAnalysisRepositoryAdapter`, `ProcessRunnerAdapter`, `DockerRunnerAdapter`, `EnvFileCredentialsAdapter`, `CsvPriceCacheAdapter`, `TaRunnerEngineInfoAdapter`, `ReportService`, `PriceHistoryService`, `AnalysisService`, `AnalysisLogService`, and the orchestration use cases of WP6, their callers and their tests
+- **Steps**:
+  - [ ] Every static method of a bean in `artifact/backend/domain/analysis`, `domain/report`, `domain/catalog` and `artifact/backend/orchestration` becomes an instance method; a caller that used it
+    statically gets the bean injected. Behaviour stays the same.
+- **Tests**: the existing tests of `artifact/backend/domain/analysis`, `domain/report`, `domain/catalog` and `artifact/backend/orchestration`, unchanged in what they assert; the grep above returns
+  nothing for the area.
+
+### WP10: TAP-D7, no static methods in Spring beans: the check and the docs
+
+- **Depends on**: WP7, WP8, WP9
+- **Status**: open
 - **Files**: `build-logic/checkstyle-rules` (a new check class, its tests and fixtures, its
-  README), `config/checkstyle/checkstyle.xml`, `docs/coding-convention/backend-java-checkstyle.md`
+  README), `config/checkstyle/checkstyle.xml`, `docs/coding-convention/backend-java-checkstyle.md`;
+  `MethodSecurityConfig` (the one suppression)
 - **Steps**:
   - [ ] A custom check in `build-logic/checkstyle-rules`, configurable by annotation names (like
-    `RequiredMethodAnnotationCheck`): no `static` method in a class annotated `@Service`,
-    `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or
-    `@Configuration`. Static fields and nested types are not methods and stay allowed. Its tests keep
-    the module's 100% coverage gate, and `ProjectRulesTest` gets a fixture that breaks it.
+    `RequiredMethodAnnotationCheck`): no `static` method in a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`. Static
+    fields and nested types are not methods and stay allowed. Its tests keep the module's 100%
+    coverage gate, and `ProjectRulesTest` gets a fixture that breaks it.
   - [ ] Wired in `checkstyle.xml` as `TAP-D7` for main code, suppressible only with
-    `@SuppressWarnings("checkstyle:TAP-D7")` and a reason, like the other `TAP-*` rules.
+    `@SuppressWarnings("checkstyle:TAP-D7")` and a reason, like the other `TAP-*` rules. The one
+    suppression: `MethodSecurityConfig`'s `static @Bean` method interceptor.
   - [ ] `backend-java-checkstyle.md`: the rule in the catalogue with its reason (beans are
-    singletons; a static method hides a dependency from the bean and from its tests) and the one
-    known exception (a `static @Bean` method that Spring needs before the configuration is created,
-    e.g. a method interceptor or a bean post-processor).
-- **Tests**: the check's own tests (main code with and without the annotations, a static field, a
-  nested type, a suppression); the module's coverage gate; `ProjectRulesTest`.
-
-### WP8: TAP-D7 in the BFF
-
-- **Depends on**: WP7
-- **Status**: open
-- **Files**: the bean classes under `artifact/backend/bff` with static methods (today
-  `UsersApiDelegateImpl`, `ApiExceptionHandler`, `CurrentUser`, `AuthenticatedUserFactory`,
-  `AuthApiDelegateImpl`, `AnalysesApiDelegateImpl`, `SpaWebConfig`, `MethodSecurityConfig`) and
-  their callers and tests
-- **Steps**:
-  - [ ] Every static method of a bean becomes an instance method; a caller that used it statically
-    gets the bean injected (e.g. `DomainExceptionHandler`, which calls
-    `ApiExceptionHandler.response(...)`).
-  - [ ] Where Spring needs a `static @Bean` method (`MethodSecurityConfig`'s method interceptor),
-    it stays, with the suppression and its reason.
-- **Tests**: the BFF's unit and integration tests unchanged in what they assert; `TAP-D7` passes.
-
-### WP9: TAP-D7 in the domains and orchestration
-
-- **Depends on**: WP7
-- **Status**: open
-- **Files**: the bean classes under `artifact/backend/domain/*` and `orchestration` with static
-  methods (today among them `RoleManagementService`, `UserManagementService`,
-  `JsonRunHistoryAdapter`, `FileSystemDataDirAdapter`, `JpaAnalysisRepositoryAdapter`, the
-  orchestration use cases of WP6, `ProcessRunnerAdapter`, `PresetService`, `JpaUserRepositoryAdapter`,
-  `EnvFileCredentialsAdapter`, `DockerRunnerAdapter`, `CsvPriceCacheAdapter`,
-  `TaRunnerEngineInfoAdapter`, `SecretsService`, `ReportService`, `PriceHistoryService`,
-  `PasswordPolicy`, `DotenvSecretStoreAdapter`, `JpaRoleRepositoryAdapter`, `AuthenticationService`,
-  `AnalysisService`, `AnalysisLogService`) and their tests
-- **Steps**:
-  - [ ] Every static method of a bean becomes an instance method (about 85 today, in about 24
-    classes). Behaviour stays the same.
-- **Tests**: every domain and orchestration test unchanged in what it asserts; `TAP-D7` passes on
-  the whole backend.
+    singletons; a static method hides a dependency from the bean and from its tests) and the known
+    exception (a `static @Bean` method that Spring needs before the configuration is created).
+- **Tests**: the check's own tests (with and without the annotations, a static field, a nested
+  type, a suppression); the module's coverage gate; `ProjectRulesTest`; Checkstyle passes on the
+  whole backend (`mise run check`).
 
 ## Tests
 
@@ -336,7 +354,7 @@ saving at once (plan 1).
 | Screenshot | `docs/screenshots/settings.png`, retaken | Settings as the admin: API keys, the Analysis defaults card with the catalog defaults, presets ("4. Add an API key") |
 | Screenshot | `docs/screenshots/new-analysis.png`, retaken | the form as the admin, the fields editable from the platform values with "Reset to defaults" ("5. Start an analysis") |
 | Text | docs/coding-convention/backend-java-package-structure.md | orchestration features: concrete `*UseCase` beans in `inbound/`, no `service/` (WP6) |
-| Text | docs/coding-convention/backend-java-checkstyle.md, build-logic/checkstyle-rules/README.md | `TAP-D7`, no static methods in Spring beans (WP7) |
+| Text | docs/coding-convention/backend-java-checkstyle.md, build-logic/checkstyle-rules/README.md | `TAP-D7`, no static methods in Spring beans (WP10) |
 | Screenshot | `docs/screenshots/new-analysis-readonly.png`, new | the form as a created ANALYST user: the five values read-only with "Set by the administrator" ("5. Start an analysis") |
 
 ## Out of scope
