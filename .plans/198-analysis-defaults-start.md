@@ -32,9 +32,9 @@ to those who may override; the Settings page gets an Analysis defaults card for
   - `model/RequestedAnalysis`: the start parameters as the client sent them, the five model/round
     fields nullable (`null` = not sent).
   - `inbound/StartAnalysisWithDefaultsUseCase`: `Analysis start(RequestedAnalysis requested,
-    OwnerId owner, boolean mayOverrideModels)`; package-private
-    `service/StartAnalysisWithDefaultsService`. (Not `StartAnalysisUseCase`: the analysis domain
-    has one, which this one calls.)
+    OwnerId owner, boolean mayOverrideModels)`; a concrete Spring bean, no interface and no
+    `service/` class (changed in the pull request review, WP6). (Not `StartAnalysisUseCase`: the
+    analysis domain has one, which this one calls.)
     1. The platform values: `ManageAnalysisDefaultsUseCase.get()` (plan 1). It asks the catalog only
        while no defaults are saved.
     2. Every one of the five fields that was sent and differs from its platform value is an
@@ -222,6 +222,100 @@ to those who may override; the Settings page gets an Analysis defaults card for
 - **Steps**: the e2e scenarios, the screenshots and the README changes above
 - **Tests**: the e2e tests (`mise run e2e`); the screenshots with `mise run screenshots`.
 
+### WP6: Orchestration use cases as concrete beans
+
+From the pull request review: an orchestration use case is one concrete Spring bean, not an
+interface in `inbound/` plus a package-private `*Service` in `service/`. The domain cores keep
+their inbound interfaces and services (unchanged).
+
+- **Depends on**: WP1, WP2, WP3, WP4, WP5
+- **Status**: open
+- **Files**: every orchestration feature (`analysisdefaults`, `analysisstart`, `health`,
+  `ownership`, `report`) under `artifact/backend/orchestration/src/main` and `src/test`; the BFF
+  delegates and any other caller that names the services; `ArchitectureTest.java`;
+  `docs/coding-convention/backend-java-package-structure.md`
+- **Steps**:
+  - [ ] Each of the 7 use cases (`ManageAnalysisDefaultsUseCase`, `StartAnalysisWithDefaultsUseCase`,
+    `SystemHealthUseCase`, `AssignAnalysisOwnersUseCase`, `GetAnalysisPricesUseCase`,
+    `GetAnalysisReportUseCase`, `ImportExistingRunsUseCase`) becomes a public concrete class with
+    that name in the feature's `inbound/` package, annotated as a Spring bean, holding the logic of
+    its `*Service` (`AnalysisDefaultsService`, `StartAnalysisWithDefaultsService`,
+    `SystemHealthService`, `AnalysisOwnershipService`, `AnalysisReportService` (two use cases: split
+    it into the two), `ImportExistingRunsService`). The `service/` packages and the interfaces go.
+    Callers keep their types: they already name the `*UseCase`.
+  - [ ] The tests move with them (`*ServiceTest` → `*UseCaseTest` next to the class). A test that
+    faked another orchestration use case through its interface (the start test's `FakeDefaults`)
+    builds the real one on fakes of its ports and domain use cases instead; no Mockito.
+  - [ ] `ArchitectureTest`: `orchestration_features_follow_the_domain_core_shape` allows only
+    `inbound` and `model` in an orchestration feature; `orchestration_services_are_only_used_by_themselves`
+    goes; a rule that an orchestration `*UseCase` is a concrete class annotated as a bean. Show that
+    each changed rule fails on a deliberately misplaced class (conventions README, "Changing a
+    convention").
+  - [ ] `backend-java-package-structure.md`: the package layout, "Where each class kind goes" and
+    the rule list say that an orchestration feature holds `inbound/` (the concrete use cases) and
+    `model/`, and why: the interface added nothing, since an orchestration use case has a single
+    implementation and no outbound port of its own.
+- **Tests**: the moved unit tests, unchanged in what they assert; `ArchitectureTest`; every
+  integration test unchanged.
+
+### WP7: TAP-D7, no static methods in Spring beans: the check and the docs
+
+From the pull request review: a Spring bean is a singleton already, so its methods are instance
+methods; a static method in one is forbidden by default.
+
+- **Depends on**: WP6
+- **Status**: open
+- **Files**: `build-logic/checkstyle-rules` (a new check class, its tests and fixtures, its
+  README), `config/checkstyle/checkstyle.xml`, `docs/coding-convention/backend-java-checkstyle.md`
+- **Steps**:
+  - [ ] A custom check in `build-logic/checkstyle-rules`, configurable by annotation names (like
+    `RequiredMethodAnnotationCheck`): no `static` method in a class annotated `@Service`,
+    `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or
+    `@Configuration`. Static fields and nested types are not methods and stay allowed. Its tests keep
+    the module's 100% coverage gate, and `ProjectRulesTest` gets a fixture that breaks it.
+  - [ ] Wired in `checkstyle.xml` as `TAP-D7` for main code, suppressible only with
+    `@SuppressWarnings("checkstyle:TAP-D7")` and a reason, like the other `TAP-*` rules.
+  - [ ] `backend-java-checkstyle.md`: the rule in the catalogue with its reason (beans are
+    singletons; a static method hides a dependency from the bean and from its tests) and the one
+    known exception (a `static @Bean` method that Spring needs before the configuration is created,
+    e.g. a method interceptor or a bean post-processor).
+- **Tests**: the check's own tests (main code with and without the annotations, a static field, a
+  nested type, a suppression); the module's coverage gate; `ProjectRulesTest`.
+
+### WP8: TAP-D7 in the BFF
+
+- **Depends on**: WP7
+- **Status**: open
+- **Files**: the bean classes under `artifact/backend/bff` with static methods (today
+  `UsersApiDelegateImpl`, `ApiExceptionHandler`, `CurrentUser`, `AuthenticatedUserFactory`,
+  `AuthApiDelegateImpl`, `AnalysesApiDelegateImpl`, `SpaWebConfig`, `MethodSecurityConfig`) and
+  their callers and tests
+- **Steps**:
+  - [ ] Every static method of a bean becomes an instance method; a caller that used it statically
+    gets the bean injected (e.g. `DomainExceptionHandler`, which calls
+    `ApiExceptionHandler.response(...)`).
+  - [ ] Where Spring needs a `static @Bean` method (`MethodSecurityConfig`'s method interceptor),
+    it stays, with the suppression and its reason.
+- **Tests**: the BFF's unit and integration tests unchanged in what they assert; `TAP-D7` passes.
+
+### WP9: TAP-D7 in the domains and orchestration
+
+- **Depends on**: WP7
+- **Status**: open
+- **Files**: the bean classes under `artifact/backend/domain/*` and `orchestration` with static
+  methods (today among them `RoleManagementService`, `UserManagementService`,
+  `JsonRunHistoryAdapter`, `FileSystemDataDirAdapter`, `JpaAnalysisRepositoryAdapter`, the
+  orchestration use cases of WP6, `ProcessRunnerAdapter`, `PresetService`, `JpaUserRepositoryAdapter`,
+  `EnvFileCredentialsAdapter`, `DockerRunnerAdapter`, `CsvPriceCacheAdapter`,
+  `TaRunnerEngineInfoAdapter`, `SecretsService`, `ReportService`, `PriceHistoryService`,
+  `PasswordPolicy`, `DotenvSecretStoreAdapter`, `JpaRoleRepositoryAdapter`, `AuthenticationService`,
+  `AnalysisService`, `AnalysisLogService`) and their tests
+- **Steps**:
+  - [ ] Every static method of a bean becomes an instance method (about 85 today, in about 24
+    classes). Behaviour stays the same.
+- **Tests**: every domain and orchestration test unchanged in what it asserts; `TAP-D7` passes on
+  the whole backend.
+
 ## Tests
 
 WP1's unit tests prove the server-side decision, WP2's integration tests the answers over HTTP,
@@ -241,6 +335,8 @@ saving at once (plan 1).
 | Text | README.md "Login" | the start request decides the five values; 403 `analysis_override_forbidden` |
 | Screenshot | `docs/screenshots/settings.png`, retaken | Settings as the admin: API keys, the Analysis defaults card with the catalog defaults, presets ("4. Add an API key") |
 | Screenshot | `docs/screenshots/new-analysis.png`, retaken | the form as the admin, the fields editable from the platform values with "Reset to defaults" ("5. Start an analysis") |
+| Text | docs/coding-convention/backend-java-package-structure.md | orchestration features: concrete `*UseCase` beans in `inbound/`, no `service/` (WP6) |
+| Text | docs/coding-convention/backend-java-checkstyle.md, build-logic/checkstyle-rules/README.md | `TAP-D7`, no static methods in Spring beans (WP7) |
 | Screenshot | `docs/screenshots/new-analysis-readonly.png`, new | the form as a created ANALYST user: the five values read-only with "Set by the administrator" ("5. Start an analysis") |
 
 ## Out of scope
