@@ -49,6 +49,12 @@ abstract class UsersApiTestBase {
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     private static final String SCRIPT = """
             #!/bin/sh
+            if [ "$1" = "catalog" ]; then
+            cat <<'JSON'
+            {"upstream_version":"0.5.1","defaults":{"llm_provider":"deepseek","deep_think_llm":"deepseek-v4-pro","quick_think_llm":"deepseek-v4-flash"},"providers":[{"id":"deepseek","api_key_env":"DEEPSEEK_API_KEY","custom_model_allowed":true,"quick_models":[{"id":"deepseek-v4-flash","label":"DeepSeek V4 Flash"}],"deep_models":[{"id":"deepseek-v4-pro","label":"DeepSeek V4 Pro"}]}],"analysts":[{"id":"market","agent":"Market Analyst"}],"asset_types":["stock","crypto"]}
+            JSON
+            exit 0
+            fi
             OUT="$5"
             sleep 3
             line() { printf '{"v":1,"ts":"2026-09-29T10:00:0%sZ","run_id":"x","seq":%s,"type":"%s"%s}\\n' "$1" "$1" "$2" "$3" | tee -a "$OUT/events.jsonl"; }
