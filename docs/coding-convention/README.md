@@ -17,6 +17,7 @@ enforces each rule.
 | [repository-git-hooks.md](repository-git-hooks.md) | Whole repository: the pre-commit hook (lefthook), what it runs on which files, how to install, run or skip it |
 | [repository-versioning-and-releases.md](repository-versioning-and-releases.md) | Whole repository: one version, bumped in every pull request into `main`, tagged and released on merge |
 | [repository-shared-types.md](repository-shared-types.md) | Whole repository: values shared by the backend domain, the BFF and the frontend (permissions as the example): one domain enum, a DTO mirror with a MapStruct mapping, OpenAPI to the generated frontend type |
+| [repository-code-comments.md](repository-code-comments.md) | Whole repository: a comment only when it says what the code cannot; Javadoc only where Checkstyle requires it; no file headers; checked by review, not by a tool |
 | [repository-dependency-hygiene.md](repository-dependency-hygiene.md) | Whole repository: declare what you use, use what you declare (Gradle analysis, Knip, deptry), exceptions |
 
 The structure documents cover package / folder placement and the dependencies between packages.
