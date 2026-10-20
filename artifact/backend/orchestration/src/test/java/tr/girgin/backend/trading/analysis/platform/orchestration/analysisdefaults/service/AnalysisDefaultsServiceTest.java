@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
@@ -155,6 +156,9 @@ class AnalysisDefaultsServiceTest {
 
         @Override
         public AnalysisDefaults save(AnalysisDefaults defaults) {
+            if (defaults.version() == null && stored != null) {
+                throw new DataIntegrityViolationException("duplicate key");
+            }
             if (!Objects.equals(defaults.version(), stored == null ? null : stored.version())) {
                 throw new OptimisticLockingFailureException("stale version");
             }

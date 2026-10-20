@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
@@ -71,7 +72,7 @@ class JpaAnalysisDefaultsRepositoryAdapterTest {
         AnalysisDefaults saved = repository.save(defaults("openai", 1, null));
 
         assertThatThrownBy(() -> repository.save(defaults("other", 5, null)))
-                .isInstanceOf(OptimisticLockingFailureException.class);
+                .isInstanceOf(DataIntegrityViolationException.class);
 
         assertThat(repository.find()).contains(saved);
     }

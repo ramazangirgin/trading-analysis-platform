@@ -11,8 +11,9 @@ public interface AnalysisDefaultsRepositoryPort {
 
     /**
      * Inserts or updates the defaults and returns them as stored, with their new {@link AnalysisDefaults#version()}.
-     * A {@code null} version inserts the row; a version that differs from the stored one, and a {@code null} version
-     * while the row exists, fail with Spring's {@code OptimisticLockingFailureException} and leave the row unchanged.
+     * A {@code null} version inserts the row. A version that differs from the stored one fails with Spring's
+     * {@code OptimisticLockingFailureException}; a {@code null} version while the row exists, or a concurrent first
+     * insert, fails with its {@code DataIntegrityViolationException}. The row stays unchanged.
      */
     AnalysisDefaults save(AnalysisDefaults defaults);
 }

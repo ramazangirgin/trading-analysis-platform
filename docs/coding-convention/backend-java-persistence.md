@@ -236,9 +236,9 @@ A write based on a stale copy of a row fails instead of overwriting a newer one.
   - Merged entities (`JpaPresetRepositoryAdapter`, `JpaRoleRepositoryAdapter`,
     `JpaAnalysisDefaultsRepositoryAdapter`): `saveAndFlush`; Hibernate rejects a detached entity whose
     version differs from the stored one. `ANALYSIS_DEFAULTS` is a one-row table with the fixed ID
-    `DEFAULTS`, so a `null` version on the existing row would hit the primary key; its adapter checks
-    for the row first and throws `OptimisticLockingFailureException`, also for the primary-key
-    violation of two concurrent first inserts.
+    `DEFAULTS`, so a `null` version on the existing row (and the second of two concurrent first
+    inserts) hits the primary key and fails with `DataIntegrityViolationException`; the adapter
+    does not translate it, the service maps it and `OptimisticLockingFailureException` alike.
   - Managed entities (`JpaUserRepositoryAdapter#save`, `JpaAnalysisRepositoryAdapter#update` and
     `#replaceImported`): the adapter loads the entity, compares the incoming version with the
     entity's and throws `OptimisticLockingFailureException` on a mismatch (a `null` version

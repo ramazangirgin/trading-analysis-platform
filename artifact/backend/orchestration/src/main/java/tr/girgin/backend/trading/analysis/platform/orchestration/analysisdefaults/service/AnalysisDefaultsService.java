@@ -2,6 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefaul
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
@@ -45,7 +46,7 @@ class AnalysisDefaultsService implements ManageAnalysisDefaultsUseCase {
                     defaults.maxDebateRounds(),
                     defaults.maxRiskDiscussRounds(),
                     expectedVersion));
-        } catch (OptimisticLockingFailureException _) {
+        } catch (OptimisticLockingFailureException | DataIntegrityViolationException _) {
             throw new SettingsException(
                     SettingsError.CONCURRENT_UPDATE,
                     "Analysis defaults were changed concurrently",
