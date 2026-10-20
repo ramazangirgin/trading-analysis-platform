@@ -18,7 +18,6 @@ import tr.girgin.checkstyle.support.TypeName;
  */
 public class StaticMethodInAnnotatedClassCheck extends AbstractCheck {
 
-    /** Message key of a static method in an annotated class. */
     public static final String MSG_STATIC = "static.method.in.annotated.class";
 
     private List<TypeName> annotations = List.of();
