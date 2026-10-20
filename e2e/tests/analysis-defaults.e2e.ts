@@ -104,6 +104,39 @@ async function openNewAnalysis(page: Page) {
   await expect(page.getByText(/This provider needs its key/)).toBeVisible({ timeout: 30_000 })
 }
 
+test('the admin saves the analysis defaults on the card and finds them after a reload', async ({
+  page,
+  request,
+}) => {
+  const original = await readDefaults(request)
+  try {
+    await page.goto('/settings')
+    const card = page
+      .locator('.n-space', { has: page.getByRole('heading', { name: 'Analysis defaults' }) })
+      .last()
+    await expect(card.getByRole('button', { name: 'Save' })).toBeEnabled({ timeout: 30_000 })
+    // Naive UI's select carries no combobox or option roles.
+    await card.locator('.n-base-selection').nth(1).click()
+    const option = page
+      .locator('.n-base-select-option:not(.n-base-select-option--selected)')
+      .first()
+    const chosen = ((await option.innerText()) as string).split(' — ')[0]
+    await option.click()
+    const rounds = card.locator('.n-input-number input')
+    await rounds.nth(0).fill('4')
+    await rounds.nth(1).fill('5')
+    await card.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByText('Analysis defaults saved.')).toBeVisible()
+
+    await page.reload()
+    await expect(rounds.nth(0)).toHaveValue('4')
+    await expect(rounds.nth(1)).toHaveValue('5')
+    await expect(card.locator('.n-base-selection').nth(1)).toContainText(chosen)
+  } finally {
+    await saveDefaults(request, original)
+  }
+})
+
 test('the platform values are what an analyst sees, starts with and finds on the run page', async ({
   page,
   request,
