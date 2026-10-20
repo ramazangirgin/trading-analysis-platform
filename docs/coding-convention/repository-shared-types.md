@@ -36,7 +36,10 @@ Each step has a check that fails when it is skipped:
    `RolePermissionsIntegrationTest` no longer returns every `Permission::key`.
 4. Add a new identity migration with `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE ...` (the
    database type is an enum, not a table row) and grant the value to the built-in roles that should
-   have it, as the headers of V3 and V4 ask. Skipped: `JpaIdentityRepositoryTest` fails because the
+   have it, as the headers of V3 and V4 ask. The grant is a migration of its own, after the one
+   that adds the value, because a transaction cannot use an enum value it added and Flyway runs
+   each migration in one: `V7__add_analysis_permissions.sql` adds, then
+   `V8__grant_analysis_permissions_to_admin.sql` grants. Skipped: `JpaIdentityRepositoryTest` fails because the
    database enum no longer matches `Permission`.
 5. Run `mise run api-types` so `shared/api/schema.d.ts` follows `openapi.json`. Skipped: `vue-tsc`
    (`mise run check`) fails wherever the frontend uses the new key, for example in `permissions.ts`

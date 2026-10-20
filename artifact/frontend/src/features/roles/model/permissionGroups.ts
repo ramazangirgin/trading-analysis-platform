@@ -5,6 +5,8 @@ export const ALL_PERMISSIONS = [
   'analysis:read',
   'analysis:read:all',
   'analysis:delete',
+  'analysis:defaults:manage',
+  'analysis:override-models',
   'preset:read',
   'preset:manage',
   'preset:read:all',

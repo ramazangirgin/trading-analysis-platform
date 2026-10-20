@@ -56,6 +56,11 @@ runtime classpath is. That is what `gradle-scan` checks (#128: Jackson 3.1.5 sta
   that is not reachable or a platform that is not shipped); the developer does it.
 - **Never merge, approve or use auto-merge** (6). Tools run with mise: `~/.local/bin/mise run <task>`.
 
+- **Comments only when needed** ([code comments](../../../docs/coding-convention/repository-code-comments.md)):
+  a comment or Javadoc in the code this skill writes or changes says only what the code, its names
+  and the docs cannot (a reason that is not obvious, a workaround). Never one that repeats them, and
+  never one copied from the code around it.
+
 ## 0. Preflight
 
 ```sh

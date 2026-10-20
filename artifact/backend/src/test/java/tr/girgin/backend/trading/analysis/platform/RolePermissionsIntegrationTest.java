@@ -62,6 +62,8 @@ class RolePermissionsIntegrationTest {
                 new String[] {"GET", "/api/secrets"},
                 new String[] {"GET", "/api/catalog"},
                 new String[] {"GET", "/api/health"},
+                new String[] {"GET", "/api/settings/analysis-defaults"},
+                new String[] {"PUT", "/api/settings/analysis-defaults"},
                 new String[] {"POST", "/api/users/" + id + "/unlock"});
         for (String[] request : refused) {
             HttpResponse<String> response =
@@ -83,6 +85,7 @@ class RolePermissionsIntegrationTest {
         for (String[] request : List.of(
                 new String[] {"PUT", "/api/secrets/OPENAI_API_KEY"},
                 new String[] {"DELETE", "/api/secrets/OPENAI_API_KEY"},
+                new String[] {"PUT", "/api/settings/analysis-defaults"},
                 new String[] {"POST", "/api/users/" + id + "/unlock"})) {
             assertThat(analyst.send(request[0], request[1], TestSession.validBody(request[0], request[1]))
                             .statusCode())
@@ -98,6 +101,7 @@ class RolePermissionsIntegrationTest {
                 new String[] {"POST", "/api/presets"},
                 new String[] {"GET", "/api/secrets"},
                 new String[] {"GET", "/api/catalog"},
+                new String[] {"GET", "/api/settings/analysis-defaults"},
                 new String[] {"GET", "/api/health"})) {
             assertThat(analyst.send(request[0], request[1], "{}").statusCode())
                     .as(request[0] + " " + request[1])

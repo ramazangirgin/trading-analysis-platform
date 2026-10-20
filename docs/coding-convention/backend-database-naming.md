@@ -34,7 +34,7 @@ SQL of its own ([persistence](backend-java-persistence.md)).
     Flyway in lower case and cannot be configured.
 - **Enum types** are named in upper snake case after the Java enum they mirror (`AnalysisStatus` →
   `"ANALYSIS"."ANALYSIS_STATUS"`). Their labels are the Java constant names (`'ANALYSIS_READ_ALL'`),
-  in declaration order, and the migration comments which enum the type mirrors. A set of enum values
+  in declaration order. A set of enum values
   is an array of the type: `"ANALYSIS"."ANALYST"[]`. No enum is stored as `TEXT`.
 - **Qualified names**: every name in a migration that can carry a schema does (tables, types, the
   table after `REFERENCES`, `COMMENT ON`, the table after `ON` in `CREATE INDEX`). PostgreSQL allows
@@ -66,7 +66,7 @@ SQL of its own ([persistence](backend-java-persistence.md)).
 - Every name that can be qualified is, and a migration references only its own domain's schema: no
   foreign key, type or view across domains.
 - Never edit a migration that has been applied (merged into `main`): add a new one.
-- Each table and column that is not obvious gets a comment in the migration.
+- Comments in a migration follow [repository-code-comments.md](repository-code-comments.md).
 
 ## Examples
 
