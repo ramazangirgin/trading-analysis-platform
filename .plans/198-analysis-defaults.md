@@ -18,10 +18,10 @@ current page keeps working against the unchanged start endpoint in between.
 | Part | Conventions that apply |
 |---|---|
 | Backend identity domain | backend-java-package-structure.md (`Permission` in `domain.identity.core.model`, the `PermissionDto` mirror in `bff.controller.api.model`); repository-shared-types.md (domain enum is the single source, DTO mirror with `@JsonValue` key, OpenAPI carries the values to the frontend, a database enum mirror guarded by a test); backend-database-naming.md and backend-java-persistence.md (migrations, uppercase quoted names) |
-| Backend settings domain | backend-java-package-structure.md (core model/port/service, adapter persistence entity/repository/mappers); backend-java-persistence.md (entities, `@Version` optimistic locking with `Long version` on the record, one schema per domain, Flyway migrations per domain, conventions test); backend-database-naming.md |
-| Backend orchestration | backend-java-package-structure.md (a use case spanning several domains lives in `orchestration`, one sub-package per feature; `domains_are_independent`) |
-| Backend BFF | backend-java-rest-api.md (a 200-only endpoint returns the DTO, never `ResponseEntity`; every error is an exception mapped by `DomainExceptionHandler` and the `*ExceptionToApiExceptionMapper`, never caught in a delegate); `@RequiresPermission` on the delegate method (`TAP-A1`) |
-| Frontend | frontend-folder-structure.md (`features/auth/model/permissions.ts`, `features/roles/model/permissionGroups.ts`, `shared/i18n/locales/*.json`); repository-shared-types.md (`PERMISSIONS` checked with `satisfies Record<string, Permission>`) |
+| Backend settings domain | backend-java-package-structure.md (core model/port, adapter persistence entity/repository/mappers); backend-java-persistence.md (entities, `@Version` optimistic locking with `Long version` on the record, `saveAndFlush`, one schema per domain, Flyway migrations per domain, conventions test, the stale-write test per entity); backend-database-naming.md |
+| Backend orchestration | backend-java-package-structure.md (a use case spanning several domains lives in `orchestration`, one sub-package per feature with only `inbound`, `service`, `model`; `domains_are_independent`) |
+| Backend BFF | backend-java-rest-api.md (a 200-only endpoint returns the DTO, never `ResponseEntity`; every error is an exception mapped by `DomainExceptionHandler` and the `*ExceptionToApiExceptionMapper`, never caught in a delegate); `@RequiresPermission` on the delegate method (`TAP-A1`); mappers named `SourceToTargetMapper` |
+| Frontend | frontend-folder-structure.md (`features/auth/model/permissions.ts`, `features/roles/model/permissionGroups.ts`, `shared/i18n/locales/*.json`); repository-shared-types.md (`PERMISSIONS` checked with `satisfies Record<string, Permission>`; `ALL_PERMISSIONS` fails the type-check while a generated value is missing) |
 | OpenAPI | repository-shared-types.md: `artifact/frontend/openapi.json` is checked in; `mise run api-types` regenerates it and `shared/api/schema.d.ts` from the running backend |
 
 ## Design
@@ -35,88 +35,100 @@ current page keeps working against the unchanged start endpoint in between.
   no change.
 - Identity migration `V7__add_analysis_permissions.sql`: one `ALTER TYPE "IDENTITY"."PERMISSION"
   ADD VALUE` per constant (labels are the Java constant names, not the keys, as the V1 comment
-  states). A second migration is needed because PostgreSQL forbids using a value added with
-  `ADD VALUE` in the same transaction, and Flyway runs each migration in its own.
+  states). This is the first `ADD VALUE` of the code base.
 - `V8__grant_analysis_permissions_to_admin.sql`: append both to ADMIN's array —
   `UPDATE "IDENTITY"."ROLES" SET "PERMISSIONS" = "PERMISSIONS" || ARRAY['ANALYSIS_DEFAULTS_MANAGE',
-  'ANALYSIS_OVERRIDE_MODELS']::"IDENTITY"."PERMISSION"[] WHERE "NAME" = 'ADMIN';`. The V3 insert
-  materialised ADMIN's array from `ENUM_RANGE` at insert time, so later enum values are not picked
-  up automatically. ANALYST and VIEWER are not granted either (the issue). A custom role picks them
-  up through `/api/roles` as every other permission.
+  'ANALYSIS_OVERRIDE_MODELS']::"IDENTITY"."PERMISSION"[] WHERE "ID" = 'ADMIN';` (the fixed ID V3
+  gives the role). Two migrations, because PostgreSQL does not let a transaction use an enum value
+  that the same transaction added, and Flyway runs each migration in a transaction of its own. The
+  V3 insert materialised ADMIN's array from `ENUM_RANGE` at insert time, so later enum values are
+  not picked up without V8. ANALYST and VIEWER are not granted either (the issue). A custom role
+  gets them through `/api/roles` like every other permission.
 
 ### Settings: the stored `AnalysisDefaults`
 
 - Settings core model: `AnalysisDefaults(String llmProvider, String deepThinkLlm, String
   quickThinkLlm, int maxDebateRounds, int maxRiskDiscussRounds, Long version)` — `version` is
-  `null` on a record the core builds before its first save and set on every record a port returns,
-  like `Preset.version`.
+  `null` while nothing is stored and set on every record the port returns, like `Preset.version`.
 - Settings core outbound port `AnalysisDefaultsRepositoryPort` in `outbound/persistence`:
-  `Optional<AnalysisDefaults> find()` and `AnalysisDefaults save(AnalysisDefaults defaults)`, with
-  the same Javadoc contract as `PresetRepositoryPort.save`: `null` version means insert, so it fails
-  on an existing ID; a version that differs from the stored row fails with
-  `OptimisticLockingFailureException` and leaves the row unchanged; save returns the stored record
+  `Optional<AnalysisDefaults> find()` and `AnalysisDefaults save(AnalysisDefaults defaults)`. Its
+  Javadoc promises: a `null` version inserts the row; a version that differs from the stored row's,
+  **and a `null` version while the row exists**, fail with Spring's
+  `OptimisticLockingFailureException` and leave the row unchanged; `save` returns the stored record
   with its new version.
-- Settings adapter (`domain.settings.adapter.persistence`): `AnalysisDefaultsEntity` on
-  `"SETTINGS"."ANALYSIS_DEFAULTS"` — `@EmbeddedId AnalysisDefaultsIdEmbeddable` holding the fixed
-  row ID `"DEFAULTS"` (a one-row table; the ID stays in the adapter, the domain record has none),
-  columns `LLM_PROVIDER`, `DEEP_THINK_LLM`, `QUICK_THINK_LLM`, `MAX_DEBATE_ROUNDS`,
-  `MAX_RISK_DISCUSS_ROUNDS` (all `NOT NULL`), `@Version VERSION`; `AnalysisDefaultsJpaRepository`;
-  `JpaAnalysisDefaultsRepositoryAdapter` (`find` maps the one row or empty; `save` merges with
-  `saveAndFlush`, like `JpaPresetRepositoryAdapter`); entity ↔ model mappers.
+- Settings adapter (`domain.settings.adapter.persistence`):
+  - `entity/AnalysisDefaultsEntity` on `"SETTINGS"."ANALYSIS_DEFAULTS"`: a plain `@Id` `String` on
+    `ID`, always `"DEFAULTS"` (a one-row table; the domain record has no ID, so there is no ID
+    wrapper to embed), columns `LLM_PROVIDER`, `DEEP_THINK_LLM`, `QUICK_THINK_LLM`,
+    `MAX_DEBATE_ROUNDS`, `MAX_RISK_DISCUSS_ROUNDS`, `@Version VERSION`.
+  - `AnalysisDefaultsJpaRepository`, and `JpaAnalysisDefaultsRepositoryAdapter`: `find` maps the
+    row or empty (`@Transactional(readOnly = true)`); `save` (`@Transactional`) merges with
+    `saveAndFlush` like `JpaPresetRepositoryAdapter`. A `null`-version save on an existing row would
+    otherwise fail with a generic `DataIntegrityViolationException` (the primary key, see
+    `JpaPresetRepositoryAdapterTest.savingWithoutAVersionFailsOnAnExistingId`): the adapter checks
+    for the row first and throws `OptimisticLockingFailureException`, and translates the primary-key
+    violation of a concurrent first insert into the same exception — the only constraint of the
+    table besides `NOT NULL`, which the core guarantees.
+  - `mapper/AnalysisDefaultsToAnalysisDefaultsEntityMapper` (sets the constant ID) and
+    `mapper/AnalysisDefaultsEntityToAnalysisDefaultsMapper`.
 - Settings migration `V3__create_analysis_defaults.sql`: the table with a named
-  `"ANALYSIS_DEFAULTS_PK"`, `"VERSION" BIGINT NOT NULL DEFAULT 0`, and a comment explaining the
-  fixed-ID one-row design. (Settings Flyway versions are per domain; presets used V1 and V2.)
+  `"ANALYSIS_DEFAULTS_PK"`, every column `NOT NULL`, `"VERSION" BIGINT NOT NULL DEFAULT 0`, and a
+  comment on the table explaining the one row with the fixed ID. (Settings Flyway versions are per
+  domain; presets used V1 and V2.)
 
 ### Orchestration: `ManageAnalysisDefaultsUseCase`
 
 The use case needs both the stored settings and the catalog, and domains are independent, so it
-lives in a new orchestration feature `orchestration.analysisdefaults` — inbound
-`ManageAnalysisDefaultsUseCase`, package-private `AnalysisDefaultsService` — not in the settings
-core. (The issue places it in the settings domain; this is the convention's home for a use case
-that spans settings and catalog.)
+lives in a new orchestration feature `orchestration.analysisdefaults` — `inbound/ManageAnalysisDefaultsUseCase`
+and the package-private `service/AnalysisDefaultsService` — not in the settings core as the issue
+says. The orchestration module already depends on `settings:core` and `catalog:core`.
 
-- `AnalysisDefaults get()`: the stored row when one exists; otherwise the catalog's `ModelDefaults`
-  (upstream's defaults including its `TRADINGAGENTS_*` overrides) and `1 / 1` rounds, with
-  `version` null, so a fresh install works without an admin step. It calls `GetCatalogUseCase`, so
-  a `CatalogUnavailableException` can surface here too (the BFF already maps it to 503).
-- `AnalysisDefaults update(AnalysisDefaults defaults, Long expectedVersion)`: validate against the
-  catalog — the provider must exist in it, both models must be listed for that provider, and both
-  rounds must be in 1..10, the range the start request accepts today
-  (`AnalysisSpecValidator.MAX_ROUNDS`) — otherwise `SettingsException(SettingsError.INVALID_ANALYSIS_DEFAULTS, ...,
-  Map.of("field", <the offending field>))`. Then save through the port with `expectedVersion`
-  (`null` = apply to what is stored, the `PresetService.updatePreset` pattern), translating
-  `OptimisticLockingFailureException` to `SettingsException(SettingsError.CONCURRENT_UPDATE, ...)`
-  exactly as `PresetService.updatePreset` does.
+- `AnalysisDefaults get()`: the stored row when one exists, without asking the catalog; otherwise
+  the catalog's `ModelDefaults` (upstream's defaults including its `TRADINGAGENTS_*` overrides) and
+  `1 / 1` rounds with `version` null, so a fresh install works without an admin step. Only the
+  fallback calls `GetCatalogUseCase`, so only then can a `CatalogUnavailableException` surface (the
+  BFF already answers it with 503 `catalog_unavailable`).
+- `AnalysisDefaults update(AnalysisDefaults defaults, Long expectedVersion)`:
+  - validate against the catalog: the provider must exist in it, both models must be listed for
+    that provider (its `deepModels` and `quickModels`), and both rounds must be in 1..10, the range
+    the start request accepts today (`AnalysisSpecValidator.MAX_ROUNDS`); otherwise
+    `SettingsException(SettingsError.INVALID_ANALYSIS_DEFAULTS, ..., Map.of("field", <the field>))`;
+  - save with `expectedVersion` as given. Unlike presets, `null` does not mean "apply to what is
+    stored": it is the version a client reads while nothing is stored, so it means "insert", and a
+    row saved meanwhile makes it fail. That is what makes the second of two admins get 409 also on
+    the very first save;
+  - translate `OptimisticLockingFailureException` into `SettingsException(SettingsError.CONCURRENT_UPDATE, ...)`
+    as `PresetService.updatePreset` does.
 - New code `INVALID_ANALYSIS_DEFAULTS` in `SettingsError`.
-- Add the orchestration module's Gradle dependencies on settings-core and catalog-core if it does
-  not declare them yet.
 
 ### BFF
 
 - `SettingsApiController` / `SettingsApiDelegate` / `SettingsApiDelegateImpl`:
   - `GET /api/settings/analysis-defaults` → `AnalysisDefaultsDto` (the five values and `version`,
-    which is `null` while no row is stored); `@RequiresPermission(Permission.ANALYSIS_RUN)`, so the
-    New analysis page can show the values.
+    `null` while nothing is stored); `@RequiresPermission({Permission.ANALYSIS_RUN,
+    Permission.ANALYSIS_DEFAULTS_MANAGE})` (any of them): the New analysis page reads it with
+    `analysis:run`, and the Settings card of plan 2 with the manage permission, also on a custom role
+    without `analysis:run`.
   - `PUT /api/settings/analysis-defaults` → `AnalysisDefaultsDto` (200, the stored values with
     their new version); body `SaveAnalysisDefaultsRequest` (`@NotBlank` provider and both models,
-    `@NotNull` both rounds, optional `Long version` like `SavePresetRequest.version`);
+    `@NotNull` both rounds, `Long version`: the version from the GET, `null` when it was `null`);
     `@RequiresPermission(Permission.ANALYSIS_DEFAULTS_MANAGE)`.
   - New MapStruct mapper `AnalysisDefaultsToAnalysisDefaultsDtoMapper` in `bff.delegate.impl.mapper`.
 - `SettingsExceptionToApiExceptionMapper` gains `INVALID_ANALYSIS_DEFAULTS -> 400`
-  (`invalid_analysis_defaults`); `CONCURRENT_UPDATE -> 409 concurrent_update` already exists, which
-  is the "two admins save at the same time: the second gets 409" answer. The delegate does not
-  catch anything.
+  (`invalid_analysis_defaults`); `CONCURRENT_UPDATE -> 409 concurrent_update` already exists. The
+  delegate catches nothing.
 - `mise run api-types`: `artifact/frontend/openapi.json` and `shared/api/schema.d.ts` gain the two
   endpoints, the DTOs and the two new keys in the generated `Permission` union.
 
 ### Frontend housekeeping for the new permissions
 
-No page changes in this plan; only the plumbing the new permissions need to exist properly:
+No page changes in this plan; only what the new keys need:
 
 - `features/auth/model/permissions.ts`: `analysisDefaultsManage: 'analysis:defaults:manage'` and
   `analysisOverrideModels: 'analysis:override-models'`.
-- `features/roles/model/permissionGroups.ts`: `analysis:override-models` in the analysis group,
-  `analysis:defaults:manage` in the settings group, so the Roles UI offers both on custom roles.
+- `features/roles/model/permissionGroups.ts`: both keys in `ALL_PERMISSIONS` (after
+  `analysis:delete`). `areaOf` groups by the key's first segment, so both land in the analysis
+  group of the Roles checklist without further change.
 - `shared/i18n/locales/en.json` and `tr.json`: `permissions.keys` labels for both keys.
 
 ## Work packages
@@ -131,48 +143,47 @@ No page changes in this plan; only the plumbing the new permissions need to exis
   - [ ] add the two constants to `Permission` (keys `analysis:defaults:manage`, `analysis:override-models`)
   - [ ] add them to `PermissionDto` with the same `@JsonValue` keys
   - [ ] V7: `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE` for each constant, in declaration order
-  - [ ] V8: append both to ADMIN's `"PERMISSIONS"` array (ANALYST and VIEWER unchanged)
-- **Tests**: `PermissionTest` (keys round-trip and are unique — unchanged); `JpaIdentityRepositoryTest`
-  (the database enum mirrors `Permission` — passes with V7); `RolePermissionsIntegrationTest`
-  (ADMIN's `me` returns every `Permission::key` — passes with V8; ANALYST's and VIEWER's exact sets
-  are unchanged).
+  - [ ] V8: append both to the role with ID `ADMIN` (ANALYST and VIEWER unchanged)
+- **Tests**: `PermissionTest` (keys round-trip and are unique, unchanged); `JpaIdentityRepositoryTest`
+  (the database enum mirrors `Permission`: green only with V7); `RolePermissionsIntegrationTest`
+  (ADMIN's `me` returns every `Permission::key`: green only with V8; ANALYST's and VIEWER's exact
+  sets stay unchanged).
 
 ### WP2: Settings storage
 
 - **Depends on**: none (parallel with WP1)
 - **Files**: settings core `model/AnalysisDefaults.java`, `outbound/persistence/AnalysisDefaultsRepositoryPort.java`;
-  settings adapter `entity/AnalysisDefaultsEntity.java`, `entity/AnalysisDefaultsIdEmbeddable.java`,
-  `AnalysisDefaultsJpaRepository.java`, `JpaAnalysisDefaultsRepositoryAdapter.java`,
-  `mapper/AnalysisDefaultsToAnalysisDefaultsEntityMapper.java` and its reverse;
+  settings adapter `entity/AnalysisDefaultsEntity.java`, `AnalysisDefaultsJpaRepository.java`,
+  `JpaAnalysisDefaultsRepositoryAdapter.java`, the two mappers in `mapper/`;
   `.../adapter/persistence/migration/V3__create_analysis_defaults.sql`
 - **Steps**:
-  - [ ] the model and the port (with the optimistic-locking contract)
-  - [ ] the entity, the fixed-ID embeddable, the mappers and the adapter
-  - [ ] the migration (named PK, `VERSION ... DEFAULT 0`, comment on the fixed-ID row)
-- **Tests**: a `@JpaAdapterTest` repository test for the new port, modelled on the settings
-  adapter's preset repository test: `find` on an empty table is empty; `save` with a `null` version
-  inserts the fixed row; a second save updates it and the version rises; the stale-write test
-  (read twice, write the first copy, the second stale write fails with
-  `OptimisticLockingFailureException` and the row keeps the first write); a `null`-version save with
-  the row present fails. `SettingsPersistenceConventionsTest` picks up the new entity and migration
-  automatically and must stay green.
+  - [ ] the model and the port, with the contract above
+  - [ ] the entity, the mappers and the adapter (the `null`-version check and translation)
+  - [ ] the migration
+- **Tests**: `JpaAnalysisDefaultsRepositoryAdapterTest` (`@JpaAdapterTest`, modelled on
+  `JpaPresetRepositoryAdapterTest`): `find` on an empty table is empty; a `null`-version save
+  inserts the row at version 0; a save at the stored version updates it and the version rises; the
+  stale-write test (read twice, write the first copy, the stale second write fails with
+  `OptimisticLockingFailureException`, a read returns the first write); a `null`-version save while
+  the row exists fails with `OptimisticLockingFailureException` and changes nothing.
+  `SettingsPersistenceConventionsTest` covers the new entity and migration as it is and must stay
+  green.
 
 ### WP3: Orchestration use case
 
 - **Depends on**: WP2
 - **Files**: `orchestration/.../orchestration/analysisdefaults/inbound/ManageAnalysisDefaultsUseCase.java`,
   `orchestration/.../orchestration/analysisdefaults/service/AnalysisDefaultsService.java`;
-  settings core `exception/SettingsError.java` (new code `INVALID_ANALYSIS_DEFAULTS`);
-  the orchestration build file if the settings-core or catalog-core dependency is missing
+  settings core `exception/SettingsError.java` (`INVALID_ANALYSIS_DEFAULTS`)
 - **Steps**:
-  - [ ] `get()`: stored row, else catalog `ModelDefaults` + `1 / 1` rounds with `version` null
-  - [ ] `update()`: catalog validation (provider exists, models listed for it, rounds 1..10) →
-    `INVALID_ANALYSIS_DEFAULTS` with the field param; save with the version semantics of
-    `PresetService.updatePreset`; `CONCURRENT_UPDATE` on a stale write
-- **Tests**: `AnalysisDefaultsServiceTest` (unit, fakes for the repository port and the catalog use
-  case): fallback when no row, stored row returned, each validation failure → `SettingsException`
-  `INVALID_ANALYSIS_DEFAULTS` with the field, stale version → `SettingsException` `CONCURRENT_UPDATE`,
-  a valid update stores the values and returns the new version.
+  - [ ] `get()`: the stored row, else the catalog's `ModelDefaults` and `1 / 1` with `version` null
+  - [ ] `update()`: the catalog validation with the field param; the save with the version as
+    given; `CONCURRENT_UPDATE` on `OptimisticLockingFailureException`
+- **Tests**: `AnalysisDefaultsServiceTest` (unit, fakes for the port and `GetCatalogUseCase`): the
+  fallback while nothing is stored; the stored row returned without asking the catalog; each
+  validation failure (unknown provider, a model not listed for the provider, rounds 0 and 11) →
+  `INVALID_ANALYSIS_DEFAULTS` with its field; a stale version and a `null` version while a row
+  exists → `CONCURRENT_UPDATE`; a valid update returns the stored values with the new version.
 
 ### WP4: BFF endpoints, OpenAPI, frontend housekeeping
 
@@ -181,42 +192,60 @@ No page changes in this plan; only the plumbing the new permissions need to exis
   `SettingsApiController.java`, `SettingsApiDelegate.java`; `bff/impl/.../SettingsApiDelegateImpl.java`;
   `bff/impl/.../mapper/AnalysisDefaultsToAnalysisDefaultsDtoMapper.java`;
   `bff/impl/.../mapper/error/SettingsExceptionToApiExceptionMapper.java`;
+  `artifact/backend/src/test/.../TestSession.java` (`validBody`), `RolePermissionsIntegrationTest.java`,
+  the new `AnalysisDefaultsApiIntegrationTest.java`;
   `artifact/frontend/openapi.json` and `artifact/frontend/src/shared/api/schema.d.ts` (generated);
   frontend `features/auth/model/permissions.ts`, `features/roles/model/permissionGroups.ts`,
   `shared/i18n/locales/en.json`, `shared/i18n/locales/tr.json`
 - **Steps**:
-  - [ ] the two endpoints with `@RequiresPermission(ANALYSIS_RUN)` and `@RequiresPermission(ANALYSIS_DEFAULTS_MANAGE)`
-  - [ ] the DTOs and the mapper; the `INVALID_ANALYSIS_DEFAULTS -> 400` case
+  - [ ] the two endpoints with their `@RequiresPermission`
+  - [ ] the DTOs, the mapper and the `INVALID_ANALYSIS_DEFAULTS -> 400` case
   - [ ] `mise run api-types`
-  - [ ] the frontend permission entries, checklist groups and i18n labels (en and tr)
-- **Tests**: new `AnalysisDefaultsApiIntegrationTest` (modelled on `PresetsApiIntegrationTest`:
-  `@SpringBootTest`, real PostgreSQL, `TestSession` over HTTP): GET without a stored row returns the
-  catalog defaults with `version` null; PUT stores and returns the values with their version; PUT
-  with a stale version → 409 `concurrent_update`; PUT with an unknown provider, an unlisted model or
-  out-of-range rounds → 400 `invalid_analysis_defaults` with the field; GET without `analysis:run`
-  and PUT without the manage permission → 403 `forbidden`. Add a `TestSession.validBody` entry for
-  the new PUT body and `RolePermissionsIntegrationTest` rows for the new endpoints (GET:
-  `analysis:run`; PUT: only the new permission); the `EndpointPermissionsIntegrationTest` sweep then
-  stays green.
+  - [ ] the frontend permission entries, `ALL_PERMISSIONS` and the i18n labels (en and tr)
+- **Tests**:
+  - new `AnalysisDefaultsApiIntegrationTest` (modelled on `PresetsApiIntegrationTest`:
+    `@SpringBootTest`, real PostgreSQL, `TestSession` over HTTP). Its runner script answers
+    `catalog` (the runner is called as `<script> catalog`) with a small catalog JSON in the shape of
+    docs/event-protocol.md section 1, two providers with their models and defaults; the scripts of
+    the other integration tests answer every command with run events, so their catalog is
+    unavailable. Cases: GET while nothing is stored returns the catalog defaults, `1 / 1` and
+    `version` null; PUT with `version` null stores the values at version 0; two admins who both
+    read `version` null: the second PUT → 409 `concurrent_update` and the first one's values stay;
+    a PUT with a stale version → 409; an unknown provider, a model not listed for the provider and
+    rounds 0 / 11 → 400 `invalid_analysis_defaults` with the field; GET with a custom role holding
+    only `analysis:defaults:manage` → 200;
+  - `TestSession.validBody` gets a valid body for `PUT /api/settings/analysis-defaults` (without it,
+    `EndpointPermissionsIntegrationTest`'s user without roles gets 400 from validation instead of
+    403);
+  - `RolePermissionsIntegrationTest`: ANALYST may GET the defaults and gets 403 `forbidden` on the
+    PUT; VIEWER gets 403 on both;
+  - frontend: `permissionGroups.spec.ts` ("every permission in exactly one group") stays green with
+    the two keys; `vue-tsc` (`mise run check`) proves `ALL_PERMISSIONS` and `PERMISSIONS` match the
+    generated `Permission`.
 
 ## Tests
 
-WP1's unit and migration-guarded tests, WP2's `@JpaAdapterTest` repository and stale-write tests,
-WP3's service unit tests, and WP4's HTTP integration tests. Together they prove this plan's part of
-the issue: an admin saves and reads the platform values; a stale save by a second admin answers
-409; a provider or model not in the catalog is refused; a fresh install answers the catalog
-fallback. The start-flow and UI acceptance criteria belong to plan 2.
+WP1's tests guarded by the database enum and ADMIN's permissions, WP2's repository tests with the
+stale writes, WP3's service unit tests, and WP4's HTTP integration tests. Together they prove this
+plan's part of the issue's acceptance criteria: an admin saves and reads the platform values; the
+second of two admins saving at the same time gets 409, also on the first save; a provider or model
+not in the catalog is refused in the admin settings; while nothing is saved, the catalog defaults
+and `1 / 1` are answered. The start-flow and UI criteria belong to plan 2.
 
 ## Docs to update
 
 | What | Where | Change |
 |---|---|---|
-| Endpoint table | README.md, "Login" section, the permissions-per-endpoint-group table | add `GET /api/settings/analysis-defaults` → `analysis:run` and `PUT /api/settings/analysis-defaults` → `analysis:defaults:manage` |
-| Roles paragraph | README.md, the paragraph after that table | say that the two new permissions exist, are held by ADMIN among the built-in roles, and can be granted to custom roles |
-| Generated API types | `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` | regenerated with `mise run api-types` |
+| Text | README.md, "Login", the permissions-per-endpoint-group table | `GET /api/settings/analysis-defaults` → `analysis:run` or `analysis:defaults:manage`; `PUT /api/settings/analysis-defaults` → `analysis:defaults:manage` |
+| Text | README.md, "Login", a bullet after the `/api/roles` one | the analysis-defaults endpoints: the DTO's fields, the catalog fallback with `version` null while nothing is saved, `version` on the PUT (`null` only for the first save), 400 `invalid_analysis_defaults` with `params.field`, 409 `concurrent_update`, 503 `catalog_unavailable` for the fallback |
+| Text | README.md, the built-in roles paragraph after that table | the two new permissions: ADMIN holds them, ANALYST and VIEWER do not, custom roles can be given them |
+| Text | docs/coding-convention/repository-shared-types.md, "Adding a value", step 4 | the value and its grant are two migrations (`ADD VALUE`, then the grant), since a transaction cannot use an enum value it added; name V7 / V8 as the example |
+| Text | docs/coding-convention/backend-java-package-structure.md, "Today's adapter packages" | the `domain.settings.adapter.persistence` row gains `JpaAnalysisDefaultsRepositoryAdapter`, `AnalysisDefaultsJpaRepository` |
+| Text | docs/coding-convention/backend-java-persistence.md, "Optimistic locking" | `ANALYSIS_DEFAULTS` in the list of tables with `VERSION`, `JpaAnalysisDefaultsRepositoryAdapter` among the merged entities, with its `null`-version rule for the one-row table |
+| Generated | `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` | regenerated with `mise run api-types` |
 
-Screenshots: none — no page looks different in this plan (the roles screenshot does not show the
-permission checklist).
+Screenshots: none. No page looks different in this plan; the roles screenshot shows the role list,
+not the permission checklist.
 
 ## Out of scope
 
