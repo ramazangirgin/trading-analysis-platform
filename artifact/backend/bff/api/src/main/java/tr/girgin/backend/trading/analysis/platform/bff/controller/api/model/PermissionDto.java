@@ -2,7 +2,6 @@ package tr.girgin.backend.trading.analysis.platform.bff.controller.api.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-/** What a role may do, on the wire as its key (e.g. {@code analysis:read:all}). */
 public enum PermissionDto {
     ANALYSIS_RUN("analysis:run"),
     ANALYSIS_READ("analysis:read"),

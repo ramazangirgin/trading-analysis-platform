@@ -7,7 +7,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.SettingsPersistenceConfiguration;
 
-/** The one row of the {@code ANALYSIS_DEFAULTS} table. */
 @Entity
 @Table(name = "ANALYSIS_DEFAULTS", schema = SettingsPersistenceConfiguration.SCHEMA)
 public class AnalysisDefaultsEntity {
