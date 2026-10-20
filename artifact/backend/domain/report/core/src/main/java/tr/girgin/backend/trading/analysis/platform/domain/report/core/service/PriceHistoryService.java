@@ -54,7 +54,7 @@ class PriceHistoryService implements GetPriceHistoryUseCase {
     }
 
     /** pandas {@code ewm(span, adjust=True, min_periods=1).mean()}, stockstats' EMA. */
-    static double[] ema(double[] values, int span) {
+    double[] ema(double[] values, int span) {
         double decay = 1 - 2.0 / (span + 1);
         double[] result = new double[values.length];
         double weighted = 0;
@@ -68,7 +68,7 @@ class PriceHistoryService implements GetPriceHistoryUseCase {
     }
 
     /** pandas {@code rolling(window, min_periods=1).mean()}, stockstats' SMA. */
-    static double[] sma(double[] values, int window) {
+    double[] sma(double[] values, int window) {
         double[] result = new double[values.length];
         double sum = 0;
         for (int i = 0; i < values.length; i++) {

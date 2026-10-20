@@ -143,7 +143,7 @@ class AuthenticationService implements AuthenticateUseCase {
                     return updated;
                 })
                 .orElseGet(() -> {
-                    User latest = users.findById(user.id()).orElseThrow(AuthenticationService::badCredentials);
+                    User latest = users.findById(user.id()).orElseThrow(this::badCredentials);
                     requireStillValid(latest, checked, password);
                     return latest;
                 });
@@ -192,7 +192,7 @@ class AuthenticationService implements AuthenticateUseCase {
         return Optional.empty();
     }
 
-    private static IdentityException badCredentials() {
+    private IdentityException badCredentials() {
         return new IdentityException(IdentityError.BAD_CREDENTIALS, "Bad credentials", Map.of());
     }
 }

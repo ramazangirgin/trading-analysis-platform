@@ -268,10 +268,10 @@ So do this package without waiting for `TAP-D7`; prove it with
 area (a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`) returning nothing, except the documented exception below.
 
 - **Depends on**: WP6
-- **Status**: open
+- **Status**: done
 - **Files**: `artifact/backend/bff`: today `UsersApiDelegateImpl`, `ApiExceptionHandler` (its caller `DomainExceptionHandler` gets it injected), `CurrentUser`, `AuthenticatedUserFactory`, `AuthApiDelegateImpl`, `AnalysesApiDelegateImpl`, `SpaWebConfig`, `MethodSecurityConfig` (its `static @Bean` method interceptor stays static: Spring needs it before the configuration exists; WP10 suppresses it with that reason), their callers and their tests
 - **Steps**:
-  - [ ] Every static method of a bean in `artifact/backend/bff` becomes an instance method; a caller that used it
+  - [x] Every static method of a bean in `artifact/backend/bff` becomes an instance method; a caller that used it
     statically gets the bean injected. Behaviour stays the same.
 - **Tests**: the existing tests of `artifact/backend/bff`, unchanged in what they assert; the grep above returns
   nothing for the area.
@@ -286,10 +286,10 @@ So do this package without waiting for `TAP-D7`; prove it with
 area (a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`) returning nothing, except the documented exception below.
 
 - **Depends on**: WP6
-- **Status**: open
+- **Status**: done
 - **Files**: `artifact/backend/domain/identity` and `artifact/backend/domain/settings`: today `RoleManagementService`, `UserManagementService`, `JpaUserRepositoryAdapter`, `JpaRoleRepositoryAdapter`, `AuthenticationService`, `PasswordPolicy`, `PresetService`, `SecretsService`, `DotenvSecretStoreAdapter`, their callers and their tests
 - **Steps**:
-  - [ ] Every static method of a bean in `artifact/backend/domain/identity` and `artifact/backend/domain/settings` becomes an instance method; a caller that used it
+  - [x] Every static method of a bean in `artifact/backend/domain/identity` and `artifact/backend/domain/settings` becomes an instance method; a caller that used it
     statically gets the bean injected. Behaviour stays the same.
 - **Tests**: the existing tests of `artifact/backend/domain/identity` and `artifact/backend/domain/settings`, unchanged in what they assert; the grep above returns
   nothing for the area.
@@ -304,10 +304,10 @@ So do this package without waiting for `TAP-D7`; prove it with
 area (a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`) returning nothing, except the documented exception below.
 
 - **Depends on**: WP6
-- **Status**: open
+- **Status**: done
 - **Files**: `artifact/backend/domain/analysis`, `domain/report`, `domain/catalog` and `artifact/backend/orchestration`: today `JsonRunHistoryAdapter`, `FileSystemDataDirAdapter`, `JpaAnalysisRepositoryAdapter`, `ProcessRunnerAdapter`, `DockerRunnerAdapter`, `EnvFileCredentialsAdapter`, `CsvPriceCacheAdapter`, `TaRunnerEngineInfoAdapter`, `ReportService`, `PriceHistoryService`, `AnalysisService`, `AnalysisLogService`, and the orchestration use cases of WP6, their callers and their tests
 - **Steps**:
-  - [ ] Every static method of a bean in `artifact/backend/domain/analysis`, `domain/report`, `domain/catalog` and `artifact/backend/orchestration` becomes an instance method; a caller that used it
+  - [x] Every static method of a bean in `artifact/backend/domain/analysis`, `domain/report`, `domain/catalog` and `artifact/backend/orchestration` becomes an instance method; a caller that used it
     statically gets the bean injected. Behaviour stays the same.
 - **Tests**: the existing tests of `artifact/backend/domain/analysis`, `domain/report`, `domain/catalog` and `artifact/backend/orchestration`, unchanged in what they assert; the grep above returns
   nothing for the area.

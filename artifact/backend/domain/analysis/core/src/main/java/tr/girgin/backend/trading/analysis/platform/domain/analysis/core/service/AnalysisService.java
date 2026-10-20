@@ -216,7 +216,7 @@ class AnalysisService
         return repository.assignOwnerWhereMissing(owner);
     }
 
-    private static AnalysisException notFound(AnalysisId id) {
+    private AnalysisException notFound(AnalysisId id) {
         return new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value()));
     }
 

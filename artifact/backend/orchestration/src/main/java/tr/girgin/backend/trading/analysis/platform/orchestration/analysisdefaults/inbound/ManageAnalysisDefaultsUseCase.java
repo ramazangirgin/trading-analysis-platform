@@ -73,8 +73,8 @@ public class ManageAnalysisDefaultsUseCase {
                 defaults.llmProvider(), defaults.deepThinkLlm(), defaults.quickThinkLlm(), 1, 1, null);
     }
 
-    private static void validate(AnalysisDefaults defaults, Catalog catalog) {
-        Provider provider = catalog.providers().stream()
+    private void validate(AnalysisDefaults defaults, Catalog offered) {
+        Provider provider = offered.providers().stream()
                 .filter(p -> p.id().equals(defaults.llmProvider()))
                 .findFirst()
                 .orElseThrow(() -> invalid("llmProvider", "Unknown provider: " + defaults.llmProvider()));
@@ -84,19 +84,19 @@ public class ManageAnalysisDefaultsUseCase {
         requireRounds(defaults.maxRiskDiscussRounds(), "maxRiskDiscussRounds");
     }
 
-    private static void requireListed(List<ModelOption> models, String model, String field) {
+    private void requireListed(List<ModelOption> models, String model, String field) {
         if (models.stream().noneMatch(m -> m.id().equals(model))) {
             throw invalid(field, "Model is not offered by the provider: " + model);
         }
     }
 
-    private static void requireRounds(int rounds, String field) {
+    private void requireRounds(int rounds, String field) {
         if (rounds < MIN_ROUNDS || rounds > MAX_ROUNDS) {
             throw invalid(field, "Rounds must be between " + MIN_ROUNDS + " and " + MAX_ROUNDS);
         }
     }
 
-    private static SettingsException invalid(String field, String message) {
+    private SettingsException invalid(String field, String message) {
         return new SettingsException(SettingsError.INVALID_ANALYSIS_DEFAULTS, message, Map.of("field", field));
     }
 }

@@ -79,7 +79,7 @@ class DotenvSecretStoreAdapter implements SecretStorePort {
         }
     }
 
-    static Map<String, String> read(Path file) {
+    Map<String, String> read(Path file) {
         Map<String, String> variables = new LinkedHashMap<>();
         if (!Files.isRegularFile(file)) {
             return variables;
@@ -100,7 +100,7 @@ class DotenvSecretStoreAdapter implements SecretStorePort {
         return variables;
     }
 
-    private static String unquote(String value) {
+    private String unquote(String value) {
         if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
             return value.substring(1, value.length() - 1).replace("\\\"", "\"").replace("\\\\", "\\");
         }

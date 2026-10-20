@@ -18,16 +18,19 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exceptio
 @RestControllerAdvice
 public class DomainExceptionHandler {
 
+    private final ApiExceptionHandler apiErrors;
     private final AnalysisExceptionToApiExceptionMapper analysisErrors;
     private final CatalogExceptionToApiExceptionMapper catalogErrors;
     private final IdentityExceptionToApiExceptionMapper identityErrors;
     private final SettingsExceptionToApiExceptionMapper settingsErrors;
 
     DomainExceptionHandler(
+            ApiExceptionHandler apiErrors,
             AnalysisExceptionToApiExceptionMapper analysisErrors,
             CatalogExceptionToApiExceptionMapper catalogErrors,
             IdentityExceptionToApiExceptionMapper identityErrors,
             SettingsExceptionToApiExceptionMapper settingsErrors) {
+        this.apiErrors = apiErrors;
         this.analysisErrors = analysisErrors;
         this.catalogErrors = catalogErrors;
         this.identityErrors = identityErrors;
@@ -36,21 +39,21 @@ public class DomainExceptionHandler {
 
     @ExceptionHandler(AnalysisException.class)
     public ResponseEntity<ApiErrorDto> handleAnalysisException(AnalysisException ex) {
-        return ApiExceptionHandler.response(analysisErrors.map(ex));
+        return apiErrors.response(analysisErrors.map(ex));
     }
 
     @ExceptionHandler(CatalogUnavailableException.class)
     public ResponseEntity<ApiErrorDto> handleCatalogUnavailable(CatalogUnavailableException ex) {
-        return ApiExceptionHandler.response(catalogErrors.map(ex));
+        return apiErrors.response(catalogErrors.map(ex));
     }
 
     @ExceptionHandler(IdentityException.class)
     public ResponseEntity<ApiErrorDto> handleIdentityException(IdentityException ex) {
-        return ApiExceptionHandler.response(identityErrors.map(ex));
+        return apiErrors.response(identityErrors.map(ex));
     }
 
     @ExceptionHandler(SettingsException.class)
     public ResponseEntity<ApiErrorDto> handleSettingsException(SettingsException ex) {
-        return ApiExceptionHandler.response(settingsErrors.map(ex));
+        return apiErrors.response(settingsErrors.map(ex));
     }
 }

@@ -19,7 +19,7 @@ public class CurrentUser {
                 .anyMatch(a -> permission.key().equals(a.getAuthority()));
     }
 
-    private static Authentication authentication() {
+    private Authentication authentication() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 }

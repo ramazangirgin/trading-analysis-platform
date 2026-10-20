@@ -276,7 +276,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         return userDirectory.usernames(ids);
     }
 
-    private static void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
+    private void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
         try {
             emitter.send(event);
         } catch (IOException e) {

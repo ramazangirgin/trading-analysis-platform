@@ -84,21 +84,21 @@ public class StartAnalysisWithDefaultsUseCase {
                 owner);
     }
 
-    private static <T> Optional<T> override(T sent, T platform) {
+    private <T> Optional<T> override(T sent, T platform) {
         if (sent == null || sameValue(sent, platform)) {
             return Optional.empty();
         }
         return Optional.of(sent);
     }
 
-    private static boolean sameValue(Object sent, Object platform) {
+    private boolean sameValue(Object sent, Object platform) {
         if (sent instanceof String s && platform instanceof String p) {
             return s.strip().equalsIgnoreCase(p);
         }
         return sent.equals(platform);
     }
 
-    private static AnalysisException forbidden(
+    private AnalysisException forbidden(
             Optional<String> provider,
             Optional<String> deep,
             Optional<String> quick,
@@ -129,13 +129,13 @@ public class StartAnalysisWithDefaultsUseCase {
         requireListed(provider.quickModels(), quick, "quickThinkLlm");
     }
 
-    private static void requireListed(List<ModelOption> models, String model, String field) {
+    private void requireListed(List<ModelOption> models, String model, String field) {
         if (models.stream().noneMatch(m -> m.id().equals(model))) {
             throw invalid(field, "Model is not offered by the provider: " + model);
         }
     }
 
-    private static AnalysisException invalid(String field, String message) {
+    private AnalysisException invalid(String field, String message) {
         return new AnalysisException(AnalysisError.INVALID_SPEC, message, Map.of("field", field));
     }
 }

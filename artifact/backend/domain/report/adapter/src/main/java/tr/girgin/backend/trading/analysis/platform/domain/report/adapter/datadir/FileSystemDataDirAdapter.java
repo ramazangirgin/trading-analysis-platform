@@ -219,13 +219,13 @@ class FileSystemDataDirAdapter implements DataDirPort {
                         modifiedAt(file)));
     }
 
-    private static <K> void putIfPresent(Map<K, String> target, K key, String value) {
+    private <K> void putIfPresent(Map<K, String> target, K key, String value) {
         if (value != null && !value.isBlank()) {
             target.put(key, value);
         }
     }
 
-    private static Optional<String> readText(Path file) {
+    private Optional<String> readText(Path file) {
         if (!Files.isRegularFile(file) || size(file) > MAX_FILE_BYTES) {
             return Optional.empty();
         }
@@ -238,7 +238,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         }
     }
 
-    private static Optional<LocalDate> parseDate(String value) {
+    private Optional<LocalDate> parseDate(String value) {
         try {
             return Optional.of(LocalDate.parse(value));
         } catch (DateTimeParseException _) {
@@ -246,7 +246,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         }
     }
 
-    private static List<Path> list(Path dir) {
+    private List<Path> list(Path dir) {
         if (!Files.isDirectory(dir)) {
             return List.of();
         }
@@ -258,7 +258,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         }
     }
 
-    private static Instant modifiedAt(Path file) {
+    private Instant modifiedAt(Path file) {
         try {
             return Files.getLastModifiedTime(file).toInstant();
         } catch (IOException _) {
@@ -266,7 +266,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         }
     }
 
-    private static long size(Path file) {
+    private long size(Path file) {
         try {
             return Files.size(file);
         } catch (IOException _) {

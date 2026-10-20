@@ -50,18 +50,18 @@ class EnvFileCredentialsAdapter implements CredentialsPort {
     public Map<String, String> environment() {
         Map<String, String> variables = new LinkedHashMap<>();
         files.forEach(file -> variables.putAll(read(file)));
-        variables.keySet().removeIf(EnvFileCredentialsAdapter::blocked);
+        variables.keySet().removeIf(this::blocked);
         if (variables.isEmpty()) {
             log.warn("No provider keys found in {}; runs get none", files);
         }
         return variables;
     }
 
-    private static boolean blocked(String name) {
+    private boolean blocked(String name) {
         return BLOCKED.contains(name) || BLOCKED_PREFIXES.stream().anyMatch(name::startsWith);
     }
 
-    private static Map<String, String> read(Path envFile) {
+    private Map<String, String> read(Path envFile) {
         if (!Files.isRegularFile(envFile)) {
             return Map.of();
         }
@@ -82,7 +82,7 @@ class EnvFileCredentialsAdapter implements CredentialsPort {
         }
     }
 
-    private static String unquote(String value) {
+    private String unquote(String value) {
         if (value.length() >= 2
                 && (value.startsWith("\"") && value.endsWith("\"") || value.startsWith("'") && value.endsWith("'"))) {
             return value.substring(1, value.length() - 1);

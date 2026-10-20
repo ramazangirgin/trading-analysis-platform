@@ -229,11 +229,11 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         }
     }
 
-    private static Instant max(Instant a, Instant b) {
+    private Instant max(Instant a, Instant b) {
         return a == null || b.isAfter(a) ? b : a;
     }
 
-    private static ExternalAnalysis toExternal(Report report, RunHistoryEntry run) {
+    private ExternalAnalysis toExternal(Report report, RunHistoryEntry run) {
         List<Analyst> analysts = new ArrayList<>();
         ANALYST_SECTIONS.forEach((section, analyst) -> {
             if (report.sections().containsKey(section)) {
@@ -255,7 +255,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 run == null ? report.modifiedAt() : run.endedAt());
     }
 
-    private static ExternalRun toRun(RunHistoryEntry entry) {
+    private ExternalRun toRun(RunHistoryEntry entry) {
         AnalysisStatus status = switch (entry.status()) {
             case COMPLETED -> AnalysisStatus.COMPLETED;
             case FAILED -> AnalysisStatus.FAILED;
@@ -282,7 +282,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 entry.endedAt());
     }
 
-    private static List<Analyst> analysts(RunHistoryEntry entry) {
+    private List<Analyst> analysts(RunHistoryEntry entry) {
         return entry.analysts().stream()
                 .map(key -> ANALYST_KEYS.get(key.toLowerCase(Locale.ROOT)))
                 .filter(Objects::nonNull)

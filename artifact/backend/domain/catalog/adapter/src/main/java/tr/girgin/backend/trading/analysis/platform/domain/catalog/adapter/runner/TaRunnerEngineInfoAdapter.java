@@ -97,7 +97,7 @@ class TaRunnerEngineInfoAdapter implements EngineInfoPort {
         }
     }
 
-    private static String readAll(InputStream in) {
+    private String readAll(InputStream in) {
         try (in) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -105,8 +105,8 @@ class TaRunnerEngineInfoAdapter implements EngineInfoPort {
         }
     }
 
-    private static List<String> absoluteExecutable(List<String> command) {
-        List<String> resolved = new ArrayList<>(command);
+    private List<String> absoluteExecutable(List<String> configured) {
+        List<String> resolved = new ArrayList<>(configured);
         if (!resolved.isEmpty() && resolved.getFirst().contains("/")) {
             resolved.set(
                     0, Path.of(resolved.getFirst()).toAbsolutePath().normalize().toString());

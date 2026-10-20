@@ -64,7 +64,7 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
         return entries;
     }
 
-    private static Optional<RunHistoryEntry> entry(String fallbackId, JsonNode run) {
+    private Optional<RunHistoryEntry> entry(String fallbackId, JsonNode run) {
         String ticker = text(run, "ticker");
         Optional<LocalDate> date = date(text(run, "date"));
         Optional<Status> status = status(text(run, "status"));
@@ -109,7 +109,7 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
                 endedAt));
     }
 
-    private static Optional<Status> status(String value) {
+    private Optional<Status> status(String value) {
         if (value == null) {
             return Optional.empty();
         }
@@ -122,12 +122,12 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
         };
     }
 
-    private static String text(JsonNode node, String field) {
+    private String text(JsonNode node, String field) {
         JsonNode value = node.path(field);
         return value.isString() && !value.asString().isBlank() ? value.asString() : null;
     }
 
-    private static Integer integer(JsonNode node) {
+    private Integer integer(JsonNode node) {
         if (node.isNumber()) {
             return node.asInt();
         }
@@ -141,14 +141,14 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
         return null;
     }
 
-    private static Instant epochSeconds(JsonNode node) {
+    private Instant epochSeconds(JsonNode node) {
         if (!node.isNumber()) {
             return null;
         }
         return Instant.ofEpochMilli(Math.round(node.asDouble() * 1000));
     }
 
-    private static Optional<LocalDate> date(String value) {
+    private Optional<LocalDate> date(String value) {
         try {
             return value == null ? Optional.empty() : Optional.of(LocalDate.parse(value));
         } catch (DateTimeParseException _) {

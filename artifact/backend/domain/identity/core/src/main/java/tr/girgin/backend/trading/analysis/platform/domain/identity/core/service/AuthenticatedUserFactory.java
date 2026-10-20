@@ -27,7 +27,7 @@ class AuthenticatedUserFactory {
         return new AuthenticatedUser(user.id(), user.username(), roleNames, permissions, user.mustChangePassword());
     }
 
-    private static void addRole(Role role, Set<String> roleNames, Set<Permission> permissions) {
+    private void addRole(Role role, Set<String> roleNames, Set<Permission> permissions) {
         roleNames.add(role.name());
         permissions.addAll(role.permissions());
     }

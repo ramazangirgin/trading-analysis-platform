@@ -44,7 +44,7 @@ public class SpaWebConfig implements WebMvcConfigurer {
             return null;
         }
 
-        private static boolean isClientRoute(String path) {
+        private boolean isClientRoute(String path) {
             return !path.startsWith("api/")
                     && !path.equals("api")
                     && !path.startsWith("actuator/")

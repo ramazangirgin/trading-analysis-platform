@@ -173,7 +173,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         csrfTokenRepository.saveToken(null, http, response);
     }
 
-    private static ApiException unauthorized() {
+    private ApiException unauthorized() {
         return new ApiException(HttpStatus.UNAUTHORIZED, "unauthorized", "Authentication required", Map.of());
     }
 

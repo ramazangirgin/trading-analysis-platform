@@ -148,7 +148,7 @@ class ProcessRunnerAdapter implements RunnerPort {
     }
 
     /** The live process behind a handle, unless its pid has since gone to another process. */
-    private static Optional<ProcessHandle> find(String ref) {
+    private Optional<ProcessHandle> find(String ref) {
         String[] parts = ref.split("@", 2);
         long pid;
         try {
@@ -161,7 +161,7 @@ class ProcessRunnerAdapter implements RunnerPort {
                 .filter(process -> parts.length == 1 || ref(process).equals(ref));
     }
 
-    private static String ref(ProcessHandle process) {
+    private String ref(ProcessHandle process) {
         return process.info()
                 .startInstant()
                 .map(start -> process.pid() + "@" + start.toEpochMilli())
@@ -239,11 +239,11 @@ class ProcessRunnerAdapter implements RunnerPort {
      *
      * @throws IllegalArgumentException when the configured command is empty
      */
-    private static List<String> absoluteExecutable(List<String> command) {
-        if (command.isEmpty()) {
+    private List<String> absoluteExecutable(List<String> configured) {
+        if (configured.isEmpty()) {
             throw new IllegalArgumentException("platform.runner.process.command must not be empty");
         }
-        List<String> resolved = new ArrayList<>(command);
+        List<String> resolved = new ArrayList<>(configured);
         if (resolved.getFirst().contains("/")) {
             resolved.set(
                     0, Path.of(resolved.getFirst()).toAbsolutePath().normalize().toString());
