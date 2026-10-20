@@ -144,15 +144,16 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP1: Orchestration start use case
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `orchestration/.../orchestration/analysisstart/model/RequestedAnalysis.java`,
   `inbound/StartAnalysisWithDefaultsUseCase.java`, `service/StartAnalysisWithDefaultsService.java`;
   analysis core `exception/AnalysisError.java` (`OVERRIDE_FORBIDDEN`);
   `bff/impl/.../mapper/error/AnalysisExceptionToApiExceptionMapper.java` (the 403)
 - **Steps**:
-  - [ ] the model with the five nullable fields
-  - [ ] the use case and its service, steps 1 to 5 above
-  - [ ] the error code and its 403 mapping
+  - [x] the model with the five nullable fields
+  - [x] the use case and its service, steps 1 to 5 above
+  - [x] the error code and its 403 mapping
 - **Tests**: `StartAnalysisWithDefaultsServiceTest` (unit, fakes for the defaults and catalog use
   cases and the domain's `StartAnalysisUseCase`): nothing sent → the platform values; exactly the
   platform values without the permission → accepted; a differing value without it → 
