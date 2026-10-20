@@ -515,12 +515,14 @@ The backend:
   `maxRiskDiscussRounds` and `version`.
   - `GET` answers the saved values. While nothing is saved it answers the catalog's defaults (upstream's,
     with its `TRADINGAGENTS_*` overrides) with one round each and `version` `null`, so a fresh install
-    works without an admin step; only this fallback asks the catalog, so only then can the answer be
-    503 `catalog_unavailable`.
+    works without an admin step; a `GET` asks the catalog only for this fallback, so only then can it
+    answer 503 `catalog_unavailable`.
   - `PUT` with the five values and `version` saves them and answers 200 with the `AnalysisDefaultsDto`
     and its new version. `version` is the one the client read, `null` only for the first save. The
     provider must be in the catalog, both models must be listed for it, and both round counts must be
-    1 to 10, or the answer is 400 `invalid_analysis_defaults` with `params.field` naming the value. A
+    1 to 10, or the answer is 400 `invalid_analysis_defaults` with `params.field` naming the value.
+    The values are checked against the catalog, so the save answers 503 `catalog_unavailable` while
+    the catalog cannot be read. A
     stale `version`, also a `null` one while values are saved, answers 409 `concurrent_update`: of two
     admins who save at the same time, also the first time, the second one gets it.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
