@@ -7,7 +7,8 @@ minimumReleaseAge: 20160
 minimumReleaseAgeExclude:
   - 'dompurify@3.4.16'
   - 'eslint-plugin-vue@10.11.1'
-  - 'vite@8.3.1'
+  # Renovate security update: vite@8.3.3
+  - 'vite@8.3.1 || 8.3.3'
   - 'vitest@5.0.2'
   - '@vitest/mocker@5.0.2'
   - '@vitest/spy@5.0.2'
