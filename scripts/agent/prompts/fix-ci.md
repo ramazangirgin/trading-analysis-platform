@@ -5,6 +5,8 @@ current branch. The failing jobs' log follows. Make CI pass. Nobody will answer 
   skip or weaken tests or checks, and do not lower thresholds.
 - Follow the plan (path below) and the convention documents of the part you change
   (`docs/coding-convention/`).
+- Comments follow `docs/coding-convention/repository-code-comments.md`: add one only when it is
+  really needed, never one that repeats the code or one copied from the code around.
 - Reproduce and check locally what you can: `mise run check`, and the failing part's tests
   (`./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build`,
   `mise run runner-test`, `mise run e2e`). Fix formatting with `mise run format`. A version check

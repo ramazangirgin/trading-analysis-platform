@@ -2,7 +2,6 @@ package tr.girgin.backend.trading.analysis.platform.bff.controller.api.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-/** What a role may do, on the wire as its key (e.g. {@code analysis:read:all}). */
 public enum PermissionDto {
     ANALYSIS_RUN("analysis:run"),
     ANALYSIS_READ("analysis:read"),
@@ -16,7 +15,9 @@ public enum PermissionDto {
     USER_READ("user:read"),
     USER_MANAGE("user:manage"),
     ROLE_MANAGE("role:manage"),
-    AUDIT_READ("audit:read");
+    AUDIT_READ("audit:read"),
+    ANALYSIS_DEFAULTS_MANAGE("analysis:defaults:manage"),
+    ANALYSIS_OVERRIDE_MODELS("analysis:override-models");
 
     private final String key;
 

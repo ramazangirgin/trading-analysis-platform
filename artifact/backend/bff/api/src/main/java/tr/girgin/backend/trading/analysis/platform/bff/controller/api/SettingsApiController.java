@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDefaultsDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PresetDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SaveAnalysisDefaultsRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SavePresetRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SecretStatusDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SetSecretRequest;
@@ -59,5 +61,15 @@ public class SettingsApiController {
     @DeleteMapping("/presets/{id}")
     public ResponseEntity<Void> deletePreset(@PathVariable String id) {
         return delegate.deletePreset(id);
+    }
+
+    @GetMapping("/settings/analysis-defaults")
+    public AnalysisDefaultsDto getAnalysisDefaults() {
+        return delegate.getAnalysisDefaults();
+    }
+
+    @PutMapping("/settings/analysis-defaults")
+    public AnalysisDefaultsDto saveAnalysisDefaults(@Valid @RequestBody SaveAnalysisDefaultsRequest request) {
+        return delegate.saveAnalysisDefaults(request);
     }
 }

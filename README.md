@@ -509,6 +509,22 @@ The backend:
   - **A permission change applies to the next request** of every logged-in holder of the role,
     without a new login. An open event stream is not a request: it keeps running until it ends or
     its session ends, even when the role lost `analysis:read`.
+- The platform's analysis defaults are read and saved through `/api/settings/analysis-defaults`
+  ([#198](https://github.com/ramazangirgin/trading-analysis-platform/issues/198)). An
+  `AnalysisDefaultsDto` has `llmProvider`, `deepThinkLlm`, `quickThinkLlm`, `maxDebateRounds`,
+  `maxRiskDiscussRounds` and `version`.
+  - `GET` answers the saved values. While nothing is saved it answers the catalog's defaults (upstream's,
+    with its `TRADINGAGENTS_*` overrides) with one round each and `version` `null`, so a fresh install
+    works without an admin step; a `GET` asks the catalog only for this fallback, so only then can it
+    answer 503 `catalog_unavailable`.
+  - `PUT` with the five values and `version` saves them and answers 200 with the `AnalysisDefaultsDto`
+    and its new version. `version` is the one the client read, `null` only for the first save. The
+    provider must be in the catalog, both models must be listed for it, and both round counts must be
+    1 to 10, or the answer is 400 `invalid_analysis_defaults` with `params.field` naming the value.
+    The values are checked against the catalog, so the save answers 503 `catalog_unavailable` while
+    the catalog cannot be read. A
+    stale `version`, also a `null` one while values are saved, answers 409 `concurrent_update`: of two
+    admins who save at the same time, also the first time, the second one gets it.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
   (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
   delegate method. The build fails (Checkstyle rule `TAP-A1`) while a delegate method has neither
@@ -524,6 +540,8 @@ The backend:
   | `GET /api/catalog`, `GET /api/health` | `analysis:run` or `settings:read` |
   | `GET /api/secrets` | `settings:read` |
   | `PUT` and `DELETE /api/secrets/{name}` | `settings:keys:write` |
+  | `GET /api/settings/analysis-defaults` | `analysis:run` or `analysis:defaults:manage` |
+  | `PUT /api/settings/analysis-defaults` | `analysis:defaults:manage` |
   | `GET /api/presets` | `preset:read` |
   | `POST`, `PUT` and `DELETE /api/presets…` | `preset:manage` |
   | `GET /api/users`, `GET /api/users/{id}` | `user:read` |
@@ -533,7 +551,9 @@ The backend:
 
   Three roles are built in. ADMIN has every permission, and the first admin has it. ANALYST runs
   analyses, reads and deletes analyses, manages presets and reads the settings. VIEWER reads
-  analyses and presets. Analyses are the user's own: the user who started a run owns it (a rerun
+  analyses and presets. `analysis:defaults:manage` (save the platform's analysis defaults) and
+  `analysis:override-models` (choose provider, models and rounds per analysis) are held by ADMIN
+  only; ANALYST and VIEWER do not have them, and a custom role can be given them. Analyses are the user's own: the user who started a run owns it (a rerun
   belongs to whoever reran it, imported runs to the first admin), and another user's analysis
   answers 404 like a missing one, unless the user has `analysis:read:all` (ADMIN). The presets are
   those of every user until the ownership issue

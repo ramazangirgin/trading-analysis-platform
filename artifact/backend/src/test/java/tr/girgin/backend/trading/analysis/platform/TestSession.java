@@ -107,12 +107,22 @@ final class TestSession {
             body = "{\"username\":\"someone\",\"roleIds\":[]}";
         } else if (method.equals("PATCH") && path.startsWith("/api/users/")) {
             body = "{\"enabled\":true}";
+        } else if (path.startsWith("/api/settings/")) {
+            body = validAnalysisDefaultsBody(method);
         } else if (path.startsWith("/api/presets")) {
             body = "{\"name\":\"preset\",\"values\":{}}";
         } else if (path.startsWith("/api/roles")) {
             body = validRoleBody(method);
         }
         return body;
+    }
+
+    private static String validAnalysisDefaultsBody(String method) {
+        if (!method.equals("PUT")) {
+            return "{}";
+        }
+        return "{\"llmProvider\":\"openai\",\"deepThinkLlm\":\"deep\",\"quickThinkLlm\":\"quick\","
+                + "\"maxDebateRounds\":1,\"maxRiskDiscussRounds\":1}";
     }
 
     private static String validRoleBody(String method) {

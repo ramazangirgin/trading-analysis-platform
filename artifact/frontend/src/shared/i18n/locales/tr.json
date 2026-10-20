@@ -405,6 +405,8 @@
       "analysis:read": "Kendi analizlerini ve raporlarını gör",
       "analysis:read:all": "Herkesin analizlerini gör",
       "analysis:delete": "Analiz sil",
+      "analysis:defaults:manage": "Analiz varsayılanlarını yönet",
+      "analysis:override-models": "Analiz başına model ve tur seç",
       "preset:read": "Hazır ayarları gör",
       "preset:manage": "Hazır ayarları yönet",
       "preset:read:all": "Herkesin hazır ayarlarını gör",

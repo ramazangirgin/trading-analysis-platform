@@ -405,6 +405,8 @@
       "analysis:read": "See own analyses and reports",
       "analysis:read:all": "See everyone's analyses",
       "analysis:delete": "Delete analyses",
+      "analysis:defaults:manage": "Manage the analysis defaults",
+      "analysis:override-models": "Choose models and rounds per analysis",
       "preset:read": "See presets",
       "preset:manage": "Manage presets",
       "preset:read:all": "See everyone's presets",

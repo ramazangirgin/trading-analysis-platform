@@ -9,8 +9,10 @@ in your final message.
 - Read first: the root `README.md`, `docs/coding-convention/README.md`, and every document the plan
   lists under "Affected parts and their conventions". Follow the documented architecture and
   conventions; do not invent new layers, tools or patterns. Read the existing code you build on and
-  match its style, naming and comment density. Earlier packages are already committed: build on them.
-- Add a comment only when it is really needed: it says why, or what the code cannot show (a race, a
+  match its style and naming, but not its comments: existing comments are no model to copy. Earlier
+  packages are already committed: build on them.
+- Comments follow `docs/coding-convention/repository-code-comments.md`. Add a comment only when it
+  is really needed: it says why, or what the code cannot show (a race, a
   rule that is not obvious, a workaround). Never one that repeats a name, a signature, a type or
   what the README and the API description already say. Javadoc only where Checkstyle requires it
   (public types in `core/inbound` and `core/outbound`): one summary sentence, then only what a

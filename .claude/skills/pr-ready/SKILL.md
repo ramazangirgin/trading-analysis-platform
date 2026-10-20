@@ -31,6 +31,11 @@ its own way).
   <version>`.
 - Tools run with mise: `~/.local/bin/mise run <task>` (mise is not on PATH).
 
+- **Comments only when needed** ([code comments](../../../docs/coding-convention/repository-code-comments.md)):
+  a comment or Javadoc in the code this skill writes or changes says only what the code, its names
+  and the docs cannot (a reason that is not obvious, a workaround). Never one that repeats them, and
+  never one copied from the code around it.
+
 ## 0. Preflight
 
 ```sh

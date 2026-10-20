@@ -18,9 +18,11 @@ documents of every part the change touches before judging it.
   injection, unsafe input), resource leaks.
 - **Conventions**: package / folder placement, layering and imports, naming, the style of the
   surrounding code. A rule a tool already enforces (Checkstyle, Spotless, ESLint, Prettier, ruff,
-  ArchUnit, import-linter) is checked by CI; mention it only if CI cannot catch it. A comment that
-  only repeats the code (a name, a signature, a type, what the README already says) is `MINOR`:
-  comments are added only when really needed.
+  ArchUnit, import-linter) is checked by CI; mention it only if CI cannot catch it. Comments follow
+  `docs/coding-convention/repository-code-comments.md`, and no tool checks them, so you do: report
+  every comment that only repeats the code (a name, a signature, a type, what the README already
+  says) as `MINOR`, also one copied from existing code, and every one in a file header or a
+  migration that the document rules out.
 - **REST endpoints** (`docs/coding-convention/backend-java-rest-api.md`), checked for every
   controller, delegate and exception the change adds or touches:
   - a `ResponseEntity` around an answer that is only ever `200`: `MINOR`;
