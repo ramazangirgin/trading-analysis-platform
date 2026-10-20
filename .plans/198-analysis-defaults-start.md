@@ -200,6 +200,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP4: Frontend: New analysis page
 
+- **Status**: done
 - **Depends on**: WP2, WP3
 - **Files**: `pages/NewAnalysisPage.vue`, `features/analysis/model/analysisOverrides.ts`,
   `analysisOverrides.spec.ts`, `features/analysis/index.ts` if the page needs the function through

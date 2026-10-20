@@ -185,7 +185,9 @@
     "checkpoint": "Kaldığı yerden devam (checkpoint)",
     "submit": "Analizi başlat",
     "catalogUnavailable": "Model listesi alınamadı. ta-runner kurulu mu?",
-    "noKeyHint": "Bu sağlayıcının anahtarı ({env}) tanımlı olmalı."
+    "noKeyHint": "Bu sağlayıcının anahtarı ({env}) tanımlı olmalı.",
+    "defaultsHint": "Yönetici tarafından belirlenir",
+    "resetToDefaults": "Varsayılanlara dön"
   },
   "languages": {
     "Turkish": "Türkçe",

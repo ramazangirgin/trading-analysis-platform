@@ -185,7 +185,9 @@
     "checkpoint": "Resume where it left off (checkpoint)",
     "submit": "Start analysis",
     "catalogUnavailable": "Could not load the model list. Is ta-runner installed?",
-    "noKeyHint": "This provider needs its key ({env}) set."
+    "noKeyHint": "This provider needs its key ({env}) set.",
+    "defaultsHint": "Set by the administrator",
+    "resetToDefaults": "Reset to defaults"
   },
   "languages": {
     "Turkish": "Turkish",

@@ -7,4 +7,10 @@ export { default as CompareTable } from './components/CompareTable.vue'
 export { default as RunLog } from './components/RunLog.vue'
 export { useRunStream } from './composables/useRunStream'
 export type { CompareColumn } from './model/compareView'
+export {
+  overriddenFields,
+  presetFieldsToApply,
+  presetFieldsToSave,
+  type ModelValues,
+} from './model/analysisOverrides'
 export { ACTIVE_STATUSES } from './model/analysisStatus'

@@ -28,7 +28,13 @@ import { outputLanguageFor } from '@/shared/i18n'
 import { useCatalogStore } from '@/features/catalog'
 import { useLabels } from '@/shared/composables/useLabels'
 import { HealthAlerts } from '@/features/health'
-import { analysisApi } from '@/features/analysis'
+import {
+  analysisApi,
+  overriddenFields,
+  presetFieldsToApply,
+  presetFieldsToSave,
+  type ModelValues,
+} from '@/features/analysis'
 import { settingsApi } from '@/features/settings'
 import { PERMISSIONS, useSessionStore } from '@/features/auth'
 
@@ -90,15 +96,13 @@ async function loadPresets() {
 function applyPreset(id: string | null) {
   const preset = presets.value.find((p) => p.id === id)
   if (!preset) return
-  for (const field of PRESET_FIELDS) {
-    if (field in preset.values) Object.assign(form, { [field]: preset.values[field] })
-  }
+  Object.assign(form, presetFieldsToApply(preset.values, PRESET_FIELDS, mayOverride.value))
 }
 
 async function savePreset() {
   const name = presetName.value.trim()
   if (!name) return
-  const values = Object.fromEntries(PRESET_FIELDS.map((field) => [field, form[field]]))
+  const values = presetFieldsToSave(form, PRESET_FIELDS, mayOverride.value)
   try {
     await settingsApi.createPreset(name, values)
     message.success(t('presets.saved', { name }))
@@ -125,14 +129,32 @@ const toOptions = (models: ModelOption[]) =>
 const deepOptions = computed(() => toOptions(provider.value?.deepModels ?? []))
 const quickOptions = computed(() => toOptions(provider.value?.quickModels ?? []))
 
+const mayOverride = computed(() => session.can(PERMISSIONS.analysisOverrideModels))
+const customModelAllowed = computed(() => mayOverride.value && !!provider.value?.customModelAllowed)
+const platformDefaults = ref<ModelValues | null>(null)
+
+function resetToDefaults() {
+  if (platformDefaults.value) Object.assign(form, platformDefaults.value)
+}
+
 onMounted(async () => {
   if (session.can(PERMISSIONS.presetRead)) void loadPresets()
-  await catalogStore.load()
-  const defaults = catalog.value?.defaults
-  if (defaults && !form.llmProvider) {
-    form.llmProvider = defaults.llmProvider
-    form.deepThinkLlm = defaults.deepThinkLlm
-    form.quickThinkLlm = defaults.quickThinkLlm
+  const [defaults] = await Promise.all([
+    settingsApi.getAnalysisDefaults().catch((e) => {
+      failure.value = e
+      return null
+    }),
+    catalogStore.load(),
+  ])
+  if (defaults) {
+    platformDefaults.value = {
+      llmProvider: defaults.llmProvider,
+      deepThinkLlm: defaults.deepThinkLlm,
+      quickThinkLlm: defaults.quickThinkLlm,
+      maxDebateRounds: defaults.maxDebateRounds,
+      maxRiskDiscussRounds: defaults.maxRiskDiscussRounds,
+    }
+    resetToDefaults()
   }
 })
 
@@ -197,11 +219,9 @@ async function submit() {
       tradeDate: isoDate(form.tradeDate!),
       assetType: form.assetType,
       analysts: form.analysts,
-      llmProvider: form.llmProvider!,
-      deepThinkLlm: form.deepThinkLlm!,
-      quickThinkLlm: form.quickThinkLlm!,
-      maxDebateRounds: form.maxDebateRounds,
-      maxRiskDiscussRounds: form.maxRiskDiscussRounds,
+      ...(platformDefaults.value
+        ? overriddenFields(form, platformDefaults.value, mayOverride.value)
+        : {}),
       outputLanguage: form.outputLanguage,
       checkpointEnabled: form.checkpointEnabled,
     })
@@ -295,6 +315,7 @@ const futureDate = (millis: number) => {
               v-model:value="form.llmProvider"
               :options="providerOptions"
               :loading="!catalog && !catalogStore.error"
+              :disabled="!mayOverride"
               filterable
             />
           </NFormItem>
@@ -302,18 +323,20 @@ const futureDate = (millis: number) => {
             <NSelect
               v-model:value="form.deepThinkLlm"
               :options="deepOptions"
+              :disabled="!mayOverride"
               filterable
-              tag
-              :placeholder="t('form.customModelHint')"
+              :tag="customModelAllowed"
+              :placeholder="customModelAllowed ? t('form.customModelHint') : undefined"
             />
           </NFormItem>
           <NFormItem :label="t('form.quickModel')" path="quickThinkLlm">
             <NSelect
               v-model:value="form.quickThinkLlm"
               :options="quickOptions"
+              :disabled="!mayOverride"
               filterable
-              tag
-              :placeholder="t('form.customModelHint')"
+              :tag="customModelAllowed"
+              :placeholder="customModelAllowed ? t('form.customModelHint') : undefined"
             />
           </NFormItem>
         </div>
@@ -323,10 +346,20 @@ const futureDate = (millis: number) => {
 
         <div class="grid">
           <NFormItem :label="t('form.debateRounds')">
-            <NInputNumber v-model:value="form.maxDebateRounds" :min="1" :max="5" />
+            <NInputNumber
+              v-model:value="form.maxDebateRounds"
+              :min="1"
+              :max="10"
+              :disabled="!mayOverride"
+            />
           </NFormItem>
           <NFormItem :label="t('form.riskRounds')">
-            <NInputNumber v-model:value="form.maxRiskDiscussRounds" :min="1" :max="5" />
+            <NInputNumber
+              v-model:value="form.maxRiskDiscussRounds"
+              :min="1"
+              :max="10"
+              :disabled="!mayOverride"
+            />
           </NFormItem>
           <NFormItem :label="t('form.outputLanguage')">
             <NSelect
@@ -337,6 +370,10 @@ const futureDate = (millis: number) => {
             />
           </NFormItem>
         </div>
+        <p v-if="!mayOverride" class="hint">{{ t('form.defaultsHint') }}</p>
+        <NButton v-else text type="primary" class="reset" @click="resetToDefaults">
+          {{ t('form.resetToDefaults') }}
+        </NButton>
         <p class="hint">{{ t('form.outputLanguageNote') }}</p>
 
         <NFormItem :label="t('form.checkpoint')">
@@ -367,6 +404,11 @@ const futureDate = (millis: number) => {
   display: grid;
   grid-template-columns: minmax(0, 320px) auto;
   gap: 8px;
+}
+
+.reset {
+  margin: -8px 0 16px;
+  font-size: 12px;
 }
 
 .hint {
