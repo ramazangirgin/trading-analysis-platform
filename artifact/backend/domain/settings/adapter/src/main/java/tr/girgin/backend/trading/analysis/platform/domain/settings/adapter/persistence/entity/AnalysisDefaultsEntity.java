@@ -15,27 +15,26 @@ public class AnalysisDefaultsEntity {
     public static final String ROW_ID = "DEFAULTS";
 
     @Id
-    @Column(name = "ID", nullable = false)
+    @Column(name = "ID")
     private String id;
 
-    @Column(name = "LLM_PROVIDER", nullable = false)
+    @Column(name = "LLM_PROVIDER")
     private String llmProvider;
 
-    @Column(name = "DEEP_THINK_LLM", nullable = false)
+    @Column(name = "DEEP_THINK_LLM")
     private String deepThinkLlm;
 
-    @Column(name = "QUICK_THINK_LLM", nullable = false)
+    @Column(name = "QUICK_THINK_LLM")
     private String quickThinkLlm;
 
-    @Column(name = "MAX_DEBATE_ROUNDS", nullable = false)
+    @Column(name = "MAX_DEBATE_ROUNDS")
     private int maxDebateRounds;
 
-    @Column(name = "MAX_RISK_DISCUSS_ROUNDS", nullable = false)
+    @Column(name = "MAX_RISK_DISCUSS_ROUNDS")
     private int maxRiskDiscussRounds;
 
-    // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.
     @Version
-    @Column(name = "VERSION", nullable = false)
+    @Column(name = "VERSION")
     private Long version;
 
     public AnalysisDefaultsEntity() {}
