@@ -5,7 +5,6 @@ import java.util.List;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 
-/** The start parameters as the client sent them; {@code null} means not sent. */
 public record RequestedAnalysis(
         String ticker,
         LocalDate tradeDate,

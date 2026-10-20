@@ -19,7 +19,6 @@ export interface ModelValues {
 const isModelField = (field: string): field is ModelField =>
   (MODEL_FIELDS as readonly string[]).includes(field)
 
-/** The model and round fields a start request carries: only the overrides, and only for those who may. */
 export function overriddenFields(
   form: ModelValues,
   defaults: ModelValues,
@@ -34,7 +33,6 @@ export function overriddenFields(
   )
 }
 
-/** The fields of a stored preset to put into the form. */
 export function presetFieldsToApply(
   values: Record<string, unknown>,
   presetFields: readonly string[],
@@ -47,7 +45,6 @@ export function presetFieldsToApply(
   )
 }
 
-/** The form fields a preset stores. */
 export function presetFieldsToSave(
   form: Record<string, unknown>,
   presetFields: readonly string[],

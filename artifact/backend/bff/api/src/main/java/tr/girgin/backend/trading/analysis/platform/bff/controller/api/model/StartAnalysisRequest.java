@@ -6,11 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * A new analysis. Provider, models and rounds left out are the platform's analysis defaults; the other
- * optional fields default to English output, stock pipeline, no checkpointing. Formats are checked by
- * the analysis domain.
- */
 public record StartAnalysisRequest(
         @NotBlank String ticker,
         @NotNull LocalDate tradeDate,

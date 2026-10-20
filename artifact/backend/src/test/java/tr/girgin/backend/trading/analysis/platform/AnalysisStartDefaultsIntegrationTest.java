@@ -25,7 +25,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
 
-/** Provider, models and rounds of a started analysis: the server decides, and only a permitted user overrides. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestDatabaseConfiguration.class)
 class AnalysisStartDefaultsIntegrationTest {
