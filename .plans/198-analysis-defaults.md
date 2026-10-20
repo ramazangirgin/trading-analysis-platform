@@ -230,7 +230,7 @@ No page changes in this plan; only what the new keys need:
 ### WP5: Changes from the pull request review
 
 - **Depends on**: WP1, WP2, WP3, WP4
-- **Status**: open
+- **Status**: done
 - **Files**: `JpaAnalysisDefaultsRepositoryAdapter.java`, `JpaAnalysisDefaultsRepositoryAdapterTest.java`,
   `AnalysisDefaultsRepositoryPort.java`, `AnalysisDefaultsService.java`, `AnalysisDefaultsServiceTest.java`,
   `AnalysisDefaultsEntity.java`; the new `docs/coding-convention/repository-code-comments.md`,
@@ -238,16 +238,16 @@ No page changes in this plan; only what the new keys need:
   `scripts/agent/prompts/implement.md`, `fix.md`, `fix-ci.md`, `review.md`; the files whose comments
   go (below)
 - **Steps**:
-  - [ ] **Optimistic locking** (review comment on `JpaAnalysisDefaultsRepositoryAdapter`): the
+  - [x] **Optimistic locking** (review comment on `JpaAnalysisDefaultsRepositoryAdapter`): the
     adapter's `save` is `repository.saveAndFlush(...)` and the mapping only, no `existsById` check
     and no `catch`. The port's Javadoc says what fails how (see Design). `AnalysisDefaultsService`
     translates `OptimisticLockingFailureException` and `DataIntegrityViolationException` into
     `CONCURRENT_UPDATE`.
-  - [ ] **`nullable = false`** (review comment on `AnalysisDefaultsEntity`): removed from
+  - [x] **`nullable = false`** (review comment on `AnalysisDefaultsEntity`): removed from
     `AnalysisDefaultsEntity` only. The migration's `NOT NULL` is what enforces it; Hibernate's
     `ddl-auto=validate` does not compare nullability. The other entities, the convention text and a
     Checkstyle rule against it are #202.
-  - [ ] **Comments only when needed: the convention.** A new
+  - [x] **Comments only when needed: the convention.** A new
     `docs/coding-convention/repository-code-comments.md` (whole repository, every language and
     SQL), listed in `docs/coding-convention/README.md`. The rule: a comment or Javadoc is written
     only when it says what the code, its names, its types and the docs cannot (a reason that is not
@@ -261,20 +261,19 @@ No page changes in this plan; only what the new keys need:
     written down is not a convention"). `backend-database-naming.md` drops "each table and column
     that is not obvious gets a comment" and "the migration comments which enum the type mirrors"
     and links the new document instead.
-  - [ ] **The agents' prompts** (`scripts/agent/prompts/implement.md`, `fix.md`, `fix-ci.md`,
+  - [x] **The agents' prompts** (`scripts/agent/prompts/implement.md`, `fix.md`, `fix-ci.md`,
     `review.md`) name the new document explicitly. `implement.md` no longer says to match the
     surrounding code's "comment density": existing comments are no model to copy. `review.md`
     reports every redundant comment, also one copied from existing code. (The skills under
     `.claude/skills/` are changed by hand on this branch: the agents may not edit them.)
-  - [ ] **Remove the redundant comments, everywhere**: in this pull request's files (the DTO
-    Javadoc of `AnalysisDefaultsDto`, the V7 and V3 migration comments and V3's `COMMENT ON TABLE`,
-    the `// Optimistic lock` comment of `AnalysisDefaultsEntity`, and every other of the same kind)
-    and in the existing code under `artifact/` (backend main and test, frontend, ta-runner), `e2e/`
-    and `build-logic/`, by the rule above. Kept: the Javadoc Checkstyle requires; comments with a
-    reason that is not obvious from the code; `@SuppressWarnings` reasons; the usage headers of the
-    shell scripts under `scripts/`; and **every migration already merged into `main`**: Flyway
-    checksums applied migrations, so changing one fails the start of every existing database (V7
-    and V8 of identity and V3 of settings are new in this pull request and may change).
+  - [x] **Remove the redundant comments in this pull request's files**: the DTO Javadoc of
+    `AnalysisDefaultsDto`, the V7, V8 and V3 migration comments and V3's `COMMENT ON TABLE`, the
+    `// Optimistic lock` comment and the Javadoc of `AnalysisDefaultsEntity`, and the Javadoc of
+    `PermissionDto`. (V7, V8 and V3 are new in this pull request, so they may change.) The same
+    sweep of the existing code under `artifact/`, `e2e/` and `build-logic/` (about 570 comments in
+    about 400 files, each a judgement) is #203, by the developer's decision in the review: one
+    reviewable part per area, and never a migration already merged into `main` (Flyway checksums
+    applied migrations).
 - **Tests**: `JpaAnalysisDefaultsRepositoryAdapterTest`: a `null`-version save while the row exists
   fails with `DataIntegrityViolationException` and changes nothing. `AnalysisDefaultsServiceTest`: a
   `DataIntegrityViolationException` from the port is `CONCURRENT_UPDATE`. The integration test's
@@ -320,3 +319,4 @@ not the permission checklist.
 - Answering domain exceptions in `DomainExceptionHandler` without the `ApiException` step: #201
   (raised in the review; it changes all four domains' mappers).
 - `nullable = false` in the other entities, its convention text and a Checkstyle rule: #202.
+- The redundant comments in the existing code: #203.
