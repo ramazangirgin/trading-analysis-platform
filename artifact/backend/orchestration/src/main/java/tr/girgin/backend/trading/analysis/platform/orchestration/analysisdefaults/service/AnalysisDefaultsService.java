@@ -49,7 +49,7 @@ class AnalysisDefaultsService implements ManageAnalysisDefaultsUseCase {
             throw new SettingsException(
                     SettingsError.CONCURRENT_UPDATE,
                     "Analysis defaults were changed concurrently",
-                    Map.of("version", String.valueOf(expectedVersion)));
+                    expectedVersion == null ? Map.of() : Map.of("version", expectedVersion.toString()));
         }
     }
 

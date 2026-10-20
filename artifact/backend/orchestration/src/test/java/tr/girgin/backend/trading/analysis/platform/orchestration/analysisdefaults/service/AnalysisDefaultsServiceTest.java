@@ -118,8 +118,14 @@ class AnalysisDefaultsServiceTest {
         assertThatThrownBy(() -> service.update(
                         new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 2, 2, expectedVersion),
                         expectedVersion))
-                .isInstanceOfSatisfying(
-                        SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.CONCURRENT_UPDATE));
+                .isInstanceOfSatisfying(SettingsException.class, e -> {
+                    assertThat(e.error()).isEqualTo(SettingsError.CONCURRENT_UPDATE);
+                    if (expectedVersion == null) {
+                        assertThat(e.params()).doesNotContainKey("version");
+                    } else {
+                        assertThat(e.params()).containsEntry("version", expectedVersion.toString());
+                    }
+                });
         assertThat(repository.stored()).isEqualTo(before);
     }
 
