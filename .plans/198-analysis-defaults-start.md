@@ -189,6 +189,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP3: Frontend: Analysis defaults card
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `features/settings/api.ts`, `features/settings/index.ts`,
   `features/settings/components/AnalysisDefaultsCard.vue`, `pages/SettingsPage.vue`,

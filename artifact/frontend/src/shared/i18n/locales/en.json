@@ -283,6 +283,8 @@
     "invalid_secret_value": "Invalid value.",
     "secret_not_managed": "This value is not in the platform's file; it comes from an external file.",
     "invalid_preset": "Invalid preset.",
+    "invalid_analysis_defaults": "Invalid value: {field}",
+    "analysis_override_forbidden": "You may not change {field} for an analysis.",
     "preset_not_found": "Preset not found.",
     "prices_not_found": "No cached prices for this analysis."
   },
@@ -437,7 +439,18 @@
     "remove": "Remove",
     "saved": "{name} saved.",
     "removed": "{name} removed.",
-    "noKeyNeeded": "No key needed"
+    "noKeyNeeded": "No key needed",
+    "analysisDefaults": {
+      "title": "Analysis defaults",
+      "note": "The provider, models and debate rounds every analysis uses. Only users who may override models can change them for a single analysis.",
+      "provider": "Provider",
+      "deepModel": "Deep-thinking model",
+      "quickModel": "Quick-thinking model",
+      "debateRounds": "Debate rounds",
+      "riskRounds": "Risk discussion rounds",
+      "save": "Save",
+      "saved": "Analysis defaults saved."
+    }
   },
   "presets": {
     "label": "Preset",
