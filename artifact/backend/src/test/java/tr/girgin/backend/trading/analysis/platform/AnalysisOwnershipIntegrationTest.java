@@ -6,10 +6,13 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +50,12 @@ class AnalysisOwnershipIntegrationTest {
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     private static final String SCRIPT = """
             #!/bin/sh
+            if [ "$1" = "catalog" ]; then
+            cat <<'JSON'
+            {"upstream_version":"0.5.1","defaults":{"llm_provider":"deepseek","deep_think_llm":"deepseek-v4-pro","quick_think_llm":"deepseek-v4-flash"},"providers":[{"id":"deepseek","api_key_env":"DEEPSEEK_API_KEY","custom_model_allowed":true,"quick_models":[{"id":"deepseek-v4-flash","label":"DeepSeek V4 Flash"}],"deep_models":[{"id":"deepseek-v4-pro","label":"DeepSeek V4 Pro"}]}],"analysts":[{"id":"market","agent":"Market Analyst"}],"asset_types":["stock","crypto"]}
+            JSON
+            exit 0
+            fi
             OUT="$5"
             echo "INFO loading tradingagents" >&2
             line() { printf '{"v":1,"ts":"2026-09-29T10:00:0%sZ","run_id":"x","seq":%s,"type":"%s"%s}\\n' "$1" "$1" "$2" "$3" | tee -a "$OUT/events.jsonl"; }
@@ -73,6 +82,9 @@ class AnalysisOwnershipIntegrationTest {
     @Autowired
     private AssignAnalysisOwnersUseCase assignOwners;
 
+    @Autowired
+    private DataSource dataSource;
+
     private String analystAName;
     private String analystBName;
     private String adminName;
@@ -88,6 +100,10 @@ class AnalysisOwnershipIntegrationTest {
 
     @BeforeEach
     void logIn() throws Exception {
+        try (Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute("DELETE FROM \"SETTINGS\".\"ANALYSIS_DEFAULTS\"");
+        }
         analystAName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
         analystBName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
         adminName = TestSession.createUser(users, hasher, true, RoleId.ADMIN);

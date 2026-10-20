@@ -163,6 +163,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP2: BFF start endpoint
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `bff/api/.../model/StartAnalysisRequest.java`;
   `bff/impl/.../mapper/StartAnalysisRequestToRequestedAnalysisMapper.java` (replaces
