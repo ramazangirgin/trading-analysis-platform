@@ -214,6 +214,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
 
 ### WP5: e2e, screenshots, README
 
+- **Status**: done
 - **Depends on**: WP3, WP4
 - **Files**: `e2e/tests/settings.e2e.ts`, `e2e/tests/analysis-defaults.e2e.ts` (new),
   `e2e/screenshots/pages.shot.ts` (the retaken shots and the new one), `docs/screenshots/*.png`,
