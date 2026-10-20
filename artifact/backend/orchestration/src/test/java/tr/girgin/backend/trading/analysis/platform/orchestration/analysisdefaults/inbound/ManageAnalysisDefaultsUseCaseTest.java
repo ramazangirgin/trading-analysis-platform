@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefaults.service;
+package tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefaults.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -18,7 +18,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound.persistence.AnalysisDefaultsRepositoryPort;
 
-class AnalysisDefaultsServiceTest {
+class ManageAnalysisDefaultsUseCaseTest {
 
     private static final Catalog CATALOG = new Catalog(
             "1.0",
@@ -41,7 +41,7 @@ class AnalysisDefaultsServiceTest {
 
     private final FakeRepository repository = new FakeRepository();
     private int catalogCalls;
-    private final AnalysisDefaultsService service = new AnalysisDefaultsService(repository, () -> {
+    private final ManageAnalysisDefaultsUseCase service = new ManageAnalysisDefaultsUseCase(repository, () -> {
         catalogCalls++;
         return CATALOG;
     });

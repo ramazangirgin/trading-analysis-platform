@@ -229,13 +229,13 @@ interface in `inbound/` plus a package-private `*Service` in `service/`. The dom
 their inbound interfaces and services (unchanged).
 
 - **Depends on**: WP1, WP2, WP3, WP4, WP5
-- **Status**: open
+- **Status**: done
 - **Files**: every orchestration feature (`analysisdefaults`, `analysisstart`, `health`,
   `ownership`, `report`) under `artifact/backend/orchestration/src/main` and `src/test`; the BFF
   delegates and any other caller that names the services; `ArchitectureTest.java`;
   `docs/coding-convention/backend-java-package-structure.md`
 - **Steps**:
-  - [ ] Each of the 7 use cases (`ManageAnalysisDefaultsUseCase`, `StartAnalysisWithDefaultsUseCase`,
+  - [x] Each of the 7 use cases (`ManageAnalysisDefaultsUseCase`, `StartAnalysisWithDefaultsUseCase`,
     `SystemHealthUseCase`, `AssignAnalysisOwnersUseCase`, `GetAnalysisPricesUseCase`,
     `GetAnalysisReportUseCase`, `ImportExistingRunsUseCase`) becomes a public concrete class with
     that name in the feature's `inbound/` package, annotated as a Spring bean, holding the logic of
@@ -243,15 +243,15 @@ their inbound interfaces and services (unchanged).
     `SystemHealthService`, `AnalysisOwnershipService`, `AnalysisReportService` (two use cases: split
     it into the two), `ImportExistingRunsService`). The `service/` packages and the interfaces go.
     Callers keep their types: they already name the `*UseCase`.
-  - [ ] The tests move with them (`*ServiceTest` → `*UseCaseTest` next to the class). A test that
+  - [x] The tests move with them (`*ServiceTest` → `*UseCaseTest` next to the class). A test that
     faked another orchestration use case through its interface (the start test's `FakeDefaults`)
     builds the real one on fakes of its ports and domain use cases instead; no Mockito.
-  - [ ] `ArchitectureTest`: `orchestration_features_follow_the_domain_core_shape` allows only
+  - [x] `ArchitectureTest`: `orchestration_features_follow_the_domain_core_shape` allows only
     `inbound` and `model` in an orchestration feature; `orchestration_services_are_only_used_by_themselves`
     goes; a rule that an orchestration `*UseCase` is a concrete class annotated as a bean. Show that
     each changed rule fails on a deliberately misplaced class (conventions README, "Changing a
     convention").
-  - [ ] `backend-java-package-structure.md`: the package layout, "Where each class kind goes" and
+  - [x] `backend-java-package-structure.md`: the package layout, "Where each class kind goes" and
     the rule list say that an orchestration feature holds `inbound/` (the concrete use cases) and
     `model/`, and why: the interface added nothing, since an orchestration use case has a single
     implementation and no outbound port of its own.

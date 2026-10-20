@@ -58,8 +58,10 @@ domain/<d>/adapter/
     spec/      ...                 data handed to an external process (RunnerSpec)
     mapper/    *To*Mapper          MapStruct mappers for this port
     support/   ...                 helpers: clients, file tails, Spring conditions
-orchestration/<feature>/           same shape as a domain core
-  inbound/ service/ model/
+orchestration/<feature>/
+  inbound/                         *UseCase: concrete Spring beans (@Service) holding the logic, no
+                                   interface and no service/ package
+  model/                           value types, records, enums
 library/<library>/                 a shared library, one kind of technical code; its README.md says
                                    what it holds
 ```
@@ -115,11 +117,12 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Root of an `adapter.<port>` package | port implementations only (shared packages aside); the one exception is `<Domain>PersistenceConfiguration` in `adapter.persistence` | `port_package_roots_hold_only_adapters` |
 | `@Configuration` in a domain adapter | `<Domain>PersistenceConfiguration`, in `domain.<d>.adapter.persistence`, nowhere else | `domain_adapter_configurations_are_persistence_configurations` (`adapter_components_implement_an_outbound_port` only exempts it) |
 | `*UseCase` | `…inbound` | `use_cases_live_in_inbound_packages` |
+| Orchestration `*UseCase` | a concrete class annotated `@Service`, not an interface: it has a single implementation and no outbound port of its own, so an interface would add nothing | `orchestration_use_cases_are_concrete_beans` |
 | `*Service` | `…service` | `services_live_in_service_packages` |
 | Exception (anything `Throwable`) | `domain.<d>.core.exception` or `bff.controller.api.error` | `exceptions_live_in_exception_packages` |
 | Error-code enum `*Error` | `domain.<d>.core.exception`, next to its exception | `error_codes_live_next_to_their_exception` |
 | Domain core sub-packages | only `inbound`, `outbound`, `service`, `model`, `exception` | `domain_core_sub_packages_are_known_kinds` |
-| Orchestration feature sub-packages | only `inbound`, `service`, `model` | `orchestration_features_follow_the_domain_core_shape` |
+| Orchestration feature sub-packages | only `inbound`, `model` | `orchestration_features_follow_the_domain_core_shape` |
 | Classes in a module root package | none | `module_root_packages_hold_no_classes` |
 
 The placement rules sit next to the dependency rules that were there before (BFF uses inbound
@@ -128,8 +131,7 @@ starts processes or talks to Docker, mappers are `SourceToTargetMapper` with one
 The package boundary has a database side: domains are independent, so each domain's tables live in
 a database schema of its own, and no migration refers to another domain's schema
 ([One schema per domain](backend-java-persistence.md#one-schema-per-domain)).
-Services, orchestrators included, are used only from their own `service` package
-(`domain_services_are_only_used_by_themselves`, `orchestration_services_are_only_used_by_themselves`).
+Domain services are used only from their own `service` package (`domain_services_are_only_used_by_themselves`).
 
 Rules check top-level classes, without `package-info` and without nested types (a record nested in
 a `*Json` record belongs to it). Tests are not checked.

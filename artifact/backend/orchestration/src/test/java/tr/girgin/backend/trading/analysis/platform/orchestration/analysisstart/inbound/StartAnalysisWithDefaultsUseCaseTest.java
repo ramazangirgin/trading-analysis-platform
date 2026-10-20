@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.service;
+package tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
@@ -17,14 +18,17 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelOption;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound.persistence.AnalysisDefaultsRepositoryPort;
+import tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefaults.inbound.ManageAnalysisDefaultsUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.model.RequestedAnalysis;
 
-class StartAnalysisWithDefaultsServiceTest {
+class StartAnalysisWithDefaultsUseCaseTest {
 
     private static final OwnerId OWNER = new OwnerId("u1");
     private static final AnalysisDefaults PLATFORM = new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 3, 2, 1L);
@@ -49,13 +53,12 @@ class StartAnalysisWithDefaultsServiceTest {
 
     private final List<AnalysisSpec> started = new ArrayList<>();
     private int catalogCalls;
-    private final StartAnalysisWithDefaultsService service = new StartAnalysisWithDefaultsService(
-            new FakeDefaults(),
-            () -> {
-                catalogCalls++;
-                return CATALOG;
-            },
-            (spec, owner) -> {
+    private final GetCatalogUseCase catalog = () -> {
+        catalogCalls++;
+        return CATALOG;
+    };
+    private final StartAnalysisWithDefaultsUseCase service = new StartAnalysisWithDefaultsUseCase(
+            new ManageAnalysisDefaultsUseCase(new StoredDefaults(), catalog), catalog, (spec, owner) -> {
                 started.add(spec);
                 return Analysis.queued(new AnalysisId("r_1"), spec, owner, Instant.EPOCH);
             });
@@ -169,17 +172,15 @@ class StartAnalysisWithDefaultsServiceTest {
                 null);
     }
 
-    private static final class FakeDefaults
-            implements tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefaults.inbound
-                    .ManageAnalysisDefaultsUseCase {
+    private static final class StoredDefaults implements AnalysisDefaultsRepositoryPort {
 
         @Override
-        public AnalysisDefaults get() {
-            return PLATFORM;
+        public Optional<AnalysisDefaults> find() {
+            return Optional.of(PLATFORM);
         }
 
         @Override
-        public AnalysisDefaults update(AnalysisDefaults defaults, Long expectedVersion) {
+        public AnalysisDefaults save(AnalysisDefaults defaults) {
             throw new UnsupportedOperationException();
         }
     }
