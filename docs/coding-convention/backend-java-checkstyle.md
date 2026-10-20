@@ -170,10 +170,11 @@ class ArchitectureTest {
 
 The check's name comes after `checkstyle:` (the name in the report, without `Check`). There is no
 central suppressions file, so each exception is visible where it applies and is reviewed with the
-code around it. Two settings in `checkstyle.xml` limit where a check applies. They are not
+code around it. Three settings in `checkstyle.xml` limit where a check applies. They are not
 suppressions:
 
 - `MissingJavadocType` applies to `core/inbound` and `core/outbound` only (`SuppressionSingleFilter`).
+- `TAP-D7` applies to main sources only (`SuppressionSingleFilter`).
 - `MagicNumber` applies to main sources only: the build turns it off for test sources, where tests
   spell out the values they expect.
 
@@ -187,6 +188,7 @@ Suppressions in the code today:
 | `ConstantName`, `DeclarationOrder`, `HideUtilityClassConstructor` | `ArchitectureTest` | ArchUnit rule names, rules grouped by topic, JUnit instantiates the class |
 | `HideUtilityClassConstructor` | `TradingPlatformApplication` | Spring instantiates the `@SpringBootApplication` class |
 | `VisibilityModifier` | test doubles (`Fakes`, `RecordingSink`) | tests read and set their state directly |
+| `TAP-D7` | `MethodSecurityConfig.requiresPermissionAdvisor` | Spring needs the static `@Bean` interceptor before it creates the configuration |
 | `LineLength` | test fixtures holding runner protocol lines | a protocol line stays on one line |
 
 ## Adding or changing a rule
