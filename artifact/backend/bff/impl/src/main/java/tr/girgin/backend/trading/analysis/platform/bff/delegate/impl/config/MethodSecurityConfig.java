@@ -15,11 +15,13 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
  */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = false)
-// HideUtilityClassConstructor, TAP-D7: the advisor is a static @Bean method, as Spring requires for an infrastructure
-// bean (it is created before this configuration).
-@SuppressWarnings({"checkstyle:HideUtilityClassConstructor", "checkstyle:TAP-D7"})
+// HideUtilityClassConstructor: the only method is the static @Bean method below.
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class MethodSecurityConfig {
 
+    // TAP-D7: Spring requires a static @Bean method for an infrastructure bean (it is created before this
+    // configuration).
+    @SuppressWarnings("checkstyle:TAP-D7")
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     static Advisor requiresPermissionAdvisor() {
