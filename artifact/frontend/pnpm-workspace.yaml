@@ -13,6 +13,10 @@ minimumReleaseAgeExclude:
   - '@vitest/mocker@5.0.2'
   - '@vitest/spy@5.0.2'
   - '@types/node@24.19.0'
+  # Renovate security update: markdown-it@15.0.3
+  - markdown-it@15.0.3
+  # markdown-it 15.0.3 requires argparse ^3.0.3
+  - argparse@3.0.3
 
 # pnpm runs no dependency build scripts unless listed here.
 allowBuilds:
