@@ -30,10 +30,10 @@ class AnalysisLogService implements ReadAnalysisLogsUseCase {
     public List<String> tailLogs(AnalysisId id, AnalysisAccess access, int maxLines) {
         getAnalysis.get(id, access);
         int lines = Math.clamp(maxLines, 1, MAX_LINES);
-        return runLog.tail(id, lines).stream().map(AnalysisLogService::mask).toList();
+        return runLog.tail(id, lines).stream().map(this::mask).toList();
     }
 
-    static String mask(String line) {
+    String mask(String line) {
         return KEY.matcher(line).replaceAll("$1$2****");
     }
 }

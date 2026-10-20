@@ -11,9 +11,12 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +50,12 @@ class AnalysesApiIntegrationTest {
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     private static final String SCRIPT = """
             #!/bin/sh
+            if [ "$1" = "catalog" ]; then
+            cat <<'JSON'
+            {"upstream_version":"0.5.1","defaults":{"llm_provider":"deepseek","deep_think_llm":"deepseek-v4-pro","quick_think_llm":"deepseek-v4-flash"},"providers":[{"id":"deepseek","api_key_env":"DEEPSEEK_API_KEY","custom_model_allowed":true,"quick_models":[{"id":"deepseek-v4-flash","label":"DeepSeek V4 Flash"}],"deep_models":[{"id":"deepseek-v4-pro","label":"DeepSeek V4 Pro"}]}],"analysts":[{"id":"market","agent":"Market Analyst"}],"asset_types":["stock","crypto"]}
+            JSON
+            exit 0
+            fi
             OUT="$5"
             echo "INFO loading tradingagents" >&2
             echo "ERROR Incorrect API key provided: sk-proj-abcdEFGH12345678xyz" >&2
@@ -69,10 +78,17 @@ class AnalysesApiIntegrationTest {
     @Autowired
     private PasswordHasherPort hasher;
 
+    @Autowired
+    private DataSource dataSource;
+
     private TestSession session;
 
     @BeforeEach
     void logIn() throws Exception {
+        try (Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute("DELETE FROM \"SETTINGS\".\"ANALYSIS_DEFAULTS\"");
+        }
         session = TestSession.loggedIn(port, users, hasher, RoleId.ANALYST);
     }
 
@@ -283,20 +299,12 @@ class AnalysesApiIntegrationTest {
     @Test
     void reportsInvalidInputWithAnErrorCodeAndField() throws Exception {
         HttpResponse<String> badTicker = post("/api/analyses", request("../etc"));
-        HttpResponse<String> missingModel = post("/api/analyses", """
-                {"ticker":"NVDA","tradeDate":"2026-09-25","analysts":["MARKET"],"llmProvider":"deepseek",
-                 "quickThinkLlm":"deepseek-v4-flash"}""");
         HttpResponse<String> garbage = post("/api/analyses", "{not json");
 
         assertThat(badTicker.statusCode()).isEqualTo(400);
         assertThat(JSON.readTree(badTicker.body()).get("errorCode").asString()).isEqualTo("invalid_spec");
         assertThat(JSON.readTree(badTicker.body()).at("/params/field").asString())
                 .isEqualTo("ticker");
-        assertThat(missingModel.statusCode()).isEqualTo(400);
-        assertThat(JSON.readTree(missingModel.body()).get("errorCode").asString())
-                .isEqualTo("invalid_request");
-        assertThat(JSON.readTree(missingModel.body()).at("/params/field").asString())
-                .isEqualTo("deepThinkLlm");
         assertThat(garbage.statusCode()).isEqualTo(400);
     }
 

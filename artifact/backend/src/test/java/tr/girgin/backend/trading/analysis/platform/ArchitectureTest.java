@@ -28,6 +28,7 @@ import org.mapstruct.Mapper;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 // ConstantName: ArchUnit reports a rule by its field name, so rule names are snake_case sentences.
@@ -70,7 +71,7 @@ class ArchitectureTest {
     private static final String CORE_EXCEPTION = BASE + ".domain.*.core.exception..";
     private static final String BFF_API_ERROR = BASE + ".bff.controller.api.error..";
     private static final String BFF_IMPL_ERROR = BASE + ".bff.delegate.impl.error..";
-    private static final String ORCHESTRATION_SERVICE = BASE + ".orchestration.*.service..";
+    private static final String ORCHESTRATION_INBOUND = BASE + ".orchestration.*.inbound..";
 
     /** Shared helper packages under {@code adapter} that serve several ports and implement none. */
     private static final String[] SHARED_ADAPTER_PACKAGES = {BASE + ".domain.analysis.adapter.eventline"};
@@ -156,15 +157,6 @@ class ArchitectureTest {
             .onlyHaveDependentClassesThat()
             .resideInAPackage(DOMAIN_SERVICE)
             .because("services are reached through inbound ports only");
-
-    @ArchTest
-    static final ArchRule orchestration_services_are_only_used_by_themselves = classes()
-            .that()
-            .resideInAPackage(ORCHESTRATION_SERVICE)
-            .should()
-            .onlyHaveDependentClassesThat()
-            .resideInAPackage(ORCHESTRATION_SERVICE)
-            .because("orchestrators, like domain services, are reached through inbound ports only");
 
     @ArchTest
     static final ArchRule adapters_are_only_used_by_themselves = classes()
@@ -394,8 +386,20 @@ class ArchitectureTest {
             .and()
             .resideInAPackage(ORCHESTRATION_FEATURE_SUB)
             .should()
-            .resideInAnyPackage(ORCHESTRATION + "inbound..", ORCHESTRATION + "service..", ORCHESTRATION + "model..")
-            .because("an orchestration feature is shaped like a domain core: inbound, service, model");
+            .resideInAnyPackage(ORCHESTRATION + "inbound..", ORCHESTRATION + "model..")
+            .because("an orchestration feature holds its concrete use cases in inbound and their types in model");
+
+    @ArchTest
+    static final ArchRule orchestration_use_cases_are_concrete_beans = classes()
+            .that()
+            .resideInAPackage(ORCHESTRATION_INBOUND)
+            .and()
+            .haveSimpleNameEndingWith("UseCase")
+            .should()
+            .notBeInterfaces()
+            .andShould()
+            .beAnnotatedWith(Service.class)
+            .because("an orchestration use case has a single implementation, so it is the bean itself");
 
     @ArchTest
     static final ArchRule use_cases_live_in_inbound_packages =

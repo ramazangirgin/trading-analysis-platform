@@ -4,6 +4,7 @@ import java.util.Locale;
 import org.mapstruct.Mapper;
 import org.springframework.http.HttpStatus;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 
 @Mapper
@@ -14,8 +15,13 @@ public interface AnalysisExceptionToApiExceptionMapper {
             case INVALID_SPEC -> HttpStatus.BAD_REQUEST;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ALREADY_RUNNING, NOT_RUNNING, CONCURRENT_UPDATE -> HttpStatus.CONFLICT;
+            case OVERRIDE_FORBIDDEN -> HttpStatus.FORBIDDEN;
         };
-        return new ApiException(
-                status, source.error().name().toLowerCase(Locale.ROOT), source.getMessage(), source.params());
+        String code = source.error().name().toLowerCase(Locale.ROOT);
+        if (source.error() == AnalysisError.OVERRIDE_FORBIDDEN) {
+            // "forbidden" alone is the code of a missing endpoint permission
+            code = "analysis_" + code;
+        }
+        return new ApiException(status, code, source.getMessage(), source.params());
     }
 }

@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.report.service;
+package tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,7 +35,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.RunHistoryEntry;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.model.ImportResult;
 
-class ImportExistingRunsServiceTest {
+class ImportExistingRunsUseCaseTest {
 
     private static final WatchDataDirUseCase NO_WATCH = _ -> () -> {};
     private static final Duration SETTLE_TIME = Duration.ofMinutes(10);
@@ -78,7 +78,7 @@ class ImportExistingRunsServiceTest {
                 null,
                 Set.of(ReportSource.REPORT_TREE),
                 Instant.parse("2026-09-27T12:00:00Z"));
-        ImportExistingRunsService service = new ImportExistingRunsService(
+        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(goog, mu),
                 List::of,
                 (external, owner) -> {
@@ -134,7 +134,7 @@ class ImportExistingRunsServiceTest {
                         RunHistoryEntry.Status.STOPPED,
                         null,
                         "2026-09-27T20:55:22Z"));
-        ImportExistingRunsService service = new ImportExistingRunsService(
+        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(report),
                 () -> history,
                 (external, owner) -> {
@@ -191,7 +191,7 @@ class ImportExistingRunsServiceTest {
                 Rating.HOLD,
                 Set.of(ReportSource.REPORT_TREE),
                 CLOCK.instant().minus(Duration.ofMinutes(1)));
-        ImportExistingRunsService service = new ImportExistingRunsService(
+        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(running, crashed, finished),
                 List::of,
                 (external, owner) -> {
@@ -219,7 +219,7 @@ class ImportExistingRunsServiceTest {
                 Rating.HOLD,
                 Set.of(ReportSource.REPORT_TREE),
                 Instant.parse("2026-09-28T12:00:00Z"));
-        ImportExistingRunsService service = new ImportExistingRunsService(
+        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(goog),
                 List::of,
                 (external, owner) -> {

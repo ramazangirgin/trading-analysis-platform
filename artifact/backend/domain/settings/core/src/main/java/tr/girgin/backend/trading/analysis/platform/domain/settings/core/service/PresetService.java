@@ -57,7 +57,7 @@ class PresetService implements ManagePresetsUseCase {
         }
     }
 
-    private static String validName(String name) {
+    private String validName(String name) {
         String trimmed = name == null ? "" : name.strip();
         if (trimmed.isEmpty() || trimmed.length() > MAX_NAME) {
             throw new SettingsException(SettingsError.INVALID_PRESET, "Invalid preset name", Map.of("field", "name"));
@@ -65,7 +65,7 @@ class PresetService implements ManagePresetsUseCase {
         return trimmed;
     }
 
-    private static String validPayload(String payload) {
+    private String validPayload(String payload) {
         if (payload == null || payload.isBlank() || payload.length() > MAX_PAYLOAD) {
             throw new SettingsException(
                     SettingsError.INVALID_PRESET, "Invalid preset payload", Map.of("field", "payload"));
@@ -73,7 +73,7 @@ class PresetService implements ManagePresetsUseCase {
         return payload;
     }
 
-    private static SettingsException notFound(PresetId id) {
+    private SettingsException notFound(PresetId id) {
         return new SettingsException(
                 SettingsError.PRESET_NOT_FOUND, "Preset not found: " + id.value(), Map.of("id", id.value()));
     }

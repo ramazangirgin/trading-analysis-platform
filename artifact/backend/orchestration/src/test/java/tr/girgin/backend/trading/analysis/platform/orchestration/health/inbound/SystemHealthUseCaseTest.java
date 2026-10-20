@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.health.service;
+package tr.girgin.backend.trading.analysis.platform.orchestration.health.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,7 +17,7 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.He
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthStatus;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.SystemHealth;
 
-class SystemHealthServiceTest {
+class SystemHealthUseCaseTest {
 
     private static final Catalog CATALOG = new Catalog(
             "0.5.1",
@@ -63,7 +63,7 @@ class SystemHealthServiceTest {
 
     @Test
     void aMissingRunnerIsDown() {
-        SystemHealthService service = new SystemHealthService(
+        SystemHealthUseCase service = new SystemHealthUseCase(
                 () -> {
                     throw new CatalogUnavailableException("Cannot start ta-runner", null);
                 },
@@ -77,9 +77,9 @@ class SystemHealthServiceTest {
         assertThat(service.checkHealth().checks().getFirst().code()).isEqualTo("runner_unavailable");
     }
 
-    private static SystemHealthService service(EngineVersion version, List<SecretStatus> secrets, int reports) {
+    private static SystemHealthUseCase service(EngineVersion version, List<SecretStatus> secrets, int reports) {
         GetCatalogUseCase catalog = () -> CATALOG;
-        return new SystemHealthService(
+        return new SystemHealthUseCase(
                 () -> version,
                 catalog,
                 () -> java.util.Collections.nCopies(reports, null),

@@ -70,6 +70,8 @@ export type CreateUserRequest = Schemas['CreateUserRequest']
 export type UpdateUserRequest = Schemas['UpdateUserRequest']
 export type CreatedUser = { user: User; oneTimePassword: string | null }
 export type OneTimePassword = { oneTimePassword: string | null }
+export type AnalysisDefaults = Present<Schemas['AnalysisDefaultsDto'], 'version'>
+export type SaveAnalysisDefaultsRequest = Schemas['SaveAnalysisDefaultsRequest']
 export type Preset = Omit<Present<Schemas['PresetDto']>, 'values'> & {
   values: Record<string, unknown>
 }

@@ -149,6 +149,7 @@ the repository.
 | `TAP-A1` | Every public method of a `*ApiDelegateImpl` carries `@RequiresPermission(Permission...)` or `@NoPermissionRequired("reason")` | main and test | [`RequiredMethodAnnotationCheck`](../../build-logic/checkstyle-rules/docs/RequiredMethodAnnotationCheck.md) | `classes = *ApiDelegateImpl`, `annotations = ...config.RequiresPermission, ...config.NoPermissionRequired` | `SecurityConfig` only requires a session for `/api/**`, so a method without a permission is open to every logged-in user; the marker makes each exception visible, with its reason | `public ResponseEntity<Void> stop(...) {...}` / `@RequiresPermission(Permission.ANALYSIS_RUN) public ResponseEntity<Void> stop(...) {...}` |
 | `TAP-D5` | No `produces` or `consumes` set to `application/json` on a mapping | main and test | [`RegexpSinglelineJava`](https://checkstyle.org/checks/regexp/regexpsinglelinejava.html) | `format` matches `produces` / `consumes` `= MediaType.APPLICATION_JSON_VALUE` or `"application/json"`; comments are ignored | JSON is already what the controllers read and write, and `springdoc.default-produces-media-type` keeps it in the OpenAPI document, so the attribute only repeats the default. Another media type (`text/event-stream`) is still declared | `@PostMapping(path = "/presets", consumes = MediaType.APPLICATION_JSON_VALUE)` / `@PostMapping("/presets")` |
 | `TAP-D6` | No `ResponseEntity.ok(...)` or `ResponseEntity::ok`: an endpoint that only answers `200` returns its body type | main and test | [`RegexpSinglelineJava`](https://checkstyle.org/checks/regexp/regexpsinglelinejava.html) | `format` matches `ResponseEntity.ok(` and `ResponseEntity::ok`; comments are ignored | Errors are exceptions ([REST endpoints](backend-java-rest-api.md#errors)), so a `ResponseEntity` around a `200` sets nothing Spring would not; it is kept for `201`, `204` and statuses or headers that vary | `public ResponseEntity<UserDto> getUser(...) { return ResponseEntity.ok(dto); }` / `public UserDto getUser(...) { return dto; }` |
+| `TAP-D7` | No `static` method in a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`; static fields and nested types stay allowed | main | [`StaticMethodInAnnotatedClassCheck`](../../build-logic/checkstyle-rules/docs/StaticMethodInAnnotatedClassCheck.md) | `annotations = ...stereotype.Service, ...stereotype.Component, ...stereotype.Repository, ...stereotype.Controller, ...annotation.RestController, ...annotation.RestControllerAdvice, ...annotation.Configuration` | A Spring bean is a singleton already, so its methods are instance methods; a static method hides a dependency from the bean and from its tests (it cannot be injected or replaced). The one known exception is a `static @Bean` method that Spring needs before it creates the configuration, such as a method interceptor or a bean post-processor: suppress it with `@SuppressWarnings("checkstyle:TAP-D7")` and that reason | `@Service class PriceService { static BigDecimal round(BigDecimal v) {...} }` / `@Service class PriceService { BigDecimal round(BigDecimal v) {...} }` |
 
 ## Suppressing a finding
 
@@ -169,10 +170,11 @@ class ArchitectureTest {
 
 The check's name comes after `checkstyle:` (the name in the report, without `Check`). There is no
 central suppressions file, so each exception is visible where it applies and is reviewed with the
-code around it. Two settings in `checkstyle.xml` limit where a check applies. They are not
+code around it. Three settings in `checkstyle.xml` limit where a check applies. They are not
 suppressions:
 
 - `MissingJavadocType` applies to `core/inbound` and `core/outbound` only (`SuppressionSingleFilter`).
+- `TAP-D7` applies to main sources only (`SuppressionSingleFilter`).
 - `MagicNumber` applies to main sources only: the build turns it off for test sources, where tests
   spell out the values they expect.
 
@@ -181,11 +183,12 @@ Suppressions in the code today:
 | Check | Where | Why |
 |---|---|---|
 | `IllegalCatch` | runner loops, background threads, event delivery, health checks, Docker probes in tests | fault isolation: one failure must not stop a run, a thread or other subscribers |
-| `ParameterNumber` | constructors of `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `DockerRunnerAdapter`, `ImportExistingRunsService`; `SecurityConfig.securityFilterChain` | constructor injection of collaborators and `@Value` settings; the security chain's collaborators |
+| `ParameterNumber` | constructors of `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `DockerRunnerAdapter`, `ImportExistingRunsUseCase`; `SecurityConfig.securityFilterChain` | constructor injection of collaborators and `@Value` settings; the security chain's collaborators |
 | `ClassFanOutComplexity` | `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `SecurityConfig` | an API delegate with a use case and a mapper per endpoint; the security chain's wiring and the filters' collaborators |
 | `ConstantName`, `DeclarationOrder`, `HideUtilityClassConstructor` | `ArchitectureTest` | ArchUnit rule names, rules grouped by topic, JUnit instantiates the class |
 | `HideUtilityClassConstructor` | `TradingPlatformApplication` | Spring instantiates the `@SpringBootApplication` class |
 | `VisibilityModifier` | test doubles (`Fakes`, `RecordingSink`) | tests read and set their state directly |
+| `TAP-D7` | `MethodSecurityConfig.requiresPermissionAdvisor` | Spring needs the static `@Bean` interceptor before it creates the configuration |
 | `LineLength` | test fixtures holding runner protocol lines | a protocol line stays on one line |
 
 ## Adding or changing a rule

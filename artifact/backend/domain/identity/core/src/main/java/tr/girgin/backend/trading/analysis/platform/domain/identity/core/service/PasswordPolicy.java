@@ -38,15 +38,12 @@ class PasswordPolicy {
 
     @Autowired
     PasswordPolicy(@Value("${platform.password.min-length:12}") int minLength) {
-        this(minLength, readBundledList());
+        this.minLength = validMinLength(minLength);
+        this.commonPasswords = parse(readBundledList());
     }
 
     PasswordPolicy(int minLength, String commonPasswordList) {
-        if (minLength < LOWEST_MIN_LENGTH || minLength > HIGHEST_MIN_LENGTH) {
-            throw new IllegalArgumentException("platform.password.min-length must be between " + LOWEST_MIN_LENGTH
-                    + " and " + HIGHEST_MIN_LENGTH + " but is " + minLength);
-        }
-        this.minLength = minLength;
+        this.minLength = validMinLength(minLength);
         this.commonPasswords = parse(commonPasswordList);
     }
 
@@ -86,7 +83,15 @@ class PasswordPolicy {
                 Map.of("reasons", reasons, "minLength", minLength, "maxLength", MAX_LENGTH));
     }
 
-    private static Set<String> parse(String list) {
+    private int validMinLength(int configured) {
+        if (configured < LOWEST_MIN_LENGTH || configured > HIGHEST_MIN_LENGTH) {
+            throw new IllegalArgumentException("platform.password.min-length must be between " + LOWEST_MIN_LENGTH
+                    + " and " + HIGHEST_MIN_LENGTH + " but is " + configured);
+        }
+        return configured;
+    }
+
+    private Set<String> parse(String list) {
         Set<String> entries = list.lines()
                 .filter(line -> !line.isBlank() && !line.startsWith("#"))
                 .map(line -> line.toLowerCase(Locale.ROOT))
@@ -97,7 +102,7 @@ class PasswordPolicy {
         return Set.copyOf(entries);
     }
 
-    private static String readBundledList() {
+    private String readBundledList() {
         try (InputStream in = PasswordPolicy.class.getResourceAsStream(COMMON_PASSWORDS)) {
             if (in == null) {
                 throw new IllegalStateException("The common password list " + COMMON_PASSWORDS + " is missing");

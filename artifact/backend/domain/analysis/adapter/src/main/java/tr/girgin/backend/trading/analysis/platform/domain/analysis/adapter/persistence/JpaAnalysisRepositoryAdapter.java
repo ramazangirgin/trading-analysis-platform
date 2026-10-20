@@ -80,7 +80,7 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
      *
      * @throws OptimisticLockingFailureException when the record's version is not the stored one
      */
-    private static void requireVersion(AnalysisEntity stored, Analysis analysis) {
+    private void requireVersion(AnalysisEntity stored, Analysis analysis) {
         if (!Objects.equals(stored.getVersion(), analysis.version())) {
             throw new OptimisticLockingFailureException(
                     "Analysis " + analysis.id() + " was changed by someone else since it was read");
@@ -134,7 +134,7 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         return unowned.size();
     }
 
-    private static Specification<AnalysisEntity> matching(AnalysisFilter filter) {
+    private Specification<AnalysisEntity> matching(AnalysisFilter filter) {
         Specification<AnalysisEntity> matching = (_, _, builder) -> builder.conjunction();
         if (filter.status() != null) {
             matching = matching.and(hasStatus(filter.status()));
@@ -148,15 +148,15 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         return matching;
     }
 
-    private static Specification<AnalysisEntity> hasOwner(OwnerId owner) {
+    private Specification<AnalysisEntity> hasOwner(OwnerId owner) {
         return (root, _, builder) -> builder.equal(root.get("owner"), owner);
     }
 
-    private static Specification<AnalysisEntity> hasStatus(AnalysisStatus status) {
+    private Specification<AnalysisEntity> hasStatus(AnalysisStatus status) {
         return (root, _, builder) -> builder.equal(root.get("status"), status);
     }
 
-    private static Specification<AnalysisEntity> hasTicker(String ticker) {
+    private Specification<AnalysisEntity> hasTicker(String ticker) {
         return (root, _, builder) -> builder.equal(root.get("spec").get("ticker"), ticker);
     }
 }

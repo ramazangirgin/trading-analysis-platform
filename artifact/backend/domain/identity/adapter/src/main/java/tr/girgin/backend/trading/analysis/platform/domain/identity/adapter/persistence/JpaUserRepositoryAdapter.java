@@ -116,7 +116,7 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
         }
     }
 
-    private static UserEntity requireNew(UserEntity incoming) {
+    private UserEntity requireNew(UserEntity incoming) {
         if (incoming.getVersion() != null) {
             throw new OptimisticLockingFailureException(
                     "User " + incoming.getId().getValue() + " was deleted since it was read");
@@ -124,7 +124,7 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
         return incoming;
     }
 
-    private static UserEntity copyOnto(UserEntity existing, UserEntity incoming) {
+    private UserEntity copyOnto(UserEntity existing, UserEntity incoming) {
         if (!Objects.equals(existing.getVersion(), incoming.getVersion())) {
             throw new OptimisticLockingFailureException(
                     "User " + existing.getId().getValue() + " was changed by someone else since it was read");
@@ -142,7 +142,7 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
         return existing;
     }
 
-    private static boolean isUniqueViolation(Throwable failure) {
+    private boolean isUniqueViolation(Throwable failure) {
         for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
             if (cause instanceof ConstraintViolationException violation
                     && violation.getKind() == ConstraintViolationException.ConstraintKind.UNIQUE) {

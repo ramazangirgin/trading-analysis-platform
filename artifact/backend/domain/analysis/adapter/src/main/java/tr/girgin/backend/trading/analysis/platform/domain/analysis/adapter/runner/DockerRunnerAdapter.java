@@ -380,7 +380,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         }
     }
 
-    private static Instant runLogModified(Path runDir) {
+    private Instant runLogModified(Path runDir) {
         try {
             Path runLog = runDir.resolve("run.log");
             return Files.exists(runLog) ? Files.getLastModifiedTime(runLog).toInstant() : null;
@@ -389,7 +389,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         }
     }
 
-    private static String shortId(String containerId) {
+    private String shortId(String containerId) {
         return containerId.length() > SHORT_ID_LENGTH ? containerId.substring(0, SHORT_ID_LENGTH) : containerId;
     }
 
@@ -476,7 +476,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             event(text);
         }
 
-        private static Instant timestamp(String prefix) {
+        private Instant timestamp(String prefix) {
             try {
                 return Instant.parse(prefix);
             } catch (DateTimeParseException _) {

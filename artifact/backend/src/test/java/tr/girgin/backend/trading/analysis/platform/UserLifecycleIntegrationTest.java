@@ -262,8 +262,7 @@ class UserLifecycleIntegrationTest extends UsersApiTestBase {
 
     private static String runRequest() {
         return """
-                {"ticker":"SLOW","tradeDate":"2026-09-25","analysts":["MARKET"],"llmProvider":"deepseek",
-                 "deepThinkLlm":"deepseek-v4-pro","quickThinkLlm":"deepseek-v4-flash"}""";
+                {"ticker":"SLOW","tradeDate":"2026-09-25","analysts":["MARKET"]}""";
     }
 
     private static InputStream openStream(TestSession session, String run) throws Exception {

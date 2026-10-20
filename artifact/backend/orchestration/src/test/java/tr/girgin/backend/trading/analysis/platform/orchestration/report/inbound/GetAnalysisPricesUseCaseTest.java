@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.report.service;
+package tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,14 +22,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 
-class AnalysisReportServiceTest {
+class GetAnalysisPricesUseCaseTest {
 
     private static final OwnerId OWNER = new OwnerId("user-a");
-    private static final AnalysisAccess OWN = new AnalysisAccess(OWNER, false);
     private static final AnalysisAccess OTHERS = new AnalysisAccess(new OwnerId("user-b"), false);
     private static final AnalysisAccess EVERYONE = new AnalysisAccess(new OwnerId("user-b"), true);
 
-    private final List<ReportKey> reportKeys = new ArrayList<>();
     private final List<ReportKey> priceKeys = new ArrayList<>();
     private final Analysis analysis = Analysis.queued(
             AnalysisId.newId(),
@@ -53,36 +51,23 @@ class AnalysisReportServiceTest {
         }
         return analysis;
     };
-    private final AnalysisReportService service = new AnalysisReportService(
-            getAnalysis,
-            key -> {
-                reportKeys.add(key);
-                return Optional.empty();
-            },
-            key -> {
-                priceKeys.add(key);
-                return Optional.empty();
-            });
+    private final GetAnalysisPricesUseCase useCase = new GetAnalysisPricesUseCase(getAnalysis, key -> {
+        priceKeys.add(key);
+        return Optional.empty();
+    });
 
     @Test
-    void anotherUsersReportAndPricesAreNotFound() {
-        assertThatThrownBy(() -> service.getReport(analysis.id(), OTHERS))
+    void anotherUsersPricesAreNotFound() {
+        assertThatThrownBy(() -> useCase.getPrices(analysis.id(), OTHERS))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
-        assertThatThrownBy(() -> service.getPrices(analysis.id(), OTHERS))
-                .isInstanceOfSatisfying(
-                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
-        assertThat(reportKeys).isEmpty();
         assertThat(priceKeys).isEmpty();
     }
 
     @Test
-    void theOwnerAndAnAllUsersReaderGetTheFilesOfTheAnalysisTickerAndDate() {
-        service.getReport(analysis.id(), OWN);
-        service.getPrices(analysis.id(), EVERYONE);
+    void anAllUsersReaderGetsThePricesOfTheAnalysisTickerAndDate() {
+        useCase.getPrices(analysis.id(), EVERYONE);
 
-        ReportKey key = new ReportKey("NVDA", LocalDate.of(2026, 9, 25));
-        assertThat(reportKeys).containsExactly(key);
-        assertThat(priceKeys).containsExactly(key);
+        assertThat(priceKeys).containsExactly(new ReportKey("NVDA", LocalDate.of(2026, 9, 25)));
     }
 }

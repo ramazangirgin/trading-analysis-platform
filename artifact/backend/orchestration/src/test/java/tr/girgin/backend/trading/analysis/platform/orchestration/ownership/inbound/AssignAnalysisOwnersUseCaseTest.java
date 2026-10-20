@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.ownership.service;
+package tr.girgin.backend.trading.analysis.platform.orchestration.ownership.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -16,13 +16,13 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 
-class AnalysisOwnershipServiceTest {
+class AssignAnalysisOwnersUseCaseTest {
 
     private final List<OwnerId> assignedTo = new ArrayList<>();
 
     @Test
     void givesTheAnalysesWithoutAnOwnerToTheFirstAdmin() {
-        AnalysisOwnershipService service = service(Optional.of(new UserId("admin-1")));
+        AssignAnalysisOwnersUseCase service = service(Optional.of(new UserId("admin-1")));
 
         service.assignUnownedToFirstAdmin();
 
@@ -31,7 +31,7 @@ class AnalysisOwnershipServiceTest {
 
     @Test
     void doesNothingBeforeThereIsAFirstAdmin() {
-        AnalysisOwnershipService service = service(Optional.empty());
+        AssignAnalysisOwnersUseCase service = service(Optional.empty());
 
         service.assignUnownedToFirstAdmin();
 
@@ -40,22 +40,23 @@ class AnalysisOwnershipServiceTest {
 
     @Test
     void doesNotFailTheStartWhenTheImportChangesTheAnalysesAtTheSameTime() {
-        AnalysisOwnershipService service = service(Optional.of(new UserId("admin-1")), _ -> {
+        AssignAnalysisOwnersUseCase service = service(Optional.of(new UserId("admin-1")), _ -> {
             throw new OptimisticLockingFailureException("stale version");
         });
 
         assertThatCode(service::assignUnownedToFirstAdmin).doesNotThrowAnyException();
     }
 
-    private AnalysisOwnershipService service(Optional<UserId> firstAdmin) {
+    private AssignAnalysisOwnersUseCase service(Optional<UserId> firstAdmin) {
         return service(firstAdmin, owner -> {
             assignedTo.add(owner);
             return 3;
         });
     }
 
-    private AnalysisOwnershipService service(Optional<UserId> firstAdmin, AssignUnownedAnalysesUseCase assignUnowned) {
-        return new AnalysisOwnershipService(
+    private AssignAnalysisOwnersUseCase service(
+            Optional<UserId> firstAdmin, AssignUnownedAnalysesUseCase assignUnowned) {
+        return new AssignAnalysisOwnersUseCase(
                 new UserDirectoryUseCase() {
                     @Override
                     public Optional<UserId> firstAdmin() {

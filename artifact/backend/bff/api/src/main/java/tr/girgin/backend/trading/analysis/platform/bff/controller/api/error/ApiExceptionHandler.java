@@ -20,7 +20,7 @@ public class ApiExceptionHandler {
         return response(ex);
     }
 
-    public static ResponseEntity<ApiErrorDto> response(ApiException ex) {
+    public ResponseEntity<ApiErrorDto> response(ApiException ex) {
         return ResponseEntity.status(ex.status()).body(new ApiErrorDto(ex.errorCode(), ex.getMessage(), ex.params()));
     }
 
@@ -43,7 +43,7 @@ public class ApiExceptionHandler {
         return badRequest("Invalid " + ex.getName(), Map.of("field", ex.getName()));
     }
 
-    private static ResponseEntity<ApiErrorDto> badRequest(String message, Map<String, Object> params) {
+    private ResponseEntity<ApiErrorDto> badRequest(String message, Map<String, Object> params) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorDto(INVALID_REQUEST, message, params));
     }
 }

@@ -558,9 +558,9 @@ export interface components {
             /** @enum {string} */
             assetType?: "STOCK" | "CRYPTO";
             analysts: ("MARKET" | "SOCIAL" | "NEWS" | "FUNDAMENTALS")[];
-            llmProvider: string;
-            deepThinkLlm: string;
-            quickThinkLlm: string;
+            llmProvider?: string;
+            deepThinkLlm?: string;
+            quickThinkLlm?: string;
             /** Format: int32 */
             maxDebateRounds?: number;
             /** Format: int32 */

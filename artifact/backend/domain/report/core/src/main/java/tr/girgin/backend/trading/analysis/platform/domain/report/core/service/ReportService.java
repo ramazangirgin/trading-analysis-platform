@@ -41,7 +41,7 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase {
         Map<ReportKey, List<ReportContent>> byKey = dataDir.readAll().stream()
                 .collect(Collectors.groupingBy(ReportContent::key, LinkedHashMap::new, Collectors.toList()));
         return byKey.values().stream()
-                .map(ReportService::merge)
+                .map(this::merge)
                 .sorted(Comparator.comparing((Report r) -> r.key().tradeDate())
                         .reversed()
                         .thenComparing(r -> r.key().ticker()))
@@ -54,7 +54,7 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase {
         return contents.isEmpty() ? Optional.empty() : Optional.of(merge(contents));
     }
 
-    private static Report merge(List<ReportContent> contents) {
+    private Report merge(List<ReportContent> contents) {
         Map<ReportSection, String> sections = new EnumMap<>(ReportSection.class);
         Map<DebateSpeaker, String> debates = new EnumMap<>(DebateSpeaker.class);
         EnumSet<ReportSource> sources = EnumSet.noneOf(ReportSource.class);
@@ -77,7 +77,7 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase {
                 modified);
     }
 
-    private static <K> void putNonBlank(Map<K, String> target, Map<K, String> source) {
+    private <K> void putNonBlank(Map<K, String> target, Map<K, String> source) {
         source.forEach((key, value) -> {
             if (value != null && !value.isBlank()) {
                 target.put(key, value);

@@ -73,7 +73,7 @@ class SecretsService implements ManageSecretsUseCase {
         store.writeManaged(managed);
     }
 
-    private static void requireWritable(String name) {
+    private void requireWritable(String name) {
         if (name == null || !WRITABLE_NAME.matcher(name).matches()) {
             throw new SettingsException(
                     SettingsError.INVALID_SECRET_NAME,
@@ -82,7 +82,7 @@ class SecretsService implements ManageSecretsUseCase {
         }
     }
 
-    static String mask(String value) {
+    String mask(String value) {
         if (value.length() <= VISIBLE_SUFFIX * 2) {
             return "••••";
         }

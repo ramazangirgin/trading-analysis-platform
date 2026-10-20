@@ -89,7 +89,7 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
         UserAccount updated = manageUsers.update(
                 currentUserId(),
                 target,
-                Optional.ofNullable(request.roleIds()).map(UsersApiDelegateImpl::roleIds),
+                Optional.ofNullable(request.roleIds()).map(this::roleIds),
                 Optional.ofNullable(request.enabled()),
                 request.version());
         if (Boolean.FALSE.equals(request.enabled())) {
@@ -117,25 +117,25 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
         return ResponseEntity.noContent().build();
     }
 
-    private static Set<RoleId> roleIds(List<String> ids) {
+    private Set<RoleId> roleIds(List<String> ids) {
         return ids.stream().map(RoleId::new).collect(Collectors.toSet());
     }
 
-    private static Set<RoleId> roleIdsOf(UserAccount account) {
+    private Set<RoleId> roleIdsOf(UserAccount account) {
         return account.roles().stream().map(Role::id).collect(Collectors.toSet());
     }
 
-    private static Optional<String> password(String password) {
+    private Optional<String> password(String password) {
         return Optional.ofNullable(password).filter(value -> !value.isBlank());
     }
 
-    private static String sessionId(HttpServletRequest http) {
+    private String sessionId(HttpServletRequest http) {
         HttpSession session = http.getSession(false);
         return session == null ? null : session.getId();
     }
 
     // The principal of a session is the user ID string.
-    private static UserId currentUserId() {
+    private UserId currentUserId() {
         Authentication current = SecurityContextHolder.getContext().getAuthentication();
         return new UserId((String) current.getPrincipal());
     }

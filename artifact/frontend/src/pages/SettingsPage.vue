@@ -15,7 +15,7 @@ import type { SecretStatus } from '@/shared/api/types'
 import { PERMISSIONS, useSessionStore } from '@/features/auth'
 import { useCatalogStore } from '@/features/catalog'
 import { useLabels } from '@/shared/composables/useLabels'
-import { PresetManager, settingsApi } from '@/features/settings'
+import { AnalysisDefaultsCard, PresetManager, settingsApi } from '@/features/settings'
 
 interface KeyRow {
   env: string
@@ -165,6 +165,7 @@ onMounted(load)
         size="small"
         :scroll-x="820"
       />
+      <AnalysisDefaultsCard v-if="session.can(PERMISSIONS.analysisDefaultsManage)" />
       <template v-if="session.can(PERMISSIONS.presetRead)">
         <h3 class="heading">{{ t('presets.title') }}</h3>
         <p class="note">{{ t('presets.note') }}</p>

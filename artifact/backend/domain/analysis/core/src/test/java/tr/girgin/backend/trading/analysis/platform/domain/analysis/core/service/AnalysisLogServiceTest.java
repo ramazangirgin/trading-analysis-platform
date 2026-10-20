@@ -27,7 +27,7 @@ class AnalysisLogServiceTest {
                 "nothing secret here, sk- alone|nothing secret here, sk- alone"
             })
     void masksApiKeys(String line, String expected) {
-        assertThat(AnalysisLogService.mask(line)).isEqualTo(expected);
+        assertThat(new AnalysisLogService(null, null).mask(line)).isEqualTo(expected);
     }
 
     @Test

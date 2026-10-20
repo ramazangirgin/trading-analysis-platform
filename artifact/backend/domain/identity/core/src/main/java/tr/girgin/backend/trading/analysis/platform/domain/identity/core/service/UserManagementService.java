@@ -166,7 +166,7 @@ class UserManagementService implements ManageUsersUseCase {
         }
     }
 
-    private static void checkNotSelfLockout(UserId actor, User user, Set<RoleId> newRoles, boolean newEnabled) {
+    private void checkNotSelfLockout(UserId actor, User user, Set<RoleId> newRoles, boolean newEnabled) {
         if (!actor.equals(user.id())) {
             return;
         }
@@ -194,7 +194,7 @@ class UserManagementService implements ManageUsersUseCase {
         }
     }
 
-    private static boolean losesAdmin(User user, Set<RoleId> newRoles) {
+    private boolean losesAdmin(User user, Set<RoleId> newRoles) {
         return user.roleIds().contains(RoleId.ADMIN) && !newRoles.contains(RoleId.ADMIN);
     }
 
@@ -231,7 +231,7 @@ class UserManagementService implements ManageUsersUseCase {
         }
     }
 
-    private static IdentityException concurrentUpdate(UserId id, OptimisticLockingFailureException cause) {
+    private IdentityException concurrentUpdate(UserId id, OptimisticLockingFailureException cause) {
         IdentityException exception = new IdentityException(
                 IdentityError.CONCURRENT_UPDATE,
                 "User " + id.value() + " was changed by someone else",
@@ -246,7 +246,7 @@ class UserManagementService implements ManageUsersUseCase {
         return roles.findAll().stream().collect(Collectors.toMap(Role::id, Function.identity()));
     }
 
-    private static void requireKnown(Set<RoleId> roleIds, Map<RoleId, Role> byId) {
+    private void requireKnown(Set<RoleId> roleIds, Map<RoleId, Role> byId) {
         for (RoleId id : roleIds) {
             if (!byId.containsKey(id)) {
                 throw new IdentityException(
@@ -255,11 +255,11 @@ class UserManagementService implements ManageUsersUseCase {
         }
     }
 
-    private static List<String> roleNames(Set<RoleId> roleIds) {
+    private List<String> roleNames(Set<RoleId> roleIds) {
         return roleIds.stream().map(RoleId::value).sorted().toList();
     }
 
-    private static UserAccount toAccount(User user, Map<RoleId, Role> byId, Instant now) {
+    private UserAccount toAccount(User user, Map<RoleId, Role> byId, Instant now) {
         List<Role> userRoles = user.roleIds().stream()
                 .map(byId::get)
                 .filter(Objects::nonNull)

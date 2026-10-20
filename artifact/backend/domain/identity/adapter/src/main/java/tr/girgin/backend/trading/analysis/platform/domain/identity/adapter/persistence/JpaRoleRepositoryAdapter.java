@@ -75,7 +75,7 @@ class JpaRoleRepositoryAdapter implements RoleRepositoryPort {
         repository.deleteByIdValue(id.value());
     }
 
-    private static boolean isUniqueViolation(Throwable failure) {
+    private boolean isUniqueViolation(Throwable failure) {
         for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
             if (cause instanceof ConstraintViolationException violation
                     && violation.getKind() == ConstraintViolationException.ConstraintKind.UNIQUE) {

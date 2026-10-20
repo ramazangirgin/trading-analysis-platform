@@ -185,7 +185,9 @@
     "checkpoint": "Kaldığı yerden devam (checkpoint)",
     "submit": "Analizi başlat",
     "catalogUnavailable": "Model listesi alınamadı. ta-runner kurulu mu?",
-    "noKeyHint": "Bu sağlayıcının anahtarı ({env}) tanımlı olmalı."
+    "noKeyHint": "Bu sağlayıcının anahtarı ({env}) tanımlı olmalı.",
+    "defaultsHint": "Yönetici tarafından belirlenir",
+    "resetToDefaults": "Varsayılanlara dön"
   },
   "languages": {
     "Turkish": "Türkçe",
@@ -283,6 +285,8 @@
     "invalid_secret_value": "Geçersiz değer.",
     "secret_not_managed": "Bu değer platform dosyasında değil; harici dosyadan geliyor.",
     "invalid_preset": "Geçersiz hazır ayar.",
+    "invalid_analysis_defaults": "Geçersiz değer: {field}",
+    "analysis_override_forbidden": "Bir analiz için {field} değerini değiştiremezsiniz.",
     "preset_not_found": "Hazır ayar bulunamadı.",
     "prices_not_found": "Bu analiz için önbellekte fiyat yok."
   },
@@ -437,7 +441,18 @@
     "remove": "Sil",
     "saved": "{name} kaydedildi.",
     "removed": "{name} silindi.",
-    "noKeyNeeded": "Anahtar gerekmez"
+    "noKeyNeeded": "Anahtar gerekmez",
+    "analysisDefaults": {
+      "title": "Analiz varsayılanları",
+      "note": "Her analizin kullandığı sağlayıcı, modeller ve tartışma turları. Yalnızca modelleri değiştirme yetkisi olan kullanıcılar bunları tek bir analiz için değiştirebilir.",
+      "provider": "Sağlayıcı",
+      "deepModel": "Derin düşünme modeli",
+      "quickModel": "Hızlı düşünme modeli",
+      "debateRounds": "Araştırma tartışma turu",
+      "riskRounds": "Risk tartışma turu",
+      "save": "Kaydet",
+      "saved": "Analiz varsayılanları kaydedildi."
+    }
   },
   "presets": {
     "label": "Hazır ayar",

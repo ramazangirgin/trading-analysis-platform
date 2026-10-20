@@ -107,7 +107,13 @@ Open **Settings**, paste the key next to its provider and press **Save**. Keys a
 `~/.tradingagents-platform/secrets.env` (owner-only) and are never shown back. A key already in
 `artifact/ta-runner/.env` is picked up too (read-only).
 
-![Settings: provider API keys](docs/screenshots/settings.png)
+The **Analysis defaults** card below the keys holds the provider, the deep- and quick-thinking
+model and the two round counts that every analysis uses. Only users with
+`analysis:defaults:manage` (ADMIN) see it. Until an admin saves once, the catalog's defaults apply
+with one round each. If another admin saved meanwhile, the save fails with a message and the card
+reloads their values.
+
+![Settings: provider API keys and analysis defaults](docs/screenshots/settings.png)
 
 ### 5. Start an analysis
 
@@ -118,15 +124,20 @@ Open **New analysis** and fill in:
 | Ticker | Any Yahoo Finance symbol: `NVDA`, `THYAO.IS`, `BTC-USD` (crypto pairs switch the asset type automatically) |
 | Analysis date | Defaults to the last weekday; future dates are rejected |
 | Analysts | Market, Sentiment, News, Fundamentals — fewer analysts means a faster, cheaper run |
-| Provider, models | A deep-thinking model (research/portfolio managers) and a quick-thinking one (everyone else); you can type a model id that is not listed |
-| Debate rounds | 1 is enough to start; every extra round adds LLM calls |
+| Provider, models | A deep-thinking model (research/portfolio managers) and a quick-thinking one (everyone else). They start from the platform's analysis defaults: read-only ("Set by the administrator") without `analysis:override-models`, editable with it, where **Reset to defaults** restores them. A model id that is not listed can be typed only for providers that allow custom ids |
+| Debate rounds | The debate and risk rounds (1 to 10) come from the same defaults; every extra round adds LLM calls |
 | Report language | The language of the reports and the decision; follows the UI language by default |
 
 Press **Start analysis**. **Save as preset** keeps the provider, model and analyst choices for next
 time; **Settings** lists the presets with what each holds, and renames or deletes them.
+Without `analysis:override-models`, applying a preset leaves the provider, models and rounds at the
+platform values and saving one stores the other fields only.
 Renaming a preset that someone else changed meanwhile fails with a message and the list reloads.
+**Run again** keeps the values of the original analysis.
 
 ![New analysis form](docs/screenshots/new-analysis.png)
+
+![New analysis form for a user without analysis:override-models](docs/screenshots/new-analysis-readonly.png)
 
 ![Presets in Settings](docs/screenshots/presets.png)
 
@@ -525,6 +536,12 @@ The backend:
     the catalog cannot be read. A
     stale `version`, also a `null` one while values are saved, answers 409 `concurrent_update`: of two
     admins who save at the same time, also the first time, the second one gets it.
+- `POST /api/analyses` decides the provider, both models and both round counts itself: the five
+  fields are optional and default to the platform's analysis defaults. Sending a value that differs
+  from them needs `analysis:override-models`; without it the answer is 403
+  `analysis_override_forbidden` with `params.field` naming the first differing field. An override
+  must be in the catalog (provider, and each model for it unless the provider allows custom ids), or
+  the answer is 400 `invalid_spec`. A rerun keeps the original analysis's values.
 - Every other `/api/**` route needs a permission: 401 (`unauthorized`) without a session, 403
   (`forbidden`) without the permission. The permission is the `@RequiresPermission` on the endpoint's
   delegate method. The build fails (Checkstyle rule `TAP-A1`) while a delegate method has neither

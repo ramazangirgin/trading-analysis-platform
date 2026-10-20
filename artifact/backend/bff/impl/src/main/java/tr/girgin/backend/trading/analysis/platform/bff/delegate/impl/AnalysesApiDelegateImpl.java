@@ -34,7 +34,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PriceHistoryToPriceHistoryDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.ReportToAnalysisReportDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RunEventToRunEventDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToAnalysisSpecMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToRequestedAnalysisMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StringToAnalysisIdMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
@@ -42,7 +42,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
@@ -54,6 +53,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
+import tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.inbound.StartAnalysisWithDefaultsUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisPricesUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisReportUseCase;
 
@@ -65,7 +65,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     /** Sent once the run is over, so the browser closes the EventSource instead of reconnecting. */
     static final String END_EVENT = "end";
 
-    private final StartAnalysisUseCase startAnalysis;
+    private final StartAnalysisWithDefaultsUseCase startAnalysis;
     private final ListAnalysesUseCase listAnalyses;
     private final GetAnalysisUseCase getAnalysis;
     private final StopAnalysisUseCase stopAnalysis;
@@ -74,7 +74,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final GetAnalysisReportUseCase getReport;
     private final GetAnalysisPricesUseCase getPrices;
     private final ReadAnalysisLogsUseCase readLogs;
-    private final StartAnalysisRequestToAnalysisSpecMapper specMapper;
+    private final StartAnalysisRequestToRequestedAnalysisMapper requestMapper;
     private final AnalysisToAnalysisDtoMapper analysisMapper;
     private final RunEventToRunEventDtoMapper eventMapper;
     private final StringToAnalysisIdMapper idMapper;
@@ -87,7 +87,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
-            StartAnalysisUseCase startAnalysis,
+            StartAnalysisWithDefaultsUseCase startAnalysis,
             ListAnalysesUseCase listAnalyses,
             GetAnalysisUseCase getAnalysis,
             StopAnalysisUseCase stopAnalysis,
@@ -96,7 +96,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             GetAnalysisReportUseCase getReport,
             GetAnalysisPricesUseCase getPrices,
             ReadAnalysisLogsUseCase readLogs,
-            StartAnalysisRequestToAnalysisSpecMapper specMapper,
+            StartAnalysisRequestToRequestedAnalysisMapper requestMapper,
             AnalysisToAnalysisDtoMapper analysisMapper,
             RunEventToRunEventDtoMapper eventMapper,
             StringToAnalysisIdMapper idMapper,
@@ -115,7 +115,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.getReport = getReport;
         this.getPrices = getPrices;
         this.readLogs = readLogs;
-        this.specMapper = specMapper;
+        this.requestMapper = requestMapper;
         this.analysisMapper = analysisMapper;
         this.eventMapper = eventMapper;
         this.idMapper = idMapper;
@@ -130,7 +130,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request) {
-        return created(startAnalysis.start(specMapper.map(request), owner()));
+        return created(startAnalysis.start(
+                requestMapper.map(request), owner(), currentUser.has(Permission.ANALYSIS_OVERRIDE_MODELS)));
     }
 
     @Override
@@ -275,7 +276,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         return userDirectory.usernames(ids);
     }
 
-    private static void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
+    private void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
         try {
             emitter.send(event);
         } catch (IOException e) {

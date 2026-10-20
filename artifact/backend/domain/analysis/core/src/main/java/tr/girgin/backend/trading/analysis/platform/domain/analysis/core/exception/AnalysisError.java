@@ -6,5 +6,6 @@ public enum AnalysisError {
     NOT_FOUND,
     ALREADY_RUNNING,
     NOT_RUNNING,
-    CONCURRENT_UPDATE
+    CONCURRENT_UPDATE,
+    OVERRIDE_FORBIDDEN
 }

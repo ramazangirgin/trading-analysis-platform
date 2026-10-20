@@ -111,7 +111,7 @@ class RoleManagementService implements ManageRolesUseCase {
         return new RoleSummary(saved, users.countWithRole(id));
     }
 
-    private static void logChanges(Role before, Role after) {
+    private void logChanges(Role before, Role after) {
         String id = before.id().value();
         if (!after.name().equals(before.name())) {
             log.info("Role {} renamed from \"{}\" to \"{}\"", id, before.name(), after.name());
@@ -170,7 +170,7 @@ class RoleManagementService implements ManageRolesUseCase {
         }
     }
 
-    private static String validName(String name) {
+    private String validName(String name) {
         String trimmed = name == null ? "" : name.trim();
         if (!VALID_NAME.matcher(trimmed).matches()) {
             throw new IdentityException(
@@ -181,7 +181,7 @@ class RoleManagementService implements ManageRolesUseCase {
         return trimmed;
     }
 
-    private static String validDescription(String description) {
+    private String validDescription(String description) {
         String trimmed = description == null ? "" : description.trim();
         if (trimmed.length() > MAX_DESCRIPTION_LENGTH) {
             throw new IdentityException(
@@ -192,14 +192,14 @@ class RoleManagementService implements ManageRolesUseCase {
         return trimmed;
     }
 
-    private static void throwBuiltIn(RoleId id, String change) {
+    private void throwBuiltIn(RoleId id, String change) {
         throw new IdentityException(
                 IdentityError.BUILT_IN_ROLE,
                 "The built-in role " + id.value() + " cannot be changed: " + change,
                 Map.of("id", id.value(), "change", change));
     }
 
-    private static IdentityException nameTaken(String name, Exception cause) {
+    private IdentityException nameTaken(String name, Exception cause) {
         IdentityException exception = new IdentityException(
                 IdentityError.ROLE_NAME_TAKEN, "The role name \"" + name + "\" is taken", Map.of("name", name));
         if (cause != null) {
@@ -208,7 +208,7 @@ class RoleManagementService implements ManageRolesUseCase {
         return exception;
     }
 
-    private static IdentityException inUse(RoleId id, long userCount, Exception cause) {
+    private IdentityException inUse(RoleId id, long userCount, Exception cause) {
         IdentityException exception = new IdentityException(
                 IdentityError.ROLE_IN_USE,
                 "Role " + id.value() + " is held by " + userCount + " users",
@@ -219,7 +219,7 @@ class RoleManagementService implements ManageRolesUseCase {
         return exception;
     }
 
-    private static IdentityException concurrentUpdate(RoleId id, OptimisticLockingFailureException cause) {
+    private IdentityException concurrentUpdate(RoleId id, OptimisticLockingFailureException cause) {
         IdentityException exception = new IdentityException(
                 IdentityError.CONCURRENT_UPDATE,
                 "Role " + id.value() + " was changed by someone else",
@@ -230,7 +230,7 @@ class RoleManagementService implements ManageRolesUseCase {
         return exception;
     }
 
-    private static List<String> keys(Set<Permission> permissions) {
+    private List<String> keys(Set<Permission> permissions) {
         return permissions.stream().map(Permission::key).sorted().toList();
     }
 }

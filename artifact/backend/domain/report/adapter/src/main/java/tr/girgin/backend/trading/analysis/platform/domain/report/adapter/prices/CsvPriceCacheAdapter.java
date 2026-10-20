@@ -54,7 +54,7 @@ class CsvPriceCacheAdapter implements PriceCachePort {
 
     @Override
     public List<PriceBar> read(String ticker, LocalDate upTo) {
-        return newestFile(ticker).map(CsvPriceCacheAdapter::parse).orElse(List.of());
+        return newestFile(ticker).map(this::parse).orElse(List.of());
     }
 
     private Optional<Path> newestFile(String ticker) {
@@ -77,7 +77,7 @@ class CsvPriceCacheAdapter implements PriceCachePort {
         }
     }
 
-    static List<PriceBar> parse(Path file) {
+    List<PriceBar> parse(Path file) {
         try {
             if (Files.size(file) > MAX_FILE_BYTES) {
                 log.warn("Skipping oversized price cache file {}", file);
@@ -90,7 +90,7 @@ class CsvPriceCacheAdapter implements PriceCachePort {
         }
     }
 
-    private static List<PriceBar> parse(Path file, List<String> lines) {
+    private List<PriceBar> parse(Path file, List<String> lines) {
         if (lines.isEmpty()) {
             return List.of();
         }
@@ -109,7 +109,7 @@ class CsvPriceCacheAdapter implements PriceCachePort {
         return bars;
     }
 
-    private static Optional<PriceBar> row(String[] cells, Map<String, Integer> index) {
+    private Optional<PriceBar> row(String[] cells, Map<String, Integer> index) {
         try {
             double close = Double.parseDouble(cells[index.get("Close")]);
             if (!Double.isFinite(close)) {

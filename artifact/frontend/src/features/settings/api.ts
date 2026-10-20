@@ -1,5 +1,10 @@
 import { request } from '@/shared/api/client'
-import type { Preset, SecretStatus } from '@/shared/api/types'
+import type {
+  AnalysisDefaults,
+  Preset,
+  SaveAnalysisDefaultsRequest,
+  SecretStatus,
+} from '@/shared/api/types'
 
 export const settingsApi = {
   listSecrets(): Promise<SecretStatus[]> {
@@ -33,5 +38,14 @@ export const settingsApi = {
   },
   deletePreset(id: string): Promise<void> {
     return request(`/api/presets/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  },
+  getAnalysisDefaults(): Promise<AnalysisDefaults> {
+    return request('/api/settings/analysis-defaults')
+  },
+  updateAnalysisDefaults(body: SaveAnalysisDefaultsRequest): Promise<AnalysisDefaults> {
+    return request('/api/settings/analysis-defaults', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })
   },
 }

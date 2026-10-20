@@ -1512,16 +1512,13 @@
                         "minItems": 1
                     },
                     "llmProvider": {
-                        "type": "string",
-                        "minLength": 1
+                        "type": "string"
                     },
                     "deepThinkLlm": {
-                        "type": "string",
-                        "minLength": 1
+                        "type": "string"
                     },
                     "quickThinkLlm": {
-                        "type": "string",
-                        "minLength": 1
+                        "type": "string"
                     },
                     "maxDebateRounds": {
                         "type": "integer",
@@ -1540,9 +1537,6 @@
                 },
                 "required": [
                     "analysts",
-                    "deepThinkLlm",
-                    "llmProvider",
-                    "quickThinkLlm",
                     "ticker",
                     "tradeDate"
                 ]
