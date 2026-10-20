@@ -55,6 +55,7 @@ async function load() {
 watch(
   () => form.llmProvider,
   () => {
+    if (!provider.value) return
     if (!deepOptions.value.some((o) => o.value === form.deepThinkLlm)) {
       form.deepThinkLlm = deepOptions.value[0]?.value ?? ''
     }
@@ -90,6 +91,7 @@ onMounted(load)
     <h3 class="heading">{{ t('settings.analysisDefaults.title') }}</h3>
     <p class="note">{{ t('settings.analysisDefaults.note') }}</p>
     <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
+    <NAlert v-if="catalogStore.error" type="warning" :title="t('form.catalogUnavailable')" />
     <div class="grid">
       <NFormItem :label="t('settings.analysisDefaults.provider')">
         <NSelect v-model:value="form.llmProvider" :options="providerOptions" filterable />
@@ -107,7 +109,12 @@ onMounted(load)
         <NInputNumber v-model:value="form.maxRiskDiscussRounds" :min="1" :max="10" />
       </NFormItem>
     </div>
-    <NButton type="primary" :loading="saving" :disabled="!!failure" @click="save">
+    <NButton
+      type="primary"
+      :loading="saving"
+      :disabled="!!failure || !!catalogStore.error"
+      @click="save"
+    >
       {{ t('settings.analysisDefaults.save') }}
     </NButton>
   </NSpace>
