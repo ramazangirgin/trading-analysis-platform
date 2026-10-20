@@ -41,8 +41,12 @@ to those who may override; the Settings page gets an Analysis defaults card for
        override. With overrides and `mayOverrideModels` false: throw
        `AnalysisException(AnalysisError.OVERRIDE_FORBIDDEN, ..., Map.of("field", <the first one>))`.
        Sending nothing, or exactly the platform values, is accepted.
-    3. With permitted overrides: check them against the catalog (`GetCatalogUseCase`) as the open
-       question below decides; a failure is `AnalysisException(AnalysisError.INVALID_SPEC, ...,
+    3. With permitted overrides: check them against the catalog (`GetCatalogUseCase`). The provider
+       must be in the catalog, and each model must be listed for it (`deepModels` / `quickModels`)
+       unless the provider allows custom ids (`customModelAllowed`). (The issue's design said
+       "validated as today", but today nothing in the start flow consults the catalog; its
+       acceptance criteria ask for the refusal, and the developer chose this rule in the plan
+       review.) A failure is `AnalysisException(AnalysisError.INVALID_SPEC, ...,
        Map.of("field", <the field>))`, the 400 `invalid_spec` the start request already answers.
     4. Build the `AnalysisSpec`: each of the five is the override when there is one, else the
        platform value; the other fields with today's mapper defaults (`STOCK`, `English`, `false`).
@@ -50,7 +54,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
        spec (`AnalysisSpecValidator`: formats, rounds 1..10) and stores it as today.
   - The five values are stored in the spec as before, so the run detail, compare view and report
     show the values actually used.
-  - **Rerun** (the issue's open question): unchanged. `RerunAnalysisUseCase` starts the stored
+  - **Rerun** (the issue's open question, answered here): unchanged. `RerunAnalysisUseCase` starts the stored
     spec of the original analysis, so a rerun reproduces the original run with its original values,
     whoever reruns it and whatever the platform values are by then. The UI's "Run again" already
     promises "the same settings". It stays on the analysis domain's use case, without a permission
@@ -94,7 +98,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
   - The round inputs go up to 10 (5 today), the range the backend and the admin card accept, so a
     platform value above 5 is shown and kept as it is.
   - A typed model id (the selects' `tag`) only where the provider allows custom ids
-    (`customModelAllowed`), per the open question's recommended answer.
+    (`customModelAllowed`), as the start request checks.
   - Presets: with the permission, applying and saving keep the five values as today. Without it,
     applying a preset leaves the five at the platform values, and saving a preset stores the other
     fields only.
@@ -130,7 +134,7 @@ to those who may override; the Settings page gets an Analysis defaults card for
   admin saves once).
 - README "5. Start an analysis": the "Provider, models" and "Debate rounds" rows of the field table
   say where the values come from: read-only without `analysis:override-models`, editable from the
-  platform values with it, "Reset to defaults", custom model ids per the open question; the preset
+  platform values with it, "Reset to defaults", a typed model id only for providers that allow custom ids; the preset
   sentence says what a preset keeps without the permission; "Run again" keeps the original values.
 - README "Login": `POST /api/analyses` decides the five values itself; 403
   `analysis_override_forbidden` (`params.field`) for a differing value without the permission.
@@ -240,14 +244,3 @@ saving at once (plan 1).
   endpoints and their README rows: plan 1.
 - Per-user or per-role defaults, limiting which providers or models an overriding user may pick,
   cost estimates (#37).
-
-## Open questions
-
-- **Which model ids does an override accept?** The issue's design says overrides are "validated
-  against the catalog as today", but today nothing in the start flow consults the catalog (only
-  `AnalysisSpecValidator`'s formats), and the acceptance criteria say "a provider or model not in
-  the catalog is refused ... in an override". Today's form also lets any provider take a typed
-  model id. Recommended: the provider must be in the catalog, and each model must be listed for it
-  unless the provider allows custom ids (`customModelAllowed`, set by the catalog for providers
-  whose upstream model list has a custom entry); the form offers typing only there. The alternative is
-  the admin rule of plan 1: listed models only, no typed ids at all.
