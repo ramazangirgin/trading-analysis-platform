@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.pers
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -19,6 +20,14 @@ class JpaAnalysisDefaultsRepositoryAdapterTest {
 
     @Autowired
     private JpaAnalysisDefaultsRepositoryAdapter repository;
+
+    @Autowired
+    private AnalysisDefaultsJpaRepository jpaRepository;
+
+    @BeforeEach
+    void emptyTheTable() {
+        jpaRepository.deleteAll();
+    }
 
     @Test
     void findOnAnEmptyTableIsEmpty() {
