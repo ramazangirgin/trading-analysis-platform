@@ -50,6 +50,10 @@ on the last one (CI's conclusion and failed jobs, or the pull requests).
   edits to `.github/workflows/`, no new suppressions to silence a new lint rule's findings (fix
   the code; a justified suppression follows the in-place convention, with a reason), no
   `--no-verify`, no force push of a branch Renovate alone owns.
+- **Comments only when needed** ([code comments](../../../docs/coding-convention/repository-code-comments.md)):
+  a comment or Javadoc in the code this skill writes or changes says only what the code, its names
+  and the docs cannot (a reason that is not obvious, a workaround). Never one that repeats them, and
+  never one copied from the code around it.
 - **Lock files are regenerated, not hand-edited**, with the tool that owns them:
   `artifact/frontend/with-node.sh pnpm install`, `e2e/with-node.sh pnpm install`,
   `cd artifact/ta-runner && uv lock`.

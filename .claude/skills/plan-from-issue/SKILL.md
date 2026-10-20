@@ -55,8 +55,10 @@ do not read other plans in `.plans/` as models.
   `Closes #<issue>` only into the last one. So push every plan of the issue in step 4, never only
   some of them, and never write `Closes #<issue>` into a plan.
 - **No comments in the plan**: never ask for comments or Javadoc ("with Javadoc in the style of
-  …"). The developer agent adds a comment only when it is really needed, and Checkstyle asks for
-  the Javadoc it requires.
+  …"). The developer agent adds a comment only when it is really needed
+  ([code comments](../../../docs/coding-convention/repository-code-comments.md)), and Checkstyle
+  asks for the Javadoc it requires. Never plan a comment on a table, a column or a migration, nor a
+  comment that explains a design decision the plan already records.
 - **REST endpoints** ([REST endpoints](../../../docs/coding-convention/backend-java-rest-api.md)):
   for every new or changed BFF endpoint, the plan names its success status and return type, and
   where each error is answered. An endpoint that only answers `200` returns its DTO, never
