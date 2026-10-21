@@ -1,6 +1,6 @@
 ---
 name: develop-issue
-description: Take a GitHub issue of this repository through the whole agentic development flow (a folder of its own checked out from main, plan, plan branch and draft pull request reviewed on GitHub or in the session, developer agent, CI, review → fix rounds, finalise, update with main) in one run. It asks the developer only to approve the plan, runs every other step without asking, keeps a progress comment on the issue (each step's start, end, duration, tokens and result), and sends a notification when the pull request is ready for the developer's review. It never touches the current checkout and never merges unless asked. Use when the user asks to develop, implement or run the agents on an issue end to end, e.g. "/develop-issue 61", "/develop-issue https://github.com/<owner>/<repo>/issues/61" or "develop issue #61".
+description: Take a GitHub issue of this repository through the whole agentic development flow (a folder of its own checked out from main, plan, plan branch and draft pull request reviewed on GitHub or in the session, developer agent, CI, review → fix rounds, finalise, update with main) in one run. It asks the developer only to approve the plan (and, when a plan branch exists already, whether to use that plan instead of writing one), runs every other step without asking, keeps a progress comment on the issue (each step's start, end, duration, tokens and result), and sends a notification when the pull request is ready for the developer's review. It never touches the current checkout and never merges unless asked. Use when the user asks to develop, implement or run the agents on an issue end to end, e.g. "/develop-issue 61", "/develop-issue https://github.com/<owner>/<repo>/issues/61" or "develop issue #61".
 ---
 
 # Develop an issue
@@ -22,7 +22,9 @@ repository than this one (`gh repo view --json nameWithOwner`) is an error: stop
 ## One approval: the plan
 
 The plan (step 2) is the only step that waits for the developer: it is pushed as a draft pull
-request labelled `plan`, which the developer reviews there or in this session. Everything after the
+request labelled `plan`, which the developer reviews there or in this session. When a plan branch
+exists already, the developer is first asked whether to use that plan, skipping the writing, or to
+write it again; either way the approval follows. Everything after the
 approval (implementing, CI fixes, reviews, fix rounds, finalising, the update with `main`) runs
 without asking. Before each step, say in one or two lines what it does and the command, then run
 it; after it, report what it did.
@@ -131,11 +133,10 @@ Stop if the issue is closed, or if `gh` is not logged in.
 
 Print one line per plan branch: the branch, its pull request, and where it stands (no pull request
 yet; draft labelled `plan`: the plan is under review; draft labelled `agent`; ready for review;
-merged). Then pick where to start after step 1: step 2 when there is no plan branch, or for an open
-draft labelled `plan` (the review goes on with its comments: step 2's loop, without writing the plan
-again); step 4 for the first unmerged plan without a pull request (a plan pushed before plan pull
-requests existed: `implement.sh` opens it); step 5 for an open draft labelled `agent`; step 6 for a
-pull request ready for review. Say where you are starting and why.
+merged). Then pick where to start after step 1: step 2 when there is no plan branch; step 2 with
+[an existing plan](#an-existing-plan) for an unmerged plan branch whose plan is not implemented yet
+(an open draft labelled `plan`, or no pull request at all); step 5 for an open draft labelled
+`agent`; step 6 for a pull request ready for review. Say where you are starting and why.
 
 ## 1. A folder of its own
 
@@ -170,6 +171,29 @@ branch.
 
 ## 2. Plan (the approval)
 
+### An existing plan
+
+When step 0 found plan branches whose plans are not implemented yet, show each plan in full (read
+it from its branch: `git show origin/plan/<n>-<slug>:.plans/<n>-<slug>.md`) with its pull request
+link, or "no pull request yet". Then ask with `AskUserQuestion`, header `Plan`, whether to skip
+writing the plan: **Use the existing plan (Recommended)**, **Write it again** and **Stop here**.
+
+- **Use the existing plan**: skip the `plan-from-issue` skill and go straight to the approval
+  question below. Its review loop works on the existing branch. A branch without a pull request has
+  no pull request comments: take the developer's answers in the session only, and do not open one;
+  `implement.sh` opens it after the approval.
+- **Write it again**: run the `plan-from-issue` skill's sections 1 to 3 (it writes the plan anew,
+  using the existing plan and its pull request comments as input), then commit the new plan on the
+  existing branch and push it, instead of its section 4: `plan-branch.sh` fails on a branch that
+  exists already. Then ask the approval question below.
+- **Stop here**: nothing changes; `/develop-issue <n>` asks again.
+
+Take `plan_start` when this question is asked. On the approval, record the plan step as
+`"approved (existing plan, <k> change rounds)"` or `"approved (written again, <k> change rounds)"`
+([Progress on the issue](#progress-on-the-issue)), and continue with step 3.
+
+### A new plan
+
 Invoke the [`plan-from-issue`](../plan-from-issue/SKILL.md) skill with the Skill tool
 (`plan-from-issue`, argument: the issue number), and follow it through its section 5, in the
 issue's folder. It writes `<dir>/.plans/<n>-<slug>.md` (several plans when the issue does not fit
@@ -177,7 +201,10 @@ one pull request), shows them, pushes each with `scripts/agent/plan-branch.sh` (
 pull request labelled `plan`, linked on the issue), and reviews them with the developer. Leave out
 its section 6 ("Tell the user what is next").
 
-Show the plan(s) in full with the pull request link(s), say that the developer can comment there
+### The approval
+
+Show the plan(s) in full with the pull request link(s) (unless just shown for
+[an existing plan](#an-existing-plan)), say that the developer can comment there
 (inline on the plan's lines, or as a comment) or answer here, and ask with `AskUserQuestion`, header
 `Plan`, the options **Approve the plan**, **Change it** (with the comments here, on the pull
 request, or both) and **Stop here**. On **Change it**, or an answer in "Other", run the skill's
