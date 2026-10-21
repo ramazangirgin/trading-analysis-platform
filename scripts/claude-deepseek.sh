@@ -7,7 +7,7 @@
 #   scripts/claude-deepseek.sh --no-persist        use DeepSeek only for this session (no shell change)
 #   scripts/claude-deepseek.sh --help
 #
-# Undo with scripts/claude-deepseek-revert.sh.
+# Undo with scripts/claude-reset.sh.
 #
 # The environment variables follow https://api-docs.deepseek.com/quick_start/agent_integrations/claude_code/
 # and are written to ~/.claude/deepseek.env (mode 0600), then sourced from your shell rc so every new
@@ -32,6 +32,11 @@ while [ $# -gt 0 ]; do
     *) die "unknown argument: $1 (see --help)" ;;
   esac
 done
+
+# Both scripts set ANTHROPIC_BASE_URL from the shell rc, so only one may be configured at a time.
+if [ "$persist" -eq 1 ] && [ -f "$HOME/.claude/ollama.env" ]; then
+  die "Ollama is configured ($HOME/.claude/ollama.env); run scripts/claude-reset.sh first, or use --no-persist"
+fi
 
 # --- Claude Code CLI ---------------------------------------------------------
 if ! command -v claude > /dev/null 2>&1; then
@@ -64,7 +69,7 @@ write_env_file() {
   old_umask="$(umask)"
   umask 077
   cat > "$file" <<EOF
-# Managed by scripts/claude-deepseek.sh (revert with scripts/claude-deepseek-revert.sh).
+# Managed by scripts/claude-deepseek.sh (revert with scripts/claude-reset.sh).
 # Default/Opus -> deepseek-v4-pro (DeepSeek-V4-Pro-0813); Sonnet/Haiku/subagent -> deepseek-flash.
 export ANTHROPIC_BASE_URL='https://api.deepseek.com/anthropic'
 export ANTHROPIC_AUTH_TOKEN='$api_key'
