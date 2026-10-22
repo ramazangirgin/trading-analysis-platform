@@ -81,6 +81,9 @@ to be changed: after logging in with it, the UI asks for a new password before a
 you lost it while `admin` is still the only user, delete the user
 (`DELETE FROM "IDENTITY"."USERS";` in the database) and restart to get a new one.
 
+Every page shows a short investment disclaimer under the header; the About page (`/about`, linked
+from the footer and the login page) shows the full text and opens without a login.
+
 More users are added in the UI, under **Admin → Users**: **New user** takes a username, roles and
 a one-time password, generated or entered. A generated one is shown once, to pass on; the user
 must change it at the first login. Per row an admin edits the roles, disables or enables the
@@ -211,6 +214,9 @@ when a ticker and date ran several times, this is the newest run's report.
 **Markdown**, **HTML** and **PDF** export the open report: the HTML file is a single page that
 opens anywhere, and PDF goes through the browser's print dialog (*Save as PDF*). On a phone the page
 folds into one column, with the list as a picker and the contents folded above the report.
+
+Every report, on screen and in every export, ends with the investment disclaimer, in the report's
+language rather than the screen language.
 
 ![Reports: list, contents and the report](docs/screenshots/reports.png)
 
@@ -416,6 +422,12 @@ login and can do nothing else until they set a new one. A change clears the flag
 user's other sessions out; the current session continues.
 
 ![The change-password page](docs/screenshots/change-password.png)
+
+Investment disclaimer: the login page included, every page shows a muted line under the header,
+and the public About page (`/about`) shows the full text (see [Log in](#3-log-in)). The wording is
+`app.disclaimer` in the translation files, shown by the `DisclaimerNotice` component.
+
+![The About page](docs/screenshots/about.png)
 
 The backend:
 

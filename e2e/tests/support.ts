@@ -25,11 +25,16 @@ export const DECISION_TEXT = 'take a 4% position now'
  * run in parallel against one platform: every test uses a ticker of its own, so a new test that
  * starts an analysis picks one no other test uses.
  */
-export async function completedAnalysis(request: APIRequestContext, ticker: string) {
+export async function completedAnalysis(
+  request: APIRequestContext,
+  ticker: string,
+  outputLanguage?: string,
+) {
   const started = await request.post('/api/analyses', {
     headers: await csrfHeaders(request),
     data: {
       ticker,
+      outputLanguage,
       tradeDate: TRADE_DATE,
       analysts: ['MARKET', 'SOCIAL', 'NEWS', 'FUNDAMENTALS'],
       llmProvider: 'openai',
