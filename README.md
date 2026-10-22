@@ -76,12 +76,13 @@ Log in at **http://127.0.0.1:8080** with it. The first admin has the ADMIN role,
 permission. To choose the name and password instead, set
 `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start; the password must
 meet the password policy (at least 12 characters, not a common password, not the username), or the
-platform does not start and says why. Later starts change nothing. Every page shows a short investment disclaimer under the
-header; the About page (`/about`, linked from the footer and the login page) shows the full text and
-opens without a login. A generated password is flagged
+platform does not start and says why. Later starts change nothing. A generated password is flagged
 to be changed: after logging in with it, the UI asks for a new password before anything else. If
 you lost it while `admin` is still the only user, delete the user
 (`DELETE FROM "IDENTITY"."USERS";` in the database) and restart to get a new one.
+
+Every page shows a short investment disclaimer under the header; the About page (`/about`, linked
+from the footer and the login page) shows the full text and opens without a login.
 
 More users are added in the UI, under **Admin → Users**: **New user** takes a username, roles and
 a one-time password, generated or entered. A generated one is shown once, to pass on; the user
