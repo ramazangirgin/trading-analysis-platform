@@ -239,6 +239,23 @@ the work package, the latest milestones and the end of `run.log`.
 A second run on the same branch is refused while one is active (the lock,
 `run.pid` in the same directory).
 
+##### Progress while it runs
+
+The milestones reach the developer without a model turn:
+
+- **The `agent-progress` mod** ([`.claude/mods/agent-progress`](../.claude/mods/agent-progress)) shows
+  the latest run of the repository in a Claude Code session: a status line (issue, step, work
+  package, minutes in the step, tokens), a toast for each milestone (`WP2 (2 of 4): done`, `CI
+  passed`, `review R1: 3 findings (0 CRITICAL, 2 MAJOR, 1 MINOR)`, `failed: …`) and, with
+  `/agent-progress`, a pane with the latest milestones. It reads `progress.tsv` and `run.pid` in
+  `.git/agent/` every few seconds, so it works for a run started by `/develop-issue`,
+  `mise run agent:run` or `detach.sh`, from any worktree. Turn it on for a session with
+  `claude --plugin-dir .claude/mods/agent-progress`, or add that folder to `CLAUDE_CODE_PLUGIN_DIRS`.
+  Turn it off by leaving it out.
+- **A push to the phone** through [ntfy](https://ntfy.sh): `export AGENT_NTFY_TOPIC=<a topic nobody
+  guesses>` (`AGENT_NTFY_SERVER` for a server of your own). This sends the milestone lines, which
+  name the issue and the pull request, to an external service: it is off unless the topic is set.
+
 ##### Progress on the issue
 
 The issue gets one **progress comment** per plan branch, posted by the first step and edited in
@@ -264,7 +281,7 @@ It holds no tool calls and no file-level detail, only:
 Each step script records its own steps in `progress.tsv` ([`lib.sh`](../scripts/agent/lib.sh),
 `step_begin`) and updates the comment in the background at every milestone, and once more when it
 ends. A failing or interrupted script still records its end. The steps a Claude Code session runs
-on its own (the plan and its approval, the CI waits, the update with `main`) are recorded with
+on its own (the plan and its approval, the update with `main`) are recorded with
 `progress.sh begin|end`. `mise run agent:progress <branch | pr>` prints the comment without posting
 it, `scripts/agent/progress.sh post <branch | pr>` posts it again. With `AGENT_ISSUE_PROGRESS=0` the
 progress stays in `progress.tsv` and nothing is posted.
@@ -316,17 +333,20 @@ only when asked to in the session.
 /develop-issue https://github.com/<owner>/<repo>/issues/32
 ```
 
-It records its own steps (the plan with the time the approval took, the CI waits, the update with
-`main`) in the [progress comment on the issue](#progress-on-the-issue) next to the scripts' steps.
-It plans with the `plan-from-issue` skill, invoked from it, and runs the same scripts one step at a time
-(`implement.sh`, then `next.sh --dry-run` for the next step and that step's script), so the pull
-request and its state comments are the same as with `mise run agent:run`, and `mise run agent:next`
-can take over the loop at any point. While a step runs, the session reports one line per milestone
-as it happens (from `run.log`, through `status.sh --follow`) and nothing for the agents' tool calls;
-ask it for the status at any time (`status.sh`). It prints the command to follow a step in a
-terminal first: `tail -f .git/agent/<issue>-<slug>/run.log`. It updates the pull request with
-`main` with the `merge-main-into-branch` skill (step 8), which resolves the conflicts itself, so
-the run stops there only on a conflict that cannot be resolved with confidence. The agents may not edit the skills
+It records its own steps (the plan with the time the approval took, the update with `main`) in the
+[progress comment on the issue](#progress-on-the-issue) next to the scripts' steps. It plans with
+the `plan-from-issue` skill, invoked from it. After the approval it starts `run.sh` once, detached
+(`detach.sh run.sh plan/<issue>-<slug>`), exactly what `mise run agent:run` runs, so the pull request
+and its state comments are the same and `mise run agent:next` can take over at any point. Every
+model turn of the session re-reads its whole context, so the session is not woken for each
+milestone or CI wait: one Monitor on `status.sh --follow`, filtered to the end of the run
+(`failed:`, `stopping:`, ready for review), wakes it. The developer sees the milestones as they
+happen in [the `agent-progress` mod and the ntfy push](#progress-while-it-runs), and can follow
+`tail -f .git/agent/<issue>-<slug>/run.log` in a terminal; ask the session for the status at any time
+(`status.sh`). When the run ends ready for review, it updates the pull request with `main` with the
+`merge-main-into-branch` skill (step 8), which resolves the conflicts itself, so the run stops there
+only on a conflict that cannot be resolved with confidence, then posts the run summary and sends the
+notification. The agents may not edit the skills
 under `.claude/`, so a plan item there comes back "not done" and is done by hand. Started again, it
 reads where the issue stands from its plan branches and pull requests and continues there.
 
@@ -482,6 +502,7 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_CI_TIMEOUT` | 60 | Minutes to wait for CI after a push |
 | `AGENT_BASE_BRANCH` | `main` | Where plan branches start and pull requests go |
 | `AGENT_ISSUE_PROGRESS` | 1 | 1: keep the [progress comment](#progress-on-the-issue) on the issue up to date; 0: `progress.tsv` only |
+| `AGENT_NTFY_TOPIC` | none | An ntfy topic that also receives each milestone; sends progress lines to an external service (`AGENT_NTFY_SERVER`, default `https://ntfy.sh`) |
 
 Costs in the final comment are Claude Code's own figures at API prices; with a subscription login
 they show the usage, not a bill. The usage of runs from before the state directory existed, or of
