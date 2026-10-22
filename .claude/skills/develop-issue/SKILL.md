@@ -19,6 +19,10 @@ Input (`$ARGUMENTS`): an issue number (`61`, `#61`) or an issue link
 (`https://github.com/<owner>/<repo>/issues/61`). Ask for it if none was given. A link to another
 repository than this one (`gh repo view --json nameWithOwner`) is an error: stop and say so.
 
+`$base` is `${AGENT_BASE_BRANCH:-main}`, the branch plans start from and pull requests go into
+(`main` unless the developer set `AGENT_BASE_BRANCH`, for example to try out a change to the agents
+themselves). Wherever this skill says `main` or `origin/main`, it means `$base`.
+
 ## One approval: the plan
 
 The plan (step 2) is the only step that waits for the developer: it is pushed as a draft pull
@@ -133,7 +137,7 @@ merged). Then pick where to start after step 1: step 2 when there is no plan bra
 ## 1. A folder of its own
 
 The folder is `../<this checkout's folder>-<n>`, next to the main checkout, as a Git worktree of
-the same repository, checked out from `origin/main`. A worktree shares the repository and its agent
+the same repository, checked out from `origin/$base`. A worktree shares the repository and its agent
 state (`.git/agent/`, see the walkthrough), so `mise run agent:next` and a later `/develop-issue
 <n>` find the run from any of them.
 
@@ -150,7 +154,7 @@ git worktree list --porcelain | grep -qx "worktree $dir" && echo "reuse $dir"
 
   ```sh
   git fetch origin
-  git worktree add --detach "$dir" origin/main
+  git worktree add --detach "$dir" "origin/$base"
   cd "$dir" && mise trust && mise run setup
   ```
 
@@ -213,7 +217,7 @@ for review, and `/develop-issue <n>` continues it.
 Record the plan step on each plan branch ([Progress on the issue](#progress-on-the-issue)), print
 the comment's link, and continue with step 4. Before it, make sure the plan branch is pushed with
 every change of the review (`git status --short` empty, nothing ahead of `origin/plan/<n>-<slug>`),
-and switch the folder back to a detached `origin/main` (`git switch --detach origin/main`): the
+and switch the folder back to a detached `origin/$base` (`git switch --detach origin/$base`): the
 scripts check the branch out themselves.
 
 For a split issue, steps 4 to 7 run once per plan, in the order of their dependencies, all in the
@@ -329,7 +333,7 @@ After the merge, in the issue's folder (`main` is checked out in the main checko
 goes back to a detached `origin/main`):
 
 ```sh
-git fetch origin && git switch --detach origin/main
+git fetch origin && git switch --detach "origin/$base"
 git branch -D plan/<n>-<slug>
 ```
 
