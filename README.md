@@ -420,6 +420,14 @@ user's other sessions out; the current session continues.
 
 ![The change-password page](docs/screenshots/change-password.png)
 
+Investment disclaimer: every page, the login page included, shows a short, muted line under the
+header: the analyses are not investment advice, acting on them is at the user's own risk, and the
+platform accepts no responsibility for any loss. The About page (`/about`, linked from the footer
+and the login page) shows the full text and opens without a login. The wording is `app.disclaimer`
+in the translation files, shown by the `DisclaimerNotice` component.
+
+![The About page](docs/screenshots/about.png)
+
 The backend:
 
 - `POST /api/auth/login` (`username`, `password`) answers 200 with the user, their roles and
