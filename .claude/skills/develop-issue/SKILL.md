@@ -55,8 +55,8 @@ re-reads the whole context, so it is woken only when it has something to do.
    It survives this session, resumes where it stopped when started again, and refuses a second run
    on the same branch. It prints the pid and `.git/agent/<n>-<slug>/run.log`; say
    `tail -f <run.log>` once, for the developer.
-2. **Arm one Monitor** (`timeout_ms` 3600000; re-arm it only if it expires with the run still
-   active) on
+2. **Arm one Monitor** (`timeout_ms` 1800000, the most the tool allows; when it expires with
+   the run still active, re-arm it with one short tool call and say nothing) on
    `cd <dir> && scripts/agent/status.sh --follow plan/<n>-<slug> | grep --line-buffered -E '>> (failed:|stopping:|#[0-9]+ is ready for review)'`.
    Nothing else wakes the session: no per-milestone monitor, no polling of CI, no `sleep` loops.
 3. **The developer sees every milestone without this session**: the `agent-progress` mod (status
