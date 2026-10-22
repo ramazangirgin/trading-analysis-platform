@@ -91,14 +91,15 @@ the version), so every user finds it.
 
 ### WP3: Disclaimer in reports and exports
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `artifact/frontend/src/features/reports/model/reportDocument.ts`,
   `reportDocument.spec.ts`, `artifact/frontend/src/features/reports/composables/useReportExport.ts`,
   `artifact/frontend/src/pages/ReportsPage.vue`, `artifact/frontend/src/pages/RunDetailPage.vue`
 - **Steps**:
-  - [ ] Add `disclaimer` to `ExportDocument`; `exportMarkdown` and `exportHtml` end with it.
-  - [ ] Fill it in `useReportExport` in the report's language.
-  - [ ] Show the component after the parts on both report pages, in the report's language.
+  - [x] Add `disclaimer` to `ExportDocument`; `exportMarkdown` and `exportHtml` end with it.
+  - [x] Fill it in `useReportExport` in the report's language.
+  - [x] Show the component after the parts on both report pages, in the report's language.
 - **Tests**: `reportDocument.spec.ts`: the Markdown and the HTML export end with the disclaimer
   given in the document.
 

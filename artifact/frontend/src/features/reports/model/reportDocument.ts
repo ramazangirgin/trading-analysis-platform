@@ -116,6 +116,7 @@ export interface ExportDocument {
   title: string
   subtitle: string
   parts: { heading: string; group?: string; markdown: string }[]
+  disclaimer: string
 }
 
 export function exportMarkdown(doc: ExportDocument): string {
@@ -132,6 +133,7 @@ export function exportMarkdown(doc: ExportDocument): string {
       '',
     )
   }
+  lines.push('---', '', `_${doc.disclaimer}_`, '')
   return lines.join('\n')
 }
 
@@ -172,7 +174,10 @@ export function exportHtml(
   pre, code { background: #f6f8fa; border-radius: 4px; }
   pre { padding: 8px 12px; overflow-x: auto; }
   blockquote { margin: 0; padding-left: 12px; border-left: 3px solid #d1d9e0; color: #59636e; }
+  hr { margin: 2em 0 1em; border: 0; border-top: 1px solid #d1d9e0; }
+  hr + p:last-child { font-size: 0.85em; color: #59636e; }
   @media print {
+    hr + p:last-child { break-before: avoid; }
     body { max-width: none; padding: 0; font-size: 11pt; }
     h2 { break-before: page; }
     h2:first-of-type { break-before: auto; }

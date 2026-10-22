@@ -212,6 +212,9 @@ when a ticker and date ran several times, this is the newest run's report.
 opens anywhere, and PDF goes through the browser's print dialog (*Save as PDF*). On a phone the page
 folds into one column, with the list as a picker and the contents folded above the report.
 
+Every report, on screen and in every export, ends with the investment disclaimer, in the report's
+language rather than the screen language.
+
 ![Reports: list, contents and the report](docs/screenshots/reports.png)
 
 ### Language
