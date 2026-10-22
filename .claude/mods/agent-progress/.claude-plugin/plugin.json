@@ -1,0 +1,6 @@
+{
+  "name": "agent-progress",
+  "version": "0.1.0",
+  "description": "Shows the active agent run (scripts/agent) in the session: status line, pane and a toast per milestone, without a model turn",
+  "types": "./types/index.d.ts"
+}

@@ -800,8 +800,11 @@ runs every later step without asking (implementation, every CI fix, review
 and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
 for your review. It never merges unless you ask it to. It continues where the issue stands when
 started again; when a plan branch exists already, it asks whether to use that plan (you still
-approve it) or to write it again. It reports each milestone of a long step (package, tests, check, review findings,
-CI) as it happens, and `mise run agent:status <branch>` shows where a run is. The issue keeps one
+approve it) or to write it again. It starts the run once, in the background, and is woken only when the run ends or stops; the
+milestones (package, tests, check, review findings, CI) reach you without a model turn: the
+`agent-progress` Claude Code mod (`claude --plugin-dir .claude/mods/agent-progress`: status line,
+`/agent-progress` pane, a toast per milestone), and, only when you set a topic, ntfy (`export AGENT_NTFY_TOPIC=<topic>`). `mise run agent:status
+<branch>` shows where a run is. The issue keeps one
 progress comment per plan, updated as the run goes: every step with its start, end, duration,
 tokens and result, the iterations per kind of step, and the slow, repeated or failed steps.
 
