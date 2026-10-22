@@ -141,11 +141,9 @@ pass.
 - Storing a user's acceptance of the disclaimer, or a consent dialog.
 - Legal review of the wording: the text of the issue is used as given.
 
-## Open questions
+## Decisions
 
-- The issue names an "info / about page and other such pages", but the app has none. This plan adds
-  a minimal `/about` page (public, linked from the footer and the login page). Is that what you want,
-  or should the disclaimer only go where pages already exist (header and reports)?
-- The e2e Turkish report needs a Turkish `outputLanguage` on a replayed run. The plan assumes the
-  replayed recording accepts it and the report is displayed as Turkish by `reportLanguage`; if the
-  recording's text is English, the test would check the disclaimer only. Is that acceptable?
+- The app has no info / about page, so this plan adds the minimal public `/about` page (linked from
+  the footer and the login page). Approved by the developer.
+- The e2e Turkish report uses a Turkish `outputLanguage` on the replayed run; if the recording's
+  text stays English, that test checks the disclaimer's language only. Approved by the developer.
