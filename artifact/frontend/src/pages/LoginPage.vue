@@ -41,5 +41,6 @@ if (session.user) leave()
   display: inline-block;
   margin-top: 16px;
   font-size: 13px;
+  color: inherit;
 }
 </style>

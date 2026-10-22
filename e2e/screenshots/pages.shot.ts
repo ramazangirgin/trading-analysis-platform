@@ -70,6 +70,14 @@ test('new analysis form without override permission', async ({ browser, request 
   await context.close()
 })
 
+// README, "Login": the About page with the full disclaimer.
+test('about', async ({ page }) => {
+  await page.goto('/about')
+  await expect(page.getByRole('heading', { name: 'About' })).toBeVisible()
+  await expect(page.getByRole('note')).toHaveCount(2)
+  await shot(page, 'about')
+})
+
 // README, "6. Past analyses": the Dashboard with the latest decisions.
 test('dashboard', async ({ page, request }) => {
   await setProviderKey(request)
