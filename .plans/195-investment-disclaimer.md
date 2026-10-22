@@ -60,15 +60,16 @@ the version), so every user finds it.
 
 ### WP1: Wording, shared component and report language helper
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`,
   `artifact/frontend/src/shared/i18n/index.ts`, `artifact/frontend/src/shared/i18n/index.spec.ts`,
   `artifact/frontend/src/shared/ui/DisclaimerNotice.vue`
 - **Steps**:
-  - [ ] Add `app.disclaimer` (EN and TR texts of the issue) and the About page's title and link
+  - [x] Add `app.disclaimer` (EN and TR texts of the issue) and the About page's title and link
         labels (`about.title`, `nav.about`).
-  - [ ] Add `localeForLanguage` to `shared/i18n/index.ts`.
-  - [ ] Create `DisclaimerNotice.vue` with the `locale` and `compact` props.
+  - [x] Add `localeForLanguage` to `shared/i18n/index.ts`.
+  - [x] Create `DisclaimerNotice.vue` with the `locale` and `compact` props.
 - **Tests**: `index.spec.ts`: `localeForLanguage('Turkish')` is `'tr'`, `'English'` and unknown
   values are `'en'`. `locales.spec.ts` (existing) proves both languages define the same keys.
 
