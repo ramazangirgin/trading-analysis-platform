@@ -75,15 +75,16 @@ the version), so every user finds it.
 
 ### WP2: Header, About page and route
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `artifact/frontend/src/app/App.vue`, `artifact/frontend/src/app/router/index.ts`,
   `artifact/frontend/src/pages/AboutPage.vue`, `artifact/frontend/src/pages/LoginPage.vue`
 - **Steps**:
-  - [ ] Add the compact disclaimer line to the header in `App.vue`, and an About link in the footer.
-  - [ ] Add the `/about` route with `meta.public`; skip the login redirect for public routes (and
+  - [x] Add the compact disclaimer line to the header in `App.vue`, and an About link in the footer.
+  - [x] Add the `/about` route with `meta.public`; skip the login redirect for public routes (and
         the password and permission gates, which have nothing to gate here).
-  - [ ] Create `AboutPage.vue`: title and the full disclaimer.
-  - [ ] Link to the About page from the login page.
+  - [x] Create `AboutPage.vue`: title and the full disclaimer.
+  - [x] Link to the About page from the login page.
 - **Tests**: a router spec if one exists for the guard, else covered by the e2e below; a Vitest
   component test for `DisclaimerNotice` (default locale follows the screen language, `locale` prop
   overrides it).

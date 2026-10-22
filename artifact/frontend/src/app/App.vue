@@ -18,6 +18,7 @@ import {
   trTR,
 } from 'naive-ui'
 import { PERMISSIONS, UserMenu, useSessionStore } from '@/features/auth'
+import DisclaimerNotice from '@/shared/ui/DisclaimerNotice.vue'
 import LocaleSwitcher from '@/shared/ui/LocaleSwitcher.vue'
 
 const { t, locale } = useI18n()
@@ -53,48 +54,54 @@ watchEffect(() => {
     <NMessageProvider>
       <NLayout class="app">
         <NLayoutHeader bordered class="app__header">
-          <RouterLink to="/" class="app__brand">{{ t('app.title') }}</RouterLink>
-          <nav v-if="!bare" class="app__nav">
-            <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
-            <RouterLink v-if="session.can(PERMISSIONS.analysisRead)" :to="{ name: 'analyses' }">{{
-              t('nav.analyses')
-            }}</RouterLink>
-            <RouterLink
-              v-if="session.can(PERMISSIONS.analysisRun)"
-              :to="{ name: 'new-analysis' }"
-              >{{ t('nav.newAnalysis') }}</RouterLink
-            >
-            <RouterLink
-              v-if="session.can(PERMISSIONS.analysisRead)"
-              :to="{ name: 'reports' }"
-              :class="{ 'router-link-exact-active': reportsActive }"
-              >{{ t('nav.reports') }}</RouterLink
-            >
-            <RouterLink v-if="session.can(PERMISSIONS.settingsRead)" :to="{ name: 'settings' }">{{
-              t('nav.settings')
-            }}</RouterLink>
-            <NDropdown
-              v-if="adminOptions.length > 0"
-              trigger="click"
-              :options="adminOptions"
-              @select="(name: string) => router.push({ name })"
-            >
-              <button
-                type="button"
-                :class="['app__nav-button', { 'app__nav-button--active': adminActive }]"
+          <div class="app__header-row">
+            <RouterLink to="/" class="app__brand">{{ t('app.title') }}</RouterLink>
+            <nav v-if="!bare" class="app__nav">
+              <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
+              <RouterLink v-if="session.can(PERMISSIONS.analysisRead)" :to="{ name: 'analyses' }">{{
+                t('nav.analyses')
+              }}</RouterLink>
+              <RouterLink
+                v-if="session.can(PERMISSIONS.analysisRun)"
+                :to="{ name: 'new-analysis' }"
+                >{{ t('nav.newAnalysis') }}</RouterLink
               >
-                {{ t('nav.admin') }}
-              </button>
-            </NDropdown>
-          </nav>
-          <span v-else class="app__nav" />
-          <UserMenu v-if="!route.meta.bare" />
-          <LocaleSwitcher />
+              <RouterLink
+                v-if="session.can(PERMISSIONS.analysisRead)"
+                :to="{ name: 'reports' }"
+                :class="{ 'router-link-exact-active': reportsActive }"
+                >{{ t('nav.reports') }}</RouterLink
+              >
+              <RouterLink v-if="session.can(PERMISSIONS.settingsRead)" :to="{ name: 'settings' }">{{
+                t('nav.settings')
+              }}</RouterLink>
+              <NDropdown
+                v-if="adminOptions.length > 0"
+                trigger="click"
+                :options="adminOptions"
+                @select="(name: string) => router.push({ name })"
+              >
+                <button
+                  type="button"
+                  :class="['app__nav-button', { 'app__nav-button--active': adminActive }]"
+                >
+                  {{ t('nav.admin') }}
+                </button>
+              </NDropdown>
+            </nav>
+            <span v-else class="app__nav" />
+            <UserMenu v-if="!route.meta.bare" />
+            <LocaleSwitcher />
+          </div>
+          <DisclaimerNotice compact class="app__disclaimer" />
         </NLayoutHeader>
         <NLayoutContent :class="['app__content', { 'app__content--wide': route.meta.wide }]">
           <RouterView />
         </NLayoutContent>
-        <NLayoutFooter class="app__footer">{{ t('app.version', { version }) }}</NLayoutFooter>
+        <NLayoutFooter class="app__footer">
+          <RouterLink :to="{ name: 'about' }">{{ t('nav.about') }}</RouterLink>
+          · {{ t('app.version', { version }) }}
+        </NLayoutFooter>
       </NLayout>
     </NMessageProvider>
   </NConfigProvider>
@@ -110,11 +117,22 @@ body {
 }
 
 .app__header {
+  padding: 12px 16px;
+}
+
+.app__header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 16px;
+}
+
+.app__disclaimer {
+  margin-top: 6px;
+}
+
+.app__footer a {
+  color: inherit;
 }
 
 .app__brand {

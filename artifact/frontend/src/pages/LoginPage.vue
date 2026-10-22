@@ -21,6 +21,7 @@ if (session.user) leave()
   <div class="login">
     <NCard :title="t('login.title')" class="login__card">
       <LoginForm @logged-in="leave" />
+      <RouterLink :to="{ name: 'about' }" class="login__about">{{ t('nav.about') }}</RouterLink>
     </NCard>
   </div>
 </template>
@@ -34,5 +35,11 @@ if (session.user) leave()
 
 .login__card {
   max-width: 400px;
+}
+
+.login__about {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 13px;
 }
 </style>
