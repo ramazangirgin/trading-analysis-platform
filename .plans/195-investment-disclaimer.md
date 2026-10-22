@@ -105,18 +105,19 @@ the version), so every user finds it.
 
 ### WP4: e2e and screenshots
 
+- **Status**: done
 - **Depends on**: WP2, WP3
 - **Files**: `e2e/tests/disclaimer.e2e.ts`, `e2e/screenshots/login.shot.ts`,
   `e2e/screenshots/pages.shot.ts`, `docs/screenshots/*.png`
 - **Steps**:
-  - [ ] e2e: the disclaimer is visible on the login page, the dashboard, the About page and a
+  - [x] e2e: the disclaimer is visible on the login page, the dashboard, the About page and a
         report; switching the screen language switches the header text; a Markdown export ends with
         the disclaimer.
-  - [ ] e2e: with the screen in English, a Turkish report (analysis started with
+  - [x] e2e: with the screen in English, a Turkish report (analysis started with
         `outputLanguage: 'Turkish'`) shows the Turkish disclaimer. If the replayed recording cannot
         produce a Turkish report, the test uses the recording with the language recorded as Turkish;
         see the open question.
-  - [ ] Add an About screenshot shot; retake the screenshots the header changes (see Docs).
+  - [x] Add an About screenshot shot; retake the screenshots the header changes (see Docs).
 - **Tests**: the e2e tests above prove the issue's acceptance criteria; a phone-width viewport
   check (390 px) asserts the page has no horizontal scroll with the header disclaimer shown.
 
