@@ -118,6 +118,8 @@ the version), so every user finds it.
         produce a Turkish report, the test uses the recording with the language recorded as Turkish;
         see the open question.
   - [x] Add an About screenshot shot; retake the screenshots the header changes (see Docs).
+  - [x] `e2e/screenshots/run.shot.ts` takes `run-decision.png`, `run-live.png` and `reports.png`,
+        which were taken by hand, so `mise run screenshots` keeps them up to date.
 - **Tests**: the e2e tests above prove the issue's acceptance criteria; a phone-width viewport
   check (390 px) asserts the page has no horizontal scroll with the header disclaimer shown.
 
