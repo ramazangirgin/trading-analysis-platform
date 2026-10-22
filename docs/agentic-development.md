@@ -302,7 +302,8 @@ The `develop-issue` skill
 steps 2 to 8 of this walkthrough in one Claude Code session. It works in a folder of its own: a
 Git worktree `../<checkout>-<issue>` checked out from `origin/main` (reused when it exists), so it
 never switches branches or writes in the checkout the session started in, and several issues can
-run side by side. It asks the developer only to approve the plan. Every later step runs without asking: pushing the plan branch, the implementation, each CI
+run side by side. It asks the developer only to approve the plan; when the issue has a plan branch
+already, it first asks whether to use that plan, skipping the writing, or to write it again. Every later step runs without asking: pushing the plan branch, the implementation, each CI
 fix, review, fix round and the finalising, and the update with `main`. When the pull request is
 ready for review (up to date with `main`, **CI passed** green), it first posts a run summary on
 the pull request ("Run summary (develop-issue session)": the review outcome, what is worth checking,
