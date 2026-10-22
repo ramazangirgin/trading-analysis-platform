@@ -76,7 +76,9 @@ Log in at **http://127.0.0.1:8080** with it. The first admin has the ADMIN role,
 permission. To choose the name and password instead, set
 `PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start; the password must
 meet the password policy (at least 12 characters, not a common password, not the username), or the
-platform does not start and says why. Later starts change nothing. A generated password is flagged
+platform does not start and says why. Later starts change nothing. Every page shows a short investment disclaimer under the
+header; the About page (`/about`, linked from the footer and the login page) shows the full text and
+opens without a login. A generated password is flagged
 to be changed: after logging in with it, the UI asks for a new password before anything else. If
 you lost it while `admin` is still the only user, delete the user
 (`DELETE FROM "IDENTITY"."USERS";` in the database) and restart to get a new one.
@@ -420,11 +422,9 @@ user's other sessions out; the current session continues.
 
 ![The change-password page](docs/screenshots/change-password.png)
 
-Investment disclaimer: every page, the login page included, shows a short, muted line under the
-header: the analyses are not investment advice, acting on them is at the user's own risk, and the
-platform accepts no responsibility for any loss. The About page (`/about`, linked from the footer
-and the login page) shows the full text and opens without a login. The wording is `app.disclaimer`
-in the translation files, shown by the `DisclaimerNotice` component.
+Investment disclaimer: the login page included, every page shows a muted line under the header,
+and the public About page (`/about`) shows the full text (see [Log in](#3-log-in)). The wording is
+`app.disclaimer` in the translation files, shown by the `DisclaimerNotice` component.
 
 ![The About page](docs/screenshots/about.png)
 
