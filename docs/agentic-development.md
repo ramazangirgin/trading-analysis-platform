@@ -254,8 +254,11 @@ The milestones reach the developer without a model turn:
   passed`, `review R1: 3 findings (0 CRITICAL, 2 MAJOR, 1 MINOR)`, `failed: …`) and, with
   `/agent-progress`, a pane with the latest milestones. It reads `progress.tsv` and `run.pid` in
   `.git/agent/` every few seconds, so it works for a run started by `/develop-issue`,
-  `mise run agent:run` or `detach.sh`, from any worktree. Turn it on for a session with
-  `claude --plugin-dir .claude/mods/agent-progress`, or add that folder to `CLAUDE_CODE_PLUGIN_DIRS`.
+  `mise run agent:run` or `detach.sh`, from any worktree. `mise.toml` sets
+  `CLAUDE_CODE_PLUGIN_DIRS` to it, so **start `claude` from a shell where mise is active**
+  (`mise activate` in your shell, or `mise exec -- claude`); a `claude` started without mise shows
+  no progress (the run itself is unaffected). Without mise, use
+  `claude --plugin-dir .claude/mods/agent-progress`.
   Turn it off by leaving it out.
 - **A push to the phone** through [ntfy](https://ntfy.sh): `export AGENT_NTFY_TOPIC=<a topic nobody
   guesses>` (`AGENT_NTFY_SERVER` for a server of your own). This sends the milestone lines, which
