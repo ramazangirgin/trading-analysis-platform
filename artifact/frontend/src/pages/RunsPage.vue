@@ -9,11 +9,12 @@ import {
   NInput,
   NSelect,
   NSpace,
-  NSwitch,
+  NTab,
+  NTabs,
   useMessage,
 } from 'naive-ui'
 import { ACTIVE_STATUSES, analysisApi, AnalysisTable } from '@/features/analysis'
-import type { Analysis, AnalysisStatus } from '@/shared/api/types'
+import type { Analysis, AnalysisScope, AnalysisStatus } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
 import { usePolling } from '@/shared/composables/usePolling'
 import { PERMISSIONS, useSessionStore } from '@/features/auth'
@@ -32,12 +33,16 @@ const router = useRouter()
 const route = useRoute()
 
 const canReadAll = computed(() => session.can(PERMISSIONS.analysisReadAll))
-const allUsers = computed({
-  get: () => canReadAll.value && route.query.allUsers === 'true',
-  set: (on: boolean) => {
+const scope = computed<AnalysisScope>({
+  get: () => {
+    if (route.query.scope === 'SHARED') return 'SHARED'
+    if (route.query.scope === 'ALL' && canReadAll.value) return 'ALL'
+    return 'MINE'
+  },
+  set: (value) => {
     const query = { ...route.query }
-    if (on) query.allUsers = 'true'
-    else delete query.allUsers
+    if (value === 'MINE') delete query.scope
+    else query.scope = value
     void router.replace({ query })
   },
 })
@@ -54,7 +59,7 @@ async function refresh() {
     analyses.value = await analysisApi.listAnalyses({
       status: status.value ?? undefined,
       ticker: ticker.value.trim() || undefined,
-      allUsers: allUsers.value,
+      scope: scope.value,
     })
     failure.value = null
   } catch (e) {
@@ -87,7 +92,10 @@ function compare() {
   void router.push({ name: 'compare', query: { ids: checked.value.join(',') } })
 }
 
-watch([status, ticker, allUsers], refresh)
+watch([status, ticker, scope], () => {
+  checked.value = []
+  void refresh()
+})
 usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.status)))
 </script>
 
@@ -128,11 +136,12 @@ usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.
           :placeholder="t('runs.filterStatus')"
           clearable
         />
-        <NSwitch v-if="canReadAll" v-model:value="allUsers">
-          <template #checked>{{ t('runs.allUsers') }}</template>
-          <template #unchecked>{{ t('runs.allUsers') }}</template>
-        </NSwitch>
       </div>
+      <NTabs v-model:value="scope" type="line">
+        <NTab name="MINE">{{ t('runs.scope.MINE') }}</NTab>
+        <NTab name="SHARED">{{ t('runs.scope.SHARED') }}</NTab>
+        <NTab v-if="canReadAll" name="ALL">{{ t('runs.scope.ALL') }}</NTab>
+      </NTabs>
       <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
       <AnalysisTable
         v-if="analyses.length || loading"
@@ -140,9 +149,9 @@ usePolling(refresh, () => analyses.value.some((a) => ACTIVE_STATUSES.includes(a.
         :analyses="analyses"
         :loading="loading"
         selectable
-        :show-owner="allUsers"
+        :show-owner="scope !== 'MINE'"
       />
-      <NEmpty v-else :description="t('runs.empty')" />
+      <NEmpty v-else :description="scope === 'SHARED' ? t('runs.emptyShared') : t('runs.empty')" />
     </NSpace>
   </NCard>
 </template>

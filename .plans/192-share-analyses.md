@@ -288,6 +288,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Frontend
 
+- **Status**: done
 - **Depends on**: WP3
 - **Files**:
   - `artifact/frontend/src/shared/api/types.ts`
@@ -296,10 +297,10 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/frontend/src/pages/RunsPage.vue`, `RunDetailPage.vue`
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
 - **Steps**:
-  - [ ] Types, permission key, API calls.
-  - [ ] The tabs with the scope in the route query, the Public tag, the Owner column on the shared
+  - [x] Types, permission key, API calls.
+  - [x] The tabs with the scope in the route query, the Public tag, the Owner column on the shared
     and all tabs.
-  - [ ] The visibility control with its confirmation, the read-only view of another user's
+  - [x] The visibility control with its confirmation, the read-only view of another user's
     analysis, the translations.
 - **Tests**:
   - `api.spec.ts`: `scope` reaches the query only when it is not `MINE`; `changeVisibility` sends

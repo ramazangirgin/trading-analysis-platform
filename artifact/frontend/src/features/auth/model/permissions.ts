@@ -11,6 +11,7 @@ export const PERMISSIONS = {
   analysisReadAll: 'analysis:read:all',
   analysisDefaultsManage: 'analysis:defaults:manage',
   analysisOverrideModels: 'analysis:override-models',
+  analysisShare: 'analysis:share',
   presetRead: 'preset:read',
   presetManage: 'preset:manage',
   settingsRead: 'settings:read',

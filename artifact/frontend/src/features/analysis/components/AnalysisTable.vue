@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, h } from 'vue'
 import { useRouter } from 'vue-router'
-import { NDataTable, type DataTableColumns } from 'naive-ui'
+import { NDataTable, NTag, type DataTableColumns } from 'naive-ui'
 import type { Analysis } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
 import StatusTag from '@/shared/ui/StatusTag.vue'
@@ -22,7 +22,21 @@ const { t, startTime, duration } = useLabels()
 const columns = computed<DataTableColumns<Analysis>>(() => {
   const all: DataTableColumns<Analysis> = [
     ...(props.selectable ? [{ type: 'selection' as const }] : []),
-    { title: t('runs.ticker'), key: 'ticker', render: (row) => h('strong', row.spec.ticker) },
+    {
+      title: t('runs.ticker'),
+      key: 'ticker',
+      render: (row) =>
+        h('span', [
+          h('strong', row.spec.ticker),
+          row.visibility === 'PUBLIC'
+            ? h(
+                NTag,
+                { size: 'tiny', type: 'info', bordered: false, style: 'margin-left: 6px' },
+                () => t('runs.public'),
+              )
+            : null,
+        ]),
+    },
     {
       title: t('runs.tradeDate'),
       key: 'tradeDate',
