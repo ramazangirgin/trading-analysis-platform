@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisScopeDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ChangeVisibilityRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
@@ -40,8 +43,8 @@ public class AnalysesApiController {
     public List<AnalysisDto> listAnalyses(
             @RequestParam(required = false) AnalysisStatusDto status,
             @RequestParam(required = false) String ticker,
-            @RequestParam(defaultValue = "false") boolean allUsers) {
-        return delegate.listAnalyses(status, ticker, allUsers);
+            @RequestParam(defaultValue = "MINE") AnalysisScopeDto scope) {
+        return delegate.listAnalyses(status, ticker, scope);
     }
 
     @GetMapping("/{id}")
@@ -52,6 +55,11 @@ public class AnalysesApiController {
     @PostMapping("/{id}/stop")
     public AnalysisDto stopAnalysis(@PathVariable String id) {
         return delegate.stopAnalysis(id);
+    }
+
+    @PutMapping("/{id}/visibility")
+    public AnalysisDto changeVisibility(@PathVariable String id, @Valid @RequestBody ChangeVisibilityRequest request) {
+        return delegate.changeVisibility(id, request);
     }
 
     @PostMapping("/{id}/rerun")

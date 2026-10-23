@@ -15,4 +15,9 @@ public record AnalysisDto(
         Instant endedAt,
         String errorCode,
         String errorMessage,
-        AnalysisOwnerDto owner) {}
+        AnalysisOwnerDto owner,
+        VisibilityDto visibility,
+        Instant visibilityChangedAt,
+        Long version,
+        boolean canManage,
+        boolean canChangeVisibility) {}

@@ -22,4 +22,22 @@ class AnalysisExceptionToApiExceptionMapperTest {
         assertThat(mapped.errorCode()).isEqualTo("concurrent_update");
         assertThat(mapped.params()).containsEntry("id", "a1");
     }
+
+    @Test
+    void mapsAMissingSharePermissionToForbiddenWithAnAnalysisPrefix() {
+        ApiException mapped = mapper.map(new AnalysisException(AnalysisError.SHARE_FORBIDDEN, "no", Map.of()));
+
+        assertThat(mapped.status()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(mapped.errorCode()).isEqualTo("analysis_share_forbidden");
+    }
+
+    @Test
+    void mapsAnAnalysisThatCannotBeSharedToConflictWithItsStatus() {
+        ApiException mapped =
+                mapper.map(new AnalysisException(AnalysisError.NOT_SHAREABLE, "running", Map.of("status", "RUNNING")));
+
+        assertThat(mapped.status()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(mapped.errorCode()).isEqualTo("analysis_not_shareable");
+        assertThat(mapped.params()).containsEntry("status", "RUNNING");
+    }
 }

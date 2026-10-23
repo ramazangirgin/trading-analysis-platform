@@ -253,15 +253,16 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: BFF and the API
 
+- **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/`: `AnalysesApiController.java`, `AnalysesApiDelegate.java`; `model/`: `ChangeVisibilityRequest.java`, `VisibilityDto.java`, `AnalysisScopeDto.java` (new), `AnalysisDto.java`
   - `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/`: `AnalysesApiDelegateImpl.java`; `mapper/`: `AnalysisToAnalysisDtoMapper.java`, `VisibilityDtoToVisibilityMapper.java`, `VisibilityToVisibilityDtoMapper.java`, `AnalysisScopeDtoToAnalysisScopeMapper.java` (new); `mapper/error/AnalysisExceptionToApiExceptionMapper.java`
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated, against a throwaway PostgreSQL)
 - **Steps**:
-  - [ ] The endpoint, the request, the scope parameter in place of `allUsers`, the DTO fields and
+  - [x] The endpoint, the request, the scope parameter in place of `allUsers`, the DTO fields and
     flags, the error codes.
-  - [ ] Regenerate `openapi.json` and run `mise run api-types`.
+  - [x] Regenerate `openapi.json` and run `mise run api-types`.
 - **Tests**:
   - `AnalysisSharingIntegrationTest` (new, `artifact/backend/src/test/...`, as
     `AnalysisOwnershipIntegrationTest`; user A with ANALYST, user B with ANALYST, the admin):

@@ -22,13 +22,16 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.AnalysesAp
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisScopeDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ChangeVisibilityRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.StartAnalysisRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.CurrentUser;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisScopeDtoToAnalysisScopeMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisStatusDtoToAnalysisStatusMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisToAnalysisDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PriceHistoryToPriceHistoryDtoMapper;
@@ -36,6 +39,8 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Repo
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RunEventToRunEventDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToRequestedAnalysisMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StringToAnalysisIdMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.VisibilityDtoToVisibilityMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
@@ -47,7 +52,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
@@ -69,6 +73,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final StartAnalysisWithDefaultsUseCase startAnalysis;
     private final ListAnalysesUseCase listAnalyses;
     private final GetAnalysisUseCase getAnalysis;
+    private final ChangeAnalysisVisibilityUseCase changeVisibility;
     private final StopAnalysisUseCase stopAnalysis;
     private final RerunAnalysisUseCase rerunAnalysis;
     private final SubscribeAnalysisEventsUseCase subscribeEvents;
@@ -80,6 +85,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final RunEventToRunEventDtoMapper eventMapper;
     private final StringToAnalysisIdMapper idMapper;
     private final AnalysisStatusDtoToAnalysisStatusMapper statusMapper;
+    private final AnalysisScopeDtoToAnalysisScopeMapper scopeMapper;
+    private final VisibilityDtoToVisibilityMapper visibilityMapper;
     private final ReportToAnalysisReportDtoMapper reportMapper;
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
     private final SessionEventStreams sessionEventStreams;
@@ -91,6 +98,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             StartAnalysisWithDefaultsUseCase startAnalysis,
             ListAnalysesUseCase listAnalyses,
             GetAnalysisUseCase getAnalysis,
+            ChangeAnalysisVisibilityUseCase changeVisibility,
             StopAnalysisUseCase stopAnalysis,
             RerunAnalysisUseCase rerunAnalysis,
             SubscribeAnalysisEventsUseCase subscribeEvents,
@@ -102,6 +110,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             RunEventToRunEventDtoMapper eventMapper,
             StringToAnalysisIdMapper idMapper,
             AnalysisStatusDtoToAnalysisStatusMapper statusMapper,
+            AnalysisScopeDtoToAnalysisScopeMapper scopeMapper,
+            VisibilityDtoToVisibilityMapper visibilityMapper,
             ReportToAnalysisReportDtoMapper reportMapper,
             PriceHistoryToPriceHistoryDtoMapper pricesMapper,
             SessionEventStreams sessionEventStreams,
@@ -110,6 +120,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
+        this.changeVisibility = changeVisibility;
         this.stopAnalysis = stopAnalysis;
         this.rerunAnalysis = rerunAnalysis;
         this.subscribeEvents = subscribeEvents;
@@ -121,6 +132,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.eventMapper = eventMapper;
         this.idMapper = idMapper;
         this.statusMapper = statusMapper;
+        this.scopeMapper = scopeMapper;
+        this.visibilityMapper = visibilityMapper;
         this.reportMapper = reportMapper;
         this.pricesMapper = pricesMapper;
         this.sessionEventStreams = sessionEventStreams;
@@ -137,20 +150,29 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
-    public List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker, boolean allUsers) {
+    public List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker, AnalysisScopeDto scope) {
         String normalizedTicker =
                 ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
         AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker, null);
-        List<Analysis> analyses =
-                listAnalyses.list(filter, allUsers ? AnalysisScope.ALL : AnalysisScope.MINE, access());
+        AnalysisAccess access = access();
+        List<Analysis> analyses = listAnalyses.list(filter, scopeMapper.map(scope), access);
         Map<UserId, Username> usernames = usernames(analyses);
-        return analyses.stream().map(a -> analysisMapper.map(a, usernames)).toList();
+        return analyses.stream()
+                .map(a -> analysisMapper.map(a, usernames, access))
+                .toList();
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto getAnalysis(String id) {
         return dto(getAnalysis.get(idMapper.map(id), access()));
+    }
+
+    @Override
+    @RequiresPermission(Permission.ANALYSIS_READ)
+    public AnalysisDto changeVisibility(String id, ChangeVisibilityRequest request) {
+        return dto(changeVisibility.change(
+                idMapper.map(id), visibilityMapper.map(request.visibility()), access(), request.version()));
     }
 
     @Override
@@ -266,7 +288,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     private AnalysisDto dto(Analysis analysis) {
-        return analysisMapper.map(analysis, usernames(List.of(analysis)));
+        return analysisMapper.map(analysis, usernames(List.of(analysis)), access());
     }
 
     private Map<UserId, Username> usernames(List<Analysis> analyses) {
