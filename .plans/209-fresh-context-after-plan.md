@@ -107,6 +107,7 @@ be applied without guessing.
 ### WP3: Skills (by hand)
 
 - **Depends on**: WP1
+- **Status**: not done: agents may not edit files under `.claude/`; the developer applies it by hand
 - **Files**: `.claude/skills/develop-issue/SKILL.md`, `.claude/skills/plan-from-issue/SKILL.md`
 - **Steps**:
   - [ ] `develop-issue` step 0: for a draft labelled `plan`, run `plan-comments.sh --approved <pr>`;
