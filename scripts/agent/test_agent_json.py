@@ -9,6 +9,7 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from unittest import mock
 
 import agent_json
@@ -236,6 +237,107 @@ class UsageTableTest(unittest.TestCase):
         self.assertIn("at least $0.50", lines[2])
         self.assertNotIn("at least", lines[3])
         self.assertIn("**at least $1.50** (an interrupted run's cost is unknown)", lines[4])
+
+
+def turn(id, at, model="claude-opus-5-5", input_tokens=100, output_tokens=10, cache_read=1000, cache_creation=0):
+    event = message(id, input_tokens, output_tokens, cache_read=cache_read, cache_creation=cache_creation)
+    event["timestamp"] = at
+    event["message"]["model"] = model
+    return event
+
+
+class SessionUsageTest(unittest.TestCase):
+    START = datetime(2026, 10, 1, 10, 0, tzinfo=timezone.utc).timestamp()
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+
+    def transcript(self, events, name="s.jsonl"):
+        path = os.path.join(self.dir.name, name)
+        with open(path, "w", encoding="utf-8") as f:
+            for event in events:
+                f.write(json.dumps(event) + "\n")
+        return path
+
+    def at(self, minutes):
+        return self.START + minutes * 60
+
+    def test_sums_the_window_and_counts_a_message_once(self):
+        path = self.transcript(
+            [
+                turn("before", "2026-10-01T09:59:00.000Z"),
+                turn("a", "2026-10-01T10:01:00.000Z", cache_creation=50),
+                turn("a", "2026-10-01T10:01:01.000Z", cache_creation=50),
+                turn("b", "2026-10-01T10:02:00.000Z", model="claude-sonnet-5-5"),
+                turn("after", "2026-10-01T10:30:00.000Z"),
+                {"type": "user", "timestamp": "2026-10-01T10:03:00.000Z", "message": {"content": "hi"}},
+                turn("synthetic", "2026-10-01T10:03:00.000Z", model="<synthetic>"),
+            ]
+        )
+        total = agent_json.session_usage(path, self.at(0), self.at(10))
+        self.assertEqual((total["in"], total["cached"], total["out"], total["turns"]), (250, 2000, 20, 2))
+        self.assertEqual(total["models"], ["claude-opus-5-5", "claude-sonnet-5-5"])
+        opus = 100 * 5.0 + 50 * 6.25 + 1000 * 0.5 + 10 * 25.0
+        sonnet = 100 * 3.0 + 1000 * 0.3 + 10 * 15.0
+        self.assertAlmostEqual(total["cost"], (opus + sonnet) / 1e6)
+        marker = agent_json.parse_marker(agent_json.usage_marker(total))
+        self.assertEqual(marker["model"], "claude-opus-5-5,claude-sonnet-5-5")
+
+    def test_unknown_model_has_tokens_and_no_cost(self):
+        path = self.transcript([turn("a", "2026-10-01T10:01:00.000Z"), turn("b", "2026-10-01T10:02:00.000Z", model="mystery-1")])
+        total = agent_json.session_usage(path, self.at(0), self.at(10))
+        self.assertEqual(total["tokens"], 2 * 1110)
+        self.assertIsNone(total["cost"])
+        marker = agent_json.usage_marker(total)
+        self.assertNotIn("cost_usd", marker)
+        row = agent_json.parse_marker(marker) | {"step": "plan", "round": "0"}
+        lines = agent_json.usage_table([row]).splitlines()
+        self.assertIn("| n/a |", lines[2])
+        self.assertIn("**at least $0.00**", lines[3])
+
+    def test_dated_model_name_is_priced(self):
+        path = self.transcript([turn("a", "2026-10-01T10:01:00.000Z", model="claude-haiku-5-5-20260101")])
+        self.assertIsNotNone(agent_json.session_usage(path, self.at(0), self.at(10))["cost"])
+
+    def test_windows_to_skip(self):
+        path = self.transcript([turn("a", "2026-10-01T10:01:00.000Z"), turn("b", "2026-10-01T10:05:00.000Z")])
+        total = agent_json.session_usage(path, self.at(0), self.at(10), skip=[(self.at(4), self.at(6))])
+        self.assertEqual(total["turns"], 1)
+
+    def test_no_transcript_or_no_message_in_the_window_is_empty(self):
+        self.assertIsNone(agent_json.session_usage(os.path.join(self.dir.name, "none.jsonl"), 0, 1e12))
+        path = self.transcript([turn("a", "2026-10-01T10:01:00.000Z")])
+        self.assertIsNone(agent_json.session_usage(path, self.at(20), self.at(30)))
+
+    def test_latest_transcript_of_a_directory(self):
+        folder = os.path.join(self.dir.name, "-Users-me-git-my-repo")
+        os.mkdir(folder)
+        old, new = os.path.join(folder, "old.jsonl"), os.path.join(folder, "new.jsonl")
+        for path, mtime in ((old, 1000), (new, 2000)):
+            open(path, "w").close()
+            os.utime(path, (mtime, mtime))
+        self.assertEqual(agent_json.latest_transcript("/Users/me/git/my_repo", self.dir.name), new)
+        self.assertIsNone(agent_json.latest_transcript("/Users/me/other", self.dir.name))
+
+    def test_orchestration_window_leaves_out_plan_and_update(self):
+        lines = [
+            "2000\tbegin\t\timplement\t",
+            "2500\tbegin\t\tupdate with main\t",
+            "2600\tend\t\tupdate with main\tmerged",
+            "1000\tbegin\t\tplan\t",
+            "1500\tusage\tplan\t\ttokens=1",
+            "1500\tend\t\tplan\tapproved",
+            "bad line",
+        ]
+        start, skip = agent_json.orchestration_window(lines)
+        self.assertEqual(start, 2000)
+        self.assertEqual(sorted(skip), [(1000, 1500), (2500, 2600)])
+
+    def test_probe_limits_are_the_last_event_of_its_stream(self):
+        path = self.transcript([limit_event(0.08, 0.30)], name="probe.jsonl")
+        _, limits = agent_json.stream_facts(path)
+        self.assertEqual({k: v[1] for k, v in limits.items()}, {"5h": 8, "7d": 30})
 
 
 def bash(id, command):

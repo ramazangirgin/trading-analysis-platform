@@ -6,18 +6,22 @@
 #   scripts/agent/progress.sh begin <branch | pr> <step> [--at <epoch>]
 #   scripts/agent/progress.sh end <branch | pr> <step> [result]
 #   scripts/agent/progress.sh note <branch | pr> <text>
+#   scripts/agent/progress.sh orchestration <branch | pr> [result]
+#   scripts/agent/progress.sh usage <branch | pr>      print the Usage section alone
 #
 # The step scripts record their steps, milestones and agent usage in
 # .git/agent/<issue>-<slug>/progress.tsv themselves (lib.sh) and post as they go. begin, end and
 # note are for the steps a Claude Code session runs on its own (develop-issue: the plan and its
-# approval, the CI waits, the update with main); each posts the comment too. The comment is one per
+# approval, the CI waits, the update with main); each posts the comment too. The session's own
+# usage (end of plan and update with main, orchestration) is read from its transcript, its limits
+# from a probe at the start and end of the window. The comment is one per
 # plan branch, found by its marker and edited in place, so the issue does not fill up with them.
 # post --async (the step scripts' milestones) skips the post while another one is running and lets
 # that one post again when it is done; post waits for it.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
-command=${1:?usage: $0 show|post|begin|end|note <branch | pr> [...]}
+command=${1:?usage: $0 show|post|usage|begin|end|orchestration|note <branch | pr> [...]}
 shift
 async=false
 if [ "$command" = post ] && [ "${1:-}" = --async ]; then
@@ -42,7 +46,7 @@ render() {
   local pr
   pr=$(gh pr list --head "$branch" --state all --limit 1 --json number --jq '.[0].number // empty' 2>/dev/null || true)
   py "$AGENT_DIR/progress.py" render "$file" "$marker" "$branch" ${pr:+--pr "$pr"} \
-    --max-rounds "$AGENT_MAX_ROUNDS" --max-ci-fixes "$AGENT_MAX_CI_FIXES"
+    --max-rounds "$AGENT_MAX_ROUNDS" --max-ci-fixes "$AGENT_MAX_CI_FIXES" "$@"
 }
 
 # The issue comment with the marker, created or edited; its ID is kept in progress.comment.
@@ -108,25 +112,114 @@ post() {
   done
 }
 
+# "limit5h=<n> limit7d=<n>": the Claude limits now, from one headless Haiku call (a few tokens, in
+# no row) whose rate_limit_event is read. Empty when the call fails: a limit that cannot be read is
+# n/a. --no-session-persistence keeps the call out of the session transcripts read below. It uses
+# the developer's login like the session does, never the DeepSeek endpoint.
+probe() {
+  local stream=$AGENT_STATE/probe.jsonl
+  command -v claude >/dev/null || return 0
+  (
+    unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL ANTHROPIC_MODEL
+    claude -p --model haiku --output-format stream-json --verbose --no-session-persistence --tools "" \
+      "Reply with ok." >"$stream" 2>/dev/null
+  ) || true
+  py "$AGENT_DIR/agent_json.py" limits "$stream" 2>/dev/null || true
+}
+
+limit_value() { printf '%s\n' "$2" | tr ' ' '\n' | sed -n "s/^$1=//p"; }
+
+# limit_keys <probe before> <probe after>: the marker keys of the windows both probes read.
+limit_keys() {
+  local key before after
+  for key in 5h 7d; do
+    before=$(limit_value "limit$key" "$1")
+    after=$(limit_value "limit$key" "$2")
+    if [ -n "$before" ] && [ -n "$after" ]; then
+      printf ' limit%s_before=%s limit%s_after=%s' "$key" "$before" "$key" "$after"
+    fi
+  done
+}
+
+# The newest transcript of the session that runs develop-issue: in the checkout it was started in,
+# the main one unless AGENT_SESSION_DIR says otherwise (the folder of the issue is a worktree of it).
+session_transcript() {
+  local dir=${AGENT_SESSION_DIR:-}
+  [ -n "$dir" ] || dir=$(cd "$(git rev-parse --git-common-dir)/.." && pwd)
+  py "$AGENT_DIR/agent_json.py" transcript "$dir" 2>/dev/null || true
+}
+
+step_slug() { printf '%s' "${1// /-}"; }
+
+# session_usage <step>: the usage event of a step the session ran itself (plan, update with main),
+# from its begin until now, with the limits read by the probes at both ends. No transcript, no
+# usage: the row is n/a.
+session_usage() {
+  local step=$1 from transcript usage before=""
+  from=$(awk -F'\t' -v s="$step" '$2 == "begin" && $3 == "" && $4 == s { at = $1 } END { print at }' "$file")
+  transcript=$(session_transcript)
+  if [ -z "$from" ] || [ -z "$transcript" ]; then
+    log "no session transcript found: the usage of '$step' is n/a"
+    return 0
+  fi
+  usage=$(py "$AGENT_DIR/agent_json.py" session-usage "$transcript" "$from" "$(($(date +%s) + 1))" 2>/dev/null || true)
+  if [ -z "$usage" ]; then
+    log "no session usage found for '$step': n/a"
+    return 0
+  fi
+  before=$(cat "$AGENT_STATE/probe-$(step_slug "$step")" 2>/dev/null || true)
+  usage+=$(limit_keys "$before" "$(probe)")
+  AGENT_PROGRESS=$file progress_event usage "$step" "" "$usage"
+}
+
 case $command in
   show) render ;;
   post) post ;;
+  usage) render --only usage ;;
   begin)
     step=${1:?usage: $0 begin <branch | pr> <step> [--at <epoch>]}
     at=$(date +%s)
-    if [ "${2:-}" = --at ]; then at=${3:?--at needs an epoch}; fi
+    # A step begun in the past (--at) has no probe from its start: its limits before are n/a.
+    rm -f "$AGENT_STATE/probe-$(step_slug "$step")"
+    if [ "${2:-}" = --at ]; then
+      at=${3:?--at needs an epoch}
+    else
+      probe >"$AGENT_STATE/probe-$(step_slug "$step")" || true
+    fi
     [[ $at =~ ^[0-9]+$ ]] || die "not an epoch: $at"
     printf '%s\tbegin\t\t%s\t\n' "$at" "$(printf '%s' "$step" | tr '\t\n' '  ')" >>"$file"
     post
     ;;
   end)
     step=${1:?usage: $0 end <branch | pr> <step> [result]}
+    case $step in plan | "update with main") session_usage "$step" ;; esac
     AGENT_PROGRESS=$file progress_event end "" "$step" "${2:-}"
+    post
+    ;;
+  orchestration)
+    result=${1:-done}
+    if grep -q $'\tend\t\torchestration\t' "$file" 2>/dev/null; then
+      log "the orchestration is recorded already"
+      exit 0
+    fi
+    transcript=$(session_transcript)
+    usage=""
+    if [ -n "$transcript" ]; then
+      usage=$(py "$AGENT_DIR/agent_json.py" orchestration-usage "$transcript" "$file" "$(($(date +%s) + 1))" 2>/dev/null || true)
+    fi
+    if [ -z "$usage" ]; then
+      log "no session usage found: the orchestration is n/a"
+      exit 0
+    fi
+    from=${usage%% *}
+    printf '%s\tbegin\t\torchestration\t\n' "${from#from=}" >>"$file"
+    AGENT_PROGRESS=$file progress_event usage orchestration "" "${usage#* }"
+    AGENT_PROGRESS=$file progress_event end "" orchestration "$result"
     post
     ;;
   note)
     AGENT_PROGRESS=$file progress_event note "" "" "${1:?usage: $0 note <branch | pr> <text>}"
     post
     ;;
-  *) die "unknown command: $command (show, post, begin, end or note)" ;;
+  *) die "unknown command: $command (show, post, usage, begin, end, orchestration or note)" ;;
 esac

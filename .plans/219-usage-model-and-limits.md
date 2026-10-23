@@ -127,16 +127,17 @@ reads `tokens` and `cost_usd`.
 
 ### WP2: Session usage, probes and the new rows
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/agent_json.py`, `scripts/agent/progress.sh`,
   `scripts/agent/test_agent_json.py`
 - **Steps**:
-  - [ ] `session-usage`: sum a transcript's assistant usage in a time window, each message id once,
+  - [x] `session-usage`: sum a transcript's assistant usage in a time window, each message id once,
     with the model and the cost from the price table (no cost for an unknown model).
-  - [ ] `limits` on a probe's stream; `progress.sh` runs the probe at `begin` and `end` and writes
+  - [x] `limits` on a probe's stream; `progress.sh` runs the probe at `begin` and `end` and writes
     the `usage` event of the window (`plan`, `update with main`).
-  - [ ] `progress.sh orchestration <pr>` and `progress.sh usage <branch | pr>`.
-  - [ ] A missing transcript, a failed probe or an unknown model gives `n/a` and a one-line
+  - [x] `progress.sh orchestration <pr>` and `progress.sh usage <branch | pr>`.
+  - [x] A missing transcript, a failed probe or an unknown model gives `n/a` and a one-line
     message, never a failing exit.
 - **Tests**: a transcript fixture with messages inside and outside the window and a repeated
   message id; an unknown model has tokens and no cost; no transcript gives an empty result.
