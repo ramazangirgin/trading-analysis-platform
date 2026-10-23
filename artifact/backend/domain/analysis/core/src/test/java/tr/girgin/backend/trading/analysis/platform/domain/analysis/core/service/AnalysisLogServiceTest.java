@@ -14,6 +14,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 class AnalysisLogServiceTest {
 
@@ -51,5 +52,28 @@ class AnalysisLogServiceTest {
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
         assertThat(service.tailLogs(id, Fakes.OWN, 10)).containsExactly("key=sk-1234****");
         assertThat(service.tailLogs(id, Fakes.EVERYONE, 10)).containsExactly("key=sk-1234****");
+    }
+
+    @Test
+    void anotherUsersPublicAnalysisHasNoLogForTheCaller() {
+        Fakes.Repository repository = new Fakes.Repository();
+        Fakes.EventStore eventStore = new Fakes.EventStore();
+        AnalysisService analyses = new AnalysisService(
+                repository,
+                new Fakes.Runner(),
+                new Fakes.Credentials(),
+                eventStore,
+                new AnalysisEventHub(repository, eventStore),
+                Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
+                2);
+        AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("line"));
+        AnalysisId id = analyses.start(Fakes.spec("NVDA"), Fakes.OWNER).id();
+        repository.rows.put(id, repository.rows.get(id).withVisibility(Visibility.PUBLIC, Instant.now()));
+
+        assertThatThrownBy(() -> service.tailLogs(id, Fakes.OTHERS, 10))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
+        assertThat(service.tailLogs(id, Fakes.OWN, 10)).containsExactly("line");
+        assertThat(service.tailLogs(id, Fakes.EVERYONE, 10)).containsExactly("line");
     }
 }

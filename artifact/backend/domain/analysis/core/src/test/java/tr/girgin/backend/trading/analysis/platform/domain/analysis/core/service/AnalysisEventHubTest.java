@@ -15,6 +15,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 class AnalysisEventHubTest {
 
@@ -109,6 +110,25 @@ class AnalysisEventHubTest {
         hub.subscribe(id, 0, Fakes.EVERYONE, listener);
 
         assertThat(listener.seqs).containsExactly(1L, 2L);
+    }
+
+    @Test
+    void replaysAnotherUsersPublicRunButNotAPrivateOne() {
+        store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.finished(2, RunOutcome.COMPLETED, null));
+        Analysis completed =
+                repository.findById(id).orElseThrow().finished(AnalysisStatus.COMPLETED, Instant.now(), null, null);
+        repository.update(completed);
+        Fakes.RecordingListener refused = new Fakes.RecordingListener();
+        assertThatThrownBy(() -> hub.subscribe(id, 0, Fakes.OTHERS, refused))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
+
+        repository.update(completed.withVisibility(Visibility.PUBLIC, Instant.now()));
+        Fakes.RecordingListener listener = new Fakes.RecordingListener();
+        hub.subscribe(id, 0, Fakes.OTHERS, listener);
+
+        assertThat(listener.seqs).containsExactly(1L, 2L);
+        assertThat(listener.completed).isTrue();
     }
 
     @Test

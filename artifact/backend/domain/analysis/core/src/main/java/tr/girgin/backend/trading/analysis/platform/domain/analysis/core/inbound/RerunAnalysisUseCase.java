@@ -8,8 +8,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 public interface RerunAnalysisUseCase {
 
     /**
-     * Starts a new run with the same spec, owned by the caller. An analysis the caller may not see is reported
-     * as not found.
+     * Starts a new run with the same spec, owned by the caller. The new run is private. An analysis the
+     * caller may not manage, a public one of another user included, is reported as not found.
      */
     Analysis rerun(AnalysisId id, AnalysisAccess access);
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
@@ -29,7 +30,7 @@ public class SystemHealthUseCase {
     static final int SUPPORTED_PROTOCOL = 1;
 
     // The queue is the platform's, not one user's: the counts cover every owner.
-    private static final AnalysisAccess PLATFORM = new AnalysisAccess(new OwnerId("platform"), true);
+    private static final AnalysisAccess PLATFORM = new AnalysisAccess(new OwnerId("platform"), true, false);
 
     private final GetEngineVersionUseCase engineVersion;
     private final GetCatalogUseCase catalog;
@@ -116,9 +117,10 @@ public class SystemHealthUseCase {
     }
 
     private HealthCheck queue() {
-        long running = analyses.list(new AnalysisFilter(AnalysisStatus.RUNNING, null, null), PLATFORM)
+        long running = analyses.list(
+                        new AnalysisFilter(AnalysisStatus.RUNNING, null, null), AnalysisScope.ALL, PLATFORM)
                 .size();
-        long queued = analyses.list(new AnalysisFilter(AnalysisStatus.QUEUED, null, null), PLATFORM)
+        long queued = analyses.list(new AnalysisFilter(AnalysisStatus.QUEUED, null, null), AnalysisScope.ALL, PLATFORM)
                 .size();
         return new HealthCheck("queue", HealthStatus.UP, "queue_ok", Map.of("running", running, "queued", queued));
     }

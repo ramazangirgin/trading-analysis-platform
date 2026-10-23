@@ -40,9 +40,11 @@ final class Fakes {
 
     static final OwnerId OWNER = new OwnerId("user-a");
     static final OwnerId OTHER = new OwnerId("user-b");
-    static final AnalysisAccess OWN = new AnalysisAccess(OWNER, false);
-    static final AnalysisAccess OTHERS = new AnalysisAccess(OTHER, false);
-    static final AnalysisAccess EVERYONE = new AnalysisAccess(OTHER, true);
+    static final AnalysisAccess OWN = new AnalysisAccess(OWNER, false, false);
+    static final AnalysisAccess OWN_SHARER = new AnalysisAccess(OWNER, false, true);
+    static final AnalysisAccess OTHERS = new AnalysisAccess(OTHER, false, false);
+    static final AnalysisAccess EVERYONE = new AnalysisAccess(OTHER, true, false);
+    static final AnalysisAccess EVERYONE_SHARER = new AnalysisAccess(OTHER, true, true);
 
     private Fakes() {}
 
@@ -107,6 +109,7 @@ final class Fakes {
         final Map<AnalysisId, Analysis> rows = new ConcurrentHashMap<>();
         // Thrown by update and replaceImported when set, as a stale write would.
         RuntimeException failOnWrite;
+        int visibilityWrites;
 
         @Override
         public void insert(Analysis analysis) {
@@ -118,6 +121,16 @@ final class Fakes {
             if (failOnWrite != null) {
                 throw failOnWrite;
             }
+            rows.put(analysis.id(), analysis);
+            return analysis;
+        }
+
+        @Override
+        public Analysis updateVisibility(Analysis analysis) {
+            if (failOnWrite != null) {
+                throw failOnWrite;
+            }
+            visibilityWrites++;
             rows.put(analysis.id(), analysis);
             return analysis;
         }
@@ -149,6 +162,8 @@ final class Fakes {
                     .filter(a -> filter.status() == null || a.status() == filter.status())
                     .filter(a -> filter.ticker() == null || a.spec().ticker().equals(filter.ticker()))
                     .filter(a -> filter.owner() == null || filter.owner().equals(a.owner()))
+                    .filter(a -> filter.visibility() == null || a.visibility() == filter.visibility())
+                    .filter(a -> filter.notOwner() == null || !filter.notOwner().equals(a.owner()))
                     .sorted(Comparator.comparing(Analysis::createdAt).reversed())
                     .toList();
         }
@@ -175,6 +190,8 @@ final class Fakes {
                             a.externalRef(),
                             a.runnerRef(),
                             owner,
+                            a.visibility(),
+                            a.visibilityChangedAt(),
                             a.version())));
             return unowned.size();
         }

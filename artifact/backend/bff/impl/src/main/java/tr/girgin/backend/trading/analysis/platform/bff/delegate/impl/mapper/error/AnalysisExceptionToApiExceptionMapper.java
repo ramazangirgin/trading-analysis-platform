@@ -14,11 +14,13 @@ public interface AnalysisExceptionToApiExceptionMapper {
         HttpStatus status = switch (source.error()) {
             case INVALID_SPEC -> HttpStatus.BAD_REQUEST;
             case NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case ALREADY_RUNNING, NOT_RUNNING, CONCURRENT_UPDATE -> HttpStatus.CONFLICT;
-            case OVERRIDE_FORBIDDEN -> HttpStatus.FORBIDDEN;
+            case ALREADY_RUNNING, NOT_RUNNING, CONCURRENT_UPDATE, NOT_SHAREABLE -> HttpStatus.CONFLICT;
+            case OVERRIDE_FORBIDDEN, SHARE_FORBIDDEN -> HttpStatus.FORBIDDEN;
         };
         String code = source.error().name().toLowerCase(Locale.ROOT);
-        if (source.error() == AnalysisError.OVERRIDE_FORBIDDEN) {
+        if (source.error() == AnalysisError.OVERRIDE_FORBIDDEN
+                || source.error() == AnalysisError.SHARE_FORBIDDEN
+                || source.error() == AnalysisError.NOT_SHAREABLE) {
             // "forbidden" alone is the code of a missing endpoint permission
             code = "analysis_" + code;
         }

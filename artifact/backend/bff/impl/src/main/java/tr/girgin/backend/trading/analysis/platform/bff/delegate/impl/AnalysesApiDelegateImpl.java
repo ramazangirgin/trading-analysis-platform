@@ -47,6 +47,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
@@ -140,8 +141,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         String normalizedTicker =
                 ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
         AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker, null);
-        AnalysisAccess access = new AnalysisAccess(owner(), allUsers && currentUser.has(Permission.ANALYSIS_READ_ALL));
-        List<Analysis> analyses = listAnalyses.list(filter, access);
+        List<Analysis> analyses =
+                listAnalyses.list(filter, allUsers ? AnalysisScope.ALL : AnalysisScope.MINE, access());
         Map<UserId, Username> usernames = usernames(analyses);
         return analyses.stream().map(a -> analysisMapper.map(a, usernames)).toList();
     }
@@ -254,7 +255,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     private AnalysisAccess access() {
-        return new AnalysisAccess(owner(), currentUser.has(Permission.ANALYSIS_READ_ALL));
+        return new AnalysisAccess(
+                owner(), currentUser.has(Permission.ANALYSIS_READ_ALL), currentUser.has(Permission.ANALYSIS_SHARE));
     }
 
     private ResponseEntity<AnalysisDto> created(Analysis analysis) {

@@ -10,9 +10,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 
 /**
- * Stores analysis runs. An {@link Analysis#version()} is the optimistic lock: {@link #update} and
- * {@link #replaceImported} fail with Spring's {@code OptimisticLockingFailureException}, leaving the row
- * unchanged, when the record's version differs from the stored row's.
+ * Stores analysis runs. An {@link Analysis#version()} is the optimistic lock: {@link #update},
+ * {@link #updateVisibility} and {@link #replaceImported} fail with Spring's
+ * {@code OptimisticLockingFailureException}, leaving the row unchanged, when the record's version differs from the
+ * stored row's.
  */
 public interface AnalysisRepositoryPort {
 
@@ -21,6 +22,9 @@ public interface AnalysisRepositoryPort {
 
     /** Writes the run state of a record and returns it as stored, with its new version. */
     Analysis update(Analysis analysis);
+
+    /** Writes the visibility of a record and its time, nothing else, and returns it as stored, new version. */
+    Analysis updateVisibility(Analysis analysis);
 
     /**
      * Rewrites an EXTERNAL record whole; unlike a platform run, its spec follows the data dir. Returns it as

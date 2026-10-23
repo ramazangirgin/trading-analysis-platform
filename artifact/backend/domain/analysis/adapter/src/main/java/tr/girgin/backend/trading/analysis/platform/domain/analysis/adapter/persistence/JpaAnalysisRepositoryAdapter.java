@@ -19,6 +19,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 @Component
@@ -60,6 +61,17 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
                 .orElseThrow(() -> new IllegalStateException("No analysis " + analysis.id() + " to update"));
         requireVersion(stored, analysis);
         stored.applyRunState(toEntity.map(analysis));
+        return toAnalysis.map(repository.saveAndFlush(stored));
+    }
+
+    @Override
+    @Transactional
+    public Analysis updateVisibility(Analysis analysis) {
+        AnalysisEntity stored = repository
+                .findById(toEntityId.map(analysis.id()))
+                .orElseThrow(() -> new IllegalStateException("No analysis " + analysis.id() + " to update"));
+        requireVersion(stored, analysis);
+        stored.applyVisibility(toEntity.map(analysis));
         return toAnalysis.map(repository.saveAndFlush(stored));
     }
 
@@ -145,7 +157,23 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         if (filter.owner() != null) {
             matching = matching.and(hasOwner(filter.owner()));
         }
+        if (filter.visibility() != null) {
+            matching = matching.and(hasVisibility(filter.visibility()));
+        }
+        if (filter.notOwner() != null) {
+            matching = matching.and(notOwnedBy(filter.notOwner()));
+        }
         return matching;
+    }
+
+    private Specification<AnalysisEntity> hasVisibility(Visibility visibility) {
+        return (root, _, builder) -> builder.equal(root.get("visibility"), visibility);
+    }
+
+    // An analysis without an owner is nobody's, so it is not owned by the user either.
+    private Specification<AnalysisEntity> notOwnedBy(OwnerId owner) {
+        return (root, _, builder) ->
+                builder.or(builder.isNull(root.get("owner")), builder.notEqual(root.get("owner"), owner));
     }
 
     private Specification<AnalysisEntity> hasOwner(OwnerId owner) {

@@ -15,5 +15,6 @@ public interface AnalysisEntityToAnalysisMapper {
 
     // Single-argument transitions on Analysis look like fluent setters to MapStruct.
     @Mapping(target = "withStats", ignore = true)
+    @Mapping(target = "withVisibilityOf", ignore = true)
     Analysis map(AnalysisEntity source);
 }

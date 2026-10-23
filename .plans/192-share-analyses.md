@@ -206,6 +206,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Visibility in the analysis domain
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/analysis/core/src/main/java/.../analysis/core/model/`: `Visibility.java`, `AnalysisScope.java` (new); `Analysis.java`, `AnalysisAccess.java`, `AnalysisFilter.java`
@@ -217,10 +218,10 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/domain/analysis/adapter/src/main/resources/.../persistence/migration/V4__add_visibility.sql` (new)
   - every existing caller and test of `AnalysisAccess`, `AnalysisFilter` and `list` (the compiler names them; `orchestration` included)
 - **Steps**:
-  - [ ] The model types, the access rules, the filter fields and the scopes.
-  - [ ] `AnalysisVisibilityService` with the rules in the order above; `canManage` for stop, rerun
+  - [x] The model types, the access rules, the filter fields and the scopes.
+  - [x] `AnalysisVisibilityService` with the rules in the order above; `canManage` for stop, rerun
     and the log.
-  - [ ] Migration, entity columns, mappers, `updateVisibility`, the two `Specification`s; run
+  - [x] Migration, entity columns, mappers, `updateVisibility`, the two `Specification`s; run
     updates and re-imports keep the visibility.
 - **Tests**:
   - `AnalysisAccessTest` (new): each rule of `canSee`, `canManage`, `canMakePublic`,
