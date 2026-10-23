@@ -86,7 +86,6 @@ def unanswered(threads, pr):
 
 
 def approved_sha(pr, agent_login):
-    """The sha of the newest `plan-approved` comment of agent_login, or None."""
     found = None
     for comment in sorted(pr.get("comments", []), key=lambda c: c["createdAt"]):
         if login(comment.get("author")) != agent_login:
