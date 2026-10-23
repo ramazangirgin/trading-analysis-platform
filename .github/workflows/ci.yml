@@ -319,6 +319,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+        with:
+          # test-deploy.sh pushes HEAD to a bare repository, which refuses a shallow update
+          fetch-depth: 0
 
       - name: Ansible (versions from mise.toml)
         uses: jdx/mise-action@v5
