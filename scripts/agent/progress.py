@@ -302,7 +302,10 @@ def worth_a_look(steps, timeline, now, elapsed, day):
     """What may have slowed the run down or been done twice: lines for the comment."""
     every = [s for step in steps for s in [step] + step.children]
     lines = []
-    slowest = sorted((s for s in every if not s.children), key=lambda s: s.spent(now), reverse=True)[:SLOWEST]
+    # The orchestration spans the run, so it would always head the ranking.
+    slowest = sorted(
+        (s for s in every if not s.children and s.name != "orchestration"), key=lambda s: s.spent(now), reverse=True
+    )[:SLOWEST]
     if slowest and elapsed:
         lines.append(
             "Slowest steps: "
@@ -376,7 +379,9 @@ def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, 
             f"{tokens(step.total('tokens'))} | {money(step.total('cost'))} | {cell(step.result())} |"
         )
 
-    for number, step in enumerate(steps, 1):
+    # Last, not among the script's steps it overlaps.
+    listed = sorted(steps, key=lambda s: s.name == "orchestration")
+    for number, step in enumerate(listed, 1):
         row(number, step.name, step)
         for child in step.children:
             row("", f"↳ {child.name}", child)

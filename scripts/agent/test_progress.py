@@ -146,6 +146,17 @@ class RenderTest(unittest.TestCase):
         self.assertIn("Retries: 09:10 WP2 (2 of 2): not finished, resuming the agent", text)
         self.assertIn("Steps beyond the plan's path: CI fix ×1", text)
 
+    def test_orchestration_is_listed_last_and_not_among_the_slowest(self):
+        lines = A_RUN + tsv(
+            (T0 + 600, "begin", "", "orchestration", ""),
+            (4100, "end", "", "orchestration", "done"),
+        )
+        text = self.render(lines)
+        rows = [line for line in text.splitlines() if line.startswith("| ") and line.split("|")[1].strip().isdigit()]
+        self.assertIn("| orchestration |", rows[-1])
+        self.assertIn("Slowest steps: CI abc1234 15m 00s", text)
+        self.assertNotIn("Slowest steps: orchestration", text)
+
     def test_status_running_with_the_open_sub_step(self):
         text = self.render(A_RUN[:9], now=T0 + 1000)
         self.assertIn("🔄 running: **implement › WP2 (2 of 2)** (for 5m 00s)", text)
