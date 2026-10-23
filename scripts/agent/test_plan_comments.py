@@ -3,6 +3,11 @@
     uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'   (mise run agent:test)
 """
 
+import contextlib
+import io
+import json
+import os
+import tempfile
 import unittest
 
 import plan_comments
@@ -133,6 +138,89 @@ class UnansweredPullRequestComments(unittest.TestCase):
     def test_empty_review_bodies_are_not_listed(self):
         p = pr(reviews=[review("", "2026-01-01T10:00:00Z"), review("  \n", "2026-01-01T10:01:00Z")])
         self.assertEqual(plan_comments.unanswered(threads(), p), [])
+
+
+HEAD = "a" * 40
+OLDER = "b" * 40
+
+
+def approval(sha):
+    return plan_comments.approval_comment(sha)
+
+
+class ApprovedSha(unittest.TestCase):
+    def test_no_marker_means_no_approval(self):
+        p = pr(comments=[pr_comment("Looks good", "2026-01-01T10:00:00Z", "bot")])
+        self.assertIsNone(plan_comments.approved_sha(p, "bot"))
+
+    def test_marker_names_the_sha(self):
+        p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "bot")])
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), HEAD)
+
+    def test_marker_for_an_older_sha_is_returned_as_it_is(self):
+        p = pr(comments=[pr_comment(approval(OLDER), "2026-01-01T10:00:00Z", "bot")])
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), OLDER)
+
+    def test_marker_of_another_login_is_ignored(self):
+        p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "someone")])
+        self.assertIsNone(plan_comments.approved_sha(p, "bot"))
+
+    def test_newest_marker_wins(self):
+        p = pr(
+            comments=[
+                pr_comment(approval(HEAD), "2026-01-01T12:00:00Z", "bot"),
+                pr_comment(approval(OLDER), "2026-01-01T10:00:00Z", "bot"),
+            ]
+        )
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), HEAD)
+
+    def test_malformed_marker_is_ignored(self):
+        p = pr(
+            comments=[
+                pr_comment(approval(OLDER), "2026-01-01T10:00:00Z", "bot"),
+                pr_comment("<!-- plan-approved sha=xyz -->", "2026-01-01T11:00:00Z", "bot"),
+                pr_comment("<!-- plan-approved -->", "2026-01-01T12:00:00Z", "bot"),
+            ]
+        )
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), OLDER)
+
+    def test_marker_quoted_in_the_middle_of_a_comment_is_ignored(self):
+        p = pr(comments=[pr_comment(f"I wrote <!-- plan-approved sha={HEAD} -->", "2026-01-01T10:00:00Z", "bot")])
+        self.assertIsNone(plan_comments.approved_sha(p, "bot"))
+
+    def test_approval_comment_has_the_marker_and_a_visible_line(self):
+        body = approval(HEAD)
+        self.assertTrue(body.startswith(f"<!-- plan-approved sha={HEAD} -->"))
+        self.assertIn("Plan approved at `aaaaaaa`", body)
+
+    def test_approval_comment_is_not_listed_as_unanswered(self):
+        p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "bot")])
+        self.assertEqual(plan_comments.unanswered(threads(), p), [])
+
+
+class ApprovedCommand(unittest.TestCase):
+    def run_approved(self, sha, head):
+        p = pr(comments=[pr_comment(approval(sha), "2026-01-01T10:00:00Z", "bot")]) if sha else pr()
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "pr.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(p, f)
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                plan_comments.main(["", "approved", path, "bot", head])
+        return out.getvalue().strip()
+
+    def test_approval_of_the_head_succeeds_and_prints_the_sha(self):
+        self.assertEqual(self.run_approved(HEAD, HEAD), HEAD)
+
+    def test_approval_of_an_older_sha_is_stale_and_exits_1(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.run_approved(OLDER, HEAD)
+        self.assertEqual(raised.exception.code, 1)
+
+    def test_no_approval_exits_1(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.run_approved(None, HEAD)
+        self.assertEqual(raised.exception.code, 1)
 
 
 if __name__ == "__main__":
