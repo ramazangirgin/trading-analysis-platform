@@ -21,7 +21,8 @@ public interface AnalysisExceptionToApiExceptionMapper {
         if (source.error() == AnalysisError.OVERRIDE_FORBIDDEN
                 || source.error() == AnalysisError.SHARE_FORBIDDEN
                 || source.error() == AnalysisError.NOT_SHAREABLE) {
-            // "forbidden" alone is the code of a missing endpoint permission
+            // "forbidden" alone is the code of a missing endpoint permission; not_shareable is
+            // prefixed to sit with the other sharing codes
             code = "analysis_" + code;
         }
         return new ApiException(status, code, source.getMessage(), source.params());
