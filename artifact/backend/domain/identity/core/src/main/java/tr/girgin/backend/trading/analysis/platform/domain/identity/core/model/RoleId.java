@@ -20,6 +20,12 @@ public record RoleId(String value) {
      */
     public static final RoleId VIEWER = new RoleId("VIEWER");
 
+    /**
+     * The built-in PUBLISHER role, seeded with this ID by the identity migration
+     * {@code V10__grant_analysis_share_and_seed_publisher_role.sql}.
+     */
+    public static final RoleId PUBLISHER = new RoleId("PUBLISHER");
+
     public RoleId {
         Objects.requireNonNull(value, "value");
     }

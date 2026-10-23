@@ -125,6 +125,16 @@ class RolePermissionsIntegrationTest {
                         Arrays.stream(Permission.values()).map(Permission::key).toList());
     }
 
+    @Test
+    void aPublisherHoldsOnlyAnalysisShareAndAnAnalystWithPublisherHoldsBoth() throws Exception {
+        assertThat(me(RoleId.PUBLISHER, "PUBLISHER")).containsExactly("analysis:share");
+
+        TestSession both = TestSession.loggedIn(port, users, hasher, RoleId.ANALYST, RoleId.PUBLISHER);
+        JsonNode me = JSON.readTree(both.send("GET", "/api/auth/me", null).body());
+        assertThat(me.get("permissions").valueStream().map(JsonNode::asString))
+                .contains("analysis:share", "analysis:run", "analysis:read");
+    }
+
     private List<String> me(RoleId role, String roleName) throws Exception {
         TestSession session = TestSession.loggedIn(port, users, hasher, role);
         JsonNode me = JSON.readTree(session.send("GET", "/api/auth/me", null).body());

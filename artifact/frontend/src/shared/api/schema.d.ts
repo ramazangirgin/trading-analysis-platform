@@ -212,6 +212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analyses/{id}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["changeVisibility"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analyses/{id}/stop": {
         parameters: {
             query?: never;
@@ -513,14 +529,14 @@ export interface components {
         CreateRoleRequest: {
             name: string;
             description?: string;
-            permissions: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
+            permissions: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models" | "analysis:share")[];
         };
         RoleDto: {
             id?: string;
             name?: string;
             builtIn?: boolean;
             description?: string;
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models" | "analysis:share")[];
             /** Format: int64 */
             userCount?: number;
             /** Format: int64 */
@@ -544,12 +560,18 @@ export interface components {
             id?: string;
             username?: string;
             roles?: string[];
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models" | "analysis:share")[];
             mustChangePassword?: boolean;
         };
         LoginRequest: {
             username: string;
             password: string;
+        };
+        ChangeVisibilityRequest: {
+            /** @enum {string} */
+            visibility: "PRIVATE" | "PUBLIC";
+            /** Format: int64 */
+            version: number;
         };
         StartAnalysisRequest: {
             ticker: string;
@@ -588,6 +610,14 @@ export interface components {
             errorCode?: string;
             errorMessage?: string;
             owner?: components["schemas"]["AnalysisOwnerDto"];
+            /** @enum {string} */
+            visibility?: "PRIVATE" | "PUBLIC";
+            /** Format: date-time */
+            visibilityChangedAt?: string;
+            /** Format: int64 */
+            version?: number;
+            canManage?: boolean;
+            canChangeVisibility?: boolean;
         };
         AnalysisOwnerDto: {
             id?: string;
@@ -632,7 +662,7 @@ export interface components {
         UpdateRoleRequest: {
             name?: string;
             description?: string;
-            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models")[];
+            permissions?: ("analysis:run" | "analysis:read" | "analysis:read:all" | "analysis:delete" | "preset:read" | "preset:manage" | "preset:read:all" | "settings:read" | "settings:keys:write" | "user:read" | "user:manage" | "role:manage" | "audit:read" | "analysis:defaults:manage" | "analysis:override-models" | "analysis:share")[];
             /** Format: int64 */
             version?: number;
         };
@@ -1129,7 +1159,7 @@ export interface operations {
             query?: {
                 status?: "QUEUED" | "RUNNING" | "COMPLETED" | "STOPPED" | "FAILED";
                 ticker?: string;
-                allUsers?: boolean;
+                scope?: "MINE" | "SHARED" | "ALL";
             };
             header?: never;
             path?: never;
@@ -1158,6 +1188,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StartAnalysisRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDto"];
+                };
+            };
+        };
+    };
+    changeVisibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeVisibilityRequest"];
             };
         };
         responses: {

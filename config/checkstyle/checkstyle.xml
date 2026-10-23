@@ -41,6 +41,12 @@
         <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/]).*$"/>
     </module>
 
+    <!-- TAP-D8 applies to the web DTOs (bff/api main sources) only (not a suppression of a finding). -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-D8"/>
+        <property name="files" value="^(?!.*[\\/]bff[\\/]api[\\/]src[\\/]main[\\/]).*$"/>
+    </module>
+
     <!-- Files ===================================================================================== -->
     <module name="NewlineAtEndOfFile"/>
     <module name="FileTabCharacter">
@@ -332,6 +338,12 @@
             <property name="format" value="\b(produces|consumes)\s*=\s*\{?\s*((\w+\.)*MediaType\.APPLICATION_JSON_VALUE|&quot;application/json&quot;)"/>
             <property name="ignoreComments" value="true"/>
             <property name="message" value="TAP-D5: JSON is the default media type of a mapping; leave out produces / consumes = application/json."/>
+        </module>
+        <module name="TypeName">
+            <property name="id" value="TAP-D8"/>
+            <property name="tokens" value="ENUM_DEF"/>
+            <property name="format" value="^[A-Z][A-Za-z0-9]*EnumDto$"/>
+            <message key="name.invalidPattern" value="TAP-D8: a web DTO enum is named ...EnumDto (found ''{0}'')."/>
         </module>
         <module name="RegexpSinglelineJava">
             <property name="id" value="TAP-D6"/>

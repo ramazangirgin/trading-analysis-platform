@@ -6,8 +6,8 @@ import java.util.List;
 public record AnalysisSpecDto(
         String ticker,
         LocalDate tradeDate,
-        AssetTypeDto assetType,
-        List<AnalystDto> analysts,
+        AssetTypeEnumDto assetType,
+        List<AnalystEnumDto> analysts,
         String llmProvider,
         String deepThinkLlm,
         String quickThinkLlm,

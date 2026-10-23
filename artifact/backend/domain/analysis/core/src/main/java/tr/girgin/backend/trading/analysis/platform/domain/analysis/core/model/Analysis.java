@@ -11,6 +11,8 @@ import java.util.Objects;
  * restarted platform can find the run again.
  * {@code owner} is the user the run belongs to; {@code null} only on a record from before owners existed, or an
  * import made before the first admin, until an owner is assigned.
+ * {@code visibility} is who besides the owner may read it; {@code visibilityChangedAt} is {@code null} until the
+ * first change.
  * {@code version} is the optimistic lock. Owned by persistence: {@code null} on a record the core builds before
  * its first save, set on every record the repository returns, and carried along unchanged by every transition.
  * A write of a record whose version differs from the stored one fails.
@@ -31,6 +33,8 @@ public record Analysis(
         String externalRef,
         String runnerRef,
         OwnerId owner,
+        Visibility visibility,
+        Instant visibilityChangedAt,
         Long version) {
 
     /** Upstream's model choices are not in its report files, so a run without run history says "unknown". */
@@ -45,6 +49,7 @@ public record Analysis(
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(stats, "stats");
+        Objects.requireNonNull(visibility, "visibility");
         Objects.requireNonNull(createdAt, "createdAt");
     }
 
@@ -65,6 +70,8 @@ public record Analysis(
                 null,
                 null,
                 owner,
+                Visibility.PRIVATE,
+                null,
                 null);
     }
 
@@ -130,6 +137,8 @@ public record Analysis(
                 external.ref(),
                 null,
                 owner,
+                Visibility.PRIVATE,
+                null,
                 version);
     }
 
@@ -154,6 +163,8 @@ public record Analysis(
                 externalRef,
                 newRunnerRef,
                 owner,
+                visibility,
+                visibilityChangedAt,
                 version);
     }
 
@@ -174,6 +185,8 @@ public record Analysis(
                 externalRef,
                 runnerRef,
                 owner,
+                visibility,
+                visibilityChangedAt,
                 version);
     }
 
@@ -194,6 +207,53 @@ public record Analysis(
                 externalRef,
                 runnerRef,
                 owner,
+                visibility,
+                visibilityChangedAt,
+                version);
+    }
+
+    public Analysis withVisibility(Visibility newVisibility, Instant now) {
+        return new Analysis(
+                id,
+                spec,
+                status,
+                source,
+                rating,
+                decision,
+                stats,
+                createdAt,
+                startedAt,
+                endedAt,
+                errorCode,
+                errorMessage,
+                externalRef,
+                runnerRef,
+                owner,
+                newVisibility,
+                now,
+                version);
+    }
+
+    /** This record with the visibility, and its time, of {@code other}: a refresh from files never changes them. */
+    public Analysis withVisibilityOf(Analysis other) {
+        return new Analysis(
+                id,
+                spec,
+                status,
+                source,
+                rating,
+                decision,
+                stats,
+                createdAt,
+                startedAt,
+                endedAt,
+                errorCode,
+                errorMessage,
+                externalRef,
+                runnerRef,
+                owner,
+                other.visibility,
+                other.visibilityChangedAt,
                 version);
     }
 
@@ -217,6 +277,8 @@ public record Analysis(
                 externalRef,
                 runnerRef,
                 owner,
+                visibility,
+                visibilityChangedAt,
                 version);
     }
 }

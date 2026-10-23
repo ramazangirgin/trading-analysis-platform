@@ -21,6 +21,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 /**
  * One row of the {@code ANALYSES} table. {@link Persistable} with a transient flag: an entity the
@@ -83,6 +84,14 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
     @Column(name = "OWNER_ID")
     private OwnerId owner;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "VISIBILITY", nullable = false, columnDefinition = "\"ANALYSIS\".\"VISIBILITY\"")
+    private Visibility visibility;
+
+    @Column(name = "VISIBILITY_CHANGED_AT")
+    private Instant visibilityChangedAt;
+
     // Optimistic lock: Hibernate sets it on insert, adds 1 on every update and fails a stale write.
     @Version
     @Column(name = "VERSION", nullable = false)
@@ -93,8 +102,8 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     public AnalysisEntity() {}
 
-    /** Copies the state a run changes onto this entity; the spec, creation time, source, external ref, owner stay. */
-    public void applyRunState(AnalysisEntity other) {
+    /** Copies the state that changes after insert; the spec, creation time, source, external ref, owner stay. */
+    public void applyState(AnalysisEntity other) {
         this.status = other.status;
         this.rating = other.rating;
         this.decision = other.decision;
@@ -104,9 +113,11 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
         this.errorCode = other.errorCode;
         this.errorMessage = other.errorMessage;
         this.runnerRef = other.runnerRef;
+        this.visibility = other.visibility;
+        this.visibilityChangedAt = other.visibilityChangedAt;
     }
 
-    /** Copies everything an import follows from the data dir: all but the ID, source, runner ref and owner. */
+    /** Copies everything an import follows from the data dir: all but ID, source, runner ref, owner, visibility. */
     public void replaceImported(AnalysisEntity other) {
         this.spec = other.spec;
         this.status = other.status;
@@ -251,6 +262,22 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     public void setOwner(OwnerId owner) {
         this.owner = owner;
+    }
+
+    public Visibility getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(Visibility visibility) {
+        this.visibility = visibility;
+    }
+
+    public Instant getVisibilityChangedAt() {
+        return visibilityChangedAt;
+    }
+
+    public void setVisibilityChangedAt(Instant visibilityChangedAt) {
+        this.visibilityChangedAt = visibilityChangedAt;
     }
 
     public Long getVersion() {

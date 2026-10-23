@@ -27,6 +27,8 @@ lefthook = "2.1"
 # Claude Code loads the agent-progress mod (status line, toasts, pane) in sessions started from this
 # folder or a worktree of it, without `--plugin-dir`.
 CLAUDE_CODE_PLUGIN_DIRS = "{{config_root}}/.claude/mods/agent-progress"
+# Testcontainers and the Docker client find Podman's socket on macOS (scripts/container-env.sh).
+_.source = "{{config_root}}/scripts/container-env.sh"
 
 [tasks.setup]
 description = "Install ta-runner (TradingAgents + deps), the frontend's packages, the Git hooks, and a container engine when there is none (Docker on Ubuntu/Debian, Podman on macOS; PLATFORM_INSTALL_ENGINE=0 skips it)"

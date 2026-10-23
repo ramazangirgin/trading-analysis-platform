@@ -32,7 +32,9 @@ Docker Compose, where each analysis runs in its own container and the data is ke
 - An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
   Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
 - Docker or Podman (`mise run setup` installs one when there is none: Docker on Ubuntu or Debian,
-  Podman on macOS with Homebrew; `PLATFORM_INSTALL_ENGINE=0` skips that). `mise run run` and
+  Podman on macOS with Homebrew; `PLATFORM_INSTALL_ENGINE=0` skips that). Under `mise run`, a
+  running Podman machine's socket is set as `DOCKER_HOST` unless it is set already
+  (`scripts/container-env.sh`); a Gradle daemon started before that needs `./gradlew --stop`. `mise run run` and
   `mise run dev` start a local PostgreSQL 18 container
   (`mise run db`; its data is in the volume `trading-analysis-platform-db`; `mise run db:stop` stops
   it, `mise run db:reset` deletes its data). To use your own PostgreSQL 18 server instead, set
@@ -92,7 +94,7 @@ beforehand what the platform refuses: disabling yourself, removing your own ADMI
 disabling or demoting the last enabled ADMIN. The page needs the permission `user:read`, its
 changes `user:manage`.
 
-![Admin → Users: an admin, an active analyst and a disabled viewer](docs/screenshots/users.png)
+![Admin → Users: an admin, an analyst who can also publish and a disabled viewer](docs/screenshots/users.png)
 
 **Admin → Roles** (permission `role:manage`) lists every role with its permissions and its number
 of users. **New role** takes a name, a description and the permissions, chosen from a checklist
@@ -102,7 +104,7 @@ description cannot be changed, ADMIN keeps all its permissions, and none of them
 role that users still hold cannot be deleted either. The page explains this beforehand. A change to
 a role applies to the users who are logged in on their next request, without logging in again.
 
-![Admin → Roles: the built-in roles and a custom read-only role](docs/screenshots/roles.png)
+![Admin → Roles: the four built-in roles and a custom read-only role](docs/screenshots/roles.png)
 
 ### 4. Add an API key
 
@@ -172,11 +174,22 @@ and report tables that are series over periods (quarterly or yearly figures) get
 
 ![A fundamentals table with its chart](docs/screenshots/run-table-chart.png)
 
+A user with the permission `analysis:share` (ADMIN, or anyone with the PUBLISHER role) can make
+their own completed analysis public with the **Public** switch on its page, after a confirmation.
+Everyone who may read analyses then sees it under **Shared with everyone**, read-only: they can open,
+read, compare and export it, but not stop it, run it again or read its log. The owner makes it
+private again at any time, also after losing the permission, and an admin can make any public
+analysis private with **Make private**.
+
+![The confirmation before an analysis is made public](docs/screenshots/run-share.png)
+
 ### 7. Past analyses
 
 **Analyses** lists your own runs with their analysis date and start time, decision, model and
-duration, filterable by ticker and status. A user with `analysis:read:all` (ADMIN) also gets an
-**All users** switch, off by default, that lists everyone's runs with an **Owner** column.
+duration, filterable by ticker and status, under the tab **My analyses**. **Shared with everyone**
+lists the analyses other users have made public (see [step 6](#6-watch-it-and-read-the-results)),
+and a user with `analysis:read:all` (ADMIN) also gets an **All users** tab with everyone's runs.
+Both show an **Owner** column, and a public analysis carries a **Public** tag.
 Runs made outside the platform are imported (read-only) and show up by themselves within about
 10 seconds, as the data dir is watched; they belong to the first admin. **Scan data dir** forces a
 rescan:
@@ -190,7 +203,7 @@ rescan:
 A run whose report files are still being written is not shown as failed; it appears once it
 finishes.
 
-![Analyses list of all users with the Owner column, two runs ticked for comparing](docs/screenshots/analyses.png)
+![Analyses list of all users with the Owner column, a public run and two runs ticked for comparing](docs/screenshots/analyses.png)
 
 To compare runs, tick two to four of them and press **Compare**: the compare view shows them side
 by side, one column per run, with the settings (ticker, date, provider and models, analysts,
@@ -293,6 +306,12 @@ platform picks it up again.
   -f docker-compose.public.yml up -d`. The [server setup](deploy/server/README.md) does this with
   `-e public_domain=…`, or you open the platform through an SSH tunnel instead.
 - The first start takes about a minute (longer under Podman's VM on macOS).
+
+### Upgrading to 5.0.0
+
+`GET /api/analyses?allUsers=true` is gone: a client sends `scope=ALL` instead (without `scope` it
+gets its own analyses, as `allUsers=true` would now). Existing analyses stay private. The migrations
+give ADMIN the new permission `analysis:share` and add the built-in role PUBLISHER.
 
 ### Upgrading to 4.0.0
 
@@ -523,9 +542,9 @@ The backend:
   - **Names** are trimmed and have 2 to 40 characters: ASCII letters, digits, space, `_` and `-`.
     They are unique ignoring case, so a custom `admin` cannot sit next to `ADMIN`. A description has
     at most 200 characters.
-  - **Built-in roles**: ADMIN, ANALYST and VIEWER keep their name and description and
-    cannot be deleted (409 `built_in_role`, `params.change`). The permissions of ANALYST and VIEWER
-    can change; ADMIN's cannot, so the platform always has a role with every permission. Sending
+  - **Built-in roles**: ADMIN, ANALYST, VIEWER and PUBLISHER keep their name and description and
+    cannot be deleted (409 `built_in_role`, `params.change`). The permissions of ANALYST, VIEWER
+    and PUBLISHER can change; ADMIN's cannot, so the platform always has a role with every permission. Sending
     the current name or description of a built-in role is not a change.
   - **An assigned role cannot be deleted**: while any user, also a disabled one, holds it, the
     answer is 409 `role_in_use`. An admin removes the role from the users first.
@@ -565,7 +584,8 @@ The backend:
   |---|---|
   | `POST /api/auth/password` | a session only (everyone changes their own password) |
   | `POST /api/analyses`, `…/{id}/stop`, `…/{id}/rerun`, `POST /api/reports/rescan` | `analysis:run` |
-  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all` |
+  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all`, unless it is public (not its `…/logs`) |
+  | `PUT /api/analyses/{id}/visibility` | `analysis:read`; making it public needs `analysis:share` too, checked by the use case |
   | `GET /api/catalog`, `GET /api/health` | `analysis:run` or `settings:read` |
   | `GET /api/secrets` | `settings:read` |
   | `PUT` and `DELETE /api/secrets/{name}` | `settings:keys:write` |
@@ -582,20 +602,37 @@ The backend:
   analyses, reads and deletes analyses, manages presets and reads the settings. VIEWER reads
   analyses and presets. `analysis:defaults:manage` (save the platform's analysis defaults) and
   `analysis:override-models` (choose provider, models and rounds per analysis) are held by ADMIN
-  only; ANALYST and VIEWER do not have them, and a custom role can be given them. Analyses are the user's own: the user who started a run owns it (a rerun
+  only; ANALYST and VIEWER do not have them, and a custom role can be given them. The fourth
+  built-in role, PUBLISHER, holds only `analysis:share` (make one's own completed analyses public),
+  which ADMIN holds too; an admin lets a user publish by adding PUBLISHER to their roles, which
+  applies at the user's next login. Analyses are the user's own: the user who started a run owns it (a rerun
   belongs to whoever reran it, imported runs to the first admin), and another user's analysis
-  answers 404 like a missing one, unless the user has `analysis:read:all` (ADMIN). The presets are
+  answers 404 like a missing one, unless the user has `analysis:read:all` (ADMIN) or the analysis is
+  public. A public analysis is readable (`GET /api/analyses/{id}`, `…/report`, `…/prices`,
+  `…/events`) with `analysis:read`, but its log, stop and rerun answer 404 for everyone but its
+  owner and `analysis:read:all`. The presets are
   those of every user until the ownership issue
   ([#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) makes "their own"
   true. On the first start after the upgrade, analyses without an owner are given to the first
-  admin. `GET /api/analyses?allUsers=true` lists everyone's analyses with `analysis:read:all` and
-  is ignored without it. Admins can add custom roles with any set of permissions. The permissions
-  of ANALYST and VIEWER can be changed, ADMIN's cannot, and no built-in role can be renamed or
-  deleted. The UI hides the links, buttons and pages the user has no permission for; the backend
+  admin. `GET /api/analyses?scope=MINE|SHARED|ALL` (default `MINE`) lists the caller's own
+  analyses, the public analyses of other users, or, with `analysis:read:all`, everyone's; `ALL`
+  without that permission lists the own ones. Admins can add custom roles with any set of
+  permissions. The permissions of ANALYST, VIEWER and PUBLISHER can be changed, ADMIN's cannot, and
+  no built-in role can be renamed or deleted.
+- `PUT /api/analyses/{id}/visibility` with `{"visibility": "PUBLIC" | "PRIVATE", "version"}` makes
+  an analysis public or private (the `AnalysisDto` has `visibility`, `visibilityChangedAt`,
+  `version`, and `canManage` and `canChangeVisibility` for the caller). Only the owner makes an
+  analysis public, and only a `COMPLETED` one, with `analysis:share`. The owner makes it private
+  again at any time, also without the permission; an admin with `analysis:share` makes any public
+  analysis private. Answers: 200 with the `AnalysisDto`; 403 `analysis_share_forbidden` (the owner
+  lacks `analysis:share`); 404 (not visible to the caller, or someone else's analysis made public);
+  409 `analysis_not_shareable` (`params.status`, the analysis is not completed); 409
+  `concurrent_update` (a stale `version`). Asking for the visibility the analysis has changes
+  nothing. The UI hides the links, buttons and pages the user has no permission for; the backend
   rules are what protect.
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
   `analysis:read` like the other analysis reads (another user's run answers 404 unless the user has
-  `analysis:read:all`), and a stream that is open when its session ends (logout, idle timeout,
+  `analysis:read:all` or the analysis is public), and a stream that is open when its session ends (logout, idle timeout,
   a password change in another session, a disable or password reset by an admin) is closed by the server.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
   `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.

@@ -14,10 +14,12 @@ import {
   NPopconfirm,
   NSpace,
   NStatistic,
+  NSwitch,
   NTabPane,
   NTabs,
   NTag,
   NTooltip,
+  useMessage,
 } from 'naive-ui'
 import {
   ACTIVE_STATUSES,
@@ -25,9 +27,11 @@ import {
   analysisApi,
   RunLog,
   useRunStream,
+  visibilityControl,
 } from '@/features/analysis'
 import { PERMISSIONS, useSessionStore } from '@/features/auth'
-import type { Analysis, AnalysisReport } from '@/shared/api/types'
+import { ApiError } from '@/shared/api/error'
+import type { Analysis, AnalysisReport, Visibility } from '@/shared/api/types'
 import { MarkdownView, PriceChart, reportLanguage, reportsApi, SECTIONS } from '@/features/reports'
 import { localeForLanguage, outputLanguageFor } from '@/shared/i18n'
 import { useLabels } from '@/shared/composables/useLabels'
@@ -53,6 +57,7 @@ const {
   usd,
 } = useLabels()
 const { locale } = useI18n()
+const message = useMessage()
 
 const id = computed(() => String(route.params.id))
 const analysis = ref<Analysis | null>(null)
@@ -145,6 +150,39 @@ async function stop() {
   }
 }
 
+const control = computed(() =>
+  analysis.value
+    ? visibilityControl(analysis.value, session.user?.id ?? null)
+    : ({ kind: 'none' } as const),
+)
+const sharedBy = computed(() => {
+  const owner = analysis.value?.owner
+  return analysis.value?.visibility === 'PUBLIC' && owner && owner.id !== session.user?.id
+    ? owner.username
+    : null
+})
+
+async function changeVisibility(visibility: Visibility) {
+  if (!analysis.value) return
+  acting.value = true
+  try {
+    analysis.value = await analysisApi.changeVisibility(id.value, {
+      visibility,
+      version: analysis.value.version,
+    })
+    failure.value = null
+  } catch (e) {
+    if (e instanceof ApiError && e.errorCode === 'concurrent_update') {
+      await refresh()
+      message.warning(t('detail.visibilityConflict'))
+    } else {
+      failure.value = e
+    }
+  } finally {
+    acting.value = false
+  }
+}
+
 async function rerun() {
   acting.value = true
   try {
@@ -172,6 +210,12 @@ async function rerun() {
           }}</span>
           <StatusTag :status="analysis.status" />
           <RatingTag :rating="rating" size="medium" />
+          <NTag v-if="analysis.visibility === 'PUBLIC'" size="small" type="info" :bordered="false">
+            {{ t('runs.public') }}
+          </NTag>
+          <span v-if="sharedBy" class="subtitle subtitle--small">{{
+            t('detail.sharedBy', { username: sharedBy })
+          }}</span>
           <NTooltip v-if="outputLanguage">
             <template #trigger>
               <NTag size="small" :bordered="false" :type="languageDiffers ? 'info' : 'default'">
@@ -183,7 +227,40 @@ async function rerun() {
         </NSpace>
       </template>
       <template #header-extra>
-        <NSpace v-if="session.can(PERMISSIONS.analysisRun)">
+        <NSpace align="center">
+          <template v-if="control.kind === 'switch'">
+            <NTooltip v-if="control.disabled">
+              <template #trigger>
+                <span><NSwitch :value="false" disabled /> {{ t('detail.public') }}</span>
+              </template>
+              {{ t('detail.notCompletedNote') }}
+            </NTooltip>
+            <span v-else-if="analysis.visibility === 'PUBLIC'">
+              <NSwitch
+                :value="true"
+                :loading="acting"
+                @update:value="changeVisibility('PRIVATE')"
+              />
+              {{ t('detail.public') }}
+            </span>
+            <NPopconfirm v-else @positive-click="changeVisibility('PUBLIC')">
+              <template #trigger>
+                <span><NSwitch :value="false" :loading="acting" /> {{ t('detail.public') }}</span>
+              </template>
+              {{ t('detail.publicConfirm') }}
+            </NPopconfirm>
+          </template>
+          <NPopconfirm
+            v-else-if="control.kind === 'makePrivate'"
+            @positive-click="changeVisibility('PRIVATE')"
+          >
+            <template #trigger>
+              <NButton secondary :loading="acting">{{ t('detail.makePrivate') }}</NButton>
+            </template>
+            {{ t('detail.makePrivateConfirm') }}
+          </NPopconfirm>
+        </NSpace>
+        <NSpace v-if="analysis.canManage && session.can(PERMISSIONS.analysisRun)">
           <NPopconfirm v-if="active" @positive-click="stop">
             <template #trigger>
               <NButton type="error" secondary :loading="acting">{{ t('detail.stop') }}</NButton>
@@ -324,7 +401,12 @@ async function rerun() {
           />
         </NTabPane>
 
-        <NTabPane name="logs" :tab="t('detail.logs')" display-directive="show:lazy">
+        <NTabPane
+          v-if="analysis?.canManage"
+          name="logs"
+          :tab="t('detail.logs')"
+          display-directive="show:lazy"
+        >
           <RunLog :analysis-id="id" :live="active" />
         </NTabPane>
 

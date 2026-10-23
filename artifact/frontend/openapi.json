@@ -521,12 +521,16 @@
                         }
                     },
                     {
-                        "name": "allUsers",
+                        "name": "scope",
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean",
-                            "default": false
+                            "type": "string",
+                            "enum": [
+                                "MINE",
+                                "SHARED",
+                                "ALL"
+                            ]
                         }
                     }
                 ],
@@ -556,6 +560,46 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/StartAnalysisRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AnalysisDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analyses/{id}/visibility": {
+            "put": {
+                "tags": [
+                    "analyses-api-controller"
+                ],
+                "operationId": "changeVisibility",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeVisibilityRequest"
                             }
                         }
                     },
@@ -1324,7 +1368,8 @@
                                 "role:manage",
                                 "audit:read",
                                 "analysis:defaults:manage",
-                                "analysis:override-models"
+                                "analysis:override-models",
+                                "analysis:share"
                             ]
                         }
                     }
@@ -1368,7 +1413,8 @@
                                 "role:manage",
                                 "audit:read",
                                 "analysis:defaults:manage",
-                                "analysis:override-models"
+                                "analysis:override-models",
+                                "analysis:share"
                             ]
                         }
                     },
@@ -1454,7 +1500,8 @@
                                 "role:manage",
                                 "audit:read",
                                 "analysis:defaults:manage",
-                                "analysis:override-models"
+                                "analysis:override-models",
+                                "analysis:share"
                             ]
                         }
                     },
@@ -1478,6 +1525,26 @@
                 "required": [
                     "password",
                     "username"
+                ]
+            },
+            "ChangeVisibilityRequest": {
+                "type": "object",
+                "properties": {
+                    "visibility": {
+                        "type": "string",
+                        "enum": [
+                            "PRIVATE",
+                            "PUBLIC"
+                        ]
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "required": [
+                    "version",
+                    "visibility"
                 ]
             },
             "StartAnalysisRequest": {
@@ -1604,6 +1671,27 @@
                     },
                     "owner": {
                         "$ref": "#/components/schemas/AnalysisOwnerDto"
+                    },
+                    "visibility": {
+                        "type": "string",
+                        "enum": [
+                            "PRIVATE",
+                            "PUBLIC"
+                        ]
+                    },
+                    "visibilityChangedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "canManage": {
+                        "type": "boolean"
+                    },
+                    "canChangeVisibility": {
+                        "type": "boolean"
                     }
                 }
             },
@@ -1747,7 +1835,8 @@
                                 "role:manage",
                                 "audit:read",
                                 "analysis:defaults:manage",
-                                "analysis:override-models"
+                                "analysis:override-models",
+                                "analysis:share"
                             ]
                         }
                     },

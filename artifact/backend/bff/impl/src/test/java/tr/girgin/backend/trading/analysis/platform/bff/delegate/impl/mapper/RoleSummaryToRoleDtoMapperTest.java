@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PermissionDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PermissionEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RoleDto;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
@@ -14,7 +14,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Ro
 class RoleSummaryToRoleDtoMapperTest {
 
     private final RoleSummaryToRoleDtoMapper mapper =
-            new RoleSummaryToRoleDtoMapperImpl(new PermissionToPermissionDtoMapperImpl());
+            new RoleSummaryToRoleDtoMapperImpl(new PermissionToPermissionEnumDtoMapperImpl());
 
     @Test
     void mapsTheRoleWithItsPermissionsSortedByKeyAndItsUserCount() {
@@ -33,7 +33,8 @@ class RoleSummaryToRoleDtoMapperTest {
         assertThat(dto.builtIn()).isTrue();
         assertThat(dto.description()).isEqualTo("Runs analyses");
         assertThat(dto.permissions())
-                .containsExactly(PermissionDto.ANALYSIS_RUN, PermissionDto.PRESET_READ, PermissionDto.USER_READ);
+                .containsExactly(
+                        PermissionEnumDto.ANALYSIS_RUN, PermissionEnumDto.PRESET_READ, PermissionEnumDto.USER_READ);
         assertThat(dto.userCount()).isEqualTo(7);
         assertThat(dto.version()).isEqualTo(3L);
     }

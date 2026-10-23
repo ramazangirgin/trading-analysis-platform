@@ -301,13 +301,13 @@ share.
 - **Status**: done
 - **Depends on**: WP3, WP5
 - **Design**:
-  - BFF API: a DTO enum `PermissionDto` in `bff.controller.api.model` (the API layer has its own
+  - BFF API: a DTO enum `PermissionEnumDto` in `bff.controller.api.model` (the API layer has its own
     types, it does not use domain types). Each constant serialises to its key (`analysis:run`)
     through `@JsonValue` on a `key()` accessor; `CurrentUserDto.permissions` becomes
-    `List<PermissionDto>` (login, `me` and password responses). JSON on the wire stays the same.
-  - Mapping: `PermissionToPermissionDtoMapper` in `bff.delegate.impl.mapper`, a MapStruct enum
+    `List<PermissionEnumDto>` (login, `me` and password responses). JSON on the wire stays the same.
+  - Mapping: `PermissionToPermissionEnumDtoMapper` in `bff.delegate.impl.mapper`, a MapStruct enum
     mapping (`SourceToTargetMapper` with one `map` method, as the other mappers). MapStruct fails the
-    compile when a `Permission` constant has no `PermissionDto` counterpart. No mapper unit test:
+    compile when a `Permission` constant has no `PermissionEnumDto` counterpart. No mapper unit test:
     MapStruct cannot see the DTO's key strings, but `RolePermissionsIntegrationTest` already
     asserts that ADMIN (who holds every permission) gets exactly `Permission::key` of every
     constant from `me`, which checks every wire key end to end. `AuthApiDelegateImpl` builds the
@@ -323,14 +323,14 @@ share.
   - Database: unchanged. `"IDENTITY"."PERMISSION"` stays the enum mirror the persistence convention
     asks for, guarded by `JpaIdentityRepositoryTest`.
 - **Files**:
-  - `artifact/backend/bff/api/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/controller/api/model/{PermissionDto,CurrentUserDto}.java`
-  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper/PermissionToPermissionDtoMapper.java` (new)
+  - `artifact/backend/bff/api/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/controller/api/model/{PermissionEnumDto,CurrentUserDto}.java`
+  - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper/PermissionToPermissionEnumDtoMapper.java` (new)
   - `artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/AuthApiDelegateImpl.java`
   - `openapi.json` (wherever `mise run api-types` reads it), `artifact/frontend/src/shared/api/{schema.d.ts,types.ts}`
   - `artifact/frontend/src/features/auth/{model/permissions.ts,store.ts}`, `artifact/frontend/src/app/router/index.ts` and any caller whose types change
   - `docs/coding-convention/repository-shared-types.md` (new), `docs/coding-convention/README.md`
 - **Steps**:
-  - [x] `PermissionDto`, the typed `CurrentUserDto.permissions` and the mapper.
+  - [x] `PermissionEnumDto`, the typed `CurrentUserDto.permissions` and the mapper.
   - [x] Regenerate the OpenAPI document and the frontend API types; type the frontend with
         `Permission`.
   - [x] Write `repository-shared-types.md` and list it in the conventions README table.

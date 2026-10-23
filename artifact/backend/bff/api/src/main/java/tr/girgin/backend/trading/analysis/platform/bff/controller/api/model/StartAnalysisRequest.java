@@ -9,8 +9,8 @@ import java.util.List;
 public record StartAnalysisRequest(
         @NotBlank String ticker,
         @NotNull LocalDate tradeDate,
-        AssetTypeDto assetType,
-        @NotEmpty List<@NotNull AnalystDto> analysts,
+        AssetTypeEnumDto assetType,
+        @NotEmpty List<@NotNull AnalystEnumDto> analysts,
         String llmProvider,
         String deepThinkLlm,
         String quickThinkLlm,

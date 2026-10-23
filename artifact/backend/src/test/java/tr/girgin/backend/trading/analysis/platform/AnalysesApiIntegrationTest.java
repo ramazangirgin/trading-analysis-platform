@@ -342,9 +342,8 @@ class AnalysesApiIntegrationTest {
 
         assertThat(rescan.statusCode()).isEqualTo(200);
         assertThat(JSON.readTree(rescan.body()).get("scanned").asInt()).isGreaterThanOrEqualTo(1);
-        JsonNode imported = JSON.readTree(
-                        get("/api/analyses?ticker=BE&allUsers=true").body())
-                .get(0);
+        JsonNode imported =
+                JSON.readTree(get("/api/analyses?ticker=BE&scope=ALL").body()).get(0);
         assertThat(imported.get("source").asString()).isEqualTo("EXTERNAL");
         assertThat(imported.get("status").asString()).isEqualTo("COMPLETED");
         assertThat(imported.get("rating").asString()).isEqualTo("UNDERWEIGHT");
@@ -353,7 +352,7 @@ class AnalysesApiIntegrationTest {
         assertThat(imported.at("/spec/outputLanguage").asString()).isEqualTo("Turkish");
         assertThat(imported.at("/stats/tokensIn").asLong()).isEqualTo(68_794);
         JsonNode failed = JSON.readTree(
-                        get("/api/analyses?ticker=ZZFAIL&allUsers=true").body())
+                        get("/api/analyses?ticker=ZZFAIL&scope=ALL").body())
                 .get(0);
         assertThat(failed.get("status").asString()).isEqualTo("FAILED");
         assertThat(failed.get("errorMessage").asString()).isEqualTo("OpenAIError: Missing credentials.");
@@ -369,7 +368,7 @@ class AnalysesApiIntegrationTest {
         JsonNode again = JSON.readTree(post("/api/reports/rescan", "").body());
         assertThat(again.get("created").asInt()).isZero();
         assertThat(again.get("updated").asInt()).isZero();
-        assertThat(JSON.readTree(get("/api/analyses?ticker=BE&allUsers=true").body())
+        assertThat(JSON.readTree(get("/api/analyses?ticker=BE&scope=ALL").body())
                         .size())
                 .isEqualTo(1);
     }

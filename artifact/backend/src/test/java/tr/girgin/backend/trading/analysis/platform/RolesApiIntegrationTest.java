@@ -165,7 +165,7 @@ class RolesApiIntegrationTest extends UsersApiTestBase {
     void builtInRolesCannotBeRenamedOrDeletedAndAdminKeepsItsPermissions() throws Exception {
         TestSession admin = admin();
 
-        for (RoleId builtIn : new RoleId[] {RoleId.ADMIN, RoleId.ANALYST, RoleId.VIEWER}) {
+        for (RoleId builtIn : new RoleId[] {RoleId.ADMIN, RoleId.ANALYST, RoleId.VIEWER, RoleId.PUBLISHER}) {
             String path = "/api/roles/" + builtIn.value();
             HttpResponse<String> rename = admin.send("PATCH", path, "{\"name\":\"Renamed\"}");
             assertThat(rename.statusCode()).as("rename " + builtIn.value()).isEqualTo(409);
@@ -179,6 +179,15 @@ class RolesApiIntegrationTest extends UsersApiTestBase {
                 admin.send("PATCH", "/api/roles/" + RoleId.ADMIN.value(), "{\"permissions\":[\"analysis:read\"]}");
         assertThat(adminPermissions.statusCode()).isEqualTo(409);
         assertThat(errorCode(adminPermissions)).isEqualTo("built_in_role");
+    }
+
+    @Test
+    void thePublisherRoleIsListedAsBuiltInWithOnlyAnalysisShare() throws Exception {
+        JsonNode publisher = body(admin().send("GET", "/api/roles/" + RoleId.PUBLISHER.value(), null));
+
+        assertThat(publisher.get("builtIn").asBoolean()).isTrue();
+        assertThat(publisher.get("name").asString()).isEqualTo("PUBLISHER");
+        assertThat(texts(publisher.get("permissions"))).containsExactly("analysis:share");
     }
 
     @Test

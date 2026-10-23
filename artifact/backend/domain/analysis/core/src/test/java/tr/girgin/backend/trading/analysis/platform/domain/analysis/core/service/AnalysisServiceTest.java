@@ -14,8 +14,10 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
@@ -24,6 +26,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ow
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 
 class AnalysisServiceTest {
@@ -36,6 +39,7 @@ class AnalysisServiceTest {
     private Fakes.EventStore eventStore;
     private AnalysisEventHub hub;
     private AnalysisService service;
+    private AnalysisListService lists;
 
     @BeforeEach
     void setUp() {
@@ -44,6 +48,7 @@ class AnalysisServiceTest {
         eventStore = new Fakes.EventStore();
         hub = new AnalysisEventHub(repository, eventStore);
         service = new AnalysisService(repository, runner, new Fakes.Credentials(), eventStore, hub, CLOCK, 2);
+        lists = new AnalysisListService(repository);
     }
 
     private Analysis start(AnalysisSpec spec) {
@@ -404,35 +409,115 @@ class AnalysisServiceTest {
         start(Fakes.spec("NVDA"));
         start(Fakes.spec("MU"));
 
-        assertThat(service.list(AnalysisFilter.ALL, Fakes.OWN)).hasSize(2);
-        assertThat(service.list(new AnalysisFilter(null, "MU", null), Fakes.OWN))
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.MINE, Fakes.OWN))
+                .hasSize(2);
+        assertThat(lists.list(new AnalysisFilter(null, "MU", null), AnalysisScope.MINE, Fakes.OWN))
                 .singleElement()
                 .satisfies(a -> assertThat(a.spec().ticker()).isEqualTo("MU"));
     }
 
     @Test
-    void listsOnlyTheCallersRunsWithoutAllUsers() {
+    void listsOnlyTheCallersRunsInTheMineScope() {
         Analysis mine = start(Fakes.spec("NVDA"));
         service.start(Fakes.spec("MU"), Fakes.OTHER);
 
-        assertThat(service.list(AnalysisFilter.ALL, Fakes.OWN))
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.MINE, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
-        assertThat(service.list(new AnalysisFilter(null, null, Fakes.OTHER), Fakes.OWN))
+        assertThat(lists.list(new AnalysisFilter(null, null, Fakes.OTHER), AnalysisScope.MINE, Fakes.OWN))
+                .extracting(Analysis::id)
+                .containsExactly(mine.id());
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.MINE, Fakes.EVERYONE))
+                .extracting(Analysis::owner)
+                .containsExactly(Fakes.OTHER);
+    }
+
+    @Test
+    void listsEveryonesRunsInTheAllScopeWithAllUsers() {
+        start(Fakes.spec("NVDA"));
+        service.start(Fakes.spec("MU"), Fakes.OTHER);
+        service.start(Fakes.spec("GOOG"), Fakes.OTHER);
+
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.ALL, Fakes.EVERYONE))
+                .hasSize(3);
+        assertThat(lists.list(new AnalysisFilter(null, null, Fakes.OWNER), AnalysisScope.ALL, Fakes.EVERYONE))
+                .singleElement()
+                .satisfies(a -> assertThat(a.owner()).isEqualTo(Fakes.OWNER));
+    }
+
+    @Test
+    void theAllScopeIsTheMineScopeWithoutAllUsers() {
+        Analysis mine = start(Fakes.spec("NVDA"));
+        service.start(Fakes.spec("MU"), Fakes.OTHER);
+
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.ALL, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
     }
 
     @Test
-    void listsEveryonesRunsWithAllUsers() {
-        start(Fakes.spec("NVDA"));
-        service.start(Fakes.spec("MU"), Fakes.OTHER);
-        service.start(Fakes.spec("GOOG"), Fakes.OTHER);
+    void theSharedScopeHoldsOtherUsersPublicRunsOnly() {
+        Analysis ownPublic = publicRun("NVDA", Fakes.OWNER);
+        Analysis othersPublic = publicRun("MU", Fakes.OTHER);
+        Analysis othersPrivate = service.start(Fakes.spec("GOOG"), Fakes.OTHER);
 
-        assertThat(service.list(AnalysisFilter.ALL, Fakes.EVERYONE)).hasSize(3);
-        assertThat(service.list(new AnalysisFilter(null, null, Fakes.OWNER), Fakes.EVERYONE))
-                .singleElement()
-                .satisfies(a -> assertThat(a.owner()).isEqualTo(Fakes.OWNER));
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.OWN))
+                .extracting(Analysis::id)
+                .containsExactly(othersPublic.id());
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.OTHERS))
+                .extracting(Analysis::id)
+                .containsExactly(ownPublic.id())
+                .doesNotContain(othersPrivate.id());
+        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.EVERYONE))
+                .extracting(Analysis::id)
+                .containsExactly(ownPublic.id());
+    }
+
+    @Test
+    void statusAndTickerApplyToEveryScope() {
+        publicRun("NVDA", Fakes.OWNER);
+        publicRun("MU", Fakes.OWNER);
+
+        for (AnalysisScope scope : AnalysisScope.values()) {
+            AnalysisAccess access = scope == AnalysisScope.SHARED ? Fakes.OTHERS : Fakes.OWN;
+            assertThat(lists.list(new AnalysisFilter(null, "MU", null), scope, access))
+                    .singleElement()
+                    .satisfies(a -> assertThat(a.spec().ticker()).isEqualTo("MU"));
+            assertThat(lists.list(new AnalysisFilter(AnalysisStatus.COMPLETED, null, null), scope, access))
+                    .hasSize(2);
+            assertThat(lists.list(new AnalysisFilter(AnalysisStatus.RUNNING, null, null), scope, access))
+                    .isEmpty();
+        }
+    }
+
+    @Test
+    void aQueuedRunIsPrivate() {
+        assertThat(start(Fakes.spec("NVDA")).visibility()).isEqualTo(Visibility.PRIVATE);
+    }
+
+    @Test
+    void anotherUsersPublicRunCanBeReadButNotStoppedOrRunAgain() {
+        Analysis shared = publicRun("NVDA", Fakes.OWNER);
+
+        assertThat(service.get(shared.id(), Fakes.OTHERS).id()).isEqualTo(shared.id());
+        assertNotFound(() -> service.stop(shared.id(), Fakes.OTHERS), shared.id());
+        assertNotFound(() -> service.rerun(shared.id(), Fakes.OTHERS), shared.id());
+    }
+
+    @Test
+    void aRerunOfAPublicRunIsPrivate() {
+        Analysis shared = publicRun("NVDA", Fakes.OWNER);
+
+        assertThat(service.rerun(shared.id(), Fakes.OWN).visibility()).isEqualTo(Visibility.PRIVATE);
+    }
+
+    private Analysis publicRun(String ticker, OwnerId owner) {
+        Analysis run = service.start(Fakes.spec(ticker), owner);
+        runner.sink(run.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
+        runner.sink(run.id()).onExit(0);
+        Analysis shared = repository.rows.get(run.id()).withVisibility(Visibility.PUBLIC, NOW);
+        repository.rows.put(shared.id(), shared);
+        return shared;
     }
 
     @Test
