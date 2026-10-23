@@ -373,17 +373,12 @@ only when asked to in the session.
 /develop-issue https://github.com/<owner>/<repo>/issues/32
 ```
 
-<<<<<<< HEAD
 It records its own steps (the plan with the time the approval took, the update with `main`, and
 one summed **orchestration** step for the rest of the session) in the
 [progress comment on the issue](#progress-on-the-issue) next to the scripts' steps, each with its
 tokens, cost, model and limit usage (from the session transcript and a limit probe, see there). At
-the end the run summary on the pull request carries the Usage section (`progress.sh usage <pr>`). It plans with
-the `plan-from-issue` skill, invoked from it. After the approval it starts `run.sh` once, detached
-=======
-It records its own steps (the plan with the time the approval took, the update with `main`) in the
-[progress comment on the issue](#progress-on-the-issue) next to the scripts' steps. It plans with
-the `plan-from-issue` skill, run in a subagent that returns only each plan's path, branch, pull
+the end the run summary on the pull request carries the Usage section (`progress.sh usage <pr>`).
+It plans with the `plan-from-issue` skill, run in a subagent that returns only each plan's path, branch, pull
 request link and a short summary, and each round of review comments is handed to a subagent in the
 same way, so the session does not carry what the plan was written from. On the approval it records
 the plan step, pushes the plan branch, posts the `plan-approved` comment on the plan's pull request
@@ -394,7 +389,6 @@ goes straight to the implementation without asking again, while a plan changed a
 is asked about again. The implementation therefore starts from a context of the skill, the plan
 and the approval, well under 100k tokens, and every model turn that follows re-reads far less.
 It then starts `run.sh` once, detached
->>>>>>> origin/main
 (`detach.sh run.sh plan/<issue>-<slug>`), exactly what `mise run agent:run` runs, so the pull request
 and its state comments are the same and `mise run agent:next` can take over at any point. Every
 model turn of the session re-reads its whole context, so the session is not woken for each
