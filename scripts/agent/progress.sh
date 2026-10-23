@@ -3,7 +3,8 @@
 #
 #   scripts/agent/progress.sh show <branch | pr>       print the comment          (mise run agent:progress)
 #   scripts/agent/progress.sh post <branch | pr>       post it on the issue, or update it there
-#   scripts/agent/progress.sh begin <branch | pr> <step> [--at <epoch>]
+#   scripts/agent/progress.sh begin <branch | pr> <step> [--at <epoch> [--limits "<probe line>"]]
+#   scripts/agent/progress.sh probe                    print the limits now (the plan's start)
 #   scripts/agent/progress.sh probe <branch | pr> <step>   save the limits at the start of a window
 #   scripts/agent/progress.sh end <branch | pr> <step> [result]
 #   scripts/agent/progress.sh note <branch | pr> <text>
@@ -22,8 +23,30 @@
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
+# "limit5h=<n> limit7d=<n>": the Claude limits now, from one headless Haiku call (a few tokens, in
+# no row) whose rate_limit_event is read. Empty when the call fails: a limit that cannot be read is
+# n/a. --no-session-persistence keeps the call out of the session transcripts read below. It uses
+# the developer's login like the session does, never the DeepSeek endpoint.
+probe() {
+  local stream
+  command -v claude >/dev/null || return 0
+  stream=$(mktemp)
+  (
+    unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL ANTHROPIC_MODEL
+    claude -p --model haiku --output-format stream-json --verbose --no-session-persistence --tools "" \
+      "Reply with ok." >"$stream" 2>/dev/null
+  ) || true
+  py "$AGENT_DIR/agent_json.py" limits "$stream" 2>/dev/null || true
+  rm -f "$stream"
+}
+
 command=${1:?usage: $0 show|post|usage|begin|end|orchestration|note <branch | pr> [...]}
 shift
+# Without a branch: the plan window starts before its branch (and the number of its plans) is known.
+if [ "$command" = probe ] && [ $# -eq 0 ]; then
+  probe
+  exit 0
+fi
 async=false
 if [ "$command" = post ] && [ "${1:-}" = --async ]; then
   async=true
@@ -113,21 +136,6 @@ post() {
   done
 }
 
-# "limit5h=<n> limit7d=<n>": the Claude limits now, from one headless Haiku call (a few tokens, in
-# no row) whose rate_limit_event is read. Empty when the call fails: a limit that cannot be read is
-# n/a. --no-session-persistence keeps the call out of the session transcripts read below. It uses
-# the developer's login like the session does, never the DeepSeek endpoint.
-probe() {
-  local stream=$AGENT_STATE/probe.jsonl
-  command -v claude >/dev/null || return 0
-  (
-    unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL ANTHROPIC_MODEL
-    claude -p --model haiku --output-format stream-json --verbose --no-session-persistence --tools "" \
-      "Reply with ok." >"$stream" 2>/dev/null
-  ) || true
-  py "$AGENT_DIR/agent_json.py" limits "$stream" 2>/dev/null || true
-}
-
 limit_value() { printf '%s\n' "$2" | tr ' ' '\n' | sed -n "s/^$1=//p"; }
 
 # limit_keys <probe before> <probe after>: the marker keys of the windows both probes read.
@@ -178,11 +186,14 @@ case $command in
   post) post ;;
   usage) render --only usage ;;
   begin)
-    step=${1:?usage: $0 begin <branch | pr> <step> [--at <epoch>]}
+    step=${1:?usage: $0 begin <branch | pr> <step> [--at <epoch> [--limits "<probe line>"]]}
     at=$(date +%s)
     if [ "${2:-}" = --at ]; then
-      # Keeps the probe saved when the window started; without one, the limits before are n/a.
+      # The probe line taken when the window started; without one, the limits before are n/a.
       at=${3:?--at needs an epoch}
+      if [ "${4:-}" = --limits ]; then
+        printf '%s\n' "${5:-}" >"$AGENT_STATE/probe-$(step_slug "$step")"
+      fi
     else
       probe >"$AGENT_STATE/probe-$(step_slug "$step")" || true
     fi
