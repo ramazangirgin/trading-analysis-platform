@@ -185,6 +185,10 @@ case $command in
       at=${3:?--at needs an epoch}
     else
       probe >"$AGENT_STATE/probe-$(step_slug "$step")" || true
+      # The orchestration window starts with the first step outside the plan.
+      if [ "$step" != plan ] && [ ! -e "$AGENT_STATE/probe-orchestration" ]; then
+        cp "$AGENT_STATE/probe-$(step_slug "$step")" "$AGENT_STATE/probe-orchestration"
+      fi
     fi
     [[ $at =~ ^[0-9]+$ ]] || die "not an epoch: $at"
     printf '%s\tbegin\t\t%s\t\n' "$at" "$(printf '%s' "$step" | tr '\t\n' '  ')" >>"$file"
@@ -215,6 +219,8 @@ case $command in
       log "no session usage found: the orchestration is n/a"
       exit 0
     fi
+    before=$(cat "$AGENT_STATE/probe-orchestration" 2>/dev/null || true)
+    usage+=$(limit_keys "$before" "$(probe)")
     from=${usage%% *}
     printf '%s\tbegin\t\torchestration\t\n' "${from#from=}" >>"$file"
     AGENT_PROGRESS=$file progress_event usage orchestration "" "${usage#* }"

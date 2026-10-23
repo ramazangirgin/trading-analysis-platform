@@ -301,8 +301,9 @@ Where the usage numbers come from:
   cost is computed from a price table in `scripts/agent/agent_json.py` (a model that is not in it
   has no cost, `n/a`). The limits come from a **limit probe**: `progress.sh` makes one headless
   call to Haiku (a one-word prompt, no tools) at the start and the end of the window (`begin` makes the first; the plan, recorded after its
-  approval with `begin --at`, gets it from `progress.sh probe` when its window starts) and reads its
-  `rate_limit_event`. The probe costs a few tokens, counted in no row. A transcript that cannot be
+  approval with `begin --at`, gets it from `progress.sh probe` when its window starts; the
+  orchestration takes the probe of the first `begin` outside the plan, or `progress.sh probe <pr> orchestration`)
+  and reads its `rate_limit_event`. The probe costs a few tokens, counted in no row. A transcript that cannot be
   found or a failed probe gives `n/a`.
 - **The limits are shared** with everything else the developer runs with the same account at the
   same time, so a difference is an approximation, not what the step alone consumed. The comment
