@@ -349,6 +349,12 @@ def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, 
     every = [s for step in steps for s in [step] + step.children]
     total_tokens = sum(s.tokens for s in every)
     total_cost = sum(s.cost for s in every)
+    usage_rows = [row for row in map(usage_row, steps) if row]
+    inexact = any("cost_usd" not in row or row.get("partial") == "1" for row in usage_rows)
+    if inexact and total_cost:
+        total_cost_text = f"at least {money(total_cost)}"
+    else:
+        total_cost_text = money(total_cost)
     agent_seconds = sum(s.agent_ms for s in every) // 1000
     agent_runs = sum(s.agent_runs for s in every)
 
@@ -362,7 +368,7 @@ def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, 
     out.append(" · ".join(facts) + "  ")
     out.append(
         f"**Elapsed**: {duration(elapsed)} · **Agents**: {agent_runs} run(s), {duration(agent_seconds)} · "
-        f"**Tokens**: {tokens(total_tokens)} · **Cost** (API prices): {money(total_cost)}"
+        f"**Tokens**: {tokens(total_tokens)} · **Cost** (API prices): {total_cost_text}"
     )
     out.append("")
     if not steps:

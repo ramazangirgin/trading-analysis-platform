@@ -105,6 +105,10 @@ class RenderTest(unittest.TestCase):
         self.assertIn("| review R1 |  | n/a | 0 | 0 | 0 | $3.00 | n/a | n/a |", text)
         self.assertIn("| orchestration |  | some-new-model | 500 | 5,000 | 800 | n/a | n/a | n/a |", text)
 
+    def test_header_cost_is_at_least_when_a_usage_has_no_cost(self):
+        self.assertIn("**Cost** (API prices): at least $", self.render(A_RUN + WITH_SESSION))
+        self.assertIn("**Cost** (API prices): $7.50", self.render(A_RUN))
+
     def test_usage_total_covers_every_row_and_the_limit_consumption(self):
         text = self.render(A_RUN + WITH_SESSION)
         self.assertIn(
