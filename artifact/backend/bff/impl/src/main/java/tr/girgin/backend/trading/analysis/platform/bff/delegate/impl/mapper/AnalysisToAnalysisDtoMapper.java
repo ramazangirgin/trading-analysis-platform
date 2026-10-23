@@ -13,7 +13,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 
 @Mapper(
-        uses = {AnalysisIdToStringMapper.class, RunStatsToRunStatsDtoMapper.class, VisibilityToVisibilityDtoMapper.class
+        uses = {
+            AnalysisIdToStringMapper.class,
+            RunStatsToRunStatsDtoMapper.class,
+            VisibilityToVisibilityEnumDtoMapper.class
         })
 public interface AnalysisToAnalysisDtoMapper {
 

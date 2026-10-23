@@ -17,7 +17,7 @@ current page keeps working against the unchanged start endpoint in between.
 
 | Part | Conventions that apply |
 |---|---|
-| Backend identity domain | backend-java-package-structure.md (`Permission` in `domain.identity.core.model`, the `PermissionDto` mirror in `bff.controller.api.model`); repository-shared-types.md (domain enum is the single source, DTO mirror with `@JsonValue` key, OpenAPI carries the values to the frontend, a database enum mirror guarded by a test); backend-database-naming.md and backend-java-persistence.md (migrations, uppercase quoted names) |
+| Backend identity domain | backend-java-package-structure.md (`Permission` in `domain.identity.core.model`, the `PermissionEnumDto` mirror in `bff.controller.api.model`); repository-shared-types.md (domain enum is the single source, DTO mirror with `@JsonValue` key, OpenAPI carries the values to the frontend, a database enum mirror guarded by a test); backend-database-naming.md and backend-java-persistence.md (migrations, uppercase quoted names) |
 | Backend settings domain | backend-java-package-structure.md (core model/port, adapter persistence entity/repository/mappers); backend-java-persistence.md (entities, `@Version` optimistic locking with `Long version` on the record, `saveAndFlush`, one schema per domain, Flyway migrations per domain, conventions test, the stale-write test per entity); backend-database-naming.md |
 | Backend orchestration | backend-java-package-structure.md (a use case spanning several domains lives in `orchestration`, one sub-package per feature with only `inbound`, `service`, `model`; `domains_are_independent`) |
 | Backend BFF | backend-java-rest-api.md (a 200-only endpoint returns the DTO, never `ResponseEntity`; every error is an exception mapped by `DomainExceptionHandler` and the `*ExceptionToApiExceptionMapper`, never caught in a delegate); `@RequiresPermission` on the delegate method (`TAP-A1`); mappers named `SourceToTargetMapper` |
@@ -30,8 +30,8 @@ current page keeps working against the unchanged start endpoint in between.
 
 - Add to `Permission` (`domain.identity.core.model`): `ANALYSIS_DEFAULTS_MANAGE("analysis:defaults:manage")`,
   `ANALYSIS_OVERRIDE_MODELS("analysis:override-models")`. Add the same constants with the same
-  `@JsonValue` keys to `PermissionDto` (`bff.controller.api.model`). The two MapStruct
-  `PermissionToPermissionDtoMapper` / `PermissionDtoToPermissionMapper` map by constant name and need
+  `@JsonValue` keys to `PermissionEnumDto` (`bff.controller.api.model`). The two MapStruct
+  `PermissionToPermissionEnumDtoMapper` / `PermissionEnumDtoToPermissionMapper` map by constant name and need
   no change.
 - Identity migration `V7__add_analysis_permissions.sql`: one `ALTER TYPE "IDENTITY"."PERMISSION"
   ADD VALUE` per constant (labels are the Java constant names, not the keys, as the V1 comment
@@ -137,12 +137,12 @@ No page changes in this plan; only what the new keys need:
 
 - **Status**: done
 - **Depends on**: none
-- **Files**: `domain/identity/core/.../model/Permission.java`; `bff/api/.../model/PermissionDto.java`;
+- **Files**: `domain/identity/core/.../model/Permission.java`; `bff/api/.../model/PermissionEnumDto.java`;
   `domain/identity/adapter/src/main/resources/.../migration/V7__add_analysis_permissions.sql`,
   `V8__grant_analysis_permissions_to_admin.sql`
 - **Steps**:
   - [x] add the two constants to `Permission` (keys `analysis:defaults:manage`, `analysis:override-models`)
-  - [x] add them to `PermissionDto` with the same `@JsonValue` keys
+  - [x] add them to `PermissionEnumDto` with the same `@JsonValue` keys
   - [x] V7: `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE` for each constant, in declaration order
   - [x] V8: append both to the role with ID `ADMIN` (ANALYST and VIEWER unchanged)
 - **Tests**: `PermissionTest` (keys round-trip and are unique, unchanged); `JpaIdentityRepositoryTest`
@@ -269,7 +269,7 @@ No page changes in this plan; only what the new keys need:
   - [x] **Remove the redundant comments in this pull request's files**: the DTO Javadoc of
     `AnalysisDefaultsDto`, the V7, V8 and V3 migration comments and V3's `COMMENT ON TABLE`, the
     `// Optimistic lock` comment and the Javadoc of `AnalysisDefaultsEntity`, and the Javadoc of
-    `PermissionDto`. (V7, V8 and V3 are new in this pull request, so they may change.) The same
+    `PermissionEnumDto`. (V7, V8 and V3 are new in this pull request, so they may change.) The same
     sweep of the existing code under `artifact/`, `e2e/` and `build-logic/` (about 570 comments in
     about 400 files, each a judgement) is #203, by the developer's decision in the review: one
     reviewable part per area, and never a migration already merged into `main` (Flyway checksums

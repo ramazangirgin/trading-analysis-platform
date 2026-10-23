@@ -97,7 +97,8 @@ build-logic/checkstyle-rules/            an own Gradle build, included by the ro
   cannot be added without proof that it works and that it does not report compliant code; this replaces
   the manual "show that it fails on a deliberate violation" step for project rules. The optional file
   `rules/<id>/sources` holds `main`, `test` or `both` (the default): the source sets the rule applies to,
-  as the config scopes some rules by path.
+  as the config scopes some rules by path. `rules/<id>/module` holds the module folder the fixtures are
+  copied into (`bff/api`), for a rule that the config scopes to one module.
 - **`DocumentationTest`**: every check has a reference document, the index above links it, and the
   document's parameter table lists exactly the check's public setters; every project rule has a row in
   the rules catalogue.

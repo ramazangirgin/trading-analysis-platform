@@ -109,7 +109,7 @@ final class Fakes {
         final Map<AnalysisId, Analysis> rows = new ConcurrentHashMap<>();
         // Thrown by every write except insert when set, as a stale write would.
         RuntimeException failOnWrite;
-        int visibilityWrites;
+        int updates;
 
         @Override
         public void insert(Analysis analysis) {
@@ -121,16 +121,7 @@ final class Fakes {
             if (failOnWrite != null) {
                 throw failOnWrite;
             }
-            rows.put(analysis.id(), analysis);
-            return analysis;
-        }
-
-        @Override
-        public Analysis updateVisibility(Analysis analysis) {
-            if (failOnWrite != null) {
-                throw failOnWrite;
-            }
-            visibilityWrites++;
+            updates++;
             rows.put(analysis.id(), analysis);
             return analysis;
         }

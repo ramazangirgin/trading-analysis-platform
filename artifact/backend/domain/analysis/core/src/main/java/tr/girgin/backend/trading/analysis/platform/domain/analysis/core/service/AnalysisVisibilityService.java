@@ -41,7 +41,7 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
             throw notFound(id);
         }
         try {
-            return repository.updateVisibility(analysis.withVisibility(visibility, clock.instant()));
+            return repository.update(analysis.withVisibility(visibility, clock.instant()));
         } catch (OptimisticLockingFailureException _) {
             throw concurrentUpdate(id);
         }

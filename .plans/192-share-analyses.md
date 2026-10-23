@@ -20,7 +20,7 @@ it. An admin can make any public analysis private again.
 
 | Part | Conventions that apply |
 |---|---|
-| Backend: identity domain (core, persistence adapter) | `repository-shared-types.md` "Adding a value": the constant on `Permission` (last, since the database enum appends), `PermissionDto`, one migration that adds the enum value and a second one that grants it, as V7 / V8; `backend-database-naming.md`: uppercase quoted names; the new role has a fixed ID like ADMIN, ANALYST, VIEWER (`RoleId` constants) |
+| Backend: identity domain (core, persistence adapter) | `repository-shared-types.md` "Adding a value": the constant on `Permission` (last, since the database enum appends), `PermissionEnumDto`, one migration that adds the enum value and a second one that grants it, as V7 / V8; `backend-database-naming.md`: uppercase quoted names; the new role has a fixed ID like ADMIN, ANALYST, VIEWER (`RoleId` constants) |
 | Backend: analysis domain (core, persistence adapter) | `backend-java-package-structure.md`: `Visibility` and `AnalysisScope` in `core.model`, the new use case in `core.inbound`, its service in `core.service` (package-private), error codes on `AnalysisError`; `backend-java-persistence.md`: a PostgreSQL enum type for `Visibility` (never text), `VISIBILITY_CHANGED_AT` a domain fact set from the `Clock`, a managed-entity partial update with the version compared first and `saveAndFlush`, list filters as `Specification`s; `backend-database-naming.md`: migration `V4__add_visibility.sql`, enum type `"ANALYSIS"."VISIBILITY"`, index `ANALYSES_VISIBILITY_IDX` |
 | Backend: BFF | `backend-java-rest-api.md`: the new `PUT` answers only `200` and returns `AnalysisDto`, no `ResponseEntity`; its errors are `AnalysisException`s answered by `DomainExceptionHandler` through `AnalysisExceptionToApiExceptionMapper`, no `try` / `catch` in the delegate; `@RequiresPermission` on the new delegate method (`TAP-A1`); DTOs and the request in `bff.controller.api.model`, mappers in `bff.delegate.impl.mapper` (`SourceToTargetMapper`, one `map` method) |
 | Shared types | `repository-shared-types.md`: `openapi.json` regenerated, `mise run api-types` for `shared/api/schema.d.ts`; `Visibility`, `AnalysisScope` and the new `Permission` key reach the frontend through the generated types |
@@ -33,7 +33,7 @@ it. An admin can make any public analysis private again.
 ### Identity: `analysis:share` and the PUBLISHER role
 
 - `Permission.ANALYSIS_SHARE("analysis:share")`, after `ANALYSIS_OVERRIDE_MODELS`;
-  `PermissionDto.ANALYSIS_SHARE("analysis:share")`.
+  `PermissionEnumDto.ANALYSIS_SHARE("analysis:share")`.
 - `RoleId.PUBLISHER = new RoleId("PUBLISHER")`, seeded by the migration below.
 - `V9__add_analysis_share_permission.sql`: `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE 'ANALYSIS_SHARE';`
 - `V10__grant_analysis_share_and_seed_publisher_role.sql` (a migration of its own, as V8: a
@@ -94,7 +94,7 @@ it. An admin can make any public analysis private again.
   4. `PUBLIC`: not the owner: `NOT_FOUND` (an admin cannot publish someone else's analysis); the
      owner without `share`: `SHARE_FORBIDDEN`; not `COMPLETED`: `NOT_SHAREABLE` (param `status`).
   5. `PRIVATE`: not `canMakePrivate`: `NOT_FOUND`.
-  6. `repository.updateVisibility(analysis.withVisibility(visibility, clock.instant()))`; an
+  6. `repository.update(analysis.withVisibility(visibility, clock.instant()))`; an
      `OptimisticLockingFailureException` becomes `CONCURRENT_UPDATE`, as `AnalysisService` does.
 - `AnalysisError` gets `NOT_SHAREABLE` and `SHARE_FORBIDDEN`.
 - Rerunning a public analysis is the owner's only, and the new run is private.
@@ -109,19 +109,17 @@ it. An admin can make any public analysis private again.
   Existing analyses stay private.
 - `AnalysisEntity`: `visibility` mapped as the other enums (`@Enumerated(EnumType.STRING)`,
   `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS\".\"VISIBILITY\""`) and
-  `visibilityChangedAt`; the two mappers map them by name. `applyRunState` and `replaceImported`
-  keep both (like the owner), so a run update or a re-import never changes the visibility. A new
-  `applyVisibility(AnalysisEntity other)` copies only the two.
-- `AnalysisRepositoryPort.updateVisibility(Analysis analysis)`: writes the visibility and its time
-  and returns the stored record with its new version; in `JpaAnalysisRepositoryAdapter` the same
-  load, `requireVersion`, copy and `saveAndFlush` as `update`.
+  `visibilityChangedAt`; the two mappers map them by name. `applyState` (was `applyRunState`) copies
+  both with the run state, so `update` stores the record as the domain decided it; `replaceImported`
+  keeps both (like the owner), so a re-import never changes the visibility. The persistence adapter
+  has no visibility behaviour of its own: there is no `updateVisibility` port method.
 - `findAll`: `hasVisibility` and `notOwnedBy` `Specification`s next to `hasOwner`.
 - `VISIBILITY_CHANGED_AT` is a domain fact (the core sets it from the `Clock` when the owner shares
   or withdraws), not an audit field.
 
 ### BFF and the API
 
-- `PUT /api/analyses/{id}/visibility` with `ChangeVisibilityRequest { @NotNull VisibilityDto
+- `PUT /api/analyses/{id}/visibility` with `ChangeVisibilityRequest { @NotNull VisibilityEnumDto
   visibility, @NotNull Long version }`: `200` with the `AnalysisDto`. `@RequiresPermission(ANALYSIS_READ)`;
   the use case checks ownership and `analysis:share`. Errors, all through `DomainExceptionHandler`
   and `AnalysisExceptionToApiExceptionMapper`:
@@ -134,17 +132,17 @@ it. An admin can make any public analysis private again.
   | `CONCURRENT_UPDATE` | 409 | `concurrent_update` (as today) |
 
   A missing field or an unknown visibility is the existing 400 of `ApiExceptionHandler`.
-- `GET /api/analyses?scope=MINE|SHARED|ALL` (`AnalysisScopeDto`, default `MINE`, upper case like
+- `GET /api/analyses?scope=MINE|SHARED|ALL` (`AnalysisScopeEnumDto`, default `MINE`, upper case like
   `status`) replaces `allUsers`. Still `200` with `List<AnalysisDto>`.
-- `AnalysisDto` gets `visibility` (`VisibilityDto`), `visibilityChangedAt`, `version` (the request
+- `AnalysisDto` gets `visibility` (`VisibilityEnumDto`), `visibilityChangedAt`, `version` (the request
   needs it) and two flags computed from the caller's access, so the UI does not repeat the rules:
   `canManage` (stop, rerun, log) and `canChangeVisibility`. `owner` is there since #91.
 - `AnalysesApiDelegateImpl`: `access()` adds `currentUser.has(Permission.ANALYSIS_SHARE)`; the
   list passes the mapped scope; `AnalysisToAnalysisDtoMapper` takes the access as a second
   `@Context` next to the usernames and fills the flags from `canManage` / `canChangeVisibility`.
-  New mappers: `VisibilityDtoToVisibilityMapper`, `AnalysisScopeDtoToAnalysisScopeMapper`
+  New mappers: `VisibilityEnumDtoToVisibilityMapper`, `AnalysisScopeEnumDtoToAnalysisScopeMapper`
   (MapStruct enum mappings; the DTO direction of `Visibility` goes through
-  `VisibilityToVisibilityDtoMapper` used by the analysis mapper).
+  `VisibilityToVisibilityEnumDtoMapper` used by the analysis mapper).
 - `openapi.json` and `shared/api/schema.d.ts` regenerated.
 
 ### Frontend
@@ -191,7 +189,7 @@ Packages without a dependency between them can be implemented in parallel.
 - **Files**:
   - `artifact/backend/domain/identity/core/src/main/java/.../identity/core/model/Permission.java`, `RoleId.java`
   - `artifact/backend/domain/identity/adapter/src/main/resources/.../identity/adapter/persistence/migration/V9__add_analysis_share_permission.sql`, `V10__grant_analysis_share_and_seed_publisher_role.sql` (new)
-  - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/model/PermissionDto.java`
+  - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/model/PermissionEnumDto.java`
   - tests named below
 - **Steps**:
   - [x] The constant, the DTO constant, the role ID, the two migrations.
@@ -221,8 +219,8 @@ Packages without a dependency between them can be implemented in parallel.
   - [x] The model types, the access rules, the filter fields and the scopes.
   - [x] `AnalysisVisibilityService` with the rules in the order above; `canManage` for stop, rerun
     and the log.
-  - [x] Migration, entity columns, mappers, `updateVisibility`, the two `Specification`s; run
-    updates and re-imports keep the visibility.
+  - [x] Migration, entity columns, mappers, the two `Specification`s; `update` stores the visibility,
+    re-imports keep it.
 - **Tests**:
   - `AnalysisAccessTest` (new): each rule of `canSee`, `canManage`, `canMakePublic`,
     `canMakePrivate`, `canChangeVisibility` for owner, other user, admin, with and without `share`,
@@ -244,9 +242,9 @@ Packages without a dependency between them can be implemented in parallel.
   - `AnalysisEventHubTest`: another user's public analysis replays; a private one fails with
     `NOT_FOUND`.
   - `JpaAnalysisRepositoryAdapterTest`: visibility and its time are stored and read back;
-    `updateVisibility` raises the version and a stale copy fails with
-    `OptimisticLockingFailureException`, leaving the row unchanged; `update` and `replaceImported`
-    keep the visibility; `findAll` by visibility and by "not owned by".
+    `update` of a changed visibility raises the version and a stale copy fails with
+    `OptimisticLockingFailureException`, leaving the row unchanged; `replaceImported`
+    keeps the visibility; `findAll` by visibility and by "not owned by".
   - `V4AnalysisVisibilityMigrationTest` (new, as `V3AnalysisOwnerMigrationTest`): a row written at
     V3 is `PRIVATE` with no change time after V4.
   - `AnalysisPersistenceConventionsTest` passes unchanged (names, enum type, index, schema).
@@ -256,8 +254,8 @@ Packages without a dependency between them can be implemented in parallel.
 - **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**:
-  - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/`: `AnalysesApiController.java`, `AnalysesApiDelegate.java`; `model/`: `ChangeVisibilityRequest.java`, `VisibilityDto.java`, `AnalysisScopeDto.java` (new), `AnalysisDto.java`
-  - `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/`: `AnalysesApiDelegateImpl.java`; `mapper/`: `AnalysisToAnalysisDtoMapper.java`, `VisibilityDtoToVisibilityMapper.java`, `VisibilityToVisibilityDtoMapper.java`, `AnalysisScopeDtoToAnalysisScopeMapper.java` (new); `mapper/error/AnalysisExceptionToApiExceptionMapper.java`
+  - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/`: `AnalysesApiController.java`, `AnalysesApiDelegate.java`; `model/`: `ChangeVisibilityRequest.java`, `VisibilityEnumDto.java`, `AnalysisScopeEnumDto.java` (new), `AnalysisDto.java`
+  - `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/`: `AnalysesApiDelegateImpl.java`; `mapper/`: `AnalysisToAnalysisDtoMapper.java`, `VisibilityEnumDtoToVisibilityMapper.java`, `VisibilityToVisibilityEnumDtoMapper.java`, `AnalysisScopeEnumDtoToAnalysisScopeMapper.java` (new); `mapper/error/AnalysisExceptionToApiExceptionMapper.java`
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated, against a throwaway PostgreSQL)
 - **Steps**:
   - [x] The endpoint, the request, the scope parameter in place of `allUsers`, the DTO fields and

@@ -75,7 +75,7 @@ class AnalysisVisibilityServiceTest {
                     assertThat(e.error()).isEqualTo(AnalysisError.NOT_SHAREABLE);
                     assertThat(e.params()).containsEntry("status", status.name());
                 });
-        assertThat(repository.visibilityWrites).isZero();
+        assertThat(repository.updates).isZero();
     }
 
     @Test
@@ -95,7 +95,7 @@ class AnalysisVisibilityServiceTest {
         assertNotFound(id, Visibility.PUBLIC, Fakes.OTHERS);
         assertNotFound(id, Visibility.PRIVATE, Fakes.OTHERS);
         assertNotFound(shared, Visibility.PRIVATE, Fakes.OTHERS);
-        assertThat(repository.visibilityWrites).isZero();
+        assertThat(repository.updates).isZero();
     }
 
     @Test
@@ -144,7 +144,7 @@ class AnalysisVisibilityServiceTest {
         assertThatThrownBy(() -> service.change(id, Visibility.PUBLIC, Fakes.OWN_SHARER, 2L))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.CONCURRENT_UPDATE));
-        assertThat(repository.visibilityWrites).isZero();
+        assertThat(repository.updates).isZero();
         assertThat(service.change(id, Visibility.PUBLIC, Fakes.OWN_SHARER, 3L).visibility())
                 .isEqualTo(Visibility.PUBLIC);
     }
@@ -155,7 +155,7 @@ class AnalysisVisibilityServiceTest {
 
         assertThat(unchanged).isEqualTo(repository.rows.get(id));
         assertThat(unchanged.visibilityChangedAt()).isEqualTo(Instant.EPOCH);
-        assertThat(repository.visibilityWrites).isZero();
+        assertThat(repository.updates).isZero();
     }
 
     @Test

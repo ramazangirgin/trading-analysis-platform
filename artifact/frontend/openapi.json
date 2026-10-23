@@ -526,7 +526,6 @@
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "default": "MINE",
                             "enum": [
                                 "MINE",
                                 "SHARED",

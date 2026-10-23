@@ -32,7 +32,9 @@ Docker Compose, where each analysis runs in its own container and the data is ke
 - An API key for at least one LLM provider (OpenAI, Anthropic, Google, DeepSeek, xAI, Mistral,
   Groq, …), or a local [Ollama](https://ollama.com/), which needs no key.
 - Docker or Podman (`mise run setup` installs one when there is none: Docker on Ubuntu or Debian,
-  Podman on macOS with Homebrew; `PLATFORM_INSTALL_ENGINE=0` skips that). `mise run run` and
+  Podman on macOS with Homebrew; `PLATFORM_INSTALL_ENGINE=0` skips that). Under `mise run`, a
+  running Podman machine's socket is set as `DOCKER_HOST` unless it is set already
+  (`scripts/container-env.sh`); a Gradle daemon started before that needs `./gradlew --stop`. `mise run run` and
   `mise run dev` start a local PostgreSQL 18 container
   (`mise run db`; its data is in the volume `trading-analysis-platform-db`; `mise run db:stop` stops
   it, `mise run db:reset` deletes its data). To use your own PostgreSQL 18 server instead, set

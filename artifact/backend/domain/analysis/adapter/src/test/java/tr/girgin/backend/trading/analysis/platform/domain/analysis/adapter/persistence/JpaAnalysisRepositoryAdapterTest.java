@@ -226,7 +226,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         assertThat(stored.visibility()).isEqualTo(Visibility.PRIVATE);
         assertThat(stored.visibilityChangedAt()).isNull();
 
-        Analysis shared = repository.updateVisibility(stored.withVisibility(Visibility.PUBLIC, now.plusSeconds(5)));
+        Analysis shared = repository.update(stored.withVisibility(Visibility.PUBLIC, now.plusSeconds(5)));
 
         assertThat(shared.version()).isEqualTo(stored.version() + 1);
         assertThat(shared.visibility()).isEqualTo(Visibility.PUBLIC);
@@ -241,7 +241,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         Analysis staleCopy = repository.findById(stored.id()).orElseThrow();
         Analysis firstWrite = repository.update(stored.running(now, "first"));
 
-        assertThatThrownBy(() -> repository.updateVisibility(staleCopy.withVisibility(Visibility.PUBLIC, now)))
+        assertThatThrownBy(() -> repository.update(staleCopy.withVisibility(Visibility.PUBLIC, now)))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(repository.findById(stored.id())).contains(firstWrite);
@@ -257,8 +257,8 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                 OWNER,
                 ExternalAnalysis.reportFiles(
                         "ZZVISIMP", LocalDate.of(2026, 9, 27), List.of(), null, null, null, ended)));
-        Analysis sharedRun = repository.updateVisibility(run.withVisibility(Visibility.PUBLIC, ended));
-        Analysis sharedImport = repository.updateVisibility(imported.withVisibility(Visibility.PUBLIC, ended));
+        Analysis sharedRun = repository.update(run.withVisibility(Visibility.PUBLIC, ended));
+        Analysis sharedImport = repository.update(imported.withVisibility(Visibility.PUBLIC, ended));
 
         Analysis updated =
                 repository.update(sharedRun.running(ended, "1").finished(AnalysisStatus.COMPLETED, ended, null, null));
@@ -285,9 +285,9 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     void filtersByVisibilityAndByNotOwnedBy() {
         Instant base = Instant.parse("2026-09-29T14:00:00Z");
         Analysis mineOpen = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), OWNER, base));
-        mineOpen = repository.updateVisibility(mineOpen.withVisibility(Visibility.PUBLIC, base));
+        mineOpen = repository.update(mineOpen.withVisibility(Visibility.PUBLIC, base));
         Analysis theirsOpen = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), OTHER_OWNER, base));
-        theirsOpen = repository.updateVisibility(theirsOpen.withVisibility(Visibility.PUBLIC, base));
+        theirsOpen = repository.update(theirsOpen.withVisibility(Visibility.PUBLIC, base));
         Analysis theirsClosed = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), OTHER_OWNER, base));
         Analysis nobodys = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), null, base));
 
@@ -418,8 +418,8 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
 
         Analysis found = repository.findById(queued.id()).orElseThrow();
         assertThat(found.owner()).isEqualTo(OWNER);
-        assertThat(found.visibility()).isEqualTo(Visibility.PRIVATE);
-        assertThat(found.visibilityChangedAt()).isNull();
+        assertThat(found.visibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(found.visibilityChangedAt()).isEqualTo(created);
         assertThat(found.spec()).isEqualTo(queued.spec());
         assertThat(found.createdAt()).isEqualTo(created);
         assertThat(found.status()).isEqualTo(AnalysisStatus.RUNNING);

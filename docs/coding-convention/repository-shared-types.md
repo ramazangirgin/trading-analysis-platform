@@ -9,8 +9,8 @@ run time. The worked example is the permissions (`Permission`).
 
 1. **The domain enum is the single source of the values.** `Permission` in the identity domain.
 2. **The BFF API has a DTO enum mirror** (the API layer has its own types and does not use domain
-   types): `PermissionDto` in `bff.controller.api.model`, serialised to the value's key with
-   `@JsonValue`. A MapStruct enum mapping (`PermissionToPermissionDtoMapper`, one `map` method like
+   types): `PermissionEnumDto` in `bff.controller.api.model`, serialised to the value's key with
+   `@JsonValue`. A MapStruct enum mapping (`PermissionToPermissionEnumDtoMapper`, one `map` method like
    the other mappers) converts it. MapStruct fails the compile when a domain constant has no
    counterpart in the DTO. It cannot see the DTO's own key strings, so one integration assertion
    checks them where a response carries every value (for permissions: ADMIN's `me` in
@@ -31,7 +31,7 @@ run time. The worked example is the permissions (`Permission`).
 Each step has a check that fails when it is skipped:
 
 1. Add the constant to `Permission` (the domain enum).
-2. Add it to `PermissionDto`. Skipped: the MapStruct mapper fails the compile.
+2. Add it to `PermissionEnumDto`. Skipped: the MapStruct mapper fails the compile.
 3. Give the DTO constant the same key as `Permission::key`. Wrong key: ADMIN's `me` in
    `RolePermissionsIntegrationTest` no longer returns every `Permission::key`.
 4. Add a new identity migration with `ALTER TYPE "IDENTITY"."PERMISSION" ADD VALUE ...` (the

@@ -11,6 +11,6 @@ import java.util.Map;
 public record AnalysisReportDto(
         Map<String, String> sections,
         Map<String, String> debates,
-        RatingDto rating,
+        RatingEnumDto rating,
         List<String> sources,
         Instant modifiedAt) {}

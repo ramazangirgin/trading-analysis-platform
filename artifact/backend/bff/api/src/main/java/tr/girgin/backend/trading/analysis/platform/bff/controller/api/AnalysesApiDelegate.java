@@ -6,8 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisScopeDto;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisScopeEnumDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ChangeVisibilityRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
@@ -17,7 +17,7 @@ public interface AnalysesApiDelegate {
 
     ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request);
 
-    List<AnalysisDto> listAnalyses(AnalysisStatusDto status, String ticker, AnalysisScopeDto scope);
+    List<AnalysisDto> listAnalyses(AnalysisStatusEnumDto status, String ticker, AnalysisScopeEnumDto scope);
 
     AnalysisDto getAnalysis(String id);
 

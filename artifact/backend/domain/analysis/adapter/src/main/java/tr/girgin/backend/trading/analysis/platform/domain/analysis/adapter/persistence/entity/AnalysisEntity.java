@@ -102,8 +102,8 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
 
     public AnalysisEntity() {}
 
-    /** Copies the state a run changes onto this entity; the spec, creation time, source, external ref, owner stay. */
-    public void applyRunState(AnalysisEntity other) {
+    /** Copies the state that changes after insert; the spec, creation time, source, external ref, owner stay. */
+    public void applyState(AnalysisEntity other) {
         this.status = other.status;
         this.rating = other.rating;
         this.decision = other.decision;
@@ -113,9 +113,6 @@ public class AnalysisEntity implements Persistable<AnalysisIdEmbeddable> {
         this.errorCode = other.errorCode;
         this.errorMessage = other.errorMessage;
         this.runnerRef = other.runnerRef;
-    }
-
-    public void applyVisibility(AnalysisEntity other) {
         this.visibility = other.visibility;
         this.visibilityChangedAt = other.visibilityChangedAt;
     }

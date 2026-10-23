@@ -60,18 +60,7 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
                 .findById(toEntityId.map(analysis.id()))
                 .orElseThrow(() -> new IllegalStateException("No analysis " + analysis.id() + " to update"));
         requireVersion(stored, analysis);
-        stored.applyRunState(toEntity.map(analysis));
-        return toAnalysis.map(repository.saveAndFlush(stored));
-    }
-
-    @Override
-    @Transactional
-    public Analysis updateVisibility(Analysis analysis) {
-        AnalysisEntity stored = repository
-                .findById(toEntityId.map(analysis.id()))
-                .orElseThrow(() -> new IllegalStateException("No analysis " + analysis.id() + " to update"));
-        requireVersion(stored, analysis);
-        stored.applyVisibility(toEntity.map(analysis));
+        stored.applyState(toEntity.map(analysis));
         return toAnalysis.map(repository.saveAndFlush(stored));
     }
 

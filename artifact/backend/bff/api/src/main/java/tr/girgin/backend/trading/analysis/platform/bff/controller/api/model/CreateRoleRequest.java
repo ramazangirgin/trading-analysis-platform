@@ -5,4 +5,4 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record CreateRoleRequest(
-        @NotBlank String name, String description, @NotNull List<@NotNull PermissionDto> permissions) {}
+        @NotBlank String name, String description, @NotNull List<@NotNull PermissionEnumDto> permissions) {}

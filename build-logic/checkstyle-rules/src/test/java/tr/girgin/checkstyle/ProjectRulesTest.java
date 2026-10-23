@@ -57,7 +57,8 @@ class ProjectRulesTest {
                 .extracting(path -> path.getFileName().toString())
                 .contains("Violation.java", "Compliant.java");
 
-        Path sources = Files.createTempDirectory("rule-fixtures").resolve("src/" + sourceSet + "/java");
+        Path root = Files.createTempDirectory("rule-fixtures");
+        Path sources = root.resolve(module(id)).resolve("src/" + sourceSet + "/java");
         Files.createDirectories(sources);
         try {
             Configuration checker = CheckstyleRunner.checkerWith(filters, List.of(rule));
@@ -80,7 +81,16 @@ class ProjectRulesTest {
                 }
             }
         } finally {
-            deleteRecursively(sources.getParent().getParent().getParent());
+            deleteRecursively(root);
+        }
+    }
+
+    private static String module(String id) {
+        try {
+            Path file = fixtureDirectory(id).resolve("module");
+            return Files.exists(file) ? Files.readString(file).trim() : "";
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
     }
 

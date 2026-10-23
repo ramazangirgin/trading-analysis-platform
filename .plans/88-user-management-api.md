@@ -56,8 +56,8 @@ DTOs in `bff.controller.api.model`:
 - `ResetPasswordRequest(String password)`: blank or missing means "generate one".
 - `OneTimePasswordDto(String oneTimePassword)`: the generated password, or null when it was
   entered.
-- `RoleDto(String id, String name, boolean builtIn, String description, List<PermissionDto> permissions)`.
-  The permissions are sorted by key and mapped with the existing `PermissionToPermissionDtoMapper`.
+- `RoleDto(String id, String name, boolean builtIn, String description, List<PermissionEnumDto> permissions)`.
+  The permissions are sorted by key and mapped with the existing `PermissionToPermissionEnumDtoMapper`.
 
 The delegates take the caller's user ID from the security context: the principal is the user ID
 string, the same way as `AuthApiDelegateImpl#currentUserId`. They call the use cases, map the

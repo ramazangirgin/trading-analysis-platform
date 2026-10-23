@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisScopeDto;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisScopeEnumDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisStatusEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ChangeVisibilityRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RunLogDto;
@@ -41,9 +41,9 @@ public class AnalysesApiController {
 
     @GetMapping
     public List<AnalysisDto> listAnalyses(
-            @RequestParam(required = false) AnalysisStatusDto status,
+            @RequestParam(required = false) AnalysisStatusEnumDto status,
             @RequestParam(required = false) String ticker,
-            @RequestParam(defaultValue = "MINE") AnalysisScopeDto scope) {
+            @RequestParam(required = false) AnalysisScopeEnumDto scope) {
         return delegate.listAnalyses(status, ticker, scope);
     }
 
