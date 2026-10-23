@@ -198,7 +198,12 @@ or to Claude in the session. The session reads the pull request's comments that 
 (`mise run agent:plan-comments <pr | branch>`; the session's replies carry a hidden `plan-reply`
 marker), changes the plan on its branch (commit `Plan: …`, push) and answers every comment with
 `plan-comments.sh --reply <comment id> <file>` or `--comment <pr> <file> <id>...` (the IDs of the comments or reviews it answers), saying what changed or why
-not. It never resolves a thread: you do. You can also edit, commit and push the plan yourself. Go on
+not. It never resolves a thread: you do. You can also edit, commit and push the plan yourself.
+Approving the plan in the session records it on the pull request: `plan-comments.sh --approve <pr |
+branch>` posts a comment with a hidden `plan-approved sha=<sha>` marker for the branch's pushed head
+(it refuses while commits are not pushed), and `plan-comments.sh --approved <pr | branch>` prints the
+sha and exits 0 when the newest such comment of the agent's login names the current head, 1 when
+there is none or a later plan commit made it stale. Go on
 until you would accept a pull request that does exactly that. The agents follow the plan literally,
 and the review agent checks the code against it. A plan-only pull request needs no version bump
 (CI's *Version* job passes).
@@ -335,7 +340,17 @@ only when asked to in the session.
 
 It records its own steps (the plan with the time the approval took, the update with `main`) in the
 [progress comment on the issue](#progress-on-the-issue) next to the scripts' steps. It plans with
-the `plan-from-issue` skill, invoked from it. After the approval it starts `run.sh` once, detached
+the `plan-from-issue` skill, run in a subagent that returns only each plan's path, branch, pull
+request link and a short summary, and each round of review comments is handed to a subagent in the
+same way, so the session does not carry what the plan was written from. On the approval it records
+the plan step, pushes the plan branch, posts the `plan-approved` comment on the plan's pull request
+(`plan-comments.sh --approve`) and ends with "approved; run `/clear`, then `/develop-issue <n>`".
+The approval is tied to the plan's head commit and lives on the pull request, so it survives `/clear`
+and a new session: the next `/develop-issue <n>` finds it with `plan-comments.sh --approved` and
+goes straight to the implementation without asking again, while a plan changed after the approval
+is asked about again. The implementation therefore starts from a context of the skill, the plan
+and the approval, well under 100k tokens, and every model turn that follows re-reads far less.
+It then starts `run.sh` once, detached
 (`detach.sh run.sh plan/<issue>-<slug>`), exactly what `mise run agent:run` runs, so the pull request
 and its state comments are the same and `mise run agent:next` can take over at any point. Every
 model turn of the session re-reads its whole context, so the session is not woken for each

@@ -91,16 +91,17 @@ be applied without guessing.
 ### WP2: Documentation
 
 - **Depends on**: WP1
+- **Status**: done
 - **Files**: `docs/agentic-development.md`
 - **Steps**:
-  - [ ] In "From Claude Code, with one approval: the plan": the plan is written and changed in a
+  - [x] In "From Claude Code, with one approval: the plan": the plan is written and changed in a
     subagent that returns the path and a summary; after the approval the session ends with "run
     `/clear`, then `/develop-issue <n>`"; the approval is the `plan-approved` comment on the plan's
     pull request, tied to the plan's head commit; a later run does not ask again, a changed plan
     does.
-  - [ ] In "Review the plan" (walkthrough step 3/4): mention `plan-comments.sh --approve` and
+  - [x] In "Review the plan" (walkthrough step 3/4): mention `plan-comments.sh --approve` and
     `--approved`.
-  - [ ] Add the context numbers' purpose in one sentence: why the implementation starts fresh.
+  - [x] Add the context numbers' purpose in one sentence: why the implementation starts fresh.
 - **Tests**: `mise run check`.
 
 ### WP3: Skills (by hand)
