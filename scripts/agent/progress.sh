@@ -26,7 +26,8 @@ source "$(dirname "$0")/lib.sh"
 # "limit5h=<n> limit7d=<n>": the Claude limits now, from one headless Haiku call (a few tokens, in
 # no row) whose rate_limit_event is read. Empty when the call fails: a limit that cannot be read is
 # n/a. --no-session-persistence keeps the call out of the session transcripts read below. It uses
-# the developer's login like the session does, never the DeepSeek endpoint.
+# the developer's login like the session does, never the DeepSeek endpoint. The prompt goes in on
+# stdin: --tools takes values, so a prompt argument after it is swallowed and the call fails.
 probe() {
   local stream
   command -v claude >/dev/null || return 0
@@ -34,7 +35,7 @@ probe() {
   (
     unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL ANTHROPIC_MODEL
     claude -p --model haiku --output-format stream-json --verbose --no-session-persistence --tools "" \
-      "Reply with ok." >"$stream" 2>/dev/null
+      <<<"Reply with ok." >"$stream" 2>/dev/null
   ) || true
   py "$AGENT_DIR/agent_json.py" limits "$stream" 2>/dev/null || true
   rm -f "$stream"
