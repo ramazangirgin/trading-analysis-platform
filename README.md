@@ -618,7 +618,7 @@ The backend:
   rules are what protect.
 - The live event stream of a run (`GET /api/analyses/{id}/events`) needs a session and
   `analysis:read` like the other analysis reads (another user's run answers 404 unless the user has
-  `analysis:read:all`), and a stream that is open when its session ends (logout, idle timeout,
+  `analysis:read:all` or the analysis is public), and a stream that is open when its session ends (logout, idle timeout,
   a password change in another session, a disable or password reset by an admin) is closed by the server.
 - Every unsafe request needs the CSRF token: the SPA echoes the `XSRF-TOKEN` cookie in the
   `X-XSRF-TOKEN` header, or gets 403 `invalid_csrf_token`. `GET /api/auth/me` sets the cookie.
