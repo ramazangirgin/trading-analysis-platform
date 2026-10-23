@@ -3,6 +3,11 @@
     uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'   (mise run agent:test)
 """
 
+import contextlib
+import io
+import json
+import os
+import tempfile
 import unittest
 
 import plan_comments
@@ -152,9 +157,9 @@ class ApprovedSha(unittest.TestCase):
         p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "bot")])
         self.assertEqual(plan_comments.approved_sha(p, "bot"), HEAD)
 
-    def test_marker_for_an_older_sha_is_returned_so_the_caller_sees_it_is_stale(self):
+    def test_marker_for_an_older_sha_is_returned_as_it_is(self):
         p = pr(comments=[pr_comment(approval(OLDER), "2026-01-01T10:00:00Z", "bot")])
-        self.assertNotEqual(plan_comments.approved_sha(p, "bot"), HEAD)
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), OLDER)
 
     def test_marker_of_another_login_is_ignored(self):
         p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "someone")])
@@ -191,6 +196,31 @@ class ApprovedSha(unittest.TestCase):
     def test_approval_comment_is_not_listed_as_unanswered(self):
         p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "bot")])
         self.assertEqual(plan_comments.unanswered(threads(), p), [])
+
+
+class ApprovedCommand(unittest.TestCase):
+    def run_approved(self, sha, head):
+        p = pr(comments=[pr_comment(approval(sha), "2026-01-01T10:00:00Z", "bot")]) if sha else pr()
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "pr.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(p, f)
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                plan_comments.main(["", "approved", path, "bot", head])
+        return out.getvalue().strip()
+
+    def test_approval_of_the_head_succeeds_and_prints_the_sha(self):
+        self.assertEqual(self.run_approved(HEAD, HEAD), HEAD)
+
+    def test_approval_of_an_older_sha_is_stale_and_exits_1(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.run_approved(OLDER, HEAD)
+        self.assertEqual(raised.exception.code, 1)
+
+    def test_no_approval_exits_1(self):
+        with self.assertRaises(SystemExit) as raised:
+            self.run_approved(None, HEAD)
+        self.assertEqual(raised.exception.code, 1)
 
 
 if __name__ == "__main__":
