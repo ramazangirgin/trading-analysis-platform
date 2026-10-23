@@ -24,6 +24,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ex
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRun;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 class ExternalAnalysisServiceTest {
 
@@ -117,6 +118,35 @@ class ExternalAnalysisServiceTest {
 
         assertThat(registration.outcome()).isEqualTo(Outcome.UNCHANGED);
         assertThat(registration.analysis()).isEqualTo(stored);
+    }
+
+    @Test
+    void aRescanOfAnUnchangedPublicImportIsUnchangedAndWritesNothing() {
+        Analysis created =
+                register(external("GOOG", Rating.HOLD, "Hold", FINISHED)).analysis();
+        Analysis shared = created.withVisibility(Visibility.PUBLIC, FINISHED.plusSeconds(5));
+        repository.rows.put(shared.id(), shared);
+        repository.failOnWrite = new OptimisticLockingFailureException("no write expected");
+
+        var registration = register(external("GOOG", Rating.HOLD, "Hold", FINISHED));
+
+        assertThat(registration.outcome()).isEqualTo(Outcome.UNCHANGED);
+        assertThat(registration.analysis().visibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(registration.analysis().visibilityChangedAt()).isEqualTo(FINISHED.plusSeconds(5));
+    }
+
+    @Test
+    void changedFilesUpdateAPublicImportAndKeepItPublic() {
+        Analysis created = register(external("GOOG", null, null, FINISHED)).analysis();
+        Analysis shared = created.withVisibility(Visibility.PUBLIC, FINISHED.plusSeconds(5));
+        repository.rows.put(shared.id(), shared);
+
+        var registration = register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)));
+
+        assertThat(registration.outcome()).isEqualTo(Outcome.UPDATED);
+        assertThat(registration.analysis().rating()).isEqualTo(Rating.SELL);
+        assertThat(registration.analysis().visibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(registration.analysis().visibilityChangedAt()).isEqualTo(FINISHED.plusSeconds(5));
     }
 
     @Test
