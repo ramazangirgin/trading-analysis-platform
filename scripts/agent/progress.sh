@@ -4,6 +4,7 @@
 #   scripts/agent/progress.sh show <branch | pr>       print the comment          (mise run agent:progress)
 #   scripts/agent/progress.sh post <branch | pr>       post it on the issue, or update it there
 #   scripts/agent/progress.sh begin <branch | pr> <step> [--at <epoch>]
+#   scripts/agent/progress.sh probe <branch | pr> <step>   save the limits at the start of a window
 #   scripts/agent/progress.sh end <branch | pr> <step> [result]
 #   scripts/agent/progress.sh note <branch | pr> <text>
 #   scripts/agent/progress.sh orchestration <branch | pr> [result]
@@ -179,9 +180,8 @@ case $command in
   begin)
     step=${1:?usage: $0 begin <branch | pr> <step> [--at <epoch>]}
     at=$(date +%s)
-    # A step begun in the past (--at) has no probe from its start: its limits before are n/a.
-    rm -f "$AGENT_STATE/probe-$(step_slug "$step")"
     if [ "${2:-}" = --at ]; then
+      # Keeps the probe saved when the window started; without one, the limits before are n/a.
       at=${3:?--at needs an epoch}
     else
       probe >"$AGENT_STATE/probe-$(step_slug "$step")" || true
@@ -189,6 +189,10 @@ case $command in
     [[ $at =~ ^[0-9]+$ ]] || die "not an epoch: $at"
     printf '%s\tbegin\t\t%s\t\n' "$at" "$(printf '%s' "$step" | tr '\t\n' '  ')" >>"$file"
     post
+    ;;
+  probe)
+    step=${1:?usage: $0 probe <branch | pr> <step>}
+    probe >"$AGENT_STATE/probe-$(step_slug "$step")" || true
     ;;
   end)
     step=${1:?usage: $0 end <branch | pr> <step> [result]}
@@ -221,5 +225,5 @@ case $command in
     AGENT_PROGRESS=$file progress_event note "" "" "${1:?usage: $0 note <branch | pr> <text>}"
     post
     ;;
-  *) die "unknown command: $command (show, post, usage, begin, end, orchestration or note)" ;;
+  *) die "unknown command: $command (show, post, usage, begin, probe, end, orchestration or note)" ;;
 esac
