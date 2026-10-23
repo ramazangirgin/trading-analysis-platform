@@ -276,13 +276,43 @@ It holds no tool calls and no file-level detail, only:
 - **worth a look**: the slowest steps, the time spent waiting for CI, steps that ran more than once,
   the agents' retries, failed or interrupted steps, and the CI fixes and updates with `main` the
   run needed;
+- a **Usage** table with a row for every step that used the model: the model(s) that ran it, input,
+  cached input and output tokens, the cost at API prices, and the Claude 5-hour and weekly limit
+  before the step, after it and the difference (`12% → 15% (+3)`). The plan, the update with `main`
+  and the **orchestration** (the session's own usage outside those two, from the start of `run.sh`
+  to the ready-for-review notification) have rows of their own. The **Total** row covers
+  everything the issue consumed, with the limit consumption from the first *before* to the last
+  *after*; it says `at least` when a row has partial or unknown usage. A value that cannot be read
+  is `n/a` and never fails a step. The finalise comment on the pull request holds the same table
+  for the steps the scripts ran; it cannot hold the rows recorded after it;
 - a collapsed **timeline** of the milestones with their times.
+
+Where the usage numbers come from:
+
+- **Agent runs** (implement, fix-ci, review, fix): the `rate_limit_event` lines of the run's own
+  stream (`<step>.jsonl`) carry the 5-hour and weekly utilization, and its `init` event the model.
+  *Before* is the first event of the run, *after* the last one, so the run's first model turn is
+  not in the difference. A step of several runs takes *before* from the first and *after* from the
+  last. A run without such events (an API key, the DeepSeek endpoint, an older Claude Code) shows
+  `n/a` for the limits.
+- **Plan, update with `main`, orchestration**: they run in the developer's own session, which has
+  no stream. Tokens, model and cost come from the session's transcript
+  (`~/.claude/projects/…/<session id>.jsonl`), the assistant messages inside the step's window; the
+  cost is computed from a price table in `scripts/agent/agent_json.py` (a model that is not in it
+  has no cost, `n/a`). The limits come from a **limit probe**: `progress.sh` makes one headless
+  call to Haiku (a one-word prompt, no tools) at the start and the end of the window and reads its
+  `rate_limit_event`. The probe costs a few tokens, counted in no row. A transcript that cannot be
+  found or a failed probe gives `n/a`.
+- **The limits are shared** with everything else the developer runs with the same account at the
+  same time, so a difference is an approximation, not what the step alone consumed. The comment
+  says so under the table.
 
 Each step script records its own steps in `progress.tsv` ([`lib.sh`](../scripts/agent/lib.sh),
 `step_begin`) and updates the comment in the background at every milestone, and once more when it
 ends. A failing or interrupted script still records its end. The steps a Claude Code session runs
 on its own (the plan and its approval, the update with `main`) are recorded with
-`progress.sh begin|end`. `mise run agent:progress <branch | pr>` prints the comment without posting
+`progress.sh begin|end`, and the orchestration with `progress.sh orchestration <pr>`;
+`progress.sh usage <branch | pr>` prints the Usage section alone. `mise run agent:progress <branch | pr>` prints the comment without posting
 it, `scripts/agent/progress.sh post <branch | pr>` posts it again. With `AGENT_ISSUE_PROGRESS=0` the
 progress stays in `progress.tsv` and nothing is posted.
 
@@ -333,8 +363,11 @@ only when asked to in the session.
 /develop-issue https://github.com/<owner>/<repo>/issues/32
 ```
 
-It records its own steps (the plan with the time the approval took, the update with `main`) in the
-[progress comment on the issue](#progress-on-the-issue) next to the scripts' steps. It plans with
+It records its own steps (the plan with the time the approval took, the update with `main`, and
+one summed **orchestration** step for the rest of the session) in the
+[progress comment on the issue](#progress-on-the-issue) next to the scripts' steps, each with its
+tokens, cost, model and limit usage (from the session transcript and a limit probe, see there). At
+the end the run summary on the pull request carries the Usage section (`progress.sh usage <pr>`). It plans with
 the `plan-from-issue` skill, invoked from it. After the approval it starts `run.sh` once, detached
 (`detach.sh run.sh plan/<issue>-<slug>`), exactly what `mise run agent:run` runs, so the pull request
 and its state comments are the same and `mise run agent:next` can take over at any point. Every

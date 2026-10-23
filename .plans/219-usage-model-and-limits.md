@@ -159,11 +159,12 @@ reads `tokens` and `cost_usd`.
 
 ### WP4: Finalise, docs
 
+- **Status**: done
 - **Depends on**: WP1, WP3
 - **Files**: `scripts/agent/finalise.sh`, `docs/agentic-development.md`
 - **Steps**:
-  - [ ] Drop the model header line from the finalise comment.
-  - [ ] Document the usage table, where the limits come from, the probe, the orchestration row and
+  - [x] Drop the model header line from the finalise comment.
+  - [x] Document the usage table, where the limits come from, the probe, the orchestration row and
     the approximation in "Progress on the issue" and under the run summary of `/develop-issue`.
 - **Tests**: covered by WP1 and WP3; `mise run check` and `mise run agent:test`.
 
