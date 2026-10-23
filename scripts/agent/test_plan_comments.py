@@ -135,5 +135,63 @@ class UnansweredPullRequestComments(unittest.TestCase):
         self.assertEqual(plan_comments.unanswered(threads(), p), [])
 
 
+HEAD = "a" * 40
+OLDER = "b" * 40
+
+
+def approval(sha):
+    return plan_comments.approval_comment(sha)
+
+
+class ApprovedSha(unittest.TestCase):
+    def test_no_marker_means_no_approval(self):
+        p = pr(comments=[pr_comment("Looks good", "2026-01-01T10:00:00Z", "bot")])
+        self.assertIsNone(plan_comments.approved_sha(p, "bot"))
+
+    def test_marker_names_the_sha(self):
+        p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "bot")])
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), HEAD)
+
+    def test_marker_for_an_older_sha_is_returned_so_the_caller_sees_it_is_stale(self):
+        p = pr(comments=[pr_comment(approval(OLDER), "2026-01-01T10:00:00Z", "bot")])
+        self.assertNotEqual(plan_comments.approved_sha(p, "bot"), HEAD)
+
+    def test_marker_of_another_login_is_ignored(self):
+        p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "someone")])
+        self.assertIsNone(plan_comments.approved_sha(p, "bot"))
+
+    def test_newest_marker_wins(self):
+        p = pr(
+            comments=[
+                pr_comment(approval(HEAD), "2026-01-01T12:00:00Z", "bot"),
+                pr_comment(approval(OLDER), "2026-01-01T10:00:00Z", "bot"),
+            ]
+        )
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), HEAD)
+
+    def test_malformed_marker_is_ignored(self):
+        p = pr(
+            comments=[
+                pr_comment(approval(OLDER), "2026-01-01T10:00:00Z", "bot"),
+                pr_comment("<!-- plan-approved sha=xyz -->", "2026-01-01T11:00:00Z", "bot"),
+                pr_comment("<!-- plan-approved -->", "2026-01-01T12:00:00Z", "bot"),
+            ]
+        )
+        self.assertEqual(plan_comments.approved_sha(p, "bot"), OLDER)
+
+    def test_marker_quoted_in_the_middle_of_a_comment_is_ignored(self):
+        p = pr(comments=[pr_comment(f"I wrote <!-- plan-approved sha={HEAD} -->", "2026-01-01T10:00:00Z", "bot")])
+        self.assertIsNone(plan_comments.approved_sha(p, "bot"))
+
+    def test_approval_comment_has_the_marker_and_a_visible_line(self):
+        body = approval(HEAD)
+        self.assertTrue(body.startswith(f"<!-- plan-approved sha={HEAD} -->"))
+        self.assertIn("Plan approved at `aaaaaaa`", body)
+
+    def test_approval_comment_is_not_listed_as_unanswered(self):
+        p = pr(comments=[pr_comment(approval(HEAD), "2026-01-01T10:00:00Z", "bot")])
+        self.assertEqual(plan_comments.unanswered(threads(), p), [])
+
+
 if __name__ == "__main__":
     unittest.main()

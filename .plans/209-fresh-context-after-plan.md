@@ -74,14 +74,15 @@ be applied without guessing.
 ### WP1: Approval marker in the plan-comment helper
 
 - **Depends on**: none
+- **Status**: done
 - **Files**: `scripts/agent/plan_comments.py`, `scripts/agent/plan-comments.sh`,
   `scripts/agent/test_plan_comments.py`
 - **Steps**:
-  - [ ] Add the marker format `<!-- plan-approved sha=<sha> -->` and a function that finds the newest
+  - [x] Add the marker format `<!-- plan-approved sha=<sha> -->` and a function that finds the newest
     marker comment of the agent login and returns its sha.
-  - [ ] Add `--approve <pr | branch>`: resolve the branch and its pushed head, refuse when ahead of
+  - [x] Add `--approve <pr | branch>`: resolve the branch and its pushed head, refuse when ahead of
     origin, post the comment (marker plus one visible line: "Plan approved at `<short sha>`").
-  - [ ] Add `--approved <pr | branch>`: print the sha and exit 0 when it equals the head, exit 1
+  - [x] Add `--approved <pr | branch>`: print the sha and exit 0 when it equals the head, exit 1
     otherwise; update the script's usage text.
 - **Tests**: Python tests in `test_plan_comments.py`: no marker, marker for the head, marker for an
   older sha (stale), a marker from another login ignored, newest marker wins, malformed marker

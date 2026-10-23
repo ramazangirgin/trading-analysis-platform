@@ -7,6 +7,12 @@
 #   scripts/agent/plan-comments.sh --comment <pr | branch> <file> <id>...
 #                                      comment on the pull request, answering the comments or reviews <id>...
 #
+#   scripts/agent/plan-comments.sh --approve <pr | branch>
+#                                      comment that the plan is approved at the branch's pushed head
+#   scripts/agent/plan-comments.sh --approved <pr | branch>
+#                                      print the head and exit 0 when the newest approval of the agent
+#                                      account names the current head, exit 1 otherwise
+#
 # Without an option it prints what has no answer yet (plan_comments.py): the review threads that are
 # not resolved and do not end in a reply of the session, and the pull request comments and review
 # bodies (with their IDs) that no --comment names. The replies carry a hidden marker, which is how
@@ -40,6 +46,23 @@ reply_body() {
 }
 
 case ${1:-} in
+  --approve)
+    pr=$(pr_number "${2:?usage: $0 --approve <pr | branch>}")
+    read -r branch head < <(gh pr view "$pr" --json headRefName,headRefOid --jq '"\(.headRefName) \(.headRefOid)"')
+    git fetch --quiet origin "$branch"
+    if git rev-parse --verify --quiet "refs/heads/$branch" >/dev/null &&
+      [ "$(git rev-list --count "$head..refs/heads/$branch")" != 0 ]; then
+      die "$branch has commits that are not pushed; push them, then approve"
+    fi
+    py "$AGENT_DIR/plan_comments.py" approval "$head" >"$AGENT_TMP/approval.md"
+    gh pr comment "$pr" --body-file "$AGENT_TMP/approval.md"
+    ;;
+  --approved)
+    pr=$(pr_number "${2:?usage: $0 --approved <pr | branch>}")
+    head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+    gh pr view "$pr" --json comments >"$AGENT_TMP/pr.json"
+    py "$AGENT_DIR/plan_comments.py" approved "$AGENT_TMP/pr.json" "$(agent_login)" "$head"
+    ;;
   --reply)
     id=${2:?usage: $0 --reply <comment id> <file>}
     file=${3:?usage: $0 --reply <comment id> <file>}

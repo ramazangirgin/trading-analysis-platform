@@ -1,6 +1,8 @@
 """What the developer said on a plan pull request that has no answer yet (plan-comments.sh).
 
     plan_comments.py <threads.json> <pr.json>
+    plan_comments.py approved <pr.json> <login> <head sha>   (exit 1 unless login approved that sha)
+    plan_comments.py approval <sha>                          (the approval comment)
 
 <threads.json> is the GraphQL answer for the pull request's review threads, <pr.json> the output of
 `gh pr view --json comments,reviews`. Prints the open review threads whose last comment is not a
@@ -14,7 +16,9 @@ import sys
 
 REPLY_MARKER = "<!-- plan-reply"
 REPLY_TARGETS = re.compile(r"<!-- plan-reply to=(\S+) -->")
-IGNORED_MARKERS = ("<!-- agent-step", "<!-- agent-progress")
+APPROVAL_PREFIX = "<!-- plan-approved sha="
+APPROVAL_MARKER = re.compile(r"^<!-- plan-approved sha=([0-9a-f]{40}) -->", re.MULTILINE)
+IGNORED_MARKERS = ("<!-- agent-step", "<!-- agent-progress", APPROVAL_PREFIX)
 
 
 def is_reply(body):
@@ -81,7 +85,33 @@ def unanswered(threads, pr):
     return unanswered_threads(threads) + unanswered_pr_comments(pr)
 
 
+def approved_sha(pr, agent_login):
+    """The sha of the newest `plan-approved` comment of agent_login, or None."""
+    found = None
+    for comment in sorted(pr.get("comments", []), key=lambda c: c["createdAt"]):
+        if login(comment.get("author")) != agent_login:
+            continue
+        match = APPROVAL_MARKER.search(comment["body"])
+        if match:
+            found = match.group(1)
+    return found
+
+
+def approval_comment(sha):
+    return f"{APPROVAL_PREFIX}{sha} -->\nPlan approved at `{sha[:7]}`.\n"
+
+
 def main(argv):
+    if argv[1] == "approved":
+        with open(argv[2], encoding="utf-8") as f:
+            sha = approved_sha(json.load(f), argv[3])
+        if sha is None or sha != argv[4]:
+            sys.exit(1)
+        print(sha)
+        return
+    if argv[1] == "approval":
+        print(approval_comment(argv[2]), end="")
+        return
     with open(argv[1], encoding="utf-8") as f:
         threads = json.load(f)
     with open(argv[2], encoding="utf-8") as f:
