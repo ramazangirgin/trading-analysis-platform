@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext } from '@playwright/test'
+import { expect, type APIRequestContext, type Browser } from '@playwright/test'
 
 /** The first admin that start-platform.sh configures (PLATFORM_ADMIN_USERNAME / _PASSWORD). */
 export const E2E_USER = 'admin'
@@ -14,6 +14,28 @@ export async function csrfHeaders(request: APIRequestContext): Promise<Record<st
   return token ? { 'X-XSRF-TOKEN': decodeURIComponent(token) } : {}
 }
 
+/**
+ * Logs in a user that an admin has just created with a one-time password, changes that password and
+ * returns the page with its context (the caller closes the context). The shared admin's session is
+ * not touched.
+ */
+export async function loginAsNewUser(browser: Browser, username: string, oneTimePassword: string) {
+  const newPassword = 'a-brand-new-password-1'
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  const page = await context.newPage()
+  await page.goto('/login')
+  await page.getByPlaceholder('Username').fill(username)
+  await page.getByPlaceholder('Password').fill(oneTimePassword)
+  await page.getByRole('button', { name: 'Log in' }).click()
+  await expect(page).toHaveURL(/\/password\?redirect=\/$/)
+  await page.getByPlaceholder('Current password').fill(oneTimePassword)
+  await page.getByPlaceholder('New password', { exact: true }).fill(newPassword)
+  await page.getByPlaceholder('Repeat new password').fill(newPassword)
+  await page.getByRole('button', { name: 'Change password' }).click()
+  await expect(page).toHaveURL('/')
+  return { page, context }
+}
+
 /** The trade date of the replayed recording (artifact/ta-runner/tests/fixtures/replay-run). */
 export const TRADE_DATE = '2026-09-25'
 
@@ -23,18 +45,24 @@ export const DECISION_TEXT = 'take a 4% position now'
 /**
  * Starts an analysis over the API and waits until ta-runner has replayed it to the end. The tests
  * run in parallel against one platform: every test uses a ticker of its own, so a new test that
- * starts an analysis picks one no other test uses.
+ * starts an analysis picks one no other test uses. Without `analysis:override-models` (an analyst),
+ * pass `platformModels` to leave the models to the platform's defaults.
  */
-export async function completedAnalysis(request: APIRequestContext, ticker: string) {
+export async function completedAnalysis(
+  request: APIRequestContext,
+  ticker: string,
+  { platformModels = false } = {},
+) {
+  const models = platformModels
+    ? {}
+    : { llmProvider: 'openai', deepThinkLlm: 'gpt-5.4-mini', quickThinkLlm: 'gpt-5.4-mini' }
   const started = await request.post('/api/analyses', {
     headers: await csrfHeaders(request),
     data: {
       ticker,
       tradeDate: TRADE_DATE,
       analysts: ['MARKET', 'SOCIAL', 'NEWS', 'FUNDAMENTALS'],
-      llmProvider: 'openai',
-      deepThinkLlm: 'gpt-5.4-mini',
-      quickThinkLlm: 'gpt-5.4-mini',
+      ...models,
     },
   })
   expect(started.ok(), await started.text()).toBe(true)

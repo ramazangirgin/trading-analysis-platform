@@ -1,6 +1,12 @@
 import { expect, type APIRequestContext } from '@playwright/test'
 import { csrfHeaders } from '../tests/support'
 
+/** The stored version of an analysis, which a change of its visibility has to send back. */
+export async function versionOf(request: APIRequestContext, id: string) {
+  const analysis = await request.get(`/api/analyses/${id}`)
+  return ((await analysis.json()) as { version: number }).version
+}
+
 /**
  * Starts an analysis over the API and waits until ta-runner has replayed it. The recording's reports
  * are the same for every run; the ticker, date and models make the runs differ. The platform runs one
