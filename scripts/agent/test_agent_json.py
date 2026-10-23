@@ -125,7 +125,102 @@ class UsageTest(unittest.TestCase):
         self.assertEqual(agent_json.parse_marker(cut)["tokens"], "195")
 
 
+def init(model):
+    return {"type": "system", "subtype": "init", "model": model}
+
+
+def limit_event(five_hour, seven_day):
+    windows = {"five_hour": {"utilization": five_hour}, "seven_day": {"utilization": seven_day}}
+    return {"type": "rate_limit_event", "rate_limit_info": {"unifiedWindows": windows}}
+
+
+class LimitsTest(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+
+    def run_of(self, name, events, result=RESULT):
+        with open(os.path.join(self.dir.name, name + ".jsonl"), "w", encoding="utf-8") as f:
+            for event in events:
+                f.write(json.dumps(event) + "\n")
+        with open(os.path.join(self.dir.name, name + ".json"), "w", encoding="utf-8") as f:
+            json.dump(result, f)
+        return os.path.join(self.dir.name, name + ".json")
+
+    def test_first_and_last_limit_event_of_a_run(self):
+        run = self.run_of("a", [init("claude-opus-5-5"), limit_event(0.08, 0.30), limit_event(0.10, 0.31), limit_event(0.12, 0.32), RESULT])
+        total = agent_json.usage([run])
+        self.assertEqual(total["limits"], {"5h": [8, 12], "7d": [30, 32]})
+        self.assertEqual(total["models"], ["claude-opus-5-5"])
+        marker = agent_json.parse_marker(agent_json.usage_marker(total))
+        self.assertEqual(marker["limit5h_before"], "8")
+        self.assertEqual(marker["limit5h_after"], "12")
+        self.assertEqual(marker["limit7d_before"], "30")
+        self.assertEqual(marker["limit7d_after"], "32")
+        self.assertEqual(marker["model"], "claude-opus-5-5")
+
+    def test_run_without_limit_events_has_no_keys(self):
+        run = self.run_of("a", [RESULT])
+        marker = agent_json.usage_marker(agent_json.usage([run]))
+        self.assertNotIn("limit", marker)
+        self.assertNotIn("model=", marker)
+        table = agent_json.usage_table([agent_json.parse_marker(marker) | {"step": "fix", "round": "1"}])
+        self.assertEqual(table.splitlines()[2].count("n/a"), 3)
+
+    def test_model_falls_back_to_the_results_model_usage(self):
+        run = self.run_of("a", [], dict(RESULT, modelUsage={"claude-sonnet-5-5": {}}))
+        self.assertEqual(agent_json.usage([run])["models"], ["claude-sonnet-5-5"])
+
+    def test_runs_of_a_step_take_the_first_before_and_the_last_after(self):
+        first = self.run_of("a", [init("m1"), limit_event(0.10, 0.20), limit_event(0.15, 0.25)])
+        second = self.run_of("b", [init("m2"), limit_event(0.16, 0.26), limit_event(0.22, 0.30)])
+        third = self.run_of("c", [init("m1")])
+        total = agent_json.usage([first, second, third])
+        self.assertEqual(total["limits"], {"5h": [10, 22], "7d": [20, 30]})
+        self.assertEqual(total["models"], ["m1", "m2"])
+
+    def test_cut_off_stream_has_limits_and_model(self):
+        path = os.path.join(self.dir.name, "a.jsonl")
+        with open(path, "w", encoding="utf-8") as f:
+            for event in [init("m1"), limit_event(0.5, 0.6), message("a", 1, 1), limit_event(0.52, 0.61)]:
+                f.write(json.dumps(event) + "\n")
+        total = agent_json.usage([path])
+        self.assertEqual(total["limits"], {"5h": [50, 52], "7d": [60, 61]})
+        self.assertTrue(total["partial"])
+
+
 class UsageTableTest(unittest.TestCase):
+    def test_row_shows_model_and_limits(self):
+        row = {"step": "review", "round": "1", "model": "m1,m2", "tokens_in": "1", "tokens_cached": "2", "tokens_out": "3",
+               "cost_usd": "0.5", "limit5h_before": "8", "limit5h_after": "12", "limit7d_before": "30", "limit7d_after": "30"}
+        line = agent_json.usage_table([row]).splitlines()[2]
+        self.assertEqual(line, "| review | 1 | m1, m2 | 1 | 2 | 3 | $0.50 | 8% → 12% (+4) | 30% → 30% (+0) |")
+
+    def test_old_marker_without_the_new_keys_renders(self):
+        rows = [{"step": "implement", "round": "0", "tokens_in": "1", "tokens_cached": "2", "tokens_out": "3", "cost_usd": "0.5"}]
+        lines = agent_json.usage_table(rows).splitlines()
+        self.assertEqual(lines[2], "| implement | 0 | n/a | 1 | 2 | 3 | $0.50 | n/a | n/a |")
+        self.assertEqual(lines[3], "| **Total** | | | **1** | **2** | **3** | **$0.50** | n/a | n/a |")
+
+    def test_total_is_the_first_before_to_the_last_after(self):
+        base = {"round": "0", "tokens_in": "1", "tokens_cached": "1", "tokens_out": "1", "cost_usd": "1"}
+        rows = [
+            dict(base, step="implement", limit5h_before="10", limit5h_after="20", limit7d_before="40", limit7d_after="41"),
+            dict(base, step="review", limit5h_before="21", limit5h_after="30", limit7d_before="41", limit7d_after="43"),
+        ]
+        total = agent_json.usage_table(rows).splitlines()[4]
+        self.assertTrue(total.endswith("| **10% → 30% (+20)** | **40% → 43% (+3)** |"))
+
+    def test_total_says_at_least_with_a_row_without_limits(self):
+        base = {"round": "0", "tokens_in": "1", "tokens_cached": "1", "tokens_out": "1", "cost_usd": "1"}
+        rows = [
+            dict(base, step="implement", limit5h_before="10", limit5h_after="20", limit7d_before="40", limit7d_after="41"),
+            dict(base, step="fix"),
+        ]
+        total = agent_json.usage_table(rows).splitlines()[4]
+        self.assertIn("**at least 10% → 20% (+10)**", total)
+        self.assertIn("**at least 40% → 41% (+1)**", total)
+
     def test_table_without_a_partial_row_has_exact_costs(self):
         rows = [{"step": "implement", "round": "0", "tokens_in": "1", "tokens_cached": "2", "tokens_out": "3", "cost_usd": "0.5"}]
         table = agent_json.usage_table(rows)

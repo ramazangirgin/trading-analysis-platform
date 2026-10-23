@@ -109,15 +109,16 @@ reads `tokens` and `cost_usd`.
 
 ### WP1: Model and limits in agent runs and their markers
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/agent/agent_json.py`, `scripts/agent/test_agent_json.py`
 - **Steps**:
-  - [ ] Read the model of a run and the first and last `unifiedWindows` utilization of a run or
+  - [x] Read the model of a run and the first and last `unifiedWindows` utilization of a run or
     stream (percents, `None` when there is none); a cut-off stream and its interrupted siblings
     combine as `usage()` does.
-  - [ ] Put `model=` and the four `limit*` keys into `usage_marker` and `progress-usage`, leaving a
+  - [x] Put `model=` and the four `limit*` keys into `usage_marker` and `progress-usage`, leaving a
     key out when unknown.
-  - [ ] Rebuild `usage_table` with the new columns, the `n/a` cells and the total limit
+  - [x] Rebuild `usage_table` with the new columns, the `n/a` cells and the total limit
     consumption.
 - **Tests**: a stream with several limit events gives first and last; a run without any gives no
   keys and `n/a` cells; two runs of one step give the first run's before and the last run's after;

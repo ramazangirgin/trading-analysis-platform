@@ -18,7 +18,7 @@ A <run> is a result file (x.json) or its stream (x.jsonl). A stream whose result
 that was interrupted) adds its tokens only, and marks the total partial (`partial=1`).
 
     agent_json.py steps < comment bodies            "<step> <round> <tokens>" per marker found
-    agent_json.py usage-table < comment bodies      Markdown table of the tokens per step
+    agent_json.py usage-table < comment bodies      Markdown table of the tokens, model and limits per step
     agent_json.py approved-head < comment bodies    the commit the latest review approved, if any
 
 Standard library only: run with `uv run --no-project python`.
@@ -228,19 +228,54 @@ def stream_result(path):
     return {"usage": summed}, False
 
 
+WINDOWS = {"5h": "five_hour", "7d": "seven_day"}
+
+
+def percent(utilization):
+    return round(utilization * 100) if isinstance(utilization, (int, float)) else None
+
+
+def stream_facts(path):
+    """The models and the first and last limit utilization (whole percents) of a stream-json log:
+    ([model], {window: [first, last]}). A window without an event is absent. The first event comes
+    after the run's first model turn, so that turn is missing from a difference of the two."""
+    models, limits = [], {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if event.get("type") == "system" and event.get("subtype") == "init":
+                model = event.get("model")
+                if model and model not in models:
+                    models.append(model)
+            elif event.get("type") == "rate_limit_event":
+                windows = (event.get("rate_limit_info") or {}).get("unifiedWindows") or {}
+                for key, name in WINDOWS.items():
+                    value = percent((windows.get(name) or {}).get("utilization"))
+                    if value is not None:
+                        limits.setdefault(key, [value, value])[1] = value
+    return models, limits
+
+
 def usage(paths):
     """Sums the usage of the given runs: input (uncached + cached), output, cost.
 
     A run is a result file (`x.json`) or its stream (`x.jsonl`); either path names the run. The
     result is used when it exists, so a run is never counted twice. Without one, the stream is:
-    tokens only, and the total is marked partial."""
-    total = {"in": 0, "cached": 0, "out": 0, "cost": 0.0, "partial": False}
+    tokens only, and the total is marked partial.
+
+    `models` lists each model once; `limits` takes a window's first value from its first run with
+    one and its last value from its last run with one. The runs are given in time order."""
+    total = {"in": 0, "cached": 0, "out": 0, "cost": 0.0, "partial": False, "models": [], "limits": {}}
     runs = []
     for path in paths:
         run = path[:-1] if path.endswith(".jsonl") else path
         if run not in runs:
             runs.append(run)
     for run in runs:
+        models, limits = stream_facts(run + "l") if os.path.exists(run + "l") else ([], {})
         if os.path.exists(run):
             result = load(run)
         elif os.path.exists(run + "l"):
@@ -248,6 +283,11 @@ def usage(paths):
             total["partial"] = total["partial"] or not complete
         else:
             continue
+        for model in models or list((result.get("modelUsage") or {})):
+            if model not in total["models"]:
+                total["models"].append(model)
+        for key, (first, last) in limits.items():
+            total["limits"].setdefault(key, [first, last])[1] = last
         u = result.get("usage") or {}
         total["in"] += u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
         total["cached"] += u.get("cache_read_input_tokens", 0)
@@ -262,12 +302,40 @@ def usage_marker(u):
         f"tokens={u['tokens']} tokens_in={u['in']} tokens_cached={u['cached']} "
         f"tokens_out={u['out']} cost_usd={u['cost']:.4f}"
     )
+    if u.get("models"):
+        marker += " model=" + ",".join(u["models"])
+    for key in WINDOWS:
+        if key in u.get("limits", {}):
+            before, after = u["limits"][key]
+            marker += f" limit{key}_before={before} limit{key}_after={after}"
     return marker + " partial=1" if u["partial"] else marker
 
 
+def limit_range(before, after):
+    return f"{before}% → {after}% ({after - before:+d})"
+
+
+def limit_cells(rows):
+    """The two limit cells of the total row: the first known before to the last known after, per
+    window. "at least" when a row has no value, as the limit is shared and its use is unknown."""
+    cells = []
+    for key in WINDOWS:
+        known = [(m[f"limit{key}_before"], m[f"limit{key}_after"]) for m in rows if f"limit{key}_before" in m and f"limit{key}_after" in m]
+        if not known:
+            cells.append("n/a")
+            continue
+        text = limit_range(int(known[0][0]), int(known[-1][1]))
+        cells.append(f"**{'at least ' if len(known) < len(rows) else ''}{text}**")
+    return cells
+
+
 def usage_table(rows):
-    """The Markdown table of the tokens per step; a cost is "at least" when a run was cut off."""
-    lines = ["| Step | Round | Input | Cached input | Output | Cost (API prices) |", "|---|---|---|---|---|---|"]
+    """The Markdown table of the tokens and limits per step. A cost is "at least" when a run was
+    cut off, a limit consumption when a row has no limit values."""
+    lines = [
+        "| Step | Round | Model | Input | Cached input | Output | Cost (API prices) | 5h before → after (Δ) | Weekly before → after (Δ) |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
     totals, cost, partial = [0, 0, 0], 0.0, False
     for m in rows:
         values = [int(m.get(k, 0)) for k in ("tokens_in", "tokens_cached", "tokens_out")]
@@ -276,14 +344,24 @@ def usage_table(rows):
         cut = m.get("partial") == "1"
         partial = partial or cut
         cells = " | ".join(f"{v:,}" for v in values)
+        model = m.get("model", "n/a").replace(",", ", ")
+        limits = " | ".join(
+            limit_range(int(m[f"limit{key}_before"]), int(m[f"limit{key}_after"]))
+            if f"limit{key}_before" in m and f"limit{key}_after" in m
+            else "n/a"
+            for key in WINDOWS
+        )
         lines.append(
-            f"| {m.get('step')} | {m.get('round')} | {cells} | {'at least ' if cut else ''}${float(m.get('cost_usd', 0)):.2f} |"
+            f"| {m.get('step')} | {m.get('round')} | {model} | {cells} | "
+            f"{'at least ' if cut else ''}${float(m.get('cost_usd', 0)):.2f} | {limits} |"
         )
     cells = " | ".join(f"**{v:,}**" for v in totals)
+    limits = " | ".join(limit_cells(rows))
     if partial:
-        lines.append(f"| **Total** | | {cells} | **at least ${cost:.2f}** (an interrupted run's cost is unknown) |")
+        total_cost = f"**at least ${cost:.2f}** (an interrupted run's cost is unknown)"
     else:
-        lines.append(f"| **Total** | | {cells} | **${cost:.2f}** |")
+        total_cost = f"**${cost:.2f}**"
+    lines.append(f"| **Total** | | | {cells} | {total_cost} | {limits} |")
     return "\n".join(lines)
 
 
