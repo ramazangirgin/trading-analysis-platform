@@ -312,6 +312,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP5: e2e, screenshots and docs
 
+- **Status**: done
 - **Depends on**: WP4
 - **Files**:
   - `e2e/tests/support.ts` (a `loginAsNewUser(browser, username, oneTimePassword)` helper: log in,
@@ -322,14 +323,14 @@ Packages without a dependency between them can be implemented in parallel.
     `docs/screenshots/analyses.png`, `docs/screenshots/run-share.png` (new), `docs/screenshots/roles.png`, `docs/screenshots/users.png`
   - `README.md`, `docs/coding-convention/backend-java-persistence.md`
 - **Steps**:
-  - [ ] `sharing.e2e.ts`: the admin creates users A and B with ANALYST (unique names, through the
+  - [x] `sharing.e2e.ts`: the admin creates users A and B with ANALYST (unique names, through the
     API) and adds PUBLISHER to A (`PATCH /api/users/{id}`). A logs in, gets a completed analysis
     (`completedAnalysis` with A's request context), opens it, turns **Public** on and confirms. B
     logs in, opens **Shared with everyone**, sees the run with A's username and the Public tag,
     opens it: the report is there, and there is no Stop, Run again, Logs tab or visibility control.
     A turns it private; B reloads and sees "Analysis not found.", and the shared tab no longer lists
     it.
-  - [ ] Retake and add the screenshots below, update the docs below.
+  - [x] Retake and add the screenshots below, update the docs below.
 - **Tests**: `sharing.e2e.ts` and the changed `ownership.e2e.ts` (`mise run e2e`).
 
 ## Tests
