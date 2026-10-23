@@ -23,6 +23,11 @@ lefthook = "2.1"
 "pipx:ansible-core" = { version = "2.21", uvx_args = "--with ansible~=14.4 --no-build-package cryptography" }
 "pipx:ansible-lint" = { version = "26.9.0", uvx_args = "--with ansible~=14.4 --no-build-package cryptography" }
 
+[env]
+# Claude Code loads the agent-progress mod (status line, toasts, pane) in sessions started from this
+# folder or a worktree of it, without `--plugin-dir`.
+CLAUDE_CODE_PLUGIN_DIRS = "{{config_root}}/.claude/mods/agent-progress"
+
 [tasks.setup]
 description = "Install ta-runner (TradingAgents + deps), the frontend's packages, the Git hooks, and a container engine when there is none (Docker on Ubuntu/Debian, Podman on macOS; PLATFORM_INSTALL_ENGINE=0 skips it)"
 run = [
@@ -172,7 +177,7 @@ description = "Push a plan on its own branch and open its draft PR labelled plan
 run = "scripts/agent/plan-branch.sh"
 
 [tasks."agent:plan-comments"]
-description = "Unanswered comments on a plan PR, or answer them: mise run agent:plan-comments <pr | plan/<issue>-<slug>> | --reply <comment id> <file> | --comment <pr | branch> <file> <id>..."
+description = "Unanswered comments on a plan PR, or answer them: mise run agent:plan-comments <pr | plan/<issue>-<slug>> | --reply <comment id> <file> | --comment <pr | branch> <file> <id>... | --approve <pr | branch> | --approved <pr | branch>"
 run = "scripts/agent/plan-comments.sh"
 
 [tasks."agent:run"]
