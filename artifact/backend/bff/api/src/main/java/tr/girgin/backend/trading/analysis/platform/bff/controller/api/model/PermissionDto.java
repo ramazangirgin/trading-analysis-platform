@@ -17,7 +17,8 @@ public enum PermissionDto {
     ROLE_MANAGE("role:manage"),
     AUDIT_READ("audit:read"),
     ANALYSIS_DEFAULTS_MANAGE("analysis:defaults:manage"),
-    ANALYSIS_OVERRIDE_MODELS("analysis:override-models");
+    ANALYSIS_OVERRIDE_MODELS("analysis:override-models"),
+    ANALYSIS_SHARE("analysis:share");
 
     private final String key;
 

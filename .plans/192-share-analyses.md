@@ -186,6 +186,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: `analysis:share` and the PUBLISHER role
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/identity/core/src/main/java/.../identity/core/model/Permission.java`, `RoleId.java`
@@ -193,7 +194,7 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/model/PermissionDto.java`
   - tests named below
 - **Steps**:
-  - [ ] The constant, the DTO constant, the role ID, the two migrations.
+  - [x] The constant, the DTO constant, the role ID, the two migrations.
 - **Tests**:
   - `JpaIdentityRepositoryTest`: the database enum still mirrors `Permission`; after the migrations
     ADMIN holds `ANALYSIS_SHARE`, PUBLISHER is built in with exactly it, ANALYST and VIEWER do not
