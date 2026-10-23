@@ -107,11 +107,12 @@ and the jar is never released (`release.yml` runs only after **CI passed**). The
 
 ### WP3: Docs
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `README.md`, `deploy/server/README.md`, `docs/coding-convention/repository-versioning-and-releases.md` if it names the push runs
 - **Steps**:
-  - [ ] README "Continuous integration": the triggers, a row for *Changes* and *Platform jar*, the skipped-job rule and `CI passed` accepting `skipped`, the server end-to-end trigger, the task list row for `ci:test-changes`
-  - [ ] `deploy/server/README.md`: the `server:test` trigger without `mise.toml`
+  - [x] README "Continuous integration": the triggers, a row for *Changes* and *Platform jar*, the skipped-job rule and `CI passed` accepting `skipped`, the server end-to-end trigger, the task list row for `ci:test-changes`
+  - [x] `deploy/server/README.md`: the `server:test` trigger without `mise.toml`
 - **Tests**: none (text); `mise run check` passes.
 
 ## Tests

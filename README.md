@@ -665,6 +665,7 @@ mise run server:tunnel # open the deployed UI from this machine: an SSH tunnel, 
 mise run server:check  # ansible-lint and the playbook's syntax, without a server (not part of check)
 mise run server:test-setup  # the server setup scripts against a throwaway Ubuntu container (needs Docker or Podman)
 mise run server:test   # the whole server deployment with THIS machine as the server: throwaway machines only (CI)
+mise run ci:test-changes  # the tests of scripts/ci-changes.sh, which decides the CI jobs a change needs
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
@@ -677,22 +678,26 @@ your shell, plain `./gradlew` and `uv` in this directory use the same versions.
 
 ### Continuous integration
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to any branch (main
-included), on every pull request, and on demand (*Run workflow* on the Actions tab):
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main`, on every pull
+request, and on demand (*Run workflow* on the Actions tab). A branch without a pull request has no
+CI until one is opened.
 
 | Job | What |
 |---|---|
-| Backend and frontend | One Gradle run, `./gradlew spotlessCheck :frontend:pnpmLint build`: the formatting of every Java and frontend file first (a formatting failure stops the build), then the build: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the database naming and schema checks of every domain (uppercase names, explicit constraint and index names, everything in the domain's own schema, a conventions test in every domain with persistence), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), the dependency analysis (every module declares the libraries it uses and no others), frontend lint, tests and Knip (unused and unlisted packages), the jar |
+| Changes | [`scripts/ci-changes.sh`](scripts/ci-changes.sh) lists the files the change touches (against the merge base with the pull request's base branch) and decides which jobs run; its test is `mise run ci:test-changes`. A change that only touches `docs/`, `.plans/`, `README.md`, `CLAUDE.md`, `.claude/` or `scripts/agent/` skips the build, jar, end-to-end, image and runner-image jobs (and the ta-runner job unless it touches `scripts/agent/` or `.claude/skills/`); the server jobs run only when `deploy/`, `mise.toml` or `.github/` changed. Any file not on that list counts as an application change. On demand and on `main`, everything runs: the release takes the jar of the run on `main` |
+| Backend and frontend | One Gradle run, `./gradlew spotlessCheck :frontend:pnpmLint build`: the formatting of every Java and frontend file first (a formatting failure stops the build), then the build: Spotless, Checkstyle, every Gradle test (ArchUnit, the Docker runner against the runner's own Docker, every repository and Spring Boot test against PostgreSQL in a container (Testcontainers), the database naming and schema checks of every domain (uppercase names, explicit constraint and index names, everything in the domain's own schema, a conventions test in every domain with persistence), the custom Checkstyle checks with their 100% coverage gate and the project rules' fixtures), the dependency analysis (every module declares the libraries it uses and no others), frontend lint, tests and Knip (unused and unlisted packages) |
+| Platform jar | `./gradlew :backend:bootJar` in a job of its own, so the platform image and the end-to-end tests start while the build job still runs its tests. A red build still fails **CI passed**, so that jar is never released |
 | ta-runner | `mise run runner-test`: ruff, import-linter (package structure), deptry (declared and imported packages match) and pytest, upstream contract tests included; then `mise run agent:test`: the Python tests of the agent scripts ([`scripts/agent/`](scripts/agent)); then `mise run skill:test`: the Python tests of the Claude Code skills' helpers ([`.claude/skills/`](.claude/skills)) |
 | Version | The version is the same in every file; in a pull request into `main`, it is also higher than `main`'s and than the latest release tag, and not yet tagged (Renovate's update pull requests are exempt from the bump) |
 | ta-runner image | Built beside the build job, then run under the platform's lockdown flags; the image that passed is handed to the platform image job |
 | ta-runner image (arm64) | The same image built on an arm64 runner (`ubuntu-24.04-arm`) and run under the same lockdown flags, so a dependency without arm64 wheels shows up before anyone deploys to an arm64 server |
 | Server deploy (Ansible) | `mise run server:check` without a server: `ansible-lint` (production profile) and the playbook's syntax; then `mise run server:test-setup`: the setup scripts against a throwaway Ubuntu 24.04 container ([`deploy/server/`](deploy/server/README.md#testing)) |
-| Server deploy end-to-end | Only when `deploy/`, the ta-runner Dockerfile, `mise.toml` or the CI workflow changed (otherwise it passes in seconds): `mise run server:test`, with the runner as the server. The setup scripts, a deploy over SSH to `127.0.0.1`, a second deploy with `changed=0`, the UI through the SSH tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH |
-| End-to-end tests | The e2e formatting (Prettier), then the build job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as the first admin: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); user management (create a user, first login with the one-time password, disable); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
+| Server deploy end-to-end | Only when `deploy/`, the ta-runner Dockerfile, the CI workflow or `scripts/ci-changes.sh` changed (otherwise it is skipped): `mise run server:test`, with the runner as the server. The setup scripts, a deploy over SSH to `127.0.0.1`, a second deploy with `changed=0`, the UI through the SSH tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH |
+| End-to-end tests | The e2e formatting (Prettier), then the platform jar job's jar, on a throwaway PostgreSQL container, in Google Chrome, in parallel (3 workers; [`e2e/`](e2e/), Playwright), with login on as the first admin: login, wrong credentials, redirect back, logout and the back button; change password (menu, wrong current password, weak new password); user management (create a user, first login with the one-time password, disable); new analysis, live run page and decision; reports and Markdown export; comparing two runs; settings (keys masked, presets). `ta-runner` replays a recording (`TA_RUNNER_REPLAY`, [`artifact/ta-runner/tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run)) instead of calling an LLM. Traces are uploaded when a test fails |
 | Platform image and Compose smoke test | The platform image (GitHub's build cache) and the ta-runner image from the job above, then [`deploy/smoke-test.sh`](deploy/smoke-test.sh): the Compose stack comes up, an analysis runs in its own container, and the data survives a database restart and `down`/`up` |
 
-A last job, **CI passed**, succeeds only if all of them did. New jobs go into its `needs` list, so
+A last job, **CI passed**, succeeds only if every job succeeded or was skipped; a failed or cancelled
+job fails it. New jobs go into its `needs` list, so
 the rules on `main` never have to change. Those rules (the repository ruleset "main"):
 
 - Changes reach `main` only through pull requests; no direct or force pushes, and `main` cannot be
@@ -702,7 +707,7 @@ the rules on `main` never have to change. Those rules (the repository ruleset "m
 - Admins can merge their own pull requests without an approval, and can merge one whose checks
   failed (GitHub's "bypass" option on the pull request). Nothing merges on its own: auto-merge is off.
 
-Tools come from `mise.toml`, as locally. A newer push to the same branch cancels the run in progress
+Tools come from `mise.toml`, as locally. A newer push to the same pull request cancels the run in progress
 (not on main). The smoke test also runs locally: `deploy/smoke-test.sh /absolute/path/for/data` after
 `mise run docker-build`.
 

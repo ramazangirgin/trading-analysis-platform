@@ -272,9 +272,9 @@ Deploy the new server as above, copy the latest dump over and restore it as in
 | `mise run server:test-setup` | your computer, with Docker or Podman | The setup scripts against a throwaway Ubuntu 24.04 container ([`test-setup.sh`](test-setup.sh)): key, deploy user, sudoers and modes, a second run that changes nothing, the login test, the inventory, a deploy user that needs a sudo password caught, key-only SSH. About a minute. |
 | `mise run server:test` | a throwaway machine only | The whole deployment with that machine as the server, over SSH to `127.0.0.1` ([`test-deploy.sh`](test-deploy.sh)): the setup scripts, a deploy of the checked-out commit, a second deploy with `changed=0`, the UI through the tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH. 20 to 30 minutes. |
 
-CI runs the first two on every push (job *Server deploy (Ansible)*), and `server:test` on a fresh
-runner when the deployment changed (job *Server deploy end-to-end*: `deploy/`, the ta-runner
-Dockerfile, `mise.toml` or the CI workflow).
+CI runs the first two when `deploy/`, `mise.toml` or `.github/` changed (job *Server deploy
+(Ansible)*), and `server:test` on a fresh runner when the deployment changed (job *Server deploy
+end-to-end*: `deploy/`, the ta-runner Dockerfile, the CI workflow or `scripts/ci-changes.sh`).
 
 `server:test` changes the machine for good (users, sudoers, firewall, Docker, swap) and refuses to
 start unless `CI=true` or `SERVER_TEST_THROWAWAY=1`. To run it yourself, use a VM you throw away
