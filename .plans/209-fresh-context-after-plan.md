@@ -142,8 +142,7 @@ The root `README.md` does not describe `develop-issue`'s steps, so it is unchang
 - Starting the implementation automatically after the approval, without `/clear`: a skill cannot
   clear its own context.
 
-## Open questions
+## Decisions
 
-- Is a pull request comment the right place for the approval, or should it be a label (for example
-  `plan-approved`)? The comment is tied to a commit sha, so a changed plan invalidates it; a label would
-  need removing on every plan commit. Default in this plan: the comment.
+- The approval is a pull request comment tied to the plan's head sha, not a label: a changed plan
+  invalidates it without anything to remove.
