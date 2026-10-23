@@ -93,15 +93,16 @@ and the jar is never released (`release.yml` runs only after **CI passed**). The
 
 ### WP2: Workflow
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `.github/workflows/ci.yml`
 - **Steps**:
-  - [ ] Triggers: `push` on `main` only; header comment rewritten
-  - [ ] `changes` job (checkout with `fetch-depth: 0`, `scripts/ci-changes.sh`, the script's test) and `needs`/`if` on `build`, `runner`, `runner-image`, `runner-image-arm64`, `server`, `server-e2e`, `images`, `e2e`
-  - [ ] `jar` job; `build` without the jar upload; `images` and `e2e` need `jar`
-  - [ ] `server-e2e` without its diff step and the "Nothing to test" step
-  - [ ] `ci-passed`: `needs` with `changes` and `jar`, accepts `success` and `skipped`
-  - [ ] Header comment: the new jobs, the areas, the triggers
+  - [x] Triggers: `push` on `main` only; header comment rewritten
+  - [x] `changes` job (checkout with `fetch-depth: 0`, `scripts/ci-changes.sh`, the script's test) and `needs`/`if` on `build`, `runner`, `runner-image`, `runner-image-arm64`, `server`, `server-e2e`, `images`, `e2e`
+  - [x] `jar` job; `build` without the jar upload; `images` and `e2e` need `jar`
+  - [x] `server-e2e` without its diff step and the "Nothing to test" step
+  - [x] `ci-passed`: `needs` with `changes` and `jar`, accepts `success` and `skipped`
+  - [x] Header comment: the new jobs, the areas, the triggers
 - **Tests**: no unit test for YAML. On this pull request's own CI: the run starts (valid syntax), the `changes` outputs are in the job log, and `CI passed` is green. A follow-up check after merge: a docs-only pull request finishes in about a minute with `CI passed` (see "Tests").
 
 ### WP3: Docs

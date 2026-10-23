@@ -1,12 +1,23 @@
-# Continuous integration: every push to any branch (main included), every pull request, and on
-# demand. Jobs; add new ones (image publishing, security scans, ...) next to them and list them
-# under ci-passed:
+# Continuous integration: every push to main, every pull request, and on demand. A branch without
+# a pull request has no CI until one is opened. Jobs; add new ones (image publishing, security
+# scans, ...) next to them and list them under ci-passed:
 #
+#   changes    which areas the change touches (scripts/ci-changes.sh, tested by
+#              scripts/test-ci-changes.sh); the jobs below skip what the change cannot affect:
+#                app         anything but docs, plans, the agent pipeline: build, jar, e2e, images,
+#                            runner-image, runner-image-arm64
+#                runner      app, or scripts/agent and .claude/skills: runner
+#                deploy      deploy/, mise.toml, .github/: server
+#                server_e2e  deploy/, the ta-runner Dockerfile, this workflow, scripts/ci-changes.sh:
+#                            server-e2e
+#              On demand, on main and when no base is found, everything runs: release.yml releases
+#              the jar of a run on main.
 #   build      backend + frontend: formatting first (Spotless, Prettier), in the same Gradle run as
 #              Checkstyle, all Gradle tests (ArchUnit, Docker runner against the runner's Docker,
 #              every repository and Spring Boot test on PostgreSQL in a container through
-#              Testcontainers), dependency analysis (Gradle), frontend lint, tests and Knip, the
-#              single jar
+#              Testcontainers), dependency analysis (Gradle), frontend lint, tests and Knip
+#   jar        the single jar, built on its own so the jar consumers (images, e2e) start while build
+#              still tests; a red build still fails ci-passed, so that jar is never released
 #   runner     ta-runner: ruff, import-linter (package structure), deptry and pytest, upstream
 #              contract tests included; also the Python tests of the agent scripts (scripts/agent)
 #   runner-image  the ta-runner image and its lockdown check, beside the build job
@@ -14,29 +25,26 @@
 #              arm64 wheel shows up here, before a deploy
 #   server     the server deployment (deploy/server/): ansible-lint, the playbook's syntax, and the
 #              setup scripts against a throwaway Ubuntu container (server:test-setup)
-#   server-e2e the server deployment end to end, this runner being the server (server:test); only
-#              when the deploy files change, else it passes at once
+#   server-e2e the server deployment end to end, this runner being the server (server:test)
 #   images     the platform image, then the Docker Compose smoke test (deploy/smoke-test.sh);
-#              needs build and runner-image
+#              needs jar and runner-image
 #   e2e        end-to-end tests (e2e/, Playwright) in parallel (playwright.config.ts), and the e2e
-#              formatting: the build job's jar in Google Chrome, with ta-runner replaying a
+#              formatting: the jar job's jar in Google Chrome, with ta-runner replaying a
 #              recording instead of calling an LLM, the jar on a throwaway PostgreSQL container
 #              (scripts/postgres.sh)
 #   version    the version is the same in every file; in a pull request into main, it is also
 #              higher than main's and than the latest release tag (scripts/version.sh); Renovate's
 #              update pull requests are exempt from the bump
-#   ci-passed  "CI passed": the one check main's ruleset requires before a pull request can merge
+#   ci-passed  "CI passed": the one check main's ruleset requires before a pull request can merge;
+#              a skipped job counts as passed, a failed or cancelled one does not
 #
 # A successful run on main is released by release.yml (tag vX.Y.Z, GitHub Release with the jar).
-#
-# Pull requests run even when their branch already ran on push: a skipped required check would
-# count as passed.
 
 name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -53,8 +61,40 @@ env:
   MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
 
 jobs:
+  changes:
+    name: Changed areas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.areas.outputs.app }}
+      runner: ${{ steps.areas.outputs.runner }}
+      deploy: ${{ steps.areas.outputs.deploy }}
+      server_e2e: ${{ steps.areas.outputs.server_e2e }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: The script's tests
+        run: scripts/test-ci-changes.sh
+
+      # Only a pull request has a base; on demand and on main everything runs.
+      - name: Areas
+        id: areas
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base=""
+          if [ "$EVENT" = pull_request ]; then
+            base=$(git merge-base "origin/$BASE_REF" HEAD || true)
+          fi
+          scripts/ci-changes.sh "$base" >> "$GITHUB_OUTPUT"
+
   build:
     name: Backend and frontend
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -99,7 +139,36 @@ jobs:
             artifact/**/build/reports/dependency-analyze/
           if-no-files-found: ignore
 
-      - name: Platform jar (for the images job)
+  # The jar needs no test result: the images and e2e jobs start from it while build still tests.
+  jar:
+    name: Platform jar
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Java and uv (versions from mise.toml)
+        uses: jdx/mise-action@v5
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Node, pnpm and packages cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            artifact/frontend/.gradle/nodejs
+            artifact/frontend/.gradle/pnpm
+            ~/.local/share/pnpm/store
+          key: frontend-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'artifact/frontend/pnpm-lock.yaml') }}
+          restore-keys: frontend-${{ runner.os }}-
+
+      - name: Build the jar
+        run: ./gradlew --console=plain :backend:bootJar
+
+      - name: Platform jar (for the images and e2e jobs)
         uses: actions/upload-artifact@v7
         with:
           name: platform-jar
@@ -109,6 +178,8 @@ jobs:
 
   runner:
     name: ta-runner
+    needs: changes
+    if: needs.changes.outputs.runner == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -137,6 +208,8 @@ jobs:
   # the images job as an artifact, so the smoke test runs the very image that passed the check.
   runner-image:
     name: ta-runner image
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -183,6 +256,8 @@ jobs:
   # without an arm64 wheel. Not the platform image: its JRE image is multi-arch and the jar is plain Java.
   runner-image-arm64:
     name: ta-runner image (arm64)
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     steps:
@@ -216,6 +291,8 @@ jobs:
   # of its own and not part of `mise run check`.
   server:
     name: Server deploy (Ansible)
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -232,57 +309,26 @@ jobs:
 
   # The whole deployment, as deploy/server/README.md describes it, with this runner as the server:
   # the setup scripts, then deploys over SSH to 127.0.0.1 (deploy/server/test-deploy.sh). It builds
-  # the images on the "server" (20 to 30 minutes), so it runs only when what it tests changes;
-  # otherwise it passes in seconds. It is in CI passed's needs either way.
+  # the images on the "server" (20 to 30 minutes), so it runs only when what it tests changes
+  # (the server_e2e area). mise.toml is not one: the server job installs the same tools from it.
   server-e2e:
     name: Server deploy end-to-end
+    needs: changes
+    if: needs.changes.outputs.server_e2e == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      # The deployment, the images it builds, the tools and this job. On demand it always runs.
-      - name: Deploy files changed?
-        id: changes
-        env:
-          EVENT: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-          REF: ${{ github.ref }}
-          BEFORE: ${{ github.event.before }}
-          PATTERN: '^(deploy/|artifact/ta-runner/Dockerfile$|mise\.toml$|\.github/workflows/ci\.yml$)'
-        run: |
-          case "$EVENT" in
-            workflow_dispatch) base="" ;;
-            pull_request) base=$(git merge-base "origin/$BASE_REF" HEAD) ;;
-            *) if [ "$REF" = refs/heads/main ]; then base=$BEFORE; else base=$(git merge-base origin/main HEAD || true); fi ;;
-          esac
-          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2> /dev/null; then
-            run=true
-          elif git diff --name-only "$base" HEAD | grep -qE "$PATTERN"; then
-            run=true
-          else
-            run=false
-          fi
-          echo "run=$run" >> "$GITHUB_OUTPUT"
-          echo "Deploy files changed since ${base:-(nothing to compare)}: $run"
 
       - name: Ansible (versions from mise.toml)
-        if: steps.changes.outputs.run == 'true'
         uses: jdx/mise-action@v5
 
       - name: Deploy to this runner over SSH, as the README's steps do
-        if: steps.changes.outputs.run == 'true'
         run: mise run server:test
-
-      - name: Nothing to test
-        if: steps.changes.outputs.run != 'true'
-        run: echo "No deploy files changed; the end-to-end test is not needed."
 
   images:
     name: Platform image and Compose smoke test
-    needs: [build, runner-image]
+    needs: [jar, runner-image]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -325,10 +371,10 @@ jobs:
       - name: Docker Compose smoke test
         run: deploy/smoke-test.sh "$RUNNER_TEMP/platform-data"
 
-  # Last: it needs the jar from the build job. Traces and the HTML report are uploaded on failure.
+  # It needs the jar from the jar job. Traces and the HTML report are uploaded on failure.
   e2e:
     name: End-to-end tests
-    needs: build
+    needs: jar
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -444,7 +490,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [build, runner, runner-image, runner-image-arm64, server, server-e2e, images, version, e2e]
+    needs: [changes, build, jar, runner, runner-image, runner-image-arm64, server, server-e2e, images, version, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -454,5 +500,8 @@ jobs:
         run: |
           echo "Job results: $RESULTS"
           for result in $RESULTS; do
-            [ "$result" = success ] || { echo "Not all jobs passed."; exit 1; }
+            case "$result" in
+              success | skipped) ;;
+              *) echo "Not all jobs passed."; exit 1 ;;
+            esac
           done
