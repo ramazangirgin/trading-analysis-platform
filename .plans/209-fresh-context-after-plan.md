@@ -51,7 +51,7 @@ commit that was approved: a later plan commit makes it stale and the skill asks 
 `plan-reply` markers):
 
 - `plan-comments.sh --approve <pr | branch>`: posts the marker comment for the branch's current head.
-  It refuses when the head is not pushed (local commits ahead of `origin/<branch>`).
+  It refuses unless the local branch is at the pull request's head (not ahead, not behind).
 - `plan-comments.sh --approved <pr | branch>`: exit 0 and print the sha when the newest
   `plan-approved` comment of the agent's login names the branch's current head sha, exit 1 otherwise.
   Only the agent login's comments count, as for the `plan-reply` markers.

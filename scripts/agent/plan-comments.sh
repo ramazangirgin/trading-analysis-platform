@@ -50,9 +50,9 @@ case ${1:-} in
     pr=$(pr_number "${2:?usage: $0 --approve <pr | branch>}")
     read -r branch head < <(gh pr view "$pr" --json headRefName,headRefOid --jq '"\(.headRefName) \(.headRefOid)"')
     git fetch --quiet origin "$branch"
-    if git rev-parse --verify --quiet "refs/heads/$branch" >/dev/null &&
-      [ "$(git rev-list --count "$head..refs/heads/$branch")" != 0 ]; then
-      die "$branch has commits that are not pushed; push them, then approve"
+    local_head=$(git rev-parse --verify --quiet "refs/heads/$branch" || true)
+    if [ -n "$local_head" ] && [ "$local_head" != "$head" ]; then
+      die "$branch is not at the pull request's head $head (unpushed or newer commits); bring them in line, show the plan again, then approve"
     fi
     py "$AGENT_DIR/plan_comments.py" approval "$head" >"$AGENT_TMP/approval.md"
     gh pr comment "$pr" --body-file "$AGENT_TMP/approval.md"

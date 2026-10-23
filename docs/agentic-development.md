@@ -201,7 +201,7 @@ marker), changes the plan on its branch (commit `Plan: …`, push) and answers e
 not. It never resolves a thread: you do. You can also edit, commit and push the plan yourself.
 Approving the plan in the session records it on the pull request: `plan-comments.sh --approve <pr |
 branch>` posts a comment with a hidden `plan-approved sha=<sha>` marker for the branch's pushed head
-(it refuses while commits are not pushed), and `plan-comments.sh --approved <pr | branch>` prints the
+(it refuses unless the local branch is that head, so the sha is the one the session showed), and `plan-comments.sh --approved <pr | branch>` prints the
 sha and exits 0 when the newest such comment of the agent's login names the current head, 1 when
 there is none or a later plan commit made it stale. Go on
 until you would accept a pull request that does exactly that. The agents follow the plan literally,
