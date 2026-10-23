@@ -31,7 +31,7 @@ test('a published analysis is read-only for another user until its owner makes i
   const publisher = await loginAsNewUser(browser, nameA, a.oneTimePassword)
   const reader = await loginAsNewUser(browser, nameB, b.oneTimePassword)
   try {
-    const id = await completedAnalysis(publisher.context.request, ticker, {
+    const id = await completedAnalysis(publisher.context.request, ticker, undefined, {
       platformModels: true,
     })
 
