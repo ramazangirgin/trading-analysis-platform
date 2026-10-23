@@ -213,7 +213,7 @@ Packages without a dependency between them can be implemented in parallel.
   - `.../analysis/core/exception/AnalysisError.java`
   - `.../analysis/core/inbound/`: `ChangeAnalysisVisibilityUseCase.java` (new), `ListAnalysesUseCase.java`
   - `.../analysis/core/outbound/persistence/AnalysisRepositoryPort.java`
-  - `.../analysis/core/service/`: `AnalysisVisibilityService.java` (new), `AnalysisService.java`, `AnalysisLogService.java`
+  - `.../analysis/core/service/`: `AnalysisVisibilityService.java` (new), `AnalysisListService.java` (new, `ListAnalysesUseCase` moved out of `AnalysisService` so it does not grow), `AnalysisService.java`, `AnalysisLogService.java`
   - `artifact/backend/domain/analysis/adapter/src/main/java/.../analysis/adapter/persistence/`: `JpaAnalysisRepositoryAdapter.java`, `entity/AnalysisEntity.java`, the two analysis mappers in `mapper/`
   - `artifact/backend/domain/analysis/adapter/src/main/resources/.../persistence/migration/V4__add_visibility.sql` (new)
   - every existing caller and test of `AnalysisAccess`, `AnalysisFilter` and `list` (the compiler names them; `orchestration` included)
@@ -235,7 +235,7 @@ Packages without a dependency between them can be implemented in parallel.
     cannot make another user's analysis public; a stale version fails with `CONCURRENT_UPDATE` and
     nothing is written; the same visibility writes nothing; an optimistic lock failure from the port
     becomes `CONCURRENT_UPDATE`.
-  - `AnalysisServiceTest`: `list` per scope (`SHARED` holds other users' public analyses only,
+  - `AnalysisServiceTest` (`list` through `AnalysisListService`): `list` per scope (`SHARED` holds other users' public analyses only,
     never one's own or a private one; `ALL` without `allUsers` is `MINE`; status and ticker apply to
     every scope); another user's public analysis can be read but `stop` and `rerun` fail with
     `NOT_FOUND`; a queued run is private.
