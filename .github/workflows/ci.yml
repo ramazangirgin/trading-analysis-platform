@@ -76,7 +76,7 @@ jobs:
           fetch-depth: 0
 
       - name: The script's tests
-        run: scripts/test-ci-changes.sh
+        run: bash scripts/test-ci-changes.sh
 
       # Only a pull request has a base; on demand and on main everything runs.
       - name: Areas
@@ -89,7 +89,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             base=$(git merge-base "origin/$BASE_REF" HEAD || true)
           fi
-          scripts/ci-changes.sh "$base" >> "$GITHUB_OUTPUT"
+          bash scripts/ci-changes.sh "$base" >> "$GITHUB_OUTPUT"
 
   build:
     name: Backend and frontend
