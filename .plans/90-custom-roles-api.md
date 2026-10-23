@@ -19,7 +19,7 @@ permissions on their next request, without logging in again. The UI follows in p
 |---|---|
 | backend, identity domain (`:backend:domain:identity:core`, `:adapter`) | `backend-java-package-structure.md`: use case in `core.inbound`, service in `core.service` (package-private), errors in `core.exception` as `IdentityError` constants; `backend-java-persistence.md`: Spring Data only, the port's `save` keeps the optimistic lock with `@Version`; `backend-database-naming.md`: a new migration `V6__…` in the identity schema, unique index named `<TABLE>_<COLUMNS>_UK` |
 | backend, BFF (`:backend:bff:api`, `:impl`) | `backend-java-rest-api.md`: return the DTO for a `200`, `ResponseEntity` only for `201` / `204`; domain errors go through `IdentityExceptionToApiExceptionMapper` and `DomainExceptionHandler`, never a `try` / `catch` in the delegate; every delegate method has `@RequiresPermission` (`TAP-A1`); security code only in `bff.delegate.impl.config`; mappers are MapStruct `SourceToTargetMapper` with one `map` method in `bff.delegate.impl.mapper` |
-| shared types | `repository-shared-types.md`: permissions on the wire are `PermissionDto` keys, mapped with MapStruct; `openapi.json` and `schema.d.ts` regenerated with `mise run api-types` |
+| shared types | `repository-shared-types.md`: permissions on the wire are `PermissionEnumDto` keys, mapped with MapStruct; `openapi.json` and `schema.d.ts` regenerated with `mise run api-types` |
 | docs | Root `README.md`, section "Login" (backend bullets and the permission table) |
 
 ## Design
@@ -101,14 +101,14 @@ Endpoints in `RolesApiController` / `RolesApiDelegate` / `RolesApiDelegateImpl`:
 | `DELETE /api/roles/{id}` | `role:manage` | 204 `ResponseEntity<Void>` | 404; 409 `built_in_role`, `role_in_use` (`params.userCount`) |
 
 - DTOs in `bff.controller.api.model`: `RoleDto` gets `userCount` and `version`.
-  `CreateRoleRequest(@NotBlank String name, String description, @NotNull List<@NotNull PermissionDto> permissions)`
-  and `UpdateRoleRequest(String name, String description, List<@NotNull PermissionDto> permissions, Long version)`.
-  A permission key that is not a `PermissionDto` value is an unreadable body: 400 from
+  `CreateRoleRequest(@NotBlank String name, String description, @NotNull List<@NotNull PermissionEnumDto> permissions)`
+  and `UpdateRoleRequest(String name, String description, List<@NotNull PermissionEnumDto> permissions, Long version)`.
+  A permission key that is not a `PermissionEnumDto` value is an unreadable body: 400 from
   `ApiExceptionHandler`.
 - Mappers in `bff.delegate.impl.mapper`: `RoleSummaryToRoleDtoMapper` replaces
   `RoleToRoleDtoMapper` (permissions sorted by key, as now), and a new
-  `PermissionDtoToPermissionMapper` (MapStruct enum mapping, the reverse of
-  `PermissionToPermissionDtoMapper`).
+  `PermissionEnumDtoToPermissionMapper` (MapStruct enum mapping, the reverse of
+  `PermissionToPermissionEnumDtoMapper`).
 - `IdentityExceptionToApiExceptionMapper`: `ROLE_NOT_FOUND` 404; `INVALID_ROLE_NAME`,
   `INVALID_ROLE_DESCRIPTION` 400; `ROLE_NAME_TAKEN`, `BUILT_IN_ROLE`, `ROLE_IN_USE` 409. No new
   handler method: `IdentityException` is handled already.
@@ -187,7 +187,7 @@ a comparison of two numbers.
   - `artifact/backend/bff/api/src/main/java/…/bff/controller/api/RolesApiController.java`, `RolesApiDelegate.java`
   - `…/bff/controller/api/model/RoleDto.java`, `CreateRoleRequest.java` (new), `UpdateRoleRequest.java` (new)
   - `artifact/backend/bff/impl/src/main/java/…/bff/delegate/impl/RolesApiDelegateImpl.java`
-  - `…/bff/delegate/impl/mapper/RoleSummaryToRoleDtoMapper.java` (new), `RoleToRoleDtoMapper.java` (removed), `PermissionDtoToPermissionMapper.java` (new)
+  - `…/bff/delegate/impl/mapper/RoleSummaryToRoleDtoMapper.java` (new), `RoleToRoleDtoMapper.java` (removed), `PermissionEnumDtoToPermissionMapper.java` (new)
   - `…/bff/delegate/impl/mapper/error/IdentityExceptionToApiExceptionMapper.java`
   - Tests: `…/bff/delegate/impl/mapper/RoleSummaryToRoleDtoMapperTest.java` (replaces `RoleToRoleDtoMapperTest.java`)
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated with `mise run api-types`)

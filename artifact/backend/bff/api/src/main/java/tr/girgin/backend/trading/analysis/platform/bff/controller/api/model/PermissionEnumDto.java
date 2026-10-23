@@ -2,7 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.bff.controller.api.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum PermissionDto {
+public enum PermissionEnumDto {
     ANALYSIS_RUN("analysis:run"),
     ANALYSIS_READ("analysis:read"),
     ANALYSIS_READ_ALL("analysis:read:all"),
@@ -17,11 +17,12 @@ public enum PermissionDto {
     ROLE_MANAGE("role:manage"),
     AUDIT_READ("audit:read"),
     ANALYSIS_DEFAULTS_MANAGE("analysis:defaults:manage"),
-    ANALYSIS_OVERRIDE_MODELS("analysis:override-models");
+    ANALYSIS_OVERRIDE_MODELS("analysis:override-models"),
+    ANALYSIS_SHARE("analysis:share");
 
     private final String key;
 
-    PermissionDto(String key) {
+    PermissionEnumDto(String key) {
         this.key = key;
     }
 

@@ -28,7 +28,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Logi
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionAuthorities;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.UserSessions;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionEnumDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
@@ -53,7 +53,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
     private final ChangePasswordUseCase changePassword;
     private final UserSessions userSessions;
     private final SessionAuthorities sessionAuthorities;
-    private final PermissionToPermissionDtoMapper permissionMapper;
+    private final PermissionToPermissionEnumDtoMapper permissionMapper;
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SecurityContextRepository contextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
@@ -67,7 +67,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
             ChangePasswordUseCase changePassword,
             UserSessions userSessions,
             SessionAuthorities sessionAuthorities,
-            PermissionToPermissionDtoMapper permissionMapper,
+            PermissionToPermissionEnumDtoMapper permissionMapper,
             SessionAuthenticationStrategy sessionStrategy,
             SecurityContextRepository contextRepository,
             CsrfTokenRepository csrfTokenRepository) {

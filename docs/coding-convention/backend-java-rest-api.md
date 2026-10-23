@@ -19,6 +19,15 @@ Checked by `TAP-D6` ([Checkstyle](backend-java-checkstyle.md#rules-catalogue)): 
 and `ResponseEntity::ok` fail the build. A method whose success status really varies between `200`
 and another one suppresses it, with the reason: `@SuppressWarnings("checkstyle:TAP-D6")`.
 
+## Enums in request and response bodies
+
+A web enum is its own type in `bff.controller.api.model` and is named `...EnumDto`
+(`AnalysisStatusEnumDto`), never the domain enum and never a name without the suffix. A query
+parameter that is optional is `required = false` and its default is an enum constant in the delegate
+(`AnalysisScopeEnumDto.MINE`), not a `defaultValue = "MINE"` string that repeats the constant's name.
+
+Checked by `TAP-D8` ([Checkstyle](backend-java-checkstyle.md#rules-catalogue)).
+
 ## Media types
 
 JSON is the default for request and response bodies: a mapping does not declare `produces` or

@@ -5,9 +5,9 @@ import java.time.Instant;
 public record AnalysisDto(
         String id,
         AnalysisSpecDto spec,
-        AnalysisStatusDto status,
-        AnalysisSourceDto source,
-        RatingDto rating,
+        AnalysisStatusEnumDto status,
+        AnalysisSourceEnumDto source,
+        RatingEnumDto rating,
         String decision,
         RunStatsDto stats,
         Instant createdAt,
@@ -15,4 +15,9 @@ public record AnalysisDto(
         Instant endedAt,
         String errorCode,
         String errorMessage,
-        AnalysisOwnerDto owner) {}
+        AnalysisOwnerDto owner,
+        VisibilityEnumDto visibility,
+        Instant visibilityChangedAt,
+        Long version,
+        boolean canManage,
+        boolean canChangeVisibility) {}

@@ -47,7 +47,8 @@ class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
         }
         Analysis current = existing.get();
         OwnerId refreshedOwner = current.owner() != null ? current.owner() : owner;
-        Analysis refreshed = Analysis.imported(current.id(), current.version(), refreshedOwner, external);
+        Analysis refreshed = Analysis.imported(current.id(), current.version(), refreshedOwner, external)
+                .withVisibilityOf(current);
         if (refreshed.equals(current)) {
             return new ExternalRegistration(current, Outcome.UNCHANGED);
         }

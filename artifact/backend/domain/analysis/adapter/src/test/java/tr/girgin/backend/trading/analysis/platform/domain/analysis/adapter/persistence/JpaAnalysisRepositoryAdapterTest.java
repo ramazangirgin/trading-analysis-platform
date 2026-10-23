@@ -30,6 +30,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ex
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
 
@@ -219,6 +220,86 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     }
 
     @Test
+    void storesTheVisibilityAndItsTimeAndRaisesTheVersion() {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        Analysis stored = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVIS"), OWNER, now));
+        assertThat(stored.visibility()).isEqualTo(Visibility.PRIVATE);
+        assertThat(stored.visibilityChangedAt()).isNull();
+
+        Analysis shared = repository.update(stored.withVisibility(Visibility.PUBLIC, now.plusSeconds(5)));
+
+        assertThat(shared.version()).isEqualTo(stored.version() + 1);
+        assertThat(shared.visibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(shared.visibilityChangedAt()).isEqualTo(now.plusSeconds(5));
+        assertThat(repository.findById(stored.id())).contains(shared);
+    }
+
+    @Test
+    void aStaleVisibilityUpdateFailsAndLeavesTheNewerRowUnchanged() {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        Analysis stored = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISSTALE"), OWNER, now));
+        Analysis staleCopy = repository.findById(stored.id()).orElseThrow();
+        Analysis firstWrite = repository.update(stored.running(now, "first"));
+
+        assertThatThrownBy(() -> repository.update(staleCopy.withVisibility(Visibility.PUBLIC, now)))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+
+        assertThat(repository.findById(stored.id())).contains(firstWrite);
+    }
+
+    @Test
+    void aRunUpdateAndAReplaceImportedKeepTheStoredVisibility() {
+        Instant ended = Instant.parse("2026-09-27T21:34:35.383Z");
+        Analysis run = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISUPD"), OWNER, ended));
+        Analysis imported = inserted(Analysis.imported(
+                AnalysisId.newId(),
+                null,
+                OWNER,
+                ExternalAnalysis.reportFiles(
+                        "ZZVISIMP", LocalDate.of(2026, 9, 27), List.of(), null, null, null, ended)));
+        Analysis sharedRun = repository.update(run.withVisibility(Visibility.PUBLIC, ended));
+        Analysis sharedImport = repository.update(imported.withVisibility(Visibility.PUBLIC, ended));
+
+        Analysis updated =
+                repository.update(sharedRun.running(ended, "1").finished(AnalysisStatus.COMPLETED, ended, null, null));
+        Analysis replaced = repository.replaceImported(Analysis.imported(
+                sharedImport.id(),
+                sharedImport.version(),
+                OWNER,
+                ExternalAnalysis.reportFiles(
+                        "ZZVISIMP",
+                        LocalDate.of(2026, 9, 27),
+                        List.of(Analyst.NEWS),
+                        Rating.HOLD,
+                        "Hold",
+                        null,
+                        ended)));
+
+        assertThat(updated.visibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(updated.visibilityChangedAt()).isEqualTo(ended);
+        assertThat(replaced.visibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(replaced.visibilityChangedAt()).isEqualTo(ended);
+    }
+
+    @Test
+    void filtersByVisibilityAndByNotOwnedBy() {
+        Instant base = Instant.parse("2026-09-29T14:00:00Z");
+        Analysis mineOpen = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), OWNER, base));
+        mineOpen = repository.update(mineOpen.withVisibility(Visibility.PUBLIC, base));
+        Analysis theirsOpen = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), OTHER_OWNER, base));
+        theirsOpen = repository.update(theirsOpen.withVisibility(Visibility.PUBLIC, base));
+        Analysis theirsClosed = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), OTHER_OWNER, base));
+        Analysis nobodys = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), null, base));
+
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, Visibility.PUBLIC, null)))
+                .containsExactlyInAnyOrder(mineOpen, theirsOpen);
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, Visibility.PUBLIC, OWNER)))
+                .containsExactly(theirsOpen);
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, null, OWNER)))
+                .containsExactlyInAnyOrder(theirsOpen, theirsClosed, nobodys);
+    }
+
+    @Test
     void assignOwnerWhereMissingTouchesOnlyRowsWithoutOneAndRaisesTheirVersion() {
         Instant base = Instant.parse("2026-09-29T13:00:00Z");
         Analysis owned = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZASSIGN"), OWNER, base));
@@ -329,12 +410,16 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                 null,
                 "4245",
                 OTHER_OWNER,
+                Visibility.PUBLIC,
+                created,
                 queued.version());
 
         repository.update(changed);
 
         Analysis found = repository.findById(queued.id()).orElseThrow();
         assertThat(found.owner()).isEqualTo(OWNER);
+        assertThat(found.visibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(found.visibilityChangedAt()).isEqualTo(created);
         assertThat(found.spec()).isEqualTo(queued.spec());
         assertThat(found.createdAt()).isEqualTo(created);
         assertThat(found.status()).isEqualTo(AnalysisStatus.RUNNING);
@@ -465,6 +550,8 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
                 null,
                 null,
                 OWNER,
+                Visibility.PRIVATE,
+                null,
                 null);
     }
 }

@@ -183,6 +183,7 @@ written, and Spring Data JPA auditing sets it (`@CreatedDate`, `@LastModifiedDat
 | Column | Kind | Why |
 |---|---|---|
 | `ANALYSES.CREATED_AT` | Domain fact | An imported run takes the start time of the original run, and recovery orders queued analyses by it. Set by the analysis core from the `Clock` |
+| `ANALYSES.VISIBILITY_CHANGED_AT` | Domain fact | When the owner last made the analysis public or private. Set by the analysis core from the `Clock` when the visibility changes; a run update never touches it |
 | `USERS.CREATED_AT` | Audit field (`@CreatedDate`) | When the row was inserted; no rule reads it |
 | `USERS.UPDATED_AT` | Audit field (`@LastModifiedDate`) | When the row was last written; no rule reads it |
 | `USERS.LAST_LOGIN_AT` | Domain fact | When the user last logged in successfully. It is shown to admins and is not the time of the write; set by the identity core from the `Clock` on a successful login |

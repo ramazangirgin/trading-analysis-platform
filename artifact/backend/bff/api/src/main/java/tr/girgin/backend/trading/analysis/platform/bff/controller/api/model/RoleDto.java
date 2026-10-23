@@ -7,6 +7,6 @@ public record RoleDto(
         String name,
         boolean builtIn,
         String description,
-        List<PermissionDto> permissions,
+        List<PermissionEnumDto> permissions,
         long userCount,
         Long version) {}

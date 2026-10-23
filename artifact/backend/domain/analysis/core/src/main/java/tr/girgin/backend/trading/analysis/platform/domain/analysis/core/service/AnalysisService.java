@@ -20,13 +20,11 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
@@ -52,7 +50,6 @@ class AnalysisService
                 StopAnalysisUseCase,
                 RerunAnalysisUseCase,
                 GetAnalysisUseCase,
-                ListAnalysesUseCase,
                 AssignUnownedAnalysesUseCase,
                 SmartInitializingSingleton {
 
@@ -164,12 +161,12 @@ class AnalysisService
 
     @Override
     public Analysis rerun(AnalysisId id, AnalysisAccess access) {
-        return start(get(id, access).spec(), access.user());
+        return start(getManaged(id, access).spec(), access.user());
     }
 
     @Override
     public Analysis stop(AnalysisId id, AnalysisAccess access) {
-        Analysis analysis = get(id, access);
+        Analysis analysis = getManaged(id, access);
         RunHandle handle;
         synchronized (lock) {
             if (queue.remove(id)) {
@@ -203,12 +200,12 @@ class AnalysisService
         return repository.findById(id).orElseThrow(() -> notFound(id));
     }
 
-    @Override
-    public List<Analysis> list(AnalysisFilter filter, AnalysisAccess access) {
-        if (access.allUsers()) {
-            return repository.findAll(filter);
+    private Analysis getManaged(AnalysisId id, AnalysisAccess access) {
+        Analysis analysis = get(id);
+        if (!access.canManage(analysis)) {
+            throw notFound(id);
         }
-        return repository.findAll(new AnalysisFilter(filter.status(), filter.ticker(), access.user()));
+        return analysis;
     }
 
     @Override

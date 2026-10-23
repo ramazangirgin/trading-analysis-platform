@@ -12,12 +12,12 @@ import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.RolesApiDelegate;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.CreateRoleRequest;
-import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PermissionDto;
+import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PermissionEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RoleDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.UpdateRoleRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionAuthorities;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionDtoToPermissionMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionEnumDtoToPermissionMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RoleSummaryToRoleDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageRolesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
@@ -28,13 +28,13 @@ class RolesApiDelegateImpl implements RolesApiDelegate {
 
     private final ManageRolesUseCase manageRoles;
     private final RoleSummaryToRoleDtoMapper roleMapper;
-    private final PermissionDtoToPermissionMapper permissionMapper;
+    private final PermissionEnumDtoToPermissionMapper permissionMapper;
     private final SessionAuthorities sessionAuthorities;
 
     RolesApiDelegateImpl(
             ManageRolesUseCase manageRoles,
             RoleSummaryToRoleDtoMapper roleMapper,
-            PermissionDtoToPermissionMapper permissionMapper,
+            PermissionEnumDtoToPermissionMapper permissionMapper,
             SessionAuthorities sessionAuthorities) {
         this.sessionAuthorities = sessionAuthorities;
         this.manageRoles = manageRoles;
@@ -89,7 +89,7 @@ class RolesApiDelegateImpl implements RolesApiDelegate {
         return ResponseEntity.noContent().build();
     }
 
-    private Set<Permission> permissions(List<PermissionDto> dtos) {
+    private Set<Permission> permissions(List<PermissionEnumDto> dtos) {
         return dtos.stream().map(permissionMapper::map).collect(Collectors.toSet());
     }
 }

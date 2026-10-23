@@ -9,7 +9,7 @@ public interface StopAnalysisUseCase {
 
     /**
      * A queued run stops at once; a running one when the runner has shut down. An analysis the caller may not
-     * see is reported as not found.
+     * manage, a public one of another user included, is reported as not found.
      */
     Analysis stop(AnalysisId id, AnalysisAccess access);
 }

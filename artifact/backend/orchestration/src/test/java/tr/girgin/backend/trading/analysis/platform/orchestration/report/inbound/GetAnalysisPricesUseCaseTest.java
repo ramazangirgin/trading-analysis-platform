@@ -25,8 +25,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 class GetAnalysisPricesUseCaseTest {
 
     private static final OwnerId OWNER = new OwnerId("user-a");
-    private static final AnalysisAccess OTHERS = new AnalysisAccess(new OwnerId("user-b"), false);
-    private static final AnalysisAccess EVERYONE = new AnalysisAccess(new OwnerId("user-b"), true);
+    private static final AnalysisAccess OTHERS = new AnalysisAccess(new OwnerId("user-b"), false, false);
+    private static final AnalysisAccess EVERYONE = new AnalysisAccess(new OwnerId("user-b"), true, false);
 
     private final List<ReportKey> priceKeys = new ArrayList<>();
     private final Analysis analysis = Analysis.queued(

@@ -98,9 +98,8 @@ final class TestSession {
      */
     static String validBody(String method, String path) {
         String body = "{}";
-        if (method.equals("POST") && path.equals("/api/analyses")) {
-            body = "{\"ticker\":\"AAPL\",\"tradeDate\":\"2026-01-02\",\"analysts\":[\"MARKET\"],"
-                    + "\"llmProvider\":\"openai\",\"deepThinkLlm\":\"deep\",\"quickThinkLlm\":\"quick\"}";
+        if (path.startsWith("/api/analyses")) {
+            body = validAnalysisBody(method);
         } else if (method.equals("PUT") && path.startsWith("/api/secrets/")) {
             body = "{\"value\":\"secret\"}";
         } else if (method.equals("POST") && path.equals("/api/users")) {
@@ -115,6 +114,16 @@ final class TestSession {
             body = validRoleBody(method);
         }
         return body;
+    }
+
+    private static String validAnalysisBody(String method) {
+        return switch (method) {
+            case "POST" ->
+                "{\"ticker\":\"AAPL\",\"tradeDate\":\"2026-01-02\",\"analysts\":[\"MARKET\"],"
+                        + "\"llmProvider\":\"openai\",\"deepThinkLlm\":\"deep\",\"quickThinkLlm\":\"quick\"}";
+            case "PUT" -> "{\"visibility\":\"PRIVATE\",\"version\":0}";
+            default -> "{}";
+        };
     }
 
     private static String validAnalysisDefaultsBody(String method) {

@@ -1,5 +1,5 @@
 // The API's data shapes, derived from the generated OpenAPI schema (schema.d.ts).
-import type { components } from './schema'
+import type { components, operations } from './schema'
 
 type Schemas = components['schemas']
 
@@ -9,6 +9,10 @@ type Present<T, Nullable extends keyof T = never> = {
 }
 
 export type AnalysisStatus = NonNullable<Schemas['AnalysisDto']['status']>
+export type Visibility = NonNullable<Schemas['AnalysisDto']['visibility']>
+export type AnalysisScope = NonNullable<
+  NonNullable<operations['listAnalyses']['parameters']['query']>['scope']
+>
 export type Rating = NonNullable<Schemas['AnalysisDto']['rating']>
 export type Analyst = NonNullable<Schemas['StartAnalysisRequest']['analysts']>[number]
 export type AnalysisSpec = Present<Schemas['AnalysisSpecDto']>
@@ -16,11 +20,18 @@ export type RunStats = Present<Schemas['RunStatsDto'], 'costUsd'>
 export type Analysis = Omit<
   Present<
     Schemas['AnalysisDto'],
-    'rating' | 'decision' | 'startedAt' | 'endedAt' | 'errorCode' | 'errorMessage'
+    | 'rating'
+    | 'decision'
+    | 'startedAt'
+    | 'endedAt'
+    | 'errorCode'
+    | 'errorMessage'
+    | 'visibilityChangedAt'
   >,
   'spec' | 'stats'
 > & { spec: AnalysisSpec; stats: RunStats }
 export type StartAnalysisRequest = Schemas['StartAnalysisRequest']
+export type ChangeVisibilityRequest = Schemas['ChangeVisibilityRequest']
 export type Provider = Omit<
   Present<Schemas['ProviderDto'], 'apiKeyEnv'>,
   'quickModels' | 'deepModels'

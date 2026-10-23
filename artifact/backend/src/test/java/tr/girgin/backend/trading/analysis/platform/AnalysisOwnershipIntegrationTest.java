@@ -120,7 +120,7 @@ class AnalysisOwnershipIntegrationTest {
         assertThat(ids(analystA.send("GET", "/api/analyses", null)))
                 .contains(own)
                 .doesNotContain(id);
-        assertThat(ids(analystA.send("GET", "/api/analyses?allUsers=true", null)))
+        assertThat(ids(analystA.send("GET", "/api/analyses?scope=ALL", null)))
                 .contains(own)
                 .doesNotContain(id);
         assertThat(ids(analystB.send("GET", "/api/analyses", null)))
@@ -161,8 +161,8 @@ class AnalysisOwnershipIntegrationTest {
         String id = startAndAwait(analystB, "OWND");
 
         assertThat(ids(admin.send("GET", "/api/analyses", null))).doesNotContain(id);
-        JsonNode all = JSON.readTree(
-                admin.send("GET", "/api/analyses?allUsers=true", null).body());
+        JsonNode all =
+                JSON.readTree(admin.send("GET", "/api/analyses?scope=ALL", null).body());
         JsonNode theirs = all.valueStream()
                 .filter(a -> a.get("id").asString().equals(id))
                 .findFirst()
@@ -190,8 +190,8 @@ class AnalysisOwnershipIntegrationTest {
 
         assignOwners.assignUnownedToFirstAdmin();
 
-        JsonNode all = JSON.readTree(
-                admin.send("GET", "/api/analyses?allUsers=true", null).body());
+        JsonNode all =
+                JSON.readTree(admin.send("GET", "/api/analyses?scope=ALL", null).body());
         assertThat(all.valueStream())
                 .allSatisfy(a -> assertThat(a.at("/owner/id").asString()).isNotBlank());
         JsonNode seeded = all.valueStream()

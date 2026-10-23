@@ -486,6 +486,23 @@ class JpaIdentityRepositoryTest {
     }
 
     @Test
+    void theMigrationsSeedTheBuiltInPublisherRoleWithOnlyAnalysisShare() {
+        assertThat(roles.findById(RoleId.PUBLISHER)).hasValueSatisfying(publisher -> {
+            assertThat(publisher.name()).isEqualTo("PUBLISHER");
+            assertThat(publisher.builtIn()).isTrue();
+            assertThat(publisher.permissions()).containsExactly(Permission.ANALYSIS_SHARE);
+        });
+    }
+
+    @Test
+    void onlyAdminAndPublisherHoldAnalysisShare() {
+        assertThat(roles.findById(RoleId.ADMIN).orElseThrow().permissions()).contains(Permission.ANALYSIS_SHARE);
+        assertThat(roles.findById(RoleId.ANALYST).orElseThrow().permissions())
+                .doesNotContain(Permission.ANALYSIS_SHARE);
+        assertThat(roles.findById(RoleId.VIEWER).orElseThrow().permissions()).doesNotContain(Permission.ANALYSIS_SHARE);
+    }
+
+    @Test
     void aUserWithTheAnalystOrViewerRoleRoundTrips() {
         User saved = users.save(user("seeded-analyst-viewer-user", Set.of(RoleId.ANALYST, RoleId.VIEWER)));
 

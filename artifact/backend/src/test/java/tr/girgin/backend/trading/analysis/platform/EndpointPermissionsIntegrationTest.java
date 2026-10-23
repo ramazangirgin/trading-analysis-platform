@@ -113,7 +113,8 @@ class EndpointPermissionsIntegrationTest {
                 "GET /api/analyses/{id}/report",
                 "GET /api/analyses/{id}/prices",
                 "GET /api/analyses/{id}/logs",
-                "GET /api/analyses/{id}/events"));
+                "GET /api/analyses/{id}/events",
+                "PUT /api/analyses/{id}/visibility"));
         assertThat(notRefused).isEqualTo(expected);
     }
 

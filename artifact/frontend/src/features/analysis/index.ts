@@ -14,3 +14,4 @@ export {
   type ModelValues,
 } from './model/analysisOverrides'
 export { ACTIVE_STATUSES } from './model/analysisStatus'
+export { visibilityControl } from './model/visibility'

@@ -1,10 +1,14 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runlog.RunLogPort;
@@ -28,7 +32,11 @@ class AnalysisLogService implements ReadAnalysisLogsUseCase {
 
     @Override
     public List<String> tailLogs(AnalysisId id, AnalysisAccess access, int maxLines) {
-        getAnalysis.get(id, access);
+        Analysis analysis = getAnalysis.get(id, access);
+        // The log can hold internal details, so a reader of a public analysis does not get it.
+        if (!access.canManage(analysis)) {
+            throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value()));
+        }
         int lines = Math.clamp(maxLines, 1, MAX_LINES);
         return runLog.tail(id, lines).stream().map(this::mask).toList();
     }
