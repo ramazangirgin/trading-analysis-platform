@@ -109,6 +109,14 @@ class RenderTest(unittest.TestCase):
         self.assertIn("**Cost** (API prices): at least $", self.render(A_RUN + WITH_SESSION))
         self.assertIn("**Cost** (API prices): $7.50", self.render(A_RUN))
 
+    def test_header_cost_is_n_a_when_no_usage_has_a_cost(self):
+        lines = tsv(
+            (0, "begin", "", "plan", ""),
+            (5, "usage", "plan", "", session(1, 2, 3, None, "some-new-model", limited((1, 2), (3, 4)))),
+            (9, "end", "", "plan", ""),
+        )
+        self.assertIn("**Cost** (API prices): n/a", self.render(lines))
+
     def test_usage_total_covers_every_row_and_the_limit_consumption(self):
         text = self.render(A_RUN + WITH_SESSION)
         self.assertIn(

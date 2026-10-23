@@ -351,7 +351,9 @@ def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, 
     total_cost = sum(s.cost for s in every)
     usage_rows = [row for row in map(usage_row, steps) if row]
     inexact = any("cost_usd" not in row or row.get("partial") == "1" for row in usage_rows)
-    if inexact and total_cost:
+    if inexact and not any("cost_usd" in row for row in usage_rows):
+        total_cost_text = "n/a"
+    elif inexact:
         total_cost_text = f"at least {money(total_cost)}"
     else:
         total_cost_text = money(total_cost)
