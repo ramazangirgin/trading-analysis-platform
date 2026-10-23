@@ -155,7 +155,9 @@ const control = computed(() =>
 )
 const sharedBy = computed(() => {
   const owner = analysis.value?.owner
-  return owner && owner.id !== session.user?.id ? owner.username : null
+  return analysis.value?.visibility === 'PUBLIC' && owner && owner.id !== session.user?.id
+    ? owner.username
+    : null
 })
 
 async function changeVisibility(visibility: Visibility) {
