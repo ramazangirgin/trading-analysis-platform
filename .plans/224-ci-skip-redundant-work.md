@@ -83,11 +83,12 @@ and the jar is never released (`release.yml` runs only after **CI passed**). The
 
 ### WP1: Change detection script and its test
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/ci-changes.sh` (new), `scripts/test-ci-changes.sh` (new), `mise.toml` (task `ci:test-changes`)
 - **Steps**:
-  - [ ] `scripts/ci-changes.sh <base-sha-or-empty>`: reads `git diff --name-only <base> HEAD`, prints `app=`, `runner=`, `deploy=`, `server_e2e=` lines for `$GITHUB_OUTPUT` and a log of the files and results; empty base means all `true`
-  - [ ] `scripts/test-ci-changes.sh`: builds a throwaway Git repository and feeds the script changed-file sets; `mise run ci:test-changes` runs it
+  - [x] `scripts/ci-changes.sh <base-sha-or-empty>`: reads `git diff --name-only <base> HEAD`, prints `app=`, `runner=`, `deploy=`, `server_e2e=` lines for `$GITHUB_OUTPUT` and a log of the files and results; empty base means all `true`
+  - [x] `scripts/test-ci-changes.sh`: builds a throwaway Git repository and feeds the script changed-file sets; `mise run ci:test-changes` runs it
 - **Tests**: the test script covers: only `docs/x.md` (all four false); only `.plans/` and `README.md`; `scripts/agent/x.sh` (only `runner`); `.claude/skills/x/SKILL.md` (only `runner`); `.claude/settings.json` (all false); `artifact/backend/...` (`app`, `runner`); `mise.toml` (`app`, `runner`, `deploy`, not `server_e2e`); `deploy/Dockerfile` (all four); `.github/workflows/ci.yml` (all four); an unlisted new top-level file (`app`); an empty base (all true); a mixed set of docs and backend (`app`).
 
 ### WP2: Workflow
