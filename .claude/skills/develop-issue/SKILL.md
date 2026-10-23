@@ -84,7 +84,7 @@ comment and prints its link:
 
 | Step | Before it | After it |
 |---|---|---|
-| 2. Plan, until approved | `plan_start=$(date +%s)`; keep the number | on the approval, per plan: `progress.sh begin plan/<n>-<slug> plan --at <plan_start>`, then `progress.sh end plan/<n>-<slug> plan "approved (<k> change rounds)"` |
+| 2. Plan, until approved | `plan_start=$(date +%s)` and `plan_limits=$(scripts/agent/progress.sh probe)`; keep both | on the approval, per plan: `progress.sh begin plan/<n>-<slug> plan --at <plan_start> --limits "<plan_limits>"`, then `progress.sh end plan/<n>-<slug> plan "approved (<k> change rounds)"` |
 | 6. Update with `main` | `progress.sh begin <pr> "update with main"` | `progress.sh end <pr> "update with main" "<merged, N conflicts resolved, bumped to X.Y.Z \| unresolved conflict in <file>>"` |
 
 Steps are named as the scripts name theirs, so the comment counts them with the scripts' own
@@ -220,6 +220,13 @@ every change of the review (`git status --short` empty, nothing ahead of `origin
 and switch the folder back to a detached `origin/$base` (`git switch --detach origin/$base`): the
 scripts check the branch out themselves.
 
+The scripts run from the plan branch's own checkout, so a plan branch cut before a change to
+`scripts/agent/` runs the old scripts (old step markers, without the model and the limits). So
+before the first run: `git fetch origin && git diff --name-only origin/plan/<n>-<slug>...origin/$base -- scripts/agent`.
+When it prints files, switch the folder to the plan branch, merge `$base` into it with the
+[`merge-main-into-branch`](../merge-main-into-branch/SKILL.md) skill (`--bump <the plan's bump> --no-questions`),
+then switch back to a detached `origin/$base`. Say that it was done and why.
+
 For a split issue, steps 4 to 7 run once per plan, in the order of their dependencies, all in the
 same folder. A plan that depends on another one waits until that one is merged: run the plans that
 do not wait, then stop with their pull requests ready for review, and say which plan comes next
@@ -283,6 +290,9 @@ the open and declined findings, and the usage. Point at the pull request, at the
 try the change there) and at
 [the walkthrough's step 6](../../../docs/agentic-development.md#6-review-the-pull-request).
 
+First record this session's own usage: `scripts/agent/progress.sh orchestration <pr>` (one summed
+row, from the session's transcript), then print the table with `scripts/agent/progress.sh usage <pr>`.
+
 Then, always and before the notification, post the run summary on the pull request, so the
 reviewer finds this session's view next to the agents' comments:
 `gh pr comment <pr> --body-file <file>`, the file in the session's scratchpad. It starts with
@@ -297,7 +307,9 @@ reviewer finds this session's view next to the agents' comments:
   a "not done or done differently" item, a file written by hand instead of generated, tests that
   only CI ran, and the checks this session ran itself (which tests, on which commit, the result);
 - the steps run, in order, and the ones skipped;
-- the progress comment's link, with its total time, tokens and cost;
+- the progress comment's link, with its total time, tokens and cost, and the **Usage** table that
+  `progress.sh usage <pr>` printed (model and limits per row, plan and orchestration included),
+  with a line on each `n/a` row and each limit that dropped (the window was reset);
 - what can come next: another agent round or the merge, whether the merge closes the issue, and
   `/develop-issue <n>` to continue.
 
