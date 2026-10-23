@@ -1,7 +1,6 @@
 import { expect, type APIRequestContext } from '@playwright/test'
 import { csrfHeaders } from '../tests/support'
 
-/** The stored version of an analysis, which a change of its visibility has to send back. */
 export async function versionOf(request: APIRequestContext, id: string) {
   const analysis = await request.get(`/api/analyses/${id}`)
   return ((await analysis.json()) as { version: number }).version

@@ -15,7 +15,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
-/** Makes analyses public and private. */
 @Service
 class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
 
