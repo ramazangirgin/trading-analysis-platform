@@ -107,7 +107,7 @@ final class Fakes {
     static final class Repository implements AnalysisRepositoryPort {
 
         final Map<AnalysisId, Analysis> rows = new ConcurrentHashMap<>();
-        // Thrown by update and replaceImported when set, as a stale write would.
+        // Thrown by every write except insert when set, as a stale write would.
         RuntimeException failOnWrite;
         int visibilityWrites;
 
