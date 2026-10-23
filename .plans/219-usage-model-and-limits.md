@@ -144,13 +144,14 @@ reads `tokens` and `cost_usd`.
 
 ### WP3: The progress comment
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/progress.py`, `scripts/agent/test_progress.py`
 - **Steps**:
-  - [ ] Parse the new `usage` keys per step (sub-steps summed into their step, as tokens are).
-  - [ ] Render the Usage section and the Total with the limit consumption; take the header's
+  - [x] Parse the new `usage` keys per step (sub-steps summed into their step, as tokens are).
+  - [x] Render the Usage section and the Total with the limit consumption; take the header's
     tokens and cost from the same sums.
-  - [ ] The note under the table: limits are shared with whatever else runs, the diff is
+  - [x] The note under the table: limits are shared with whatever else runs, the diff is
     approximate, the first turn of a run is not in it.
 - **Tests**: `A_RUN` extended with plan, orchestration and limit values: the table has a row per
   step with usage, plan and orchestration included, the total covers them, rows without limits show

@@ -1,7 +1,7 @@
 """Renders a plan branch's progress (scripts/agent/lib.sh, progress.tsv) as the issue comment.
 
     progress.py render <progress.tsv> <marker> <branch> [--pr <n>] [--max-rounds <n>]
-                       [--max-ci-fixes <n>] [--now <epoch>]
+                       [--max-ci-fixes <n>] [--now <epoch>] [--only usage]
 
 progress.tsv holds one event per line, tab separated: <epoch> <kind> <parent> <name> <text>.
 
@@ -12,11 +12,14 @@ progress.tsv holds one event per line, tab separated: <epoch> <kind> <parent> <n
                 or a result of its own
     milestone   <text> happened in step <parent> (sub-step <name>), or outside every step
     usage       an agent run of step <parent> (sub-step <name>) ended; <text> is its usage,
-                "tokens=... cost_usd=... duration_ms=... turns=..." (agent_json.py progress-usage)
+                "tokens=... cost_usd=... model=... limit5h_before=... duration_ms=... turns=..."
+                (agent_json.py progress-usage); the plan, the update with main and the orchestration
+                are the session's own, read from its transcript
     note        <text>, for the timeline only
 
 The comment says where the run stands, the total time, tokens and cost; every step with its start,
-end, duration, tokens and result; the runs, time, tokens and outcomes per kind of step (the
+end, duration, tokens and result; the usage per step (model, tokens, cost, the Claude limits before
+and after) with the total of everything the issue consumed; the runs, time, tokens and outcomes per kind of step (the
 iterations); what is worth a look (the slowest steps, steps run again, retries, failures, the time
 spent waiting for CI); and the milestones as a timeline. The agents' tool calls are not in it:
 progress.tsv has the milestones only.
@@ -28,6 +31,8 @@ import argparse
 import re
 import sys
 import time
+
+import agent_json
 
 # The kinds of step, by the step's name; the first match wins.
 KINDS = [
@@ -67,6 +72,7 @@ class Step:
         self.cost = 0.0
         self.agent_runs = 0
         self.agent_ms = 0
+        self.usages = []  # (epoch, pairs) of every usage event
 
     @property
     def open(self):
@@ -170,6 +176,7 @@ def build(events):
                 step.cost += float(u.get("cost_usd", 0))
                 step.agent_ms += int(u.get("duration_ms", 0))
                 step.agent_runs += 1
+                step.usages.append((at, u))
         elif kind == "note":
             timeline.append((at, "", text))
     return steps, timeline
@@ -202,6 +209,46 @@ def clock(epoch, day):
     """The time of day, with the date when it is not the run's first day."""
     moment = LOCALTIME(epoch)
     return time.strftime("%H:%M" if time.strftime("%Y-%m-%d", moment) == day else "%m-%d %H:%M", moment)
+
+
+def usage_row(step):
+    """The usage of a step and its sub-steps as one agent-step marker's pairs (agent_json.py), or None
+    without usage. A limit's before comes from the first event that has one, its after from the last."""
+    events = sorted((e for s in [step] + step.children for e in s.usages), key=lambda e: e[0])
+    if not events:
+        return None
+    row = {"step": cell(step.name), "round": ""}
+    for key in ("tokens_in", "tokens_cached", "tokens_out"):
+        row[key] = sum(int(u.get(key, 0)) for _, u in events)
+    if all("cost_usd" in u for _, u in events):
+        row["cost_usd"] = sum(float(u["cost_usd"]) for _, u in events)
+    if any(u.get("partial") == "1" for _, u in events):
+        row["partial"] = "1"
+    models = []
+    for _, u in events:
+        models += [m for m in u.get("model", "").split(",") if m and m not in models]
+    if models:
+        row["model"] = ",".join(models)
+    for key in agent_json.WINDOWS:
+        before = [u[f"limit{key}_before"] for _, u in events if f"limit{key}_before" in u]
+        after = [u[f"limit{key}_after"] for _, u in events if f"limit{key}_after" in u]
+        if before and after:
+            row[f"limit{key}_before"], row[f"limit{key}_after"] = before[0], after[-1]
+    return row
+
+
+def usage_section(steps):
+    rows = [row for row in map(usage_row, steps) if row]
+    if not rows:
+        return ["**Usage**", "", "No agent usage recorded yet."]
+    return [
+        "**Usage**",
+        "",
+        agent_json.usage_table(rows),
+        "",
+        "The Claude limits are shared with whatever else runs at the same time, so a difference is "
+        "approximate; the first turn of a run is not in it. `n/a`: no value could be read.",
+    ]
 
 
 def cell(text):
@@ -286,8 +333,10 @@ def worth_a_look(steps, timeline, now, elapsed, day):
     return lines
 
 
-def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, now=None):
+def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, now=None, only=None):
     steps, timeline = build(events)
+    if only == "usage":
+        return "\n".join(usage_section(steps)) + "\n"
     now = now if now is not None else int(time.time())
     first = events[0][0] if events else now
     last = events[-1][0] if events else now
@@ -332,6 +381,8 @@ def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, 
         for child in step.children:
             row("", f"↳ {child.name}", child)
 
+    out += [""] + usage_section(steps)
+
     # The iterations: runs, time, tokens and outcomes per kind of step, in the order they first ran.
     limits = {"review": max_rounds, "CI fix": max_ci_fixes}
     kinds = {}
@@ -372,13 +423,14 @@ def main(argv):
     one.add_argument("--max-rounds", type=int)
     one.add_argument("--max-ci-fixes", type=int)
     one.add_argument("--now", type=int)
+    one.add_argument("--only", choices=["usage"])
     args = parser.parse_args(argv[1:])
     try:
         with open(args.file, encoding="utf-8") as f:
             events = parse(f)
     except FileNotFoundError:
         events = []
-    sys.stdout.write(render(events, args.marker, args.branch, args.pr, args.max_rounds, args.max_ci_fixes, args.now))
+    sys.stdout.write(render(events, args.marker, args.branch, args.pr, args.max_rounds, args.max_ci_fixes, args.now, args.only))
 
 
 if __name__ == "__main__":
