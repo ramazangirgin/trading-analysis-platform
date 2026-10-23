@@ -49,7 +49,6 @@ case ${1:-} in
   --approve)
     pr=$(pr_number "${2:?usage: $0 --approve <pr | branch>}")
     read -r branch head < <(gh pr view "$pr" --json headRefName,headRefOid --jq '"\(.headRefName) \(.headRefOid)"')
-    git fetch --quiet origin "$branch"
     local_head=$(git rev-parse --verify --quiet "refs/heads/$branch" || true)
     if [ -n "$local_head" ] && [ "$local_head" != "$head" ]; then
       die "$branch is not at the pull request's head $head (unpushed or newer commits); bring them in line, show the plan again, then approve"
