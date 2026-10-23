@@ -48,7 +48,7 @@ rounds=$(count_steps "$pr" review)
   echo
   echo "Open and declined findings are for the developer to decide."
   echo
-  echo "**Usage** (developer: $(model_name "$AGENT_MODEL"), review: $(model_name "$AGENT_REVIEW_MODEL")):"
+  echo "**Usage**:"
   echo
   py "$AGENT_DIR/agent_json.py" usage-table <<<"$comments"
 } >"$AGENT_TMP/final.md"

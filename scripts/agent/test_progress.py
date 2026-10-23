@@ -52,6 +52,26 @@ A_RUN = tsv(
 )
 
 
+def session(tokens_in, cached, out, cost, model, limits=""):
+    total = tokens_in + cached + out
+    cost = f" cost_usd={cost}" if cost is not None else ""
+    return f"tokens={total} tokens_in={tokens_in} tokens_cached={cached} tokens_out={out}{cost} model={model}{limits}"
+
+
+def limited(h5, h7):
+    return f" limit5h_before={h5[0]} limit5h_after={h5[1]} limit7d_before={h7[0]} limit7d_after={h7[1]}"
+
+
+# A_RUN with the session's own steps: the plan, and the orchestration recorded at the end.
+WITH_SESSION = tsv(
+    (590, "usage", "plan", "", session(1_000, 20_000, 3_000, 2.0, "claude-opus-5-5", limited((10, 14), (30, 31)))),
+    (1000, "usage", "implement", "WP2 (2 of 2)", session(100, 200, 300, 1.0, "claude-sonnet-5-5", limited((14, 20), (31, 33)))),
+    (3901, "begin", "", "orchestration", ""),
+    (3950, "usage", "orchestration", "", session(500, 5_000, 800, None, "some-new-model")),
+    (3951, "end", "", "orchestration", "done"),
+)
+
+
 class RenderTest(unittest.TestCase):
     def setUp(self):
         self.addCleanup(setattr, progress, "LOCALTIME", progress.LOCALTIME)
@@ -77,6 +97,51 @@ class RenderTest(unittest.TestCase):
         self.assertIn("**Agents**: 4 run(s), 11m 20s", text)
         self.assertIn("**Tokens**: 4.3M · **Cost** (API prices): $7.50", text)
 
+    def test_usage_has_a_row_per_step_with_the_plan_and_the_orchestration(self):
+        text = self.render(A_RUN + WITH_SESSION)
+        self.assertIn("| Step | Round | Model | Input | Cached input | Output | Cost (API prices) |", text)
+        self.assertIn("| plan |  | claude-opus-5-5 | 1,000 | 20,000 | 3,000 | $2.00 | 10% → 14% (+4) | 30% → 31% (+1) |", text)
+        self.assertIn("| implement |  | claude-sonnet-5-5 | 100 | 200 | 300 | $5.00 | 14% → 20% (+6) | 31% → 33% (+2) |", text)
+        self.assertIn("| review R1 |  | n/a | 0 | 0 | 0 | $3.00 | n/a | n/a |", text)
+        self.assertIn("| orchestration |  | some-new-model | 500 | 5,000 | 800 | n/a | n/a | n/a |", text)
+
+    def test_header_cost_is_at_least_when_a_usage_has_no_cost(self):
+        self.assertIn("**Cost** (API prices): at least $", self.render(A_RUN + WITH_SESSION))
+        self.assertIn("**Cost** (API prices): $7.50", self.render(A_RUN))
+
+    def test_header_cost_is_n_a_when_no_usage_has_a_cost(self):
+        lines = tsv(
+            (0, "begin", "", "plan", ""),
+            (5, "usage", "plan", "", session(1, 2, 3, None, "some-new-model", limited((1, 2), (3, 4)))),
+            (9, "end", "", "plan", ""),
+        )
+        self.assertIn("**Cost** (API prices): n/a", self.render(lines))
+
+    def test_usage_total_covers_every_row_and_the_limit_consumption(self):
+        text = self.render(A_RUN + WITH_SESSION)
+        self.assertIn(
+            "| **Total** | | | **1,600** | **25,200** | **4,100** | **at least $10.50** | **at least 10% → 20% (+10)** | **at least 30% → 33% (+3)** |",
+            text,
+        )
+
+    def test_usage_total_is_exact_when_every_row_has_its_values(self):
+        lines = tsv(
+            (0, "begin", "", "plan", ""),
+            (5, "usage", "plan", "", session(1, 2, 3, 1.0, "claude-opus-5-5", limited((1, 2), (3, 4)))),
+            (9, "end", "", "plan", ""),
+            (10, "begin", "", "review R1", ""),
+            (15, "usage", "review R1", "", session(1, 2, 3, 0.5, "claude-sonnet-5-5", limited((2, 5), (4, 4)))),
+            (19, "end", "", "review R1", ""),
+        )
+        self.assertIn("| **Total** | | | **2** | **4** | **6** | **$1.50** | **1% → 5% (+4)** | **3% → 4% (+1)** |", self.render(lines))
+
+    def test_usage_section_alone(self):
+        text = self.render(A_RUN + WITH_SESSION, only="usage")
+        self.assertTrue(text.startswith("**Usage**"))
+        self.assertNotIn(MARKER, text)
+        self.assertIn("shared with whatever else runs", text)
+        self.assertIn("No agent usage recorded yet.", self.render([], only="usage"))
+
     def test_counts_the_iterations_per_kind_of_step(self):
         text = self.render(A_RUN, max_rounds=2, max_ci_fixes=3)
         self.assertIn("| work package | 2 | 13m 10s | 3.0M | $4.00 | 1 done, 1 not done |", text)
@@ -92,6 +157,17 @@ class RenderTest(unittest.TestCase):
         self.assertIn("Run more than once: review R1 ×2", text)
         self.assertIn("Retries: 09:10 WP2 (2 of 2): not finished, resuming the agent", text)
         self.assertIn("Steps beyond the plan's path: CI fix ×1", text)
+
+    def test_orchestration_is_listed_last_and_not_among_the_slowest(self):
+        lines = A_RUN + tsv(
+            (T0 + 600, "begin", "", "orchestration", ""),
+            (4100, "end", "", "orchestration", "done"),
+        )
+        text = self.render(lines)
+        rows = [line for line in text.splitlines() if line.startswith("| ") and line.split("|")[1].strip().isdigit()]
+        self.assertIn("| orchestration |", rows[-1])
+        self.assertIn("Slowest steps: CI abc1234 15m 00s", text)
+        self.assertNotIn("Slowest steps: orchestration", text)
 
     def test_status_running_with_the_open_sub_step(self):
         text = self.render(A_RUN[:9], now=T0 + 1000)
