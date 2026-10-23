@@ -302,7 +302,7 @@ Where the usage numbers come from:
   has no cost, `n/a`). The limits come from a **limit probe**: `progress.sh` makes one headless
   call to Haiku (a one-word prompt, no tools) at the start and the end of the window (`begin` makes the first; the plan, recorded after its
   approval with `begin --at`, gets it from `progress.sh probe` when its window starts; the
-  orchestration takes the probe of the first `begin` outside the plan, or `progress.sh probe <pr> orchestration`)
+  orchestration gets it from `progress.sh probe <plan branch> orchestration`, which the skill runs right before it starts `run.sh`)
   and reads its `rate_limit_event`. The probe costs a few tokens, counted in no row. A transcript that cannot be
   found or a failed probe gives `n/a`.
 - **The limits are shared** with everything else the developer runs with the same account at the
