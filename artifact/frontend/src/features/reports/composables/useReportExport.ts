@@ -2,6 +2,7 @@ import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import { useI18n } from 'vue-i18n'
 import type { Analysis } from '@/shared/api/types'
+import { localeForLanguage } from '@/shared/i18n'
 import {
   type ExportDocument,
   exportHtml,
@@ -45,6 +46,7 @@ export function useReportExport() {
               : undefined,
         markdown: localizeReport(part.markdown, language),
       })),
+      disclaimer: t('app.disclaimer', {}, { locale: localeForLanguage(language ?? '') }),
     }
   }
 

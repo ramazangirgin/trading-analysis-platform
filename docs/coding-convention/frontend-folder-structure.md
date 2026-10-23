@@ -63,7 +63,7 @@ app  ->  pages  ->  features  ->  shared
 | Backend call | `features/<feature>/api.ts`, as a method of `<feature>Api` |
 | State shared across pages | `features/<feature>/store.ts` (Pinia) |
 | Component of one feature | `features/<feature>/components/` |
-| Component with no feature knowledge | `shared/ui/` |
+| Component with no feature knowledge | `shared/ui/` (e.g. `DisclaimerNotice`) |
 | Composable of one feature | `features/<feature>/composables/` |
 | Generic composable | `shared/composables/` |
 | Pure logic (parsing, derived view data) | `features/<feature>/model/`, without Vue or HTTP imports |

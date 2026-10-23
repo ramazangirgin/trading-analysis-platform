@@ -20,6 +20,10 @@
 #   AGENT_ISSUE_PROGRESS 1 (default): keep the progress comment on the issue up to date
 #                        (progress.sh); 0: record the progress in progress.tsv only
 #
+#   AGENT_NTFY_TOPIC     an ntfy topic: each milestone is also sent to it (AGENT_NTFY_SERVER, default
+#                        https://ntfy.sh). This sends progress lines to an external service: off
+#                        unless set
+#
 #   AGENT_STEP_LABEL     set by a step before run_agent: the label of the milestone lines for the
 #                        agent's phases (tests, mise run check, commit); none without it
 #
@@ -85,6 +89,7 @@ AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
 AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 AGENT_ISSUE_PROGRESS=${AGENT_ISSUE_PROGRESS:-1}
+AGENT_NTFY_SERVER=${AGENT_NTFY_SERVER:-https://ntfy.sh}
 # Label on an agent's pull request; removing it stops the loop.
 AGENT_LABEL=agent
 # Label on a plan's draft pull request while the plan is under review; the implementation changes it
@@ -104,7 +109,22 @@ milestone() {
   echo "agent: >> $*" >&2
   progress_event milestone "${AGENT_STEP:-}" "${AGENT_SUBSTEP:-}" "$*"
   progress_publish
+  notify_milestone "$*"
 }
+
+# notify_milestone <text>: the opt-in push (AGENT_NTFY_TOPIC), in the
+# background; a failure never fails a step. The milestones that only say where the loop goes next
+# are left out.
+notify_milestone() {
+  case $1 in *": next step:"* | *": waiting for "*) return 0 ;; esac
+  local name=${AGENT_BRANCH#plan/} title="Agent"
+  [ -z "${AGENT_BRANCH:-}" ] || title="Agent #${name%%-*}"
+  if [ -n "${AGENT_NTFY_TOPIC:-}" ]; then
+    curl -fsS --max-time 10 -H "Title: $title" -d "$1" "$AGENT_NTFY_SERVER/$AGENT_NTFY_TOPIC" >/dev/null 2>&1 &
+  fi
+  return 0
+}
+
 # The first line of the message is a milestone (failed: …), the rest plain lines.
 die() {
   local message=$* first rest

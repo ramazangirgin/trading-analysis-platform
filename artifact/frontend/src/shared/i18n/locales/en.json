@@ -2,9 +2,14 @@
   "app": {
     "title": "TradingAgents Platform",
     "language": "Language",
-    "version": "Version {version}"
+    "version": "Version {version}",
+    "disclaimer": "The analyses on this platform are not investment advice. You act on them at your own risk, and the platform accepts no responsibility for any loss."
+  },
+  "about": {
+    "title": "About"
   },
   "nav": {
+    "about": "About",
     "dashboard": "Dashboard",
     "analyses": "Analyses",
     "newAnalysis": "New analysis",

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { i18n, loadStoredLocale, outputLanguageFor, setLocale } from '.'
+import { i18n, loadStoredLocale, localeForLanguage, outputLanguageFor, setLocale } from '.'
 
 describe('setLocale', () => {
   afterEach(() => {
@@ -37,5 +37,13 @@ describe('outputLanguageFor', () => {
   it('starts reports in the UI language', () => {
     expect(outputLanguageFor('tr')).toBe('Turkish')
     expect(outputLanguageFor('en')).toBe('English')
+  })
+})
+
+describe('localeForLanguage', () => {
+  it('shows a Turkish report in Turkish and anything else in English', () => {
+    expect(localeForLanguage('Turkish')).toBe('tr')
+    expect(localeForLanguage('English')).toBe('en')
+    expect(localeForLanguage('German')).toBe('en')
   })
 })

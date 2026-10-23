@@ -50,3 +50,8 @@ export function setLocale(locale: AppLocale): void {
 export function outputLanguageFor(locale: string): string {
   return locale === 'tr' ? 'Turkish' : 'English'
 }
+
+/** The locale a report in the given language is shown in; the inverse of `outputLanguageFor`. */
+export function localeForLanguage(language: string): AppLocale {
+  return language === 'Turkish' ? 'tr' : 'en'
+}

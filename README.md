@@ -81,6 +81,9 @@ to be changed: after logging in with it, the UI asks for a new password before a
 you lost it while `admin` is still the only user, delete the user
 (`DELETE FROM "IDENTITY"."USERS";` in the database) and restart to get a new one.
 
+Every page shows a short investment disclaimer under the header; the About page (`/about`, linked
+from the footer and the login page) shows the full text and opens without a login.
+
 More users are added in the UI, under **Admin → Users**: **New user** takes a username, roles and
 a one-time password, generated or entered. A generated one is shown once, to pass on; the user
 must change it at the first login. Per row an admin edits the roles, disables or enables the
@@ -222,6 +225,9 @@ when a ticker and date ran several times, this is the newest run's report.
 **Markdown**, **HTML** and **PDF** export the open report: the HTML file is a single page that
 opens anywhere, and PDF goes through the browser's print dialog (*Save as PDF*). On a phone the page
 folds into one column, with the list as a picker and the contents folded above the report.
+
+Every report, on screen and in every export, ends with the investment disclaimer, in the report's
+language rather than the screen language.
 
 ![Reports: list, contents and the report](docs/screenshots/reports.png)
 
@@ -433,6 +439,12 @@ login and can do nothing else until they set a new one. A change clears the flag
 user's other sessions out; the current session continues.
 
 ![The change-password page](docs/screenshots/change-password.png)
+
+Investment disclaimer: the login page included, every page shows a muted line under the header,
+and the public About page (`/about`) shows the full text (see [Log in](#3-log-in)). The wording is
+`app.disclaimer` in the translation files, shown by the `DisclaimerNotice` component.
+
+![The About page](docs/screenshots/about.png)
 
 The backend:
 
@@ -798,6 +810,10 @@ approving the plan and merging the pull request. Everything runs on your machine
 and your own Claude Code login: Sonnet as the developer agent, Opus as the review agent. Agents
 never merge.
 
+Start Claude Code from a shell where mise is active in this repository (`mise activate` in your
+shell, or `mise exec -- claude`). `mise.toml` sets `CLAUDE_CODE_PLUGIN_DIRS` for the
+`agent-progress` mod; a `claude` started without mise shows no progress in the status bar.
+
 A sample flow, for issue #32 (compare runs):
 
 ```text
@@ -834,8 +850,13 @@ draft pull request, reads your comments on it (or in the session) until you appr
 runs every later step without asking (implementation, every CI fix, review
 and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
 for your review. It never merges unless you ask it to. It continues where the issue stands when
-started again. It reports each milestone of a long step (package, tests, check, review findings,
-CI) as it happens, and `mise run agent:status <branch>` shows where a run is. The issue keeps one
+started again; when a plan branch exists already, it asks whether to use that plan (you still
+approve it) or to write it again. It starts the run once, in the background, and is woken only when the run ends or stops; the
+milestones (package, tests, check, review findings, CI) reach you without a model turn: the
+`agent-progress` Claude Code mod (status line, `/agent-progress` pane, a toast per milestone;
+`mise.toml` loads it through `CLAUDE_CODE_PLUGIN_DIRS`, so start `claude` from a shell with mise
+active, see the note above the sample flow), and, only when you set a topic, ntfy (`export AGENT_NTFY_TOPIC=<topic>`). `mise run agent:status
+<branch>` shows where a run is. The issue keeps one
 progress comment per plan, updated as the run goes: every step with its start, end, duration,
 tokens and result, the iterations per kind of step, and the slow, repeated or failed steps.
 

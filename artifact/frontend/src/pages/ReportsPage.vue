@@ -26,6 +26,8 @@ import {
   useReportExport,
 } from '@/features/reports'
 import { useLabels } from '@/shared/composables/useLabels'
+import { localeForLanguage } from '@/shared/i18n'
+import DisclaimerNotice from '@/shared/ui/DisclaimerNotice.vue'
 import RatingTag from '@/shared/ui/RatingTag.vue'
 import { analysisApi } from '@/features/analysis'
 
@@ -295,6 +297,7 @@ onMounted(loadIndex)
             />
           </section>
         </template>
+        <DisclaimerNotice v-if="parts.length && language" :locale="localeForLanguage(language)" />
       </template>
     </main>
   </div>

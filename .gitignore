@@ -55,3 +55,7 @@ __pycache__/
 
 ### macOS ###
 .DS_Store
+
+### Claude Code mods ###
+# Written next to a mod when Claude Code loads it, for the types it generates
+.claude/mods/*/tsconfig.json

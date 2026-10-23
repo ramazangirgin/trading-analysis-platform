@@ -51,15 +51,21 @@ export const DECISION_TEXT = 'take a 4% position now'
 export async function completedAnalysis(
   request: APIRequestContext,
   ticker: string,
+<<<<<<< HEAD
   { platformModels = false } = {},
 ) {
   const models = platformModels
     ? {}
     : { llmProvider: 'openai', deepThinkLlm: 'gpt-5.4-mini', quickThinkLlm: 'gpt-5.4-mini' }
+=======
+  outputLanguage?: string,
+) {
+>>>>>>> origin/main
   const started = await request.post('/api/analyses', {
     headers: await csrfHeaders(request),
     data: {
       ticker,
+      outputLanguage,
       tradeDate: TRADE_DATE,
       analysts: ['MARKET', 'SOCIAL', 'NEWS', 'FUNDAMENTALS'],
       ...models,

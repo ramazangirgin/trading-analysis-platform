@@ -33,9 +33,10 @@ import { PERMISSIONS, useSessionStore } from '@/features/auth'
 import { ApiError } from '@/shared/api/error'
 import type { Analysis, AnalysisReport, Visibility } from '@/shared/api/types'
 import { MarkdownView, PriceChart, reportLanguage, reportsApi, SECTIONS } from '@/features/reports'
-import { outputLanguageFor } from '@/shared/i18n'
+import { localeForLanguage, outputLanguageFor } from '@/shared/i18n'
 import { useLabels } from '@/shared/composables/useLabels'
 import { usePolling } from '@/shared/composables/usePolling'
+import DisclaimerNotice from '@/shared/ui/DisclaimerNotice.vue'
 import RatingTag from '@/shared/ui/RatingTag.vue'
 import StatusTag from '@/shared/ui/StatusTag.vue'
 
@@ -99,6 +100,7 @@ const outputLanguage = computed(() =>
       )
     : null,
 )
+const reportLocale = computed(() => localeForLanguage(outputLanguage.value ?? ''))
 const languageDiffers = computed(
   () => !!outputLanguage.value && outputLanguage.value !== outputLanguageFor(locale.value),
 )
@@ -343,6 +345,7 @@ async function rerun() {
               <MarkdownView :language="outputLanguage" :source="sectionText(key) ?? ''" charts />
             </NCollapseItem>
           </NCollapse>
+          <DisclaimerNotice v-if="sections.length && outputLanguage" :locale="reportLocale" />
         </NTabPane>
 
         <NTabPane name="debates" :tab="t('detail.debates')">
@@ -389,6 +392,13 @@ async function rerun() {
               </article>
             </section>
           </template>
+          <DisclaimerNotice
+            v-if="
+              outputLanguage &&
+              (view.debates.length || reportDebates.investment.length || reportDebates.risk.length)
+            "
+            :locale="reportLocale"
+          />
         </NTabPane>
 
         <NTabPane

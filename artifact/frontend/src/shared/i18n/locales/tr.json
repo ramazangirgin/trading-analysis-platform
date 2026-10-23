@@ -2,9 +2,14 @@
   "app": {
     "title": "TradingAgents Platformu",
     "language": "Dil",
-    "version": "Sürüm {version}"
+    "version": "Sürüm {version}",
+    "disclaimer": "Bu platformdaki analizler yatırım tavsiyesi değildir. Bunlara dayanarak hareket etmek tamamen sizin sorumluluğunuzdadır; platform, oluşabilecek hiçbir zarardan sorumlu tutulamaz."
+  },
+  "about": {
+    "title": "Hakkında"
   },
   "nav": {
+    "about": "Hakkında",
     "dashboard": "Gösterge Paneli",
     "analyses": "Analizler",
     "newAnalysis": "Yeni analiz",

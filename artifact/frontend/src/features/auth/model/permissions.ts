@@ -24,6 +24,7 @@ export const PERMISSIONS = {
 declare module 'vue-router' {
   interface RouteMeta {
     permission?: Permission | Permission[]
+    public?: boolean
   }
 }
 

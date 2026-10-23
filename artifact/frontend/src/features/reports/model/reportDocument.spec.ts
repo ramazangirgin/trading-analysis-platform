@@ -89,6 +89,7 @@ const doc: ExportDocument = {
     { heading: 'Bull', group: 'Investment debate', markdown: 'Buy <script>alert(1)</script>' },
     { heading: 'Bear', group: 'Investment debate', markdown: 'Wait' },
   ],
+  disclaimer: 'Not investment advice.',
 }
 
 describe('exportMarkdown', () => {
@@ -113,6 +114,10 @@ describe('exportMarkdown', () => {
         '',
         'Wait',
         '',
+        '---',
+        '',
+        '_Not investment advice._',
+        '',
       ].join('\n'),
     )
   })
@@ -130,5 +135,12 @@ describe('exportHtml', () => {
     expect(html).toContain('<table>')
     expect(html).not.toContain('<script>')
     expect(html).not.toMatch(/<link|src=/)
+  })
+
+  it('ends the report with the disclaimer', () => {
+    const markdown = new MarkdownIt({ html: false })
+    const html = exportHtml(doc, (source) => markdown.render(source), 'en')
+
+    expect(html).toMatch(/<hr>\s*<p><em>Not investment advice\.<\/em><\/p>\s*<\/body>/)
   })
 })
