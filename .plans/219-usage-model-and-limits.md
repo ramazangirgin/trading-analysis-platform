@@ -186,10 +186,8 @@ consumption (WP3), and a missing value is `n/a` without a failure (WP1, WP2).
 - A bill: the cost stays at API prices.
 - Per-step rows for the session's CI waits: they use no session tokens (see the decision above).
 
-## Open questions
+## Decisions
 
-- The session's cost uses a price table kept in `agent_json.py`, because the transcript has none:
-  it has to be updated when models or prices change. Is that acceptable, or should the cost of the
-  plan and orchestration rows be `n/a` (tokens only)?
-- The probe is one cheap headless Haiku call per window boundary (about six per run). Acceptable, or
-  should the limits of the session's rows be read from a status line snapshot you set up instead?
+- The plan and orchestration cost comes from a per-model price table in `agent_json.py`, to be
+  updated when models or prices change; a model not in it shows `n/a`.
+- The session's limits are read by a headless Haiku probe at the start and end of each window.
