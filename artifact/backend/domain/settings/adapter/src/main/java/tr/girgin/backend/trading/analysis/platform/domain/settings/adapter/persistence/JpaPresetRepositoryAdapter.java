@@ -2,11 +2,14 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.pers
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.entity.PresetEntity;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.mapper.PresetEntityToPresetMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.mapper.PresetIdToPresetIdEmbeddableMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.mapper.PresetToPresetEntityMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound.persistence.PresetRepositoryPort;
@@ -32,8 +35,13 @@ class JpaPresetRepositoryAdapter implements PresetRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Preset> findAll() {
-        return repository.findAll().stream().map(toPreset::map).toList();
+    public List<Preset> findAll(OwnerId owner) {
+        Specification<PresetEntity> matching = owner == null ? Specification.unrestricted() : hasOwner(owner);
+        return repository.findAll(matching).stream().map(toPreset::map).toList();
+    }
+
+    private Specification<PresetEntity> hasOwner(OwnerId owner) {
+        return (root, _, builder) -> builder.equal(root.get("owner"), owner);
     }
 
     @Override
@@ -60,5 +68,16 @@ class JpaPresetRepositoryAdapter implements PresetRepositoryPort {
     @Transactional
     public boolean delete(PresetId id) {
         return repository.deleteByIdCounting(toEntityId.map(id)) == 1;
+    }
+
+    @Override
+    @Transactional
+    public int assignOwnerWhereMissing(OwnerId owner) {
+        List<PresetEntity> unowned = repository.findByOwnerIsNull();
+        unowned.forEach(entity -> {
+            entity.setOwner(owner);
+            repository.saveAndFlush(entity);
+        });
+        return unowned.size();
     }
 }

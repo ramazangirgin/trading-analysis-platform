@@ -2,13 +2,15 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.core.outboun
 
 import java.util.List;
 import java.util.Optional;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
 
 /** Stores presets. */
 public interface PresetRepositoryPort {
 
-    List<Preset> findAll();
+    /** The presets of {@code owner}, or of every owner (and of none) when {@code owner} is {@code null}. */
+    List<Preset> findAll(OwnerId owner);
 
     Optional<Preset> findById(PresetId id);
 
@@ -21,4 +23,7 @@ public interface PresetRepositoryPort {
     Preset save(Preset preset);
 
     boolean delete(PresetId id);
+
+    /** Gives every preset without an owner to {@code owner}, raising its version, and returns how many. */
+    int assignOwnerWhereMissing(OwnerId owner);
 }

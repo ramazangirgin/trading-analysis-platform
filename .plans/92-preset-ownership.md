@@ -137,6 +137,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Owner in the settings domain
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/settings/core/src/main/java/.../settings/core/model/`: `OwnerId.java`, `PresetAccess.java` (new); `Preset.java`
@@ -146,9 +147,9 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/domain/settings/adapter/src/main/java/.../settings/adapter/persistence/`: `JpaPresetRepositoryAdapter.java`, `PresetJpaRepository.java`, `entity/PresetEntity.java`, `entity/OwnerIdAttributeConverter.java` (new), `mapper/PresetToPresetEntityMapper.java`, `mapper/PresetEntityToPresetMapper.java`
   - `artifact/backend/domain/settings/adapter/src/main/resources/.../persistence/migration/V4__add_owner.sql` (new)
 - **Steps**:
-  - [ ] The model types and the owner on `Preset`.
-  - [ ] The new use case signatures and the `canSee` checks in `PresetService`, NOT_FOUND for a preset the caller cannot see; `assignUnowned`.
-  - [ ] Migration, entity column with its converter, mappers, the owner `Specification`, `assignOwnerWhereMissing`.
+  - [x] The model types and the owner on `Preset`.
+  - [x] The new use case signatures and the `canSee` checks in `PresetService`, NOT_FOUND for a preset the caller cannot see; `assignUnowned`.
+  - [x] Migration, entity column with its converter, mappers, the owner `Specification`, `assignOwnerWhereMissing`.
 - **Tests**:
   - `PresetServiceTest`: a preset belongs to its creator; `listPresets` returns only the caller's own, with `allUsers` and the permission everyone's, and `allUsers` without the permission is ignored; `updatePreset` and `deletePreset` of another user's preset fail with NOT_FOUND and with the permission succeed; an update keeps the owner; `assignUnowned` touches only presets without an owner.
   - `JpaPresetRepositoryAdapterTest`: the owner is stored and read back, `findAll(owner)` filters, `save` of an update keeps it, `assignOwnerWhereMissing` sets only missing owners and raises their version.

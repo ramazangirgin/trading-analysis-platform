@@ -10,6 +10,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Pres
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SaveAnalysisDefaultsRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SavePresetRequest;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.SecretStatusDto;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.CurrentUser;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisDefaultsToAnalysisDefaultsDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.MapToJsonStringMapper;
@@ -19,7 +20,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Pe
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
 import tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefaults.inbound.ManageAnalysisDefaultsUseCase;
 
@@ -33,7 +36,9 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     private final PresetToPresetDtoMapper presetMapper;
     private final AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper;
     private final MapToJsonStringMapper jsonMapper;
+    private final CurrentUser currentUser;
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     SettingsApiDelegateImpl(
             ManageSecretsUseCase secrets,
             ManagePresetsUseCase presets,
@@ -41,7 +46,9 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
             SecretStatusToSecretStatusDtoMapper secretMapper,
             PresetToPresetDtoMapper presetMapper,
             AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper,
-            MapToJsonStringMapper jsonMapper) {
+            MapToJsonStringMapper jsonMapper,
+            CurrentUser currentUser) {
+        this.currentUser = currentUser;
         this.secrets = secrets;
         this.presets = presets;
         this.analysisDefaults = analysisDefaults;
@@ -73,13 +80,15 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     @Override
     @RequiresPermission(Permission.PRESET_READ)
     public List<PresetDto> listPresets() {
-        return presets.listPresets().stream().map(presetMapper::map).toList();
+        return presets.listPresets(access(), false).stream()
+                .map(presetMapper::map)
+                .toList();
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<PresetDto> createPreset(SavePresetRequest request) {
-        Preset preset = presets.createPreset(request.name(), jsonMapper.map(request.values()));
+        Preset preset = presets.createPreset(request.name(), jsonMapper.map(request.values()), access().user());
         return ResponseEntity.created(URI.create("/api/presets/" + preset.id().value()))
                 .body(presetMapper.map(preset));
     }
@@ -88,14 +97,18 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     @RequiresPermission(Permission.PRESET_MANAGE)
     public PresetDto updatePreset(String id, SavePresetRequest request) {
         return presetMapper.map(presets.updatePreset(
-                new PresetId(id), request.name(), jsonMapper.map(request.values()), request.version()));
+                new PresetId(id), request.name(), jsonMapper.map(request.values()), request.version(), access()));
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<Void> deletePreset(String id) {
-        presets.deletePreset(new PresetId(id));
+        presets.deletePreset(new PresetId(id), access());
         return ResponseEntity.noContent().build();
+    }
+
+    private PresetAccess access() {
+        return new PresetAccess(new OwnerId(currentUser.id().value()), currentUser.has(Permission.PRESET_READ_ALL));
     }
 
     @Override
