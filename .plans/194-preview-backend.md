@@ -162,13 +162,14 @@ report, and the `analysis` domain must not depend on `report`, so the pieces are
 
 ### WP2: The preview in orchestration
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/orchestration/src/main/java/.../orchestration/preview/inbound/`: `GetAnalysisPreviewUseCase.java`, `ListAnalysisPreviewsUseCase.java`, `PreviewSettings.java`; `model/`: `AnalysisPreview.java`, `AnalysisPreviewSummary.java`, `AnalysisPreviewPage.java`
   - `artifact/backend/src/main/resources/application.properties`
   - tests named below
 - **Steps**:
-  - [ ] The settings record with validation, the two use cases and the cut.
+  - [x] The settings record with validation, the two use cases and the cut.
 - **Tests**:
   - `GetAnalysisPreviewUseCaseTest`: with the default settings the preview holds `market_report` only
     and lists every other section and debate speaker of the report in `lockedSections`; a changed
