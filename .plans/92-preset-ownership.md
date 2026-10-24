@@ -99,8 +99,9 @@ installation an owner on the first start after the upgrade.
 - `SettingsApiDelegateImpl` builds the access once per call from `CurrentUser`:
   `new PresetAccess(new OwnerId(currentUser.id().value()), currentUser.has(Permission.PRESET_READ_ALL))`
   and passes it, or the owner, to the use case. The permissions on the methods stay as they are.
-- `GET /api/presets` gets the query parameter `allUsers` (boolean, default `false`). Still `200`
-  with `List<PresetDto>`.
+- `GET /api/presets` gets the optional query parameter `allUsers` (`boolean`, no `defaultValue`: a
+  missing primitive boolean is `false`, so `@RequestParam(required = false) boolean allUsers`).
+  Still `200` with `List<PresetDto>`.
 - `PresetDto` gets `owner` (`PresetOwnerDto { id, username }`, `null` for a preset without an owner).
   The delegate looks the usernames up once per response with `UserDirectoryUseCase.usernames` and
   maps them with `PresetToPresetDtoMapper` (one `map` method stays the rule). Create (`201`), update
@@ -130,6 +131,26 @@ New Analysis page still asks without `allUsers`, so even an admin loads their ow
 - A VIEWER now sees an empty preset list on Settings and New Analysis (they own none); the existing
   "No presets yet." empty state covers it.
 - Translations (`en.json`, `tr.json`): `presets.allUsers`, `presets.owner`; `presets.note` reworded.
+
+### Typed preset values (review comments)
+
+`PresetDto.values` and `SavePresetRequest.values` stop being `Map<String, Object>`; no DTO has an
+`Object` type. They become `bff.controller.api.model.PresetValuesDto`, a record with the fields the
+New Analysis form saves (`PRESET_FIELDS` in `NewAnalysisPage.vue`): `assetType`, `analysts`
+(`List<String>`), `llmProvider`, `deepThinkLlm`, `quickThinkLlm`, `maxDebateRounds`,
+`maxRiskDiscussRounds` (`Integer`), `outputLanguage`, `checkpointEnabled` (`Boolean`). Every field
+is nullable, since a user without `analysis:override-models` saves the other fields only, and
+unknown properties of an older stored payload are ignored on read. The settings domain still stores
+the payload as JSON text and does not interpret it.
+
+Spring maps the request and response DTOs: Jackson reads `SavePresetRequest` and writes `PresetDto`
+with the typed record. The conversion between the record and the domain's payload string is done by
+MapStruct mappers in `bff.delegate.impl.mapper` (`PresetValuesDtoToJsonStringMapper`, and the
+reverse inside `PresetToPresetDtoMapper`) that use the Spring-managed `JsonMapper` bean, not a
+static instance built in the mapper (`PresetToPresetDtoMapper.JSON` goes away). `MapToJsonStringMapper`
+is deleted when nothing else uses it. `openapi.json` and `schema.d.ts` are regenerated; the frontend
+`Preset` type, `presetFieldsToApply` / `presetFieldsToSave` and `PresetManager.vue` use the generated
+`PresetValuesDto` instead of `Record<string, unknown>`.
 
 ## Work packages
 
@@ -207,6 +228,20 @@ Packages without a dependency between them can be implemented in parallel.
   - [x] Retake the screenshot and update the docs below.
 - **Tests**: the e2e test above (`mise run e2e`); the existing `settings.e2e.ts` keeps passing.
 
+### WP6: Review comments on the pull request
+
+- **Depends on**: WP5
+- **Files**:
+  - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/model/`: `PresetValuesDto.java` (new), `PresetDto.java`, `SavePresetRequest.java`; `.../bff/controller/api/SettingsApiController.java`
+  - `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/`: `SettingsApiDelegateImpl.java`, `mapper/PresetToPresetDtoMapper.java`, `mapper/PresetValuesDtoToJsonStringMapper.java` (new), `mapper/MapToJsonStringMapper.java` (deleted if unused)
+  - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated), `artifact/frontend/src/shared/api/types.ts`, `artifact/frontend/src/features/settings/`, `artifact/frontend/src/features/analysis/model/analysisOverrides.ts`, `artifact/frontend/src/pages/NewAnalysisPage.vue` (types only)
+- **Steps**:
+  - [ ] Typed `PresetValuesDto` in the request and the response; no `Object` in a DTO.
+  - [ ] The record ↔ payload conversion with the Spring `JsonMapper` bean, no static `JsonMapper`.
+  - [ ] `allUsers` without `defaultValue`.
+  - [ ] Regenerate `openapi.json` against a throwaway PostgreSQL and run `mise run api-types`; adapt the frontend types.
+- **Tests**: a mapper test (`PresetToPresetDtoMapperTest`) for the round trip, including a stored payload with an unknown property and one without the model fields; `PresetsApiIntegrationTest` and `PresetOwnershipIntegrationTest` still pass; a request without `allUsers` lists the caller's own presets; the e2e tests (`settings.e2e.ts`, `preset-ownership.e2e.ts`) and `vue-tsc` pass.
+
 ## Tests
 
 - Unit: `PresetServiceTest` (the checks per use case), `AssignPresetOwnersUseCaseTest`.
@@ -241,6 +276,13 @@ conventions do not change.
   so there is nothing to check there. Add it together with any server-side use of a preset.
 - Changing a preset's owner by hand, and filtering the list by one chosen owner.
 - Preset name uniqueness (names are not unique today and stay so).
+
+## Decisions from the plan review
+
+- **Typed values**: the preset `values` become a typed `PresetValuesDto` (comments 1 and 3 on the
+  pull request), not `Map<String, Object>` and not raw JSON text.
+- **Domain objects as POJOs**: moving domain logic (such as `PresetAccess.canSee`) out of the
+  model into domain services is a separate issue, opened from comment 4, not part of this plan.
 
 ## Open questions
 
