@@ -4,7 +4,6 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 
-/** An {@link OwnerId} as the text of its column. Applied with {@code @Convert}, not automatically. */
 @Converter
 public class OwnerIdAttributeConverter implements AttributeConverter<OwnerId, String> {
 
