@@ -1,5 +1,6 @@
 ---
 name: plan-from-issue
+model: claude-opus-5-5
 description: Turn a GitHub issue of this repository into one or more reviewed implementation plans (.plans/<issue>-<slug>.md), each pushed on its own plan/<issue>-<slug> branch with a draft pull request labelled plan, reviewed with the user on that pull request and in the session, ready for the agent implementation loop. Use when the user asks to plan an issue, e.g. "/plan-from-issue 32" or "plan issue #61".
 ---
 
