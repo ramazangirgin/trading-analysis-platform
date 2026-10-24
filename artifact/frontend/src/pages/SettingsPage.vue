@@ -169,7 +169,10 @@ onMounted(load)
       <template v-if="session.can(PERMISSIONS.presetRead)">
         <h3 class="heading">{{ t('presets.title') }}</h3>
         <p class="note">{{ t('presets.note') }}</p>
-        <PresetManager :readonly="!session.can(PERMISSIONS.presetManage)" />
+        <PresetManager
+          :readonly="!session.can(PERMISSIONS.presetManage)"
+          :can-see-all="session.can(PERMISSIONS.presetReadAll)"
+        />
       </template>
     </NSpace>
   </NCard>

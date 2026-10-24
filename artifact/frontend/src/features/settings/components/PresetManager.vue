@@ -8,6 +8,7 @@ import {
   NInput,
   NPopconfirm,
   NSpace,
+  NSwitch,
   useMessage,
   type DataTableColumns,
 } from 'naive-ui'
@@ -17,17 +18,18 @@ import { settingsApi } from '../api'
 import { presetColumnPlan } from '../model/presetColumns'
 
 /** Saved New Analysis presets: what each holds, rename, delete. Presets are made on New Analysis. */
-const props = defineProps<{ readonly?: boolean }>()
+const props = defineProps<{ readonly?: boolean; canSeeAll?: boolean }>()
 const { t, error: errorLabel, language, dateTime } = useLabels()
 const message = useMessage()
 const presets = ref<Preset[]>([])
+const allUsers = ref(false)
 const names = reactive<Record<string, string>>({})
 const busy = ref<string | null>(null)
 const failure = ref<unknown>(null)
 
 async function load() {
   try {
-    presets.value = await settingsApi.listPresets()
+    presets.value = await settingsApi.listPresets({ allUsers: allUsers.value })
     for (const preset of presets.value) names[preset.id] = preset.name
     failure.value = null
   } catch (e) {
@@ -88,6 +90,8 @@ function summary(values: Record<string, unknown>): string {
   return parts.join(' · ')
 }
 
+const showAll = computed(() => (props.canSeeAll ?? false) && allUsers.value)
+
 const allColumns = computed<DataTableColumns<Preset>>(() => [
   {
     title: t('presets.name'),
@@ -116,6 +120,12 @@ const allColumns = computed<DataTableColumns<Preset>>(() => [
             ),
           ]),
   },
+  {
+    title: t('presets.owner'),
+    key: 'owner',
+    width: 140,
+    render: (preset) => preset.owner?.username ?? '—',
+  },
   { title: t('presets.values'), key: 'values', render: (preset) => summary(preset.values) },
   {
     title: t('presets.updated'),
@@ -143,7 +153,7 @@ const allColumns = computed<DataTableColumns<Preset>>(() => [
 ])
 
 const columns = computed(() => {
-  const keys = presetColumnPlan(props.readonly ?? false).keys
+  const keys = presetColumnPlan(props.readonly ?? false, showAll.value).keys
   return allColumns.value.filter((column) => 'key' in column && keys.includes(String(column.key)))
 })
 
@@ -152,6 +162,10 @@ onMounted(load)
 
 <template>
   <NSpace vertical :size="12">
+    <NSpace v-if="canSeeAll" align="center" :size="8">
+      <NSwitch v-model:value="allUsers" @update:value="load" />
+      <span>{{ t('presets.allUsers') }}</span>
+    </NSpace>
     <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
     <NEmpty v-else-if="!presets.length" :description="t('presets.emptyHint')" />
     <NDataTable

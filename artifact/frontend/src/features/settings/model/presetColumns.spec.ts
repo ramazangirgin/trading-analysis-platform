@@ -15,4 +15,15 @@ describe('presetColumnPlan', () => {
       nameEditable: false,
     })
   })
+
+  it('adds the owner column after the name when listing all users', () => {
+    expect(presetColumnPlan(false, true).keys).toEqual([
+      'name',
+      'owner',
+      'values',
+      'updatedAt',
+      'delete',
+    ])
+    expect(presetColumnPlan(true, true).keys).toEqual(['name', 'owner', 'values', 'updatedAt'])
+  })
 })

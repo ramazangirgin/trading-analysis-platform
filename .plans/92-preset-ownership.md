@@ -184,13 +184,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Frontend
 
+- **Status**: done
 - **Depends on**: WP3
 - **Files**:
   - `artifact/frontend/src/features/auth/model/permissions.ts`
   - `artifact/frontend/src/features/settings/api.ts`, `.../components/PresetManager.vue`, `.../model/presetColumns.ts`
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
 - **Steps**:
-  - [ ] The permission key, the `allUsers` call, the Owner column and the All users switch.
+  - [x] The permission key, the `allUsers` call, the Owner column and the All users switch.
 - **Tests**: `presetColumns.spec.ts` (the Owner column appears only with the switch on); `permissions.spec.ts` covers the new key if it lists them; `features/settings/api.spec.ts` (new, client mocked): `allUsers` reaches the query only when set.
 
 ### WP5: e2e, screenshot and docs

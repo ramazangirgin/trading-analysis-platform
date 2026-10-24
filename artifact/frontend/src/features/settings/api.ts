@@ -19,8 +19,8 @@ export const settingsApi = {
   removeSecret(name: string): Promise<void> {
     return request(`/api/secrets/${encodeURIComponent(name)}`, { method: 'DELETE' })
   },
-  listPresets(): Promise<Preset[]> {
-    return request('/api/presets')
+  listPresets({ allUsers = false }: { allUsers?: boolean } = {}): Promise<Preset[]> {
+    return request(allUsers ? '/api/presets?allUsers=true' : '/api/presets')
   },
   createPreset(name: string, values: Record<string, unknown>): Promise<Preset> {
     return request('/api/presets', { method: 'POST', body: JSON.stringify({ name, values }) })

@@ -4,9 +4,11 @@ export interface PresetColumnPlan {
   readonly nameEditable: boolean
 }
 
-/** A read-only user sees the name as text and has no delete column. */
-export function presetColumnPlan(readonly: boolean): PresetColumnPlan {
-  return readonly
-    ? { keys: ['name', 'values', 'updatedAt'], nameEditable: false }
-    : { keys: ['name', 'values', 'updatedAt', 'delete'], nameEditable: true }
+/** A read-only user sees the name as text and has no delete column; the list of all users adds the owner. */
+export function presetColumnPlan(readonly: boolean, allUsers = false): PresetColumnPlan {
+  const keys = readonly
+    ? ['name', 'values', 'updatedAt']
+    : ['name', 'values', 'updatedAt', 'delete']
+  if (allUsers) keys.splice(1, 0, 'owner')
+  return { keys, nameEditable: !readonly }
 }
