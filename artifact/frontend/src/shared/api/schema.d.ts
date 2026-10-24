@@ -484,10 +484,15 @@ export interface components {
             values?: {
                 [key: string]: unknown;
             };
+            owner?: components["schemas"]["PresetOwnerDto"];
             /** Format: date-time */
             updatedAt?: string;
             /** Format: int64 */
             version?: number;
+        };
+        PresetOwnerDto: {
+            id?: string;
+            username?: string;
         };
         CreateUserRequest: {
             username: string;
@@ -1046,7 +1051,9 @@ export interface operations {
     };
     listPresets: {
         parameters: {
-            query?: never;
+            query?: {
+                allUsers?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;

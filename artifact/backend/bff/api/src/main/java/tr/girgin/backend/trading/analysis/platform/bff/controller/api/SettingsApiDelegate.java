@@ -16,7 +16,7 @@ public interface SettingsApiDelegate {
 
     ResponseEntity<Void> removeSecret(String name);
 
-    List<PresetDto> listPresets();
+    List<PresetDto> listPresets(boolean allUsers);
 
     ResponseEntity<PresetDto> createPreset(SavePresetRequest request);
 

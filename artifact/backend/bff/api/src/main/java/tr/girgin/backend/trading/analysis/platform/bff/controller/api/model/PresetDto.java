@@ -7,4 +7,5 @@ import java.util.Map;
  * Saved New Analysis form values; {@code values} is whatever the form stored. {@code version} counts the
  * saves; send it back on an update to fail if someone else changed the preset meanwhile.
  */
-public record PresetDto(String id, String name, Map<String, Object> values, Instant updatedAt, Long version) {}
+public record PresetDto(
+        String id, String name, Map<String, Object> values, PresetOwnerDto owner, Instant updatedAt, Long version) {}

@@ -372,6 +372,17 @@
                     "settings-api-controller"
                 ],
                 "operationId": "listPresets",
+                "parameters": [
+                    {
+                        "name": "allUsers",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1222,6 +1233,9 @@
                         "type": "object",
                         "additionalProperties": {}
                     },
+                    "owner": {
+                        "$ref": "#/components/schemas/PresetOwnerDto"
+                    },
                     "updatedAt": {
                         "type": "string",
                         "format": "date-time"
@@ -1229,6 +1243,17 @@
                     "version": {
                         "type": "integer",
                         "format": "int64"
+                    }
+                }
+            },
+            "PresetOwnerDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
                     }
                 }
             },

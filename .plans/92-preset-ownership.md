@@ -168,14 +168,15 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: BFF and the API
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/SettingsApiDelegateImpl.java`, `.../mapper/PresetToPresetDtoMapper.java`
   - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/`: `SettingsApiController.java`, `SettingsApiDelegate.java` (`allUsers` parameter), `model/PresetDto.java`, `model/PresetOwnerDto.java` (new)
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated)
 - **Steps**:
-  - [ ] The access per call, `allUsers`, the owner in the DTO.
-  - [ ] Regenerate `openapi.json` against a throwaway PostgreSQL and run `mise run api-types`.
+  - [x] The access per call, `allUsers`, the owner in the DTO.
+  - [x] Regenerate `openapi.json` against a throwaway PostgreSQL and run `mise run api-types`.
 - **Tests**:
   - `PresetOwnershipIntegrationTest` (new, `artifact/backend/src/test/...`, as `PresetsApiIntegrationTest` and `AnalysisOwnershipIntegrationTest`, with an ANALYST user A, an ANALYST user B and the admin): B's preset is missing from A's list (also with `allUsers=true`), and A gets **404** on `PUT` and `DELETE /api/presets/{id}` of B's preset; the admin lists both with `allUsers=true` (only their own without it), renames and deletes B's preset, and sees `owner` with B's username; a preset A creates has A as `owner`. A VIEWER lists nothing and gets 403 on create.
   - The same test seeds presets without an owner (through `PresetRepositoryPort`) and checks that `AssignPresetOwnersUseCase` gives them to the first admin.

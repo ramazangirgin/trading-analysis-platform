@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDefaultsDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PresetDto;
@@ -44,8 +45,8 @@ public class SettingsApiController {
     }
 
     @GetMapping("/presets")
-    public List<PresetDto> listPresets() {
-        return delegate.listPresets();
+    public List<PresetDto> listPresets(@RequestParam(defaultValue = "false") boolean allUsers) {
+        return delegate.listPresets(allUsers);
     }
 
     @PostMapping("/presets")
