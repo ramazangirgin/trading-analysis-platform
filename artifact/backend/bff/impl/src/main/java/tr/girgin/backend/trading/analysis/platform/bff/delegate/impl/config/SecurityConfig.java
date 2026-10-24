@@ -85,6 +85,7 @@ public class SecurityConfig {
             CsrfTokenRepository csrfTokenRepository,
             SessionRegistry sessionRegistry,
             LoginAttemptLimiter loginAttemptLimiter,
+            PublicRequestLimiter publicRequestLimiter,
             SessionAuthorities sessionAuthorities,
             AuthenticateUseCase authentication,
             JsonMapper jsonMapper)
@@ -104,6 +105,7 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository))
                 // A blocked address is turned away before any other work.
                 .addFilterBefore(new LoginRateLimitFilter(loginAttemptLimiter, writer), CsrfFilter.class)
+                .addFilterBefore(new PublicRateLimitFilter(publicRequestLimiter, writer), CsrfFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterBefore(
                         new RoleAuthoritiesRefreshFilter(sessionAuthorities, authentication, securityContextRepository),
@@ -127,6 +129,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/auth/me")
                 .permitAll()
                 .requestMatchers("/api/openapi", "/api/openapi.yaml", "/api/openapi/**", "/actuator/**")
+                .permitAll()
+                // The preview of the partial analyses is for visitors: GET only, the other methods stay closed.
+                .requestMatchers(HttpMethod.GET, "/api/public/**")
                 .permitAll()
                 // The rest needs a session (401 without one); the delegate methods check the permission.
                 // Every user changes their own password: that route needs only the session.
