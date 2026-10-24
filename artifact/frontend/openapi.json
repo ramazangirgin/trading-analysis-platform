@@ -378,8 +378,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean",
-                            "default": false
+                            "type": "boolean"
                         }
                     }
                 ],
@@ -1207,8 +1206,7 @@
                         "minLength": 1
                     },
                     "values": {
-                        "type": "object",
-                        "additionalProperties": {}
+                        "$ref": "#/components/schemas/PresetValuesDto"
                     },
                     "version": {
                         "type": "integer",
@@ -1220,6 +1218,43 @@
                     "values"
                 ]
             },
+            "PresetValuesDto": {
+                "type": "object",
+                "properties": {
+                    "assetType": {
+                        "type": "string"
+                    },
+                    "analysts": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "llmProvider": {
+                        "type": "string"
+                    },
+                    "deepThinkLlm": {
+                        "type": "string"
+                    },
+                    "quickThinkLlm": {
+                        "type": "string"
+                    },
+                    "maxDebateRounds": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "maxRiskDiscussRounds": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "outputLanguage": {
+                        "type": "string"
+                    },
+                    "checkpointEnabled": {
+                        "type": "boolean"
+                    }
+                }
+            },
             "PresetDto": {
                 "type": "object",
                 "properties": {
@@ -1230,8 +1265,7 @@
                         "type": "string"
                     },
                     "values": {
-                        "type": "object",
-                        "additionalProperties": {}
+                        "$ref": "#/components/schemas/PresetValuesDto"
                     },
                     "owner": {
                         "$ref": "#/components/schemas/PresetOwnerDto"

@@ -12,7 +12,7 @@ import {
   useMessage,
   type DataTableColumns,
 } from 'naive-ui'
-import type { Preset } from '@/shared/api/types'
+import type { Preset, PresetValues } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
 import { settingsApi } from '../api'
 import { presetColumnPlan } from '../model/presetColumns'
@@ -67,16 +67,14 @@ async function remove(preset: Preset) {
 }
 
 /** "deepseek · deepseek-v4-pro / deepseek-v4-flash · 4 analysts · 2 rounds · Turkish" */
-function summary(values: Record<string, unknown>): string {
+function summary(values: PresetValues): string {
   const parts: string[] = []
-  if (values.llmProvider) parts.push(String(values.llmProvider))
+  if (values.llmProvider) parts.push(values.llmProvider)
   if (values.deepThinkLlm || values.quickThinkLlm) {
     parts.push(`${values.deepThinkLlm ?? '—'} / ${values.quickThinkLlm ?? '—'}`)
   }
-  if (Array.isArray(values.analysts)) {
-    parts.push(
-      values.analysts.map((analyst) => t(`analysts.${String(analyst).toUpperCase()}`)).join(', '),
-    )
+  if (values.analysts) {
+    parts.push(values.analysts.map((analyst) => t(`analysts.${analyst.toUpperCase()}`)).join(', '))
   }
   if (typeof values.maxDebateRounds === 'number') {
     parts.push(
@@ -86,7 +84,7 @@ function summary(values: Record<string, unknown>): string {
       }),
     )
   }
-  if (typeof values.outputLanguage === 'string') parts.push(language(values.outputLanguage))
+  if (values.outputLanguage) parts.push(language(values.outputLanguage))
   return parts.join(' · ')
 }
 

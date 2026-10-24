@@ -45,7 +45,7 @@ public class SettingsApiController {
     }
 
     @GetMapping("/presets")
-    public List<PresetDto> listPresets(@RequestParam(defaultValue = "false") boolean allUsers) {
+    public List<PresetDto> listPresets(@RequestParam(required = false) boolean allUsers) {
         return delegate.listPresets(allUsers);
     }
 

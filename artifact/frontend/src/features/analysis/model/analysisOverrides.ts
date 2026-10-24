@@ -1,3 +1,5 @@
+import type { PresetValues } from '@/shared/api/types'
+
 export const MODEL_FIELDS = [
   'llmProvider',
   'deepThinkLlm',
@@ -33,24 +35,28 @@ export function overriddenFields(
   )
 }
 
+type PresetField = keyof PresetValues
+
 export function presetFieldsToApply(
-  values: Record<string, unknown>,
-  presetFields: readonly string[],
+  values: PresetValues,
+  presetFields: readonly PresetField[],
   mayOverride: boolean,
-): Record<string, unknown> {
+): PresetValues {
   return Object.fromEntries(
     presetFields
-      .filter((f) => f in values && (mayOverride || !isModelField(f)))
+      .filter((f) => values[f] !== undefined && (mayOverride || !isModelField(f)))
       .map((f) => [f, values[f]]),
-  )
+  ) as PresetValues
 }
 
 export function presetFieldsToSave(
-  form: Record<string, unknown>,
-  presetFields: readonly string[],
+  form: { [K in PresetField]?: PresetValues[K] | null },
+  presetFields: readonly PresetField[],
   mayOverride: boolean,
-): Record<string, unknown> {
+): PresetValues {
   return Object.fromEntries(
-    presetFields.filter((f) => mayOverride || !isModelField(f)).map((f) => [f, form[f]]),
-  )
+    presetFields
+      .filter((f) => mayOverride || !isModelField(f))
+      .map((f) => [f, form[f] ?? undefined]),
+  ) as PresetValues
 }

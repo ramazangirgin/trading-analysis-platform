@@ -83,9 +83,8 @@ export type CreatedUser = { user: User; oneTimePassword: string | null }
 export type OneTimePassword = { oneTimePassword: string | null }
 export type AnalysisDefaults = Present<Schemas['AnalysisDefaultsDto'], 'version'>
 export type SaveAnalysisDefaultsRequest = Schemas['SaveAnalysisDefaultsRequest']
-export type Preset = Omit<Present<Schemas['PresetDto']>, 'values'> & {
-  values: Record<string, unknown>
-}
+export type PresetValues = Schemas['PresetValuesDto']
+export type Preset = Present<Schemas['PresetDto']>
 
 /** One runner event from the SSE stream (docs/event-protocol.md, section 4). */
 export interface RunEvent {

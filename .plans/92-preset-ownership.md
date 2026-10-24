@@ -230,16 +230,17 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP6: Review comments on the pull request
 
+- **Status**: done
 - **Depends on**: WP5
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/model/`: `PresetValuesDto.java` (new), `PresetDto.java`, `SavePresetRequest.java`; `.../bff/controller/api/SettingsApiController.java`
   - `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/`: `SettingsApiDelegateImpl.java`, `mapper/PresetToPresetDtoMapper.java`, `mapper/PresetValuesDtoToJsonStringMapper.java` (new), `mapper/MapToJsonStringMapper.java` (deleted if unused)
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated), `artifact/frontend/src/shared/api/types.ts`, `artifact/frontend/src/features/settings/`, `artifact/frontend/src/features/analysis/model/analysisOverrides.ts`, `artifact/frontend/src/pages/NewAnalysisPage.vue` (types only)
 - **Steps**:
-  - [ ] Typed `PresetValuesDto` in the request and the response; no `Object` in a DTO.
-  - [ ] The record ↔ payload conversion with the Spring `JsonMapper` bean, no static `JsonMapper`.
-  - [ ] `allUsers` without `defaultValue`.
-  - [ ] Regenerate `openapi.json` against a throwaway PostgreSQL and run `mise run api-types`; adapt the frontend types.
+  - [x] Typed `PresetValuesDto` in the request and the response; no `Object` in a DTO.
+  - [x] The record ↔ payload conversion with the Spring `JsonMapper` bean, no static `JsonMapper`.
+  - [x] `allUsers` without `defaultValue`.
+  - [x] Regenerate `openapi.json` against a throwaway PostgreSQL and run `mise run api-types`; adapt the frontend types.
 - **Tests**: a mapper test (`PresetToPresetDtoMapperTest`) for the round trip, including a stored payload with an unknown property and one without the model fields; `PresetsApiIntegrationTest` and `PresetOwnershipIntegrationTest` still pass; a request without `allUsers` lists the caller's own presets; the e2e tests (`settings.e2e.ts`, `preset-ownership.e2e.ts`) and `vue-tsc` pass.
 
 ## Tests
