@@ -263,8 +263,10 @@ test('an analyst who applies a preset with other models keeps the platform value
   const { deep, quick } = modelIds(openai)
   const { context, page: analyst } = await loggedInAnalyst(browser, request)
   const name = `E2E models preset ${Date.now()}`
-  const created = await request.post('/api/presets', {
-    headers: await csrfHeaders(request),
+  // A preset is its owner's: the analyst saves it, as the admin's would not be in their list.
+  const own = context.request
+  const created = await own.post('/api/presets', {
+    headers: await csrfHeaders(own),
     data: {
       name,
       values: {
@@ -296,8 +298,8 @@ test('an analyst who applies a preset with other models keeps the platform value
     await expect(analyst.locator('.n-input-number input').first()).toHaveValue('2')
     await expect(analyst.locator('.n-input-number input').nth(1)).toHaveValue('2')
   } finally {
+    await own.delete(`/api/presets/${preset.id}`, { headers: await csrfHeaders(own) })
     await context.close()
-    await request.delete(`/api/presets/${preset.id}`, { headers: await csrfHeaders(request) })
     await saveDefaults(request, original)
   }
 })

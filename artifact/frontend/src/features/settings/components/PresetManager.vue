@@ -8,26 +8,28 @@ import {
   NInput,
   NPopconfirm,
   NSpace,
+  NSwitch,
   useMessage,
   type DataTableColumns,
 } from 'naive-ui'
-import type { Preset } from '@/shared/api/types'
+import type { Preset, PresetValues } from '@/shared/api/types'
 import { useLabels } from '@/shared/composables/useLabels'
 import { settingsApi } from '../api'
 import { presetColumnPlan } from '../model/presetColumns'
 
 /** Saved New Analysis presets: what each holds, rename, delete. Presets are made on New Analysis. */
-const props = defineProps<{ readonly?: boolean }>()
+const props = defineProps<{ readonly?: boolean; canSeeAll?: boolean }>()
 const { t, error: errorLabel, language, dateTime } = useLabels()
 const message = useMessage()
 const presets = ref<Preset[]>([])
+const allUsers = ref(false)
 const names = reactive<Record<string, string>>({})
 const busy = ref<string | null>(null)
 const failure = ref<unknown>(null)
 
 async function load() {
   try {
-    presets.value = await settingsApi.listPresets()
+    presets.value = await settingsApi.listPresets({ allUsers: allUsers.value })
     for (const preset of presets.value) names[preset.id] = preset.name
     failure.value = null
   } catch (e) {
@@ -65,16 +67,14 @@ async function remove(preset: Preset) {
 }
 
 /** "deepseek · deepseek-v4-pro / deepseek-v4-flash · 4 analysts · 2 rounds · Turkish" */
-function summary(values: Record<string, unknown>): string {
+function summary(values: PresetValues): string {
   const parts: string[] = []
-  if (values.llmProvider) parts.push(String(values.llmProvider))
+  if (values.llmProvider) parts.push(values.llmProvider)
   if (values.deepThinkLlm || values.quickThinkLlm) {
     parts.push(`${values.deepThinkLlm ?? '—'} / ${values.quickThinkLlm ?? '—'}`)
   }
-  if (Array.isArray(values.analysts)) {
-    parts.push(
-      values.analysts.map((analyst) => t(`analysts.${String(analyst).toUpperCase()}`)).join(', '),
-    )
+  if (values.analysts) {
+    parts.push(values.analysts.map((analyst) => t(`analysts.${analyst.toUpperCase()}`)).join(', '))
   }
   if (typeof values.maxDebateRounds === 'number') {
     parts.push(
@@ -84,9 +84,11 @@ function summary(values: Record<string, unknown>): string {
       }),
     )
   }
-  if (typeof values.outputLanguage === 'string') parts.push(language(values.outputLanguage))
+  if (values.outputLanguage) parts.push(language(values.outputLanguage))
   return parts.join(' · ')
 }
+
+const showAll = computed(() => (props.canSeeAll ?? false) && allUsers.value)
 
 const allColumns = computed<DataTableColumns<Preset>>(() => [
   {
@@ -116,6 +118,12 @@ const allColumns = computed<DataTableColumns<Preset>>(() => [
             ),
           ]),
   },
+  {
+    title: t('presets.owner'),
+    key: 'owner',
+    width: 140,
+    render: (preset) => preset.owner?.username ?? '—',
+  },
   { title: t('presets.values'), key: 'values', render: (preset) => summary(preset.values) },
   {
     title: t('presets.updated'),
@@ -143,7 +151,7 @@ const allColumns = computed<DataTableColumns<Preset>>(() => [
 ])
 
 const columns = computed(() => {
-  const keys = presetColumnPlan(props.readonly ?? false).keys
+  const keys = presetColumnPlan(props.readonly ?? false, showAll.value).keys
   return allColumns.value.filter((column) => 'key' in column && keys.includes(String(column.key)))
 })
 
@@ -152,6 +160,10 @@ onMounted(load)
 
 <template>
   <NSpace vertical :size="12">
+    <NSpace v-if="canSeeAll" align="center" :size="8">
+      <NSwitch v-model:value="allUsers" @update:value="load" />
+      <span>{{ t('presets.allUsers') }}</span>
+    </NSpace>
     <NAlert v-if="failure" type="error" :title="errorLabel(failure)" />
     <NEmpty v-else-if="!presets.length" :description="t('presets.emptyHint')" />
     <NDataTable

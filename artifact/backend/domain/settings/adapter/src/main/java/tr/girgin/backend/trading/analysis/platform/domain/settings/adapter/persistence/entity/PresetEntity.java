@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.SettingsPersistenceConfiguration;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 
 /** One row of the {@code PRESETS} table. */
 @Entity
@@ -25,6 +27,10 @@ public class PresetEntity {
 
     @Column(name = "PAYLOAD", nullable = false)
     private String payload;
+
+    @Convert(converter = OwnerIdAttributeConverter.class)
+    @Column(name = "OWNER_ID")
+    private OwnerId owner;
 
     @LastModifiedDate
     @Column(name = "UPDATED_AT", nullable = false)
@@ -59,6 +65,14 @@ public class PresetEntity {
 
     public void setPayload(String payload) {
         this.payload = payload;
+    }
+
+    public OwnerId getOwner() {
+        return owner;
+    }
+
+    public void setOwner(OwnerId owner) {
+        this.owner = owner;
     }
 
     public Instant getUpdatedAt() {

@@ -14,6 +14,7 @@ export const PERMISSIONS = {
   analysisShare: 'analysis:share',
   presetRead: 'preset:read',
   presetManage: 'preset:manage',
+  presetReadAll: 'preset:read:all',
   settingsRead: 'settings:read',
   settingsKeysWrite: 'settings:keys:write',
   userRead: 'user:read',

@@ -48,5 +48,6 @@ test('a preset saved on New analysis is listed in settings, loads back and is de
   await row.getByRole('button', { name: 'Delete' }).click()
   await page.getByRole('button', { name: 'Confirm' }).click()
   await expect(page.getByText(`"${name}" deleted.`)).toBeVisible()
-  await expect(page.getByText('No presets yet.', { exact: false })).toBeVisible()
+  // Other tests keep presets of the shared admin for a while: the list is not empty for sure.
+  await expect(row).toHaveCount(0)
 })

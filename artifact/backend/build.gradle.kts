@@ -60,6 +60,7 @@ dependencies {
     testImplementation(libs.spring.security.core)
     testImplementation(project(":backend:domain:identity:core"))
     testImplementation(project(":backend:domain:analysis:core"))
+    testImplementation(project(":backend:domain:settings:core"))
     testImplementation(project(":backend:orchestration"))
     testImplementation(libs.spring.data.commons)
     testImplementation(libs.spring.data.jpa)

@@ -37,18 +37,20 @@ class V2SettingsVersionMigrationTest {
                         new PresetId("p_seed_a"),
                         "Cheap DeepSeek",
                         "{\"llmProvider\":\"deepseek\"}",
+                        null,
                         Instant.parse("2026-10-01T10:00:00.5Z"),
                         0L));
         assertThat(repository.findById(new PresetId("p_seed_b")))
                 .contains(new Preset(
-                        new PresetId("p_seed_b"), "Second", "{}", Instant.parse("2026-10-02T11:30:15.25Z"), 0L));
+                        new PresetId("p_seed_b"), "Second", "{}", null, Instant.parse("2026-10-02T11:30:15.25Z"), 0L));
     }
 
     @Test
     void aMigratedPresetCanBeSavedAtItsVersion() {
         Preset seeded = repository.findById(new PresetId("p_seed_b")).orElseThrow();
 
-        Preset saved = repository.save(new Preset(seeded.id(), "Renamed", seeded.payload(), null, seeded.version()));
+        Preset saved =
+                repository.save(new Preset(seeded.id(), "Renamed", seeded.payload(), null, null, seeded.version()));
 
         assertThat(saved.version()).isEqualTo(1);
     }

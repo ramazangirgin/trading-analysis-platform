@@ -134,7 +134,8 @@ Open **New analysis** and fill in:
 | Report language | The language of the reports and the decision; follows the UI language by default |
 
 Press **Start analysis**. **Save as preset** keeps the provider, model and analyst choices for next
-time; **Settings** lists the presets with what each holds, and renames or deletes them.
+time; **Settings** lists your own presets with what each holds, and renames or deletes them. With
+`preset:read:all` (ADMIN) an **All users** switch lists everyone's presets, with an **Owner** column.
 Without `analysis:override-models`, applying a preset leaves the provider, models and rounds at the
 platform values and saving one stores the other fields only.
 Renaming a preset that someone else changed meanwhile fails with a message and the list reloads.
@@ -610,10 +611,11 @@ The backend:
   answers 404 like a missing one, unless the user has `analysis:read:all` (ADMIN) or the analysis is
   public. A public analysis is readable (`GET /api/analyses/{id}`, `…/report`, `…/prices`,
   `…/events`) with `analysis:read`, but its log, stop and rerun answer 404 for everyone but its
-  owner and `analysis:read:all`. The presets are
-  those of every user until the ownership issue
-  ([#92](https://github.com/ramazangirgin/trading-analysis-platform/issues/92)) makes "their own"
-  true. On the first start after the upgrade, analyses without an owner are given to the first
+  owner and `analysis:read:all`. Presets are the user's own too: the user who saved one owns it,
+  and another user's preset answers 404 like a missing one, unless the user has `preset:read:all`
+  (ADMIN). `GET /api/presets?allUsers=true` lists everyone's presets with that permission and the
+  own ones without it. A VIEWER cannot save presets, so has none. On the first start after the
+  upgrade, analyses and presets without an owner are given to the first
   admin. `GET /api/analyses?scope=MINE|SHARED|ALL` (default `MINE`) lists the caller's own
   analyses, the public analyses of other users, or, with `analysis:read:all`, everyone's; `ALL`
   without that permission lists the own ones. Admins can add custom roles with any set of

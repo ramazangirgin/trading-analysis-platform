@@ -19,7 +19,7 @@ const PRESET_FIELDS = [
   'deepThinkLlm',
   'maxDebateRounds',
   'outputLanguage',
-]
+] as const
 
 describe('overriddenFields', () => {
   it('carries no field without the permission', () => {

@@ -472,22 +472,36 @@ export interface components {
         };
         SavePresetRequest: {
             name: string;
-            values: {
-                [key: string]: unknown;
-            };
+            values: components["schemas"]["PresetValuesDto"];
             /** Format: int64 */
             version?: number;
+        };
+        PresetValuesDto: {
+            assetType?: string;
+            analysts?: string[];
+            llmProvider?: string;
+            deepThinkLlm?: string;
+            quickThinkLlm?: string;
+            /** Format: int32 */
+            maxDebateRounds?: number;
+            /** Format: int32 */
+            maxRiskDiscussRounds?: number;
+            outputLanguage?: string;
+            checkpointEnabled?: boolean;
         };
         PresetDto: {
             id?: string;
             name?: string;
-            values?: {
-                [key: string]: unknown;
-            };
+            values?: components["schemas"]["PresetValuesDto"];
+            owner?: components["schemas"]["PresetOwnerDto"];
             /** Format: date-time */
             updatedAt?: string;
             /** Format: int64 */
             version?: number;
+        };
+        PresetOwnerDto: {
+            id?: string;
+            username?: string;
         };
         CreateUserRequest: {
             username: string;
@@ -1046,7 +1060,9 @@ export interface operations {
     };
     listPresets: {
         parameters: {
-            query?: never;
+            query?: {
+                allUsers?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
