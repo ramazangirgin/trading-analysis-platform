@@ -158,11 +158,12 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Orchestration
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/orchestration/src/main/java/.../orchestration/ownership/inbound/AssignPresetOwnersUseCase.java` (new)
 - **Steps**:
-  - [ ] The startup assignment on `ApplicationReadyEvent`.
+  - [x] The startup assignment on `ApplicationReadyEvent`.
 - **Tests**: `AssignPresetOwnersUseCaseTest` (new, as the analysis one): assigns to the first admin; does nothing without one.
 
 ### WP3: BFF and the API
