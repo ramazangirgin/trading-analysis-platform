@@ -214,6 +214,10 @@ run = "uv run --no-project python -m unittest discover -s scripts/agent -p 'test
 description = "Python tests of the Claude Code skills' helpers (.claude/skills/dependabot-fix/test_*.py)"
 run = "uv run --no-project python -m unittest discover -s .claude/skills/dependabot-fix -p 'test_*.py'"
 
+[tasks."ci:test-changes"]
+description = "Test scripts/ci-changes.sh, which decides the CI jobs a change needs, against a throwaway Git repository"
+run = "bash scripts/test-ci-changes.sh"
+
 # Deployment to a server over SSH (deploy/server/README.md): Ansible sets the server up and deploys
 # the Compose setup on it. server:deploy needs deploy/server/inventory.ini; server:check needs nothing.
 [tasks."server:deploy"]
