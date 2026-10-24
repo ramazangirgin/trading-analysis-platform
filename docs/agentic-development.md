@@ -163,7 +163,8 @@ In Claude Code, in this repository:
 ```
 
 The skill ([`.claude/skills/plan-from-issue/SKILL.md`](../.claude/skills/plan-from-issue/SKILL.md))
-runs on Opus whatever model the session uses (`model:` in its frontmatter). It
+always plans on Opus, whatever model the session uses and however it is started (typed, or invoked
+by `develop-issue`): the session hands the work to an Opus subagent. It
 reads the issue, the issues it links to and the documents of every part it touches, and writes
 `.plans/<issue>-<slug>.md` from [`plan-template.md`](../.claude/skills/plan-from-issue/plan-template.md),
 or several plans when the issue does not fit one pull request. Discuss it with Claude in the same
