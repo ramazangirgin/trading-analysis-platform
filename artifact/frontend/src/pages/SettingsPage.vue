@@ -168,7 +168,9 @@ onMounted(load)
       <AnalysisDefaultsCard v-if="session.can(PERMISSIONS.analysisDefaultsManage)" />
       <template v-if="session.can(PERMISSIONS.presetRead)">
         <h3 class="heading">{{ t('presets.title') }}</h3>
-        <p class="note">{{ t('presets.note') }}</p>
+        <p class="note">
+          {{ t(session.can(PERMISSIONS.presetReadAll) ? 'presets.noteAll' : 'presets.note') }}
+        </p>
         <PresetManager
           :readonly="!session.can(PERMISSIONS.presetManage)"
           :can-see-all="session.can(PERMISSIONS.presetReadAll)"
