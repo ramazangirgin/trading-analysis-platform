@@ -1106,6 +1106,81 @@
                     }
                 }
             }
+        },
+        "/api/public/analyses": {
+            "get": {
+                "tags": [
+                    "public-analyses-api-controller"
+                ],
+                "operationId": "listPublicAnalyses",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0,
+                            "minimum": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 12,
+                            "maximum": 24,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AnalysisPreviewPageDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/public/analyses/{id}": {
+            "get": {
+                "tags": [
+                    "public-analyses-api-controller"
+                ],
+                "operationId": "getPublicAnalysis",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AnalysisPreviewDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -1593,7 +1668,8 @@
                         "type": "string",
                         "enum": [
                             "PRIVATE",
-                            "PUBLIC"
+                            "PUBLIC",
+                            "PARTIAL"
                         ]
                     },
                     "version": {
@@ -1735,7 +1811,8 @@
                         "type": "string",
                         "enum": [
                             "PRIVATE",
-                            "PUBLIC"
+                            "PUBLIC",
+                            "PARTIAL"
                         ]
                     },
                     "visibilityChangedAt": {
@@ -1751,6 +1828,17 @@
                     },
                     "canChangeVisibility": {
                         "type": "boolean"
+                    },
+                    "allowedVisibilities": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "PRIVATE",
+                                "PUBLIC",
+                                "PARTIAL"
+                            ]
+                        }
                     }
                 }
             },
@@ -2130,6 +2218,87 @@
                     "timeout": {
                         "type": "integer",
                         "format": "int64"
+                    }
+                }
+            },
+            "AnalysisPreviewPageDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AnalysisPreviewSummaryDto"
+                        }
+                    },
+                    "hasMore": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "AnalysisPreviewSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "ticker": {
+                        "type": "string"
+                    },
+                    "analysisDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "rating": {
+                        "type": "string",
+                        "enum": [
+                            "BUY",
+                            "OVERWEIGHT",
+                            "HOLD",
+                            "UNDERWEIGHT",
+                            "SELL",
+                            "REVIEW"
+                        ]
+                    },
+                    "excerpt": {
+                        "type": "string"
+                    }
+                }
+            },
+            "AnalysisPreviewDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "ticker": {
+                        "type": "string"
+                    },
+                    "analysisDate": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "rating": {
+                        "type": "string",
+                        "enum": [
+                            "BUY",
+                            "OVERWEIGHT",
+                            "HOLD",
+                            "UNDERWEIGHT",
+                            "SELL",
+                            "REVIEW"
+                        ]
+                    },
+                    "sections": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "lockedSections": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 }
             }

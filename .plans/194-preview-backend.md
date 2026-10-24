@@ -181,6 +181,7 @@ report, and the `analysis` domain must not depend on `report`, so the pieces are
 
 ### WP3: The public endpoints, rate limit and API contract
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**:
   - `artifact/backend/bff/api/src/main/java/.../bff/controller/api/`: `PublicAnalysesApiController.java`, `PublicAnalysesApiDelegate.java`; `model/`: `AnalysisPreviewDto.java`, `AnalysisPreviewSummaryDto.java`, `AnalysisPreviewPageDto.java` (new), `VisibilityEnumDto.java`, `AnalysisDto.java`
@@ -188,10 +189,10 @@ report, and the `analysis` domain must not depend on `report`, so the pieces are
   - `artifact/backend/src/main/resources/application.properties`
   - `artifact/frontend/openapi.json`, `artifact/frontend/src/shared/api/schema.d.ts` (regenerated; `schema.d.ts` is never edited by hand)
 - **Steps**:
-  - [ ] DTOs, controller, delegate, mappers.
-  - [ ] The security rule, the limiter and the filter.
-  - [ ] `allowedVisibilities` on `AnalysisDto`.
-  - [ ] Regenerate `openapi.json` against a throwaway PostgreSQL, run `mise run api-types`.
+  - [x] DTOs, controller, delegate, mappers.
+  - [x] The security rule, the limiter and the filter.
+  - [x] `allowedVisibilities` on `AnalysisDto`.
+  - [x] Regenerate `openapi.json` against a throwaway PostgreSQL, run `mise run api-types`.
 - **Tests**:
   - `PartialPreviewIntegrationTest` (new, `artifact/backend/src/test/...`, as `AnalysisSharingIntegrationTest`;
     owner with PUBLISHER, another user, the admin, and a request without a session):
