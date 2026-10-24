@@ -27,7 +27,8 @@ if [ -z "$base" ]; then
   echo "no base to compare with: every area runs" >&2
   app=true runner=true deploy=true server_e2e=true
 else
-  files=$(git diff --name-only "$base" HEAD)
+  # --no-renames lists the old path of a moved file too, so moving a file out of an area counts
+  files=$(git diff --name-only --no-renames "$base" HEAD)
   echo "changed since $base:" >&2
   sed 's/^/  /' <<<"$files" >&2
 

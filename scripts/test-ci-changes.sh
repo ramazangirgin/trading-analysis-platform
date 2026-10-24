@@ -51,6 +51,24 @@ check "true true false false" new-top-level-file.txt
 check "true true false false" docs/x.md artifact/backend/src/Main.java
 
 n=$((n + 1))
+git reset -q --hard "$base"
+mkdir -p artifact/backend/src
+echo "content that git sees as the same file after the move" >artifact/backend/src/Foo.java
+git add -A
+git commit -q -m "add Foo"
+moved_base=$(git rev-parse HEAD)
+mkdir -p docs
+git mv artifact/backend/src/Foo.java docs/Foo.java
+git commit -q -m "move Foo"
+actual=$(bash "$script" "$moved_base" 2>/dev/null | cut -d= -f2 | paste -sd' ' -)
+if [ "$actual" = "true true false false" ]; then
+  echo "ok   file moved out of artifact/ into docs/"
+else
+  echo "FAIL file moved out of artifact/ into docs/: got '$actual'" >&2
+  failures=$((failures + 1))
+fi
+
+n=$((n + 1))
 actual=$(bash "$script" "" 2>/dev/null | cut -d= -f2 | paste -sd' ' -)
 if [ "$actual" = "true true true true" ]; then
   echo "ok   empty base"
