@@ -21,7 +21,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 public interface AnalysisToAnalysisDtoMapper {
 
     @Mapping(target = "canManage", expression = "java(access.canManage(source))")
-    @Mapping(target = "canChangeVisibility", expression = "java(access.canChangeVisibility(source))")
+    @Mapping(target = "canChangeVisibility", expression = "java(!access.allowedVisibilities(source).isEmpty())")
     AnalysisDto map(Analysis source, @Context Map<UserId, Username> usernames, @Context AnalysisAccess access);
 
     default AnalysisOwnerDto map(OwnerId source, @Context Map<UserId, Username> usernames) {

@@ -35,10 +35,14 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
         if (analysis.visibility() == visibility) {
             return analysis;
         }
-        if (visibility == Visibility.PUBLIC) {
-            checkCanMakePublic(analysis, access);
-        } else if (!access.canMakePrivate(analysis)) {
-            throw notFound(id);
+        if (!access.canChangeTo(analysis, visibility)) {
+            throw refusal(analysis, visibility, access);
+        }
+        if (visibility != Visibility.PRIVATE && analysis.status() != AnalysisStatus.COMPLETED) {
+            throw new AnalysisException(
+                    AnalysisError.NOT_SHAREABLE,
+                    "Only a completed analysis can be shared: " + id,
+                    Map.of("id", id.value(), "status", analysis.status().name()));
         }
         try {
             return repository.update(analysis.withVisibility(visibility, clock.instant()));
@@ -47,26 +51,15 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
         }
     }
 
-    private void checkCanMakePublic(Analysis analysis, AnalysisAccess access) {
-        if (!access.isOwner(analysis)) {
-            throw notFound(analysis.id());
-        }
-        if (!access.canMakePublic(analysis)) {
-            throw new AnalysisException(
+    // Only the owner who lacks the permission learns why; anyone else must not learn the analysis can be shared.
+    private AnalysisException refusal(Analysis analysis, Visibility target, AnalysisAccess access) {
+        if (target != Visibility.PRIVATE && access.isOwner(analysis) && !access.share()) {
+            return new AnalysisException(
                     AnalysisError.SHARE_FORBIDDEN,
                     "Missing the permission to share analyses",
                     Map.of("id", analysis.id().value()));
         }
-        if (analysis.status() != AnalysisStatus.COMPLETED) {
-            throw new AnalysisException(
-                    AnalysisError.NOT_SHAREABLE,
-                    "Only a completed analysis can be made public: " + analysis.id(),
-                    Map.of(
-                            "id",
-                            analysis.id().value(),
-                            "status",
-                            analysis.status().name()));
-        }
+        return notFound(analysis.id());
     }
 
     private AnalysisException notFound(AnalysisId id) {

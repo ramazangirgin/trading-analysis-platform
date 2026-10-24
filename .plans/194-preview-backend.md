@@ -127,6 +127,7 @@ report, and the `analysis` domain must not depend on `report`, so the pieces are
 
 ### WP1: Partial visibility in the analysis domain
 
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/analysis/core/src/main/java/.../analysis/core/model/`: `Visibility.java`, `AnalysisAccess.java`, `AnalysisFilter.java`, `PartialAnalysisPage.java` (new)
@@ -137,9 +138,9 @@ report, and the `analysis` domain must not depend on `report`, so the pieces are
   - `artifact/backend/domain/analysis/adapter/src/main/resources/.../persistence/migration/V5__add_partial_visibility.sql` (new)
   - every caller of `canMakePublic`, `canMakePrivate`, `canChangeVisibility` and `AnalysisFilter.visibility` (the compiler names them)
 - **Steps**:
-  - [ ] `PARTIAL`, `sharedWithUsers`, `canChangeTo`, `allowedVisibilities`, the set filter.
-  - [ ] The visibility service with the rules above; the visitor use cases and the paged port method.
-  - [ ] The migration and the adapter.
+  - [x] `PARTIAL`, `sharedWithUsers`, `canChangeTo`, `allowedVisibilities`, the set filter.
+  - [x] The visibility service with the rules above; the visitor use cases and the paged port method.
+  - [x] The migration and the adapter.
 - **Tests**:
   - `AnalysisAccessTest`: every cell of `canSee` and `canChangeTo` (owner, other user, admin with and
     without `share`; private, public, partial; each target), `allowedVisibilities`.
