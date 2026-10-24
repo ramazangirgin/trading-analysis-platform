@@ -196,14 +196,15 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP5: e2e, screenshot and docs
 
+- **Status**: done
 - **Depends on**: WP4
 - **Files**:
   - `e2e/tests/preset-ownership.e2e.ts` (new)
   - the screenshot script that produces `docs/screenshots/presets.png` (or a new `e2e/screenshots/presets.shot.ts` when none does), `docs/screenshots/presets.png`
   - `README.md`
 - **Steps**:
-  - [ ] e2e: the admin creates an ANALYST (unique name, through the API, as `ownership.e2e.ts`) and a preset of their own through the API; the analyst logs in, changes the one-time password, saves a preset on New Analysis, sees only that preset in Settings (no All users switch) and not the admin's in the Load a preset list. The admin turns on **All users** in Settings and sees both presets with the Owner column.
-  - [ ] Retake the screenshot and update the docs below.
+  - [x] e2e: the admin creates an ANALYST (unique name, through the API, as `ownership.e2e.ts`) and a preset of their own through the API; the analyst logs in, changes the one-time password, saves a preset on New Analysis, sees only that preset in Settings (no All users switch) and not the admin's in the Load a preset list. The admin turns on **All users** in Settings and sees both presets with the Owner column.
+  - [x] Retake the screenshot and update the docs below.
 - **Tests**: the e2e test above (`mise run e2e`); the existing `settings.e2e.ts` keeps passing.
 
 ## Tests
