@@ -291,11 +291,11 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         Analysis theirsClosed = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), OTHER_OWNER, base));
         Analysis nobodys = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZVISF"), null, base));
 
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, Visibility.PUBLIC, null)))
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, Set.of(Visibility.PUBLIC), null)))
                 .containsExactlyInAnyOrder(mineOpen, theirsOpen);
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, Visibility.PUBLIC, OWNER)))
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, Set.of(Visibility.PUBLIC), OWNER)))
                 .containsExactly(theirsOpen);
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, null, OWNER)))
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZVISF", null, Set.of(), OWNER)))
                 .containsExactlyInAnyOrder(theirsOpen, theirsClosed, nobodys);
     }
 
@@ -458,6 +458,16 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
             Analysis analysis = analysis(
                     AnalysisStatus.COMPLETED, AnalysisSource.PLATFORM, rating, AssetType.STOCK, Analyst.MARKET);
             assertThat(roundTrip(analysis).rating()).isEqualTo(rating);
+        }
+        for (Visibility visibility : Visibility.values()) {
+            Analysis analysis = analysis(
+                            AnalysisStatus.COMPLETED,
+                            AnalysisSource.PLATFORM,
+                            Rating.HOLD,
+                            AssetType.STOCK,
+                            Analyst.MARKET)
+                    .withVisibility(visibility, Instant.EPOCH);
+            assertThat(roundTrip(analysis).visibility()).isEqualTo(visibility);
         }
         for (Analyst analyst : Analyst.values()) {
             Analysis analysis =

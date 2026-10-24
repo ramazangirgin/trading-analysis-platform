@@ -23,6 +23,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.PartialAnalysisPage;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
@@ -153,10 +154,18 @@ final class Fakes {
                     .filter(a -> filter.status() == null || a.status() == filter.status())
                     .filter(a -> filter.ticker() == null || a.spec().ticker().equals(filter.ticker()))
                     .filter(a -> filter.owner() == null || filter.owner().equals(a.owner()))
-                    .filter(a -> filter.visibility() == null || a.visibility() == filter.visibility())
+                    .filter(a -> filter.visibilities().isEmpty()
+                            || filter.visibilities().contains(a.visibility()))
                     .filter(a -> filter.notOwner() == null || !filter.notOwner().equals(a.owner()))
                     .sorted(Comparator.comparing(Analysis::createdAt).reversed())
                     .toList();
+        }
+
+        @Override
+        public PartialAnalysisPage findPage(AnalysisFilter filter, int page, int size) {
+            List<Analysis> rest =
+                    findAll(filter).stream().skip((long) page * size).toList();
+            return new PartialAnalysisPage(rest.stream().limit(size).toList(), rest.size() > size);
         }
 
         @Override

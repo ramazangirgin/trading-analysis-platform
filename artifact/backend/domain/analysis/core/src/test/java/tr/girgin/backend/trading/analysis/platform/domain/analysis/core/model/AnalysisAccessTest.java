@@ -21,6 +21,7 @@ class AnalysisAccessTest {
 
     private final Analysis privateRun = analysis(Visibility.PRIVATE);
     private final Analysis publicRun = analysis(Visibility.PUBLIC);
+    private final Analysis partialRun = analysis(Visibility.PARTIAL);
 
     private static Analysis analysis(Visibility visibility) {
         AnalysisSpec spec = new AnalysisSpec(
@@ -64,7 +65,7 @@ class AnalysisAccessTest {
 
     @Test
     void onlyTheOwnerAndAllUsersManageAnAnalysisPublicOrNot() {
-        for (Analysis analysis : List.of(privateRun, publicRun)) {
+        for (Analysis analysis : List.of(privateRun, publicRun, partialRun)) {
             assertThat(OWNER_PLAIN.canManage(analysis)).isTrue();
             assertThat(ADMIN_PLAIN.canManage(analysis)).isTrue();
             assertThat(OTHER_PLAIN.canManage(analysis)).isFalse();
@@ -73,43 +74,60 @@ class AnalysisAccessTest {
     }
 
     @Test
-    void onlyTheOwnerWithShareMakesAnAnalysisPublic() {
-        assertThat(OWNER_SHARER.canMakePublic(privateRun)).isTrue();
-        assertThat(OWNER_PLAIN.canMakePublic(privateRun)).isFalse();
-        assertThat(OTHER_SHARER.canMakePublic(privateRun)).isFalse();
-        assertThat(ADMIN_SHARER.canMakePublic(privateRun)).isFalse();
-        assertThat(ADMIN_PLAIN.canMakePublic(privateRun)).isFalse();
+    void aPartialAnalysisIsSeenByEveryLoggedInUser() {
+        assertThat(OTHER_PLAIN.canSee(partialRun)).isTrue();
+        assertThat(OWNER_PLAIN.canSee(partialRun)).isTrue();
+        assertThat(ADMIN_PLAIN.canSee(partialRun)).isTrue();
     }
 
     @Test
-    void theOwnerMakesAPublicAnalysisPrivateWithOrWithoutShare() {
-        assertThat(OWNER_PLAIN.canMakePrivate(publicRun)).isTrue();
-        assertThat(OWNER_SHARER.canMakePrivate(publicRun)).isTrue();
+    void onlyTheSharedVisibilitiesAreSharedWithUsers() {
+        assertThat(Visibility.PRIVATE.sharedWithUsers()).isFalse();
+        assertThat(Visibility.PUBLIC.sharedWithUsers()).isTrue();
+        assertThat(Visibility.PARTIAL.sharedWithUsers()).isTrue();
     }
 
     @Test
-    void allUsersWithShareMakeAnotherUsersPublicAnalysisPrivate() {
-        assertThat(ADMIN_SHARER.canMakePrivate(publicRun)).isTrue();
-        assertThat(ADMIN_PLAIN.canMakePrivate(publicRun)).isFalse();
-        assertThat(OTHER_PLAIN.canMakePrivate(publicRun)).isFalse();
-        assertThat(OTHER_SHARER.canMakePrivate(publicRun)).isFalse();
+    void canChangeToCoversEveryCaller() {
+        assertAllowed(privateRun, Visibility.PUBLIC, OWNER_SHARER);
+        assertAllowed(privateRun, Visibility.PARTIAL, OWNER_SHARER);
+        assertAllowed(privateRun, Visibility.PRIVATE);
+
+        assertAllowed(publicRun, Visibility.PRIVATE, OWNER_PLAIN, OWNER_SHARER, ADMIN_SHARER);
+        assertAllowed(publicRun, Visibility.PARTIAL, OWNER_SHARER);
+        assertAllowed(publicRun, Visibility.PUBLIC);
+
+        assertAllowed(partialRun, Visibility.PRIVATE, OWNER_PLAIN, OWNER_SHARER, ADMIN_SHARER);
+        assertAllowed(partialRun, Visibility.PUBLIC, OWNER_SHARER, ADMIN_SHARER);
+        assertAllowed(partialRun, Visibility.PARTIAL);
     }
 
     @Test
-    void aPrivateAnalysisCannotBeMadePrivate() {
-        assertThat(OWNER_SHARER.canMakePrivate(privateRun)).isFalse();
-        assertThat(ADMIN_SHARER.canMakePrivate(privateRun)).isFalse();
+    void allowedVisibilitiesListsTheTargetsInEnumOrder() {
+        assertThat(OWNER_SHARER.allowedVisibilities(privateRun)).containsExactly(Visibility.PUBLIC, Visibility.PARTIAL);
+        assertThat(OWNER_PLAIN.allowedVisibilities(privateRun)).isEmpty();
+        assertThat(ADMIN_SHARER.allowedVisibilities(privateRun)).isEmpty();
+
+        assertThat(OWNER_SHARER.allowedVisibilities(publicRun)).containsExactly(Visibility.PRIVATE, Visibility.PARTIAL);
+        assertThat(OWNER_PLAIN.allowedVisibilities(publicRun)).containsExactly(Visibility.PRIVATE);
+        assertThat(ADMIN_SHARER.allowedVisibilities(publicRun)).containsExactly(Visibility.PRIVATE);
+        assertThat(ADMIN_PLAIN.allowedVisibilities(publicRun)).isEmpty();
+        assertThat(OTHER_SHARER.allowedVisibilities(publicRun)).isEmpty();
+
+        assertThat(OWNER_SHARER.allowedVisibilities(partialRun)).containsExactly(Visibility.PRIVATE, Visibility.PUBLIC);
+        assertThat(ADMIN_SHARER.allowedVisibilities(partialRun)).containsExactly(Visibility.PRIVATE, Visibility.PUBLIC);
+        assertThat(ADMIN_PLAIN.allowedVisibilities(partialRun)).isEmpty();
+        assertThat(OTHER_SHARER.allowedVisibilities(partialRun)).isEmpty();
     }
 
-    @Test
-    void theVisibilityChangeAllowedDependsOnTheCurrentVisibility() {
-        assertThat(OWNER_SHARER.canChangeVisibility(privateRun)).isTrue();
-        assertThat(OWNER_PLAIN.canChangeVisibility(privateRun)).isFalse();
-        assertThat(ADMIN_SHARER.canChangeVisibility(privateRun)).isFalse();
-
-        assertThat(OWNER_PLAIN.canChangeVisibility(publicRun)).isTrue();
-        assertThat(ADMIN_SHARER.canChangeVisibility(publicRun)).isTrue();
-        assertThat(ADMIN_PLAIN.canChangeVisibility(publicRun)).isFalse();
-        assertThat(OTHER_SHARER.canChangeVisibility(publicRun)).isFalse();
+    // Asserts that exactly the given callers, out of every kind of caller, may change the analysis to target.
+    private static void assertAllowed(Analysis analysis, Visibility target, AnalysisAccess... allowed) {
+        List<AnalysisAccess> everyone =
+                List.of(OWNER_PLAIN, OWNER_SHARER, OTHER_PLAIN, OTHER_SHARER, ADMIN_PLAIN, ADMIN_SHARER);
+        for (AnalysisAccess caller : everyone) {
+            assertThat(caller.canChangeTo(analysis, target))
+                    .as("%s -> %s by %s", analysis.visibility(), target, caller)
+                    .isEqualTo(List.of(allowed).contains(caller));
+        }
     }
 }

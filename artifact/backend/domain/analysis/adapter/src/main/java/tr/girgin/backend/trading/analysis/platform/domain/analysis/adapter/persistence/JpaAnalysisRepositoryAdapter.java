@@ -4,7 +4,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
@@ -19,6 +22,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.PartialAnalysisPage;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
@@ -115,6 +119,16 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
                 .toList();
     }
 
+    /** The slice asks for one row more than {@code size} to know {@code hasMore}, with no COUNT query. */
+    @Override
+    @Transactional(readOnly = true)
+    public PartialAnalysisPage findPage(AnalysisFilter filter, int page, int size) {
+        PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Slice<AnalysisEntity> slice = repository.findBy(matching(filter), query -> query.slice(request));
+        return new PartialAnalysisPage(
+                slice.getContent().stream().map(toAnalysis::map).toList(), slice.hasNext());
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<Analysis> findByStatusIn(Collection<AnalysisStatus> statuses) {
@@ -146,8 +160,8 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         if (filter.owner() != null) {
             matching = matching.and(hasOwner(filter.owner()));
         }
-        if (filter.visibility() != null) {
-            matching = matching.and(hasVisibility(filter.visibility()));
+        if (!filter.visibilities().isEmpty()) {
+            matching = matching.and(hasVisibilityIn(filter.visibilities()));
         }
         if (filter.notOwner() != null) {
             matching = matching.and(notOwnedBy(filter.notOwner()));
@@ -155,8 +169,8 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         return matching;
     }
 
-    private Specification<AnalysisEntity> hasVisibility(Visibility visibility) {
-        return (root, _, builder) -> builder.equal(root.get("visibility"), visibility);
+    private Specification<AnalysisEntity> hasVisibilityIn(Set<Visibility> visibilities) {
+        return (root, _, _) -> root.get("visibility").in(visibilities);
     }
 
     // An analysis without an owner is nobody's, so it is not owned by the user either.

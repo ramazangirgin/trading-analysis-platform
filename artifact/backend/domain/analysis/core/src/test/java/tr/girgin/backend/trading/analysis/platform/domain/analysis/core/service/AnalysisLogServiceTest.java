@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
@@ -54,8 +55,11 @@ class AnalysisLogServiceTest {
         assertThat(service.tailLogs(id, Fakes.EVERYONE, 10)).containsExactly("key=sk-1234****");
     }
 
-    @Test
-    void anotherUsersPublicAnalysisHasNoLogForTheCaller() {
+    @ParameterizedTest
+    @EnumSource(
+            value = Visibility.class,
+            names = {"PUBLIC", "PARTIAL"})
+    void anotherUsersSharedAnalysisHasNoLogForTheCaller(Visibility visibility) {
         Fakes.Repository repository = new Fakes.Repository();
         Fakes.EventStore eventStore = new Fakes.EventStore();
         AnalysisService analyses = new AnalysisService(
@@ -68,7 +72,7 @@ class AnalysisLogServiceTest {
                 2);
         AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("line"));
         AnalysisId id = analyses.start(Fakes.spec("NVDA"), Fakes.OWNER).id();
-        repository.rows.put(id, repository.rows.get(id).withVisibility(Visibility.PUBLIC, Instant.now()));
+        repository.rows.put(id, repository.rows.get(id).withVisibility(visibility, Instant.now()));
 
         assertThatThrownBy(() -> service.tailLogs(id, Fakes.OTHERS, 10))
                 .isInstanceOfSatisfying(

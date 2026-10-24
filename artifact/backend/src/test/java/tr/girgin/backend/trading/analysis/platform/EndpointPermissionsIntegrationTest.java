@@ -43,14 +43,17 @@ class EndpointPermissionsIntegrationTest {
 
     private static final Path HOME = TestPlatformHome.create();
 
-    // The routes that need no permission: the login flow, a user's own password and the API description.
+    // The routes that need no permission: the login flow, a user's own password, the API description and the
+    // preview that visitors read.
     private static final Set<String> OPEN = Set.of(
             "POST /api/auth/login",
             "POST /api/auth/logout",
             "GET /api/auth/me",
             "POST /api/auth/password",
             "GET /api/openapi",
-            "GET /api/openapi.yaml");
+            "GET /api/openapi.yaml",
+            "GET /api/public/analyses",
+            "GET /api/public/analyses/{id}");
 
     private static final String UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
@@ -83,7 +86,7 @@ class EndpointPermissionsIntegrationTest {
 
         List<String> notRefused = new ArrayList<>();
         for (Endpoint endpoint : endpoints) {
-            if (!OPEN.contains(endpoint.toString()) && statusOf(session, endpoint, true) != 403) {
+            if (!OPEN.contains(endpoint.template()) && statusOf(session, endpoint, true) != 403) {
                 notRefused.add(endpoint.toString());
             }
         }
@@ -102,11 +105,15 @@ class EndpointPermissionsIntegrationTest {
         for (Endpoint endpoint : endpoints()) {
             // The auth routes would end or change the session, and are open anyway.
             if (!endpoint.path().startsWith("/api/auth/") && statusOf(session, endpoint, true) != 403) {
-                notRefused.add(endpoint.method() + " " + endpoint.path().replaceAll(UUID_PATTERN, "{id}"));
+                notRefused.add(endpoint.template());
             }
         }
 
-        Set<String> expected = new TreeSet<>(List.of("GET /api/openapi", "GET /api/openapi.yaml"));
+        Set<String> expected = new TreeSet<>(List.of(
+                "GET /api/openapi",
+                "GET /api/openapi.yaml",
+                "GET /api/public/analyses",
+                "GET /api/public/analyses/{id}"));
         expected.addAll(List.of(
                 "GET /api/analyses",
                 "GET /api/analyses/{id}",
@@ -177,6 +184,10 @@ class EndpointPermissionsIntegrationTest {
     }
 
     private record Endpoint(String method, String path, boolean stream) {
+
+        String template() {
+            return method + " " + path.replaceAll(UUID_PATTERN, "{id}");
+        }
 
         @Override
         public String toString() {
