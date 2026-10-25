@@ -125,6 +125,20 @@ class UsageTest(unittest.TestCase):
         self.assertTrue(cut.endswith(" partial=1"))
         self.assertEqual(agent_json.parse_marker(cut)["tokens"], "195")
 
+    def test_get_reads_the_subtype_of_a_max_turns_result(self):
+        result = self.write_result("wp-WP1.json", dict(RESULT, subtype="error_max_turns", is_error=True))
+        out = io.StringIO()
+        with mock.patch("sys.stdout", out):
+            agent_json.main(["agent_json.py", "get", result, "subtype"])
+        self.assertEqual(out.getvalue().strip(), "error_max_turns")
+
+    def test_usage_marker_sums_a_package_and_its_continuation(self):
+        first = self.write_result("wp-WP1.json", dict(RESULT, subtype="error_max_turns", is_error=True))
+        second = self.write_result("wp-WP1-2.json")
+        marker = agent_json.parse_marker(agent_json.usage_marker(agent_json.usage([first, second])))
+        self.assertEqual(marker["tokens"], str(2 * 510))
+        self.assertNotIn("partial", agent_json.usage_marker(agent_json.usage([first, second])))
+
 
 def init(model):
     return {"type": "system", "subtype": "init", "model": model}

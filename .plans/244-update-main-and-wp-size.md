@@ -215,17 +215,17 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Turn limit and fresh continuations in implement.sh
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: `scripts/agent/implement.sh`, `scripts/agent/lib.sh`,
   `scripts/agent/prompts/implement.md`, `scripts/agent/test_agent_json.py`
 - **Steps**:
-  - [ ] `AGENT_WP_MAX_TURNS`, `AGENT_WP_MAX_CONTINUATIONS` in `lib.sh` (defaults, the variables list
+  - [x] `AGENT_WP_MAX_TURNS`, `AGENT_WP_MAX_CONTINUATIONS` in `lib.sh` (defaults, the variables list
     at the top)
-  - [ ] `run_agent` accepts a max-turns result when asked to
-  - [ ] `implement.sh`: `--max-turns`, the continuation loop, fresh retries for unfinished packages
+  - [x] `run_agent` accepts a max-turns result when asked to
+  - [x] `implement.sh`: `--max-turns`, the continuation loop, fresh retries for unfinished packages
     and final checks
-  - [ ] `implement.md`: commit each finished step
+  - [x] `implement.md`: commit each finished step
 - **Tests**: `test_agent_json.py`: `get <result> subtype` on a max-turns result fixture, and
   `usage-marker` over `wp-WP1.json` plus `wp-WP1-2.json` sums both; `bash -n` on the scripts;
   `implement.sh --dry-run` on a plan branch still prints the packages.

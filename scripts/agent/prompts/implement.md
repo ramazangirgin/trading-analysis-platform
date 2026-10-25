@@ -48,6 +48,11 @@ in your final message.
   `Compare view for two or more runs`. Every commit of your package ends with the trailer
   `Work-package: <id>` as a last line of its own, after a blank line (`<id>` is your package's, for
   example `WP2`). Do not commit build output or secrets.
+- Commit each finished step of the package as soon as its tests pass, with the `Work-package`
+  trailer and the plan's step ticked in that same commit (the `Status` line only with the last one).
+  A run is cut off after a number of turns and a fresh agent continues from the commits and the
+  plan, so uncommitted work is what gets lost. If your prompt has a "Continue" section, read the
+  listed commits and the plan's ticks instead of the whole code again, and do only the open steps.
 - With your last commit, record the progress in the plan file (`.plans/<issue>-<slug>.md`), in the
   same commit as the code: tick the package's steps (`- [x]`) and set its status line
   `- **Status**: done` (add the line under the `### WP…` heading if the package has none). If you
