@@ -98,6 +98,11 @@ class ListAnalysisPreviewsUseCaseTest {
     }
 
     @Test
+    void theExcerptNeverEndsInsideASurrogatePair() {
+        assertThat(list("abc😀def", 4).items().getFirst().excerpt()).isEqualTo("abc…");
+    }
+
+    @Test
     void noTextOfAHiddenSectionIsInTheExcerpt() {
         assertThat(list("open", 400).toString()).doesNotContain("hidden");
     }

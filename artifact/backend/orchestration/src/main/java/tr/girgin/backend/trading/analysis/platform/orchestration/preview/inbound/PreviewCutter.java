@@ -77,7 +77,8 @@ class PreviewCutter {
         if (trimmed.length() <= length) {
             return trimmed;
         }
-        String cut = trimmed.substring(0, length);
+        int end = length > 0 && Character.isHighSurrogate(trimmed.charAt(length - 1)) ? length - 1 : length;
+        String cut = trimmed.substring(0, end);
         int lineBreak = cut.lastIndexOf('\n');
         if (lineBreak > 0) {
             cut = cut.substring(0, lineBreak);
