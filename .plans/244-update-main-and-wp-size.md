@@ -183,7 +183,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: The update step script
 
-- **Status**: not done: the by-hand run in a throwaway clone could not be done with the agent's allowed commands (no git init/clone/push); the script is only syntax-checked
+- **Status**: done (the by-hand run in the develop-issue session: up to date, a clean merge, a version-only conflict resolved by script and bumped, each pushed once to a local bare origin)
 - **Depends on**: WP1
 - **Files**: `scripts/agent/update-main.sh` (new), `scripts/agent/prompts/update-main.md` (new),
   `mise.toml`
@@ -191,7 +191,7 @@ Packages without a dependency between them can be implemented in parallel.
   - [x] `update-main.sh` as in the design (usage comment at the top, as the other step scripts)
   - [x] `prompts/update-main.md`
   - [x] task `agent:update-main`
-  - [ ] check by hand in a throwaway clone (a local bare repository as `origin`, no GitHub: a plan
+  - [x] check by hand in a throwaway clone (a local bare repository as `origin`, no GitHub: a plan
     branch without a pull request): up to date; a merge without conflicts; a merge whose only
     conflict is the version lines (resolved with no agent, bumped, pushed)
 - **Tests**: `bash -n scripts/agent/update-main.sh`; the resolver's unit tests (WP1); the by-hand
