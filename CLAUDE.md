@@ -61,8 +61,11 @@ mise run runner-test    # ta-runner: ruff, import-linter, deptry, pytest
 mise run test           # build + runner-test
 mise run e2e            # Playwright against the jar
 mise run dev            # backend :8080 + Vite :5173
-./gradlew :backend:domain:analysis:adapter:test --tests '*SomeTest'   # one module's tests
+mise run gradle :backend:domain:analysis:adapter:test --tests '*SomeTest'   # one module's tests
 ```
+
+With `AGENT_QUIET=1` (set for the agents) these tasks print `ok:` lines; a failure prints an excerpt
+and the path of the full log in `build/quiet/`.
 
 On macOS the engine is Podman: set
 `DOCKER_HOST=unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')`

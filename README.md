@@ -718,9 +718,15 @@ mise run server:check  # ansible-lint and the playbook's syntax, without a serve
 mise run server:test-setup  # the server setup scripts against a throwaway Ubuntu container (needs Docker or Podman)
 mise run server:test   # the whole server deployment with THIS machine as the server: throwaway machines only (CI)
 mise run ci:test-changes  # the tests of scripts/ci-changes.sh, which decides the CI jobs a change needs
+mise run gradle :backend:test   # Gradle with --console=plain; the arguments after the task name go to Gradle
+mise run agent:stats 244       # token, tool and context statistics of an issue's agent transcripts (docs/agentic-development.md)
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
+
+With `AGENT_QUIET=1` (set for the agents) `check`, `format`, `format-check`, `runner-test` and `gradle`
+print one `ok:` line per command, or on a failure an excerpt and the path of the full log in
+`build/quiet/`.
 
 `run`, `dev`, `build`, `test`, `e2e` and `screenshots` need Docker or Podman (a PostgreSQL container;
 the backend tests start theirs through Testcontainers; on a Podman machine the build points

@@ -213,13 +213,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP5: Docs
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3, WP4
 - **Files**: `docs/agentic-development.md`, `docs/coding-convention/repository-git-hooks.md`,
   `README.md`, `CLAUDE.md`
 - **Steps**:
-  - [ ] the docs listed under "Docs to update"
-  - [ ] bump the version (`scripts/version.sh bump minor`), as the last package
+  - [x] the docs listed under "Docs to update"
+  - [x] bump the version (`scripts/version.sh bump minor`), as the last package
 - **Tests**: `mise run check` (Prettier does not cover Markdown here; the links are checked by
   reading them).
 
