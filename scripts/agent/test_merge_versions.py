@@ -23,13 +23,14 @@ class ResolveTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.dir.cleanup)
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.dir.name)
 
     def write(self, name, text):
-        path = os.path.join(self.dir.name, name)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as handle:
+        os.makedirs(os.path.dirname(name) or ".", exist_ok=True)
+        with open(name, "w") as handle:
             handle.write(text)
-        return path
+        return name
 
     def read(self, path):
         with open(path) as handle:
@@ -80,6 +81,7 @@ class ResolveTest(unittest.TestCase):
         self.assertEqual(merge_versions.main(["x", "is-version-file", GRADLE]), 0)
         self.assertEqual(merge_versions.main(["x", "is-version-file", INIT]), 0)
         self.assertEqual(merge_versions.main(["x", "is-version-file", "README.md"]), 1)
+        self.assertEqual(merge_versions.main(["x", "is-version-file", "build-logic/gradle.properties"]), 1)
 
 
 if __name__ == "__main__":

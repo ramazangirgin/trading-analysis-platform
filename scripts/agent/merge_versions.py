@@ -29,11 +29,7 @@ END = ">>>>>>>"
 
 
 def version_pattern(path):
-    normalized = path.replace("\\", "/")
-    for name, pattern in VERSION_LINES.items():
-        if normalized == name or normalized.endswith("/" + name):
-            return pattern
-    return None
+    return VERSION_LINES.get(path.replace("\\", "/"))
 
 
 def marker(line, token):
