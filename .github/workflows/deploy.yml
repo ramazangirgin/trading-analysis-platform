@@ -1,0 +1,123 @@
+# Deploy: puts a released tag on the server behind the public domain, with the same playbook as
+# `mise run server:deploy` (deploy/server/README.md), and ends by checking that the platform answers
+# over HTTPS and reports the released version.
+#
+# The only trigger is workflow_dispatch. Release (release.yml) creates the release with the
+# workflow's GITHUB_TOKEN, and events caused by that token start no other workflow, so `on: release`
+# would never fire; a dispatch is the one thing that token may start. Release dispatches this
+# workflow for a newly created latest release; the same workflow, started by hand from the Actions
+# tab for any released tag, re-runs a failed deploy and rolls a release back.
+#
+# The `production` environment holds the SSH key, the host and its pinned host key, and requires the
+# developer's approval: the job waits for it and no secret is handed out before.
+#
+# Deploys run one at a time and a running one is never cancelled. GitHub keeps one pending run per
+# concurrency group and replaces it with a newer one, so of several releases queued behind a running
+# deploy, or still waiting for approval, only the newest is deployed.
+
+name: Deploy
+run-name: Deploy ${{ inputs.tag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Released tag to deploy, for example v5.3.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-24.04
+    # The image build on the server runs inside Ansible's async: 3600; the time before the approval
+    # does not count.
+    timeout-minutes: 90
+    environment:
+      name: production
+      url: https://${{ vars.PUBLIC_DOMAIN }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+      PUBLIC_DOMAIN: ${{ vars.PUBLIC_DOMAIN }}
+      ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+    steps:
+      - name: Check the tag and the environment
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$TAG' is not a release tag like v5.3.0."
+            exit 1
+          fi
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null; then
+            echo "::error::$TAG has no GitHub Release; only released tags are deployed."
+            exit 1
+          fi
+          missing=()
+          [ -n "$PUBLIC_DOMAIN" ] || missing+=("variable PUBLIC_DOMAIN")
+          [ -n "$ACME_EMAIL" ] || missing+=("secret ACME_EMAIL")
+          [ -n "$DEPLOY_HOST" ] || missing+=("secret DEPLOY_HOST")
+          [ -n "$DEPLOY_SSH_KEY" ] || missing+=("secret DEPLOY_SSH_KEY")
+          [ -n "$DEPLOY_KNOWN_HOSTS" ] || missing+=("secret DEPLOY_KNOWN_HOSTS")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::The production environment lacks: ${missing[*]} (deploy/server/README.md, Automatic deploys on release)."
+            exit 1
+          fi
+
+      # The playbook of the deployed release, as a hand deploy from that tag would use.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Ansible (versions from mise.toml)
+        uses: jdx/mise-action@v5
+
+      - name: SSH key, host key and inventory
+        run: |
+          umask 077
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy-key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+          line="platform ansible_host=$DEPLOY_HOST ansible_user=${DEPLOY_USER:-deploy} ansible_ssh_private_key_file=$RUNNER_TEMP/deploy-key"
+          if [ -n "$DEPLOY_PORT" ]; then
+            line="$line ansible_port=$DEPLOY_PORT"
+          fi
+          printf '[server]\n%s\n' "$line" > "$RUNNER_TEMP/inventory.ini"
+
+      - name: Deploy
+        env:
+          # Replaces ssh_args of deploy/server/ansible.cfg (accept-new): the server's key must match
+          # the pinned one, an unknown or changed key stops the deploy.
+          ANSIBLE_SSH_ARGS: -o ControlMaster=auto -o ControlPersist=60s -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${{ runner.temp }}/known_hosts
+        run: >
+          mise run server:deploy --
+          -i "$RUNNER_TEMP/inventory.ini"
+          -e app_ref="$TAG"
+          -e public_domain="$PUBLIC_DOMAIN"
+          -e acme_email="$ACME_EMAIL"
+
+      - name: Summary
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+        run: |
+          {
+            echo "### Deploy $TAG"
+            echo
+            echo "- Result: $RESULT"
+            echo "- URL: https://$PUBLIC_DOMAIN"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/known_hosts" "$RUNNER_TEMP/inventory.ini"

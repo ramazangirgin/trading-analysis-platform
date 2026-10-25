@@ -196,10 +196,11 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 
 ### WP2: The Deploy workflow
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `.github/workflows/deploy.yml` (new)
 - **Steps**:
-  - [ ] Write the workflow as in the Design: header comment (what, why `workflow_dispatch` only, the
+  - [x] Write the workflow as in the Design: header comment (what, why `workflow_dispatch` only, the
         approval of the `production` environment, the concurrency behaviour), `workflow_dispatch` with input `tag`, `run-name`, `permissions`,
         `concurrency`, the `production` environment, the steps 1 to 7.
 - **Tests**: no workflow test harness exists. CI's *Server deploy (Ansible)* job runs because
