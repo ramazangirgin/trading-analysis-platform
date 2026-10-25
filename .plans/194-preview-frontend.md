@@ -139,6 +139,7 @@ three visibility options and the confirmation, the Partial tag, the link on the 
 
 ### WP3: e2e, screenshots and docs
 
+- **Status**: not done: landing.png, preview.png and run-share.png could not be taken and partial.e2e.ts could not be run, because this branch does not contain the backend of 194-preview-backend (merge origin/main first)
 - **Depends on**: WP2
 - **Files**:
   - `e2e/tests/partial.e2e.ts` (new), `e2e/tests/sharing.e2e.ts` (the control is a select now)
@@ -146,9 +147,9 @@ three visibility options and the confirmation, the Partial tag, the link on the 
   - `docs/screenshots/landing.png`, `preview.png` (new), `login.png`, `run-share.png` (retaken)
   - `README.md`
 - **Steps**:
-  - [ ] `partial.e2e.ts` (below), the changed `sharing.e2e.ts`.
+  - [x] `partial.e2e.ts` (below), the changed `sharing.e2e.ts`.
   - [ ] The screenshot shots and `mise run screenshots`.
-  - [ ] The README changes below.
+  - [x] The README changes below.
 - **Tests**: `partial.e2e.ts`: the admin creates user A with ANALYST and PUBLISHER through the API (unique
   name); A gets a completed replayed analysis and makes it **Partial** in the detail page after the
   confirmation. A visitor (a fresh context, no storage state) opens `/`, sees the landing page and A's

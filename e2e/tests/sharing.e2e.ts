@@ -36,9 +36,10 @@ test('a published analysis is read-only for another user until its owner makes i
     })
 
     await publisher.page.goto(`/analyses/${id}`)
-    await publisher.page.getByRole('switch').click()
+    await publisher.page.locator('.n-select').click()
+    await publisher.page.getByText('Public (logged-in users)').click()
     await publisher.page.getByRole('button', { name: 'Confirm' }).click()
-    await expect(publisher.page.getByRole('switch')).toBeChecked()
+    await expect(publisher.page.locator('.n-select')).toContainText('Public')
 
     await reader.page.goto('/analyses')
     await reader.page.locator('.n-tabs-tab', { hasText: 'Shared with everyone' }).click()
@@ -55,11 +56,12 @@ test('a published analysis is read-only for another user until its owner makes i
     await expect(reader.page.getByRole('button', { name: 'Run again' })).toHaveCount(0)
     await expect(reader.page.locator('.n-tabs-tab', { hasText: 'Reports' })).toBeVisible()
     await expect(reader.page.locator('.n-tabs-tab', { hasText: 'Log' })).toHaveCount(0)
-    await expect(reader.page.getByRole('switch')).toHaveCount(0)
+    await expect(reader.page.locator('.n-select')).toHaveCount(0)
     await expect(reader.page.getByRole('button', { name: 'Make private' })).toHaveCount(0)
 
-    await publisher.page.getByRole('switch').click()
-    await expect(publisher.page.getByRole('switch')).not.toBeChecked()
+    await publisher.page.locator('.n-select').click()
+    await publisher.page.getByText('Private', { exact: true }).click()
+    await expect(publisher.page.locator('.n-select')).toContainText('Private')
 
     await reader.page.reload()
     await expect(reader.page.getByText('Analysis not found.')).toBeVisible()
