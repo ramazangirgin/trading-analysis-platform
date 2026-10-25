@@ -900,6 +900,8 @@ mise run agent:run plan/32-compare-runs
 #    after CI passed: review agent comments R1-1, R1-2, ... (CRITICAL / MAJOR / MINOR)
 #    developer agent: one "Address R1-n: ..." commit or a reasoned reply per finding; CI again
 #    a second review → fix round, then a final comment and the PR is marked ready for review
+#    before each review round and before finalising, main is merged in when the branch is behind
+#    (update-main.sh: version-only conflicts by script, other conflicts by a fresh agent)
 
 # 4. Review the PR (start with the final comment: open and declined findings), then
 git fetch origin && git switch plan/32-compare-runs && git pull

@@ -246,12 +246,12 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP6: Docs
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3, WP4, WP5
 - **Files**: `docs/agentic-development.md`, `README.md`
 - **Steps**:
-  - [ ] the docs listed under "Docs to update"
-  - [ ] bump the version (`scripts/version.sh bump minor`), as the last package
+  - [x] the docs listed under "Docs to update"
+  - [x] bump the version (`scripts/version.sh bump minor`), as the last package
 - **Tests**: `mise run check`.
 
 ### WP7: The skills (by hand, not by the agents)

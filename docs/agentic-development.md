@@ -19,12 +19,14 @@ flowchart TD
     ci -- "red" --> fixCi["Developer agent (Sonnet)<br/>fix CI from the failed job's log<br/>(up to 3 attempts)"]
     fixCi --> ci
     ci -- "green" --> rounds{"Review rounds<br/>left? (2)"}
-    rounds -- "yes" --> review["Review agent (Opus)<br/>diff against the plan and the conventions"]
+    rounds -- "yes" --> update["Update with main<br/>update-main.sh, only when the branch is behind"]
+    update --> review["Review agent (Opus)<br/>diff against the plan and the conventions"]
     review --> findings{"Findings?"}
     findings -- "R1-1, R1-2, ...<br/>CRITICAL / MAJOR / MINOR" --> fix["Developer agent (Sonnet)<br/>per finding: one commit Address R1-n,<br/>or a reply declining it"]
     fix --> ci
-    findings -- "none: approved" --> finalise
-    rounds -- "no" --> finalise["Finalise<br/>summary, findings and outcomes, usage;<br/>PR out of draft: ready for review"]
+    findings -- "none: approved" --> updateFinal["Update with main<br/>when the branch is behind"]
+    rounds -- "no" --> updateFinal
+    updateFinal --> finalise["Finalise<br/>summary, findings and outcomes, usage;<br/>PR out of draft: ready for review"]
     finalise --> reviewPr{"Developer:<br/>review the pull request"}
     reviewPr -- "more changes: commit by hand,<br/>or another agent round" --> ci
     reviewPr -- "approve, update with main, merge" --> main[("main")]
@@ -34,7 +36,7 @@ flowchart TD
     classDef agent fill:#dbeafe,stroke:#1d4ed8,color:#000
     classDef github fill:#e5e7eb,stroke:#4b5563,color:#000
     class approvePlan,reviewPr developer
-    class skill,implement,fixCi,review,fix agent
+    class skill,implement,fixCi,review,fix,update,updateFinal agent
     class issue,plan,draft,ci,rounds,findings,finalise,main,release github
 ```
 
@@ -92,7 +94,19 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   the order of the `Depends on` lines, each in a fresh session, and pushes the branch after each
   one. The context of a run stays small, the work survives the machine, and an interrupted
   implementation starts again at the package it was on: the packages the plan on the branch marks
-  `done` or `not done` are skipped.
+  `done` or `not done` are skipped. A run stops at `AGENT_WP_MAX_TURNS` turns, so one session never
+  grows past a few hundred thousand tokens; a fresh agent then continues from the package's commits,
+  the uncommitted work and the plan (up to `AGENT_WP_MAX_CONTINUATIONS` times), and the retries of an
+  unfinished package or a failed final check start fresh too, instead of resuming the large
+  session. The developer agent commits each finished step as soon as its tests pass, so a cut loses
+  little. `plan-branch.sh` warns about a package that names more than `AGENT_MAX_WP_FILES` files.
+- **Update with `main` is a step script with a fresh agent.** `update-main.sh` merges `main` into
+  the branch outside the `develop-issue` session's context and is recorded like every other step.
+  A conflict that is only the version lines is resolved by a script
+  (`scripts/agent/merge_versions.py`, no agent); any other conflict by a headless agent in a fresh
+  context, which commits the resolution but never pushes. `next.sh` runs it before each review
+  round and before finalising when the branch is behind (at most once per round), and an approval
+  survives an update that only brought in `main`.
 - **The state directory is inside `.git`.** Everything a run leaves behind goes to
   `.git/agent/<issue>-<slug>/` of the plan branch: `run.log` (the scripts' and agents' progress
   lines, with the milestone lines `agent: >> …` next to the tool lines), `progress.tsv` (the steps,
@@ -188,7 +202,9 @@ This is the first of the two decisions that are yours. Read the plan on the draf
 - each part names the right conventions, and the design puts the code where they say;
 - every work package has its tests, and the tests prove the issue's "done when"; every `Status` is
   `open` and the `Depends on` lines are right (they decide the order the agent works in, and each
-  package is pushed on its own, so it should leave the repository green);
+  package is pushed on its own, so it should leave the repository green); no package names more
+  than `AGENT_MAX_WP_FILES` files (8, tests included; `plan-branch.sh` prints a warning for one
+  that does, and the planning session shows it);
 - the version bump (`minor`, `major` for a breaking change);
 - "Docs to update" covers the README text for the feature and every screenshot: a new page gets
   one, a page whose look changes gets it retaken. "Later" is not an option: the review agent checks
@@ -363,7 +379,8 @@ Git worktree `../<checkout>-<issue>` checked out from `origin/main` (reused when
 never switches branches or writes in the checkout the session started in, and several issues can
 run side by side. It asks the developer only to approve the plan; when the issue has a plan branch
 already, it first asks whether to use that plan, skipping the writing, or to write it again. Every later step runs without asking: pushing the plan branch, the implementation, each CI
-fix, review, fix round and the finalising, and the update with `main`. When the pull request is
+fix, review, fix round and the finalising, and the update with `main` (run by `update-main.sh`, not in
+the session's own context; the session runs on Sonnet, its turns are routine). When the pull request is
 ready for review (up to date with `main`, **CI passed** green), it first posts a run summary on
 the pull request ("Run summary (develop-issue session)": the review outcome, what is worth checking,
 the checks it ran itself, the steps and the usage), then sends a notification; when the run stops
@@ -398,10 +415,11 @@ milestone or CI wait: one Monitor on `status.sh --follow`, filtered to the end o
 (`failed:`, `stopping:`, ready for review), wakes it. The developer sees the milestones as they
 happen in [the `agent-progress` mod and the ntfy push](#progress-while-it-runs), and can follow
 `tail -f .git/agent/<issue>-<slug>/run.log` in a terminal; ask the session for the status at any time
-(`status.sh`). When the run ends ready for review, it updates the pull request with `main` with the
-`merge-main-into-branch` skill (step 8), which resolves the conflicts itself, so the run stops there
-only on a conflict that cannot be resolved with confidence, then posts the run summary and sends the
-notification. The agents may not edit the skills
+(`status.sh`). The loop already updates the pull request with `main` before each review round and
+before finalising (step 8), so when the run ends ready for review the branch is usually up to date;
+when `main` moved since, the session starts `detach.sh update-main.sh <pr>` and waits for it, so the
+run stops there only on a conflict that cannot be resolved with confidence. It then posts the run
+summary and sends the notification. The agents may not edit the skills
 under `.claude/`, so a plan item there comes back "not done" and is done by hand. Started again, it
 reads where the issue stands from its plan branches and pull requests and continues there.
 
@@ -463,7 +481,19 @@ summary" comment after it: what the session checked itself and what is worth che
 
 The `main` ruleset merges only a pull request whose branch is up to date with `main`, whose
 **CI passed** is green, and that a code owner approved (see the root README). If `main` moved while
-the agents worked, merge `main` into the branch with the Claude Code skill
+the agents worked, merge `main` into the branch. Unattended, `mise run agent:update-main <pr | plan
+branch>` (or `scripts/agent/detach.sh update-main.sh <pr>`) does it as a recorded step: up to date →
+nothing happens; a merge without conflicts is committed and checked (`mise run check`, an agent
+adapts the code when it fails); conflicts that are only the version lines are taken from `main` by
+a script; any other conflict is committed as it is (markers included, `--no-verify`) and resolved
+in a commit of its own by a headless agent. The version is bumped again when `main` caught up, and
+the merge, the resolution and the bump are pushed together; `--bump major|minor|patch` overrides
+the plan's "Version bump". The review → fix loop (`next.sh`) runs it itself before each review
+round and before finalising when the branch is behind, so this step is usually already done. An
+unresolved conflict stops the run with the merge left local; finish it by hand or drop it with
+`git reset --keep @{u}`.
+
+By hand, with the Claude Code skill
 [`merge-main-into-branch`](../.claude/skills/merge-main-into-branch/SKILL.md), in a checkout of the
 branch:
 
@@ -572,6 +602,9 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_REVIEW_MODEL` | `claude-opus-5-5` (`deepseek-v4-pro` on the DeepSeek endpoint) | The review agent's model |
 | `AGENT_MAX_ROUNDS` | 2 | Review → fix rounds |
 | `AGENT_MAX_CI_FIXES` | 3 | Attempts at a red CI, per pull request |
+| `AGENT_WP_MAX_TURNS` | 40 | Turns of one work package agent run; at the limit a fresh agent continues |
+| `AGENT_WP_MAX_CONTINUATIONS` | 3 | Fresh continuations of a work package after a turn limit, before it counts as unfinished |
+| `AGENT_MAX_WP_FILES` | 8 | Files a work package may name (tests included); `plan-branch.sh` warns about more |
 | `AGENT_MAX_TOKENS` | 50 000 000 | Tokens per pull request, cached input included |
 | `AGENT_MAX_BUDGET_USD` | none | Per agent call (`claude --max-budget-usd`) |
 | `AGENT_CI_TIMEOUT` | 60 | Minutes to wait for CI after a push |
