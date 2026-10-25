@@ -185,7 +185,7 @@ while true; do
     none) exit 0 ;;
     stop*) stop "${step#stop }" ;;
     fix-ci) "$AGENT_DIR/fix-ci.sh" "$pr" ;;
-    update-main) "$AGENT_DIR/update-main.sh" "$pr" ;;
+    update-main) bash "$AGENT_DIR/update-main.sh" "$pr" ;;
     review) "$AGENT_DIR/review.sh" "$pr" ;;
     fix) "$AGENT_DIR/fix.sh" "$pr" ;;
     finalise)
