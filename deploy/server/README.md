@@ -265,8 +265,14 @@ older one than the latest, starts nothing.
    DEPLOY_KEY=~/.ssh/platform-deploy-github deploy/server/setup-key.sh --no-passphrase
    ```
 2. **Add it to the deploy user** next to the existing key (`setup-server.sh` appends, it does not
-   replace): `deploy/server/setup-remote.sh <you>@<server>` with that key, or on the console.
-   To revoke it, delete its line from `/home/deploy/.ssh/authorized_keys`.
+   replace), or on the console:
+
+   ```sh
+   DEPLOY_KEY=~/.ssh/platform-deploy-github deploy/server/setup-remote.sh <you>@<server>
+   ```
+
+   `DEPLOY_KEY` picks the public key that is installed; you log in as before (add `-i …` only to
+   choose the login key). To revoke it, delete its line from `/home/deploy/.ssh/authorized_keys`.
 3. **The host key to pin**, from your own `known_hosts`, which your deploys already verified:
    `ssh-keygen -F <server>` (with a port: `ssh-keygen -F '[<server>]:<port>'`). Compare its
    fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
