@@ -3,6 +3,7 @@ import { NCard } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import type { AnalysisPreviewSummary } from '@/shared/api/types'
 import RatingTag from '@/shared/ui/RatingTag.vue'
+import { excerptText } from '../model/excerptText'
 
 defineProps<{ analysis: AnalysisPreviewSummary }>()
 const { t } = useI18n()
@@ -17,7 +18,7 @@ const { t } = useI18n()
         <RatingTag :rating="analysis.rating" />
       </div>
       <div class="card__excerpt">
-        <p>{{ analysis.excerpt }}</p>
+        <p>{{ excerptText(analysis.excerpt) }}</p>
         <div class="card__fade">
           <span class="card__lock">{{ t('landing.lockedHint') }}</span>
         </div>
