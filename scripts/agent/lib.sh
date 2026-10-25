@@ -26,6 +26,8 @@
 #
 #   AGENT_STEP_LABEL     set by a step before run_agent: the label of the milestone lines for the
 #                        agent's phases (tests, mise run check, commit); none without it
+#   AGENT_QUIET          set to 1 by run_agent for every agent: the mise tasks print one line per
+#                        command, the output goes to build/quiet/ (scripts/quiet.sh)
 #
 # Everything a run leaves behind (prompts, agent results and streams, run.log, progress.tsv, the lock
 # run.pid, the package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
@@ -424,7 +426,7 @@ run_agent() {
   fi
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
-  env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format stream-json --verbose --permission-mode dontAsk \
+  env -u GH_TOKEN -u GITHUB_TOKEN AGENT_QUIET=1 claude -p --output-format stream-json --verbose --permission-mode dontAsk \
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
     ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}" || true
   [ -s "$out" ] || die "the agent wrote no result ($out)"

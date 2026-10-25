@@ -145,19 +145,16 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Quiet wrapper, mise tasks and hooks
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/quiet.sh` (new), `scripts/agent/test_quiet.py` (new), `mise.toml`,
-  `lefthook.yml`, `scripts/agent/lib.sh`
+  `scripts/agent/lib.sh`
 - **Steps**:
-  - [ ] `scripts/quiet.sh` as in the design (usage line at the top, `set -euo pipefail`, Bash 3.2)
-  - [ ] wrap the commands of `check`, `format`, `format-check`, `runner-test`, `agent:test`,
+  - [x] `scripts/quiet.sh` as in the design (usage line at the top, `set -euo pipefail`, Bash 3.2)
+  - [x] wrap the commands of `check`, `format`, `format-check`, `runner-test`, `agent:test`,
     `skill:test`; add the `gradle` task; keep every task's behaviour without `AGENT_QUIET`
-  - [ ] wrap the lefthook jobs' `run:` commands
-  - [ ] `run_agent` exports `AGENT_QUIET=1` into the agent's environment; document it in the
+  - [x] `run_agent` exports `AGENT_QUIET=1` into the agent's environment; document it in the
     variables list at the top of `lib.sh`
-  - [ ] check by hand: `AGENT_QUIET=1 mise run check` prints only `ok:` lines (and mise's own task
-    lines); a commit of a staged Java file with `AGENT_QUIET=1` prints the hook summary only
 - **Tests**: `test_quiet.py` runs `scripts/quiet.sh` with throwaway commands (`sh -c 'echo a; exit
   0'`, a failing one with error lines and many lines of noise): without `AGENT_QUIET` the output is
   passed through and the status kept; with it, success prints one `ok:` line and writes the log,
@@ -225,6 +222,17 @@ Packages without a dependency between them can be implemented in parallel.
   - [ ] bump the version (`scripts/version.sh bump minor`), as the last package
 - **Tests**: `mise run check` (Prettier does not cover Markdown here; the links are checked by
   reading them).
+
+### WP6: Hooks and the by-hand check (by hand, not by the agents)
+
+- **Status**: not done: manual: the agents may not edit `lefthook.yml` and may not run commands with an environment variable in front (`AGENT_QUIET=1 …`), so the developer does this by hand
+- **Depends on**: WP1
+- **Files**: `lefthook.yml`
+- **Steps**:
+  - [ ] wrap the lefthook jobs' `run:` commands as in the design
+  - [ ] check by hand: `AGENT_QUIET=1 mise run check` prints only `ok:` lines (and mise's own task
+    lines); a commit of a staged Java file with `AGENT_QUIET=1` prints the hook summary only
+- **Tests**: the by-hand check above.
 
 ## Tests
 
