@@ -26,6 +26,8 @@
 #
 #   AGENT_STEP_LABEL     set by a step before run_agent: the label of the milestone lines for the
 #                        agent's phases (tests, mise run check, commit); none without it
+#   AGENT_QUIET          set to 1 by run_agent for every agent: the mise tasks print one line per
+#                        command, the output goes to build/quiet/ (scripts/quiet.sh)
 #
 # Everything a run leaves behind (prompts, agent results and streams, run.log, progress.tsv, the lock
 # run.pid, the package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
@@ -369,12 +371,13 @@ DEFAULT_MODEL_NAME="Claude Code's default model"
 model_name() { echo "${1:-$DEFAULT_MODEL_NAME}"; }
 
 # Tools no agent may use, whatever else it is allowed: agents never merge, never push (the scripts
-# push, to the agent's own branch only) and never skip the Git hooks.
+# push, to the agent's own branch only), never skip the Git hooks and never open a screenshot (the
+# report of `mise run screenshots` tells what they need).
 AGENT_DENIED_TOOLS=(
   "Bash(git push:*)" "Bash(gh pr merge:*)" "Bash(gh api:*)" "Bash(gh repo:*)"
   "Bash(git commit --no-verify:*)" "Bash(git commit -n:*)" "Bash(LEFTHOOK=0:*)"
   "Bash(git checkout main:*)" "Bash(git switch main:*)" "Bash(git reset --hard:*)"
-  "Bash(git rebase:*)" "WebSearch"
+  "Bash(git rebase:*)" "WebSearch" "Read(**/*.png)"
 )
 
 # Tools the developer agents (implement, fix) may use.
@@ -424,7 +427,7 @@ run_agent() {
   fi
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
-  env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format stream-json --verbose --permission-mode dontAsk \
+  env -u GH_TOKEN -u GITHUB_TOKEN AGENT_QUIET=1 claude -p --output-format stream-json --verbose --permission-mode dontAsk \
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
     ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}" || true
   [ -s "$out" ] || die "the agent wrote no result ($out)"
