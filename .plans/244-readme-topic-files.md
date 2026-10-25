@@ -201,8 +201,8 @@ Packages without a dependency between them can be implemented in parallel.
 
 ## Open questions
 
-- The six topic files and their names (`user-guide`, `docker-compose`, `configuration`,
-  `login-and-backend`, `development`, `ci-and-releases`): right cut? The "Login" section is mostly a
-  backend reference (permissions, endpoints), hence `login-and-backend.md`.
-- The link check is a new check (`scripts/agent/doc_links.py`, run through `mise run agent:test`):
-  keep it there, or make it a task of its own (`docs:check`) in `mise run check` and a CI step?
+None open. Decided in review:
+
+- The six topic files as named: `user-guide`, `docker-compose`, `configuration`,
+  `login-and-backend`, `development`, `ci-and-releases`.
+- The link check stays in `scripts/agent/doc_links.py`, run through `mise run agent:test`.
