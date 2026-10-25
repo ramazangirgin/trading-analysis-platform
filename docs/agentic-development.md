@@ -538,7 +538,8 @@ mise run screenshots             # every screenshot
 mise run screenshots compare     # those whose file or title matches "compare"
 ```
 
-`SCREENSHOT_DIR=<dir>` writes them elsewhere, to try one out. The agents never open a PNG
+`SCREENSHOT_DIR=<dir>` writes them elsewhere (a relative path counts from the repository root), to
+try one out. The agents never open a PNG
 (`Read(**/*.png)` is denied): `mise run screenshots` ends with a report, one line per written image
 (dimensions, size, new, changed or unchanged), and fails on a likely blank or tiny image (under 100
 pixels, or nearly uniform). Whether a screenshot looks right is checked by the developer in the pull
