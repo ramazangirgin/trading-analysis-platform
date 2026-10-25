@@ -139,6 +139,8 @@ deploy "$release_tag" third
 [ "$(recap "$work/third.log" changed)" != 0 ] || fail "a deploy of another commit changed nothing"
 [ "$(sudo cat /etc/trading-analysis-platform/built-commit)" = "$second" ] || fail "the images were not rebuilt from $second"
 health "http://127.0.0.1:8080"
+curl -fsS http://127.0.0.1:8080/actuator/info | grep -F "\"version\":\"${release_tag#v}\"" > /dev/null \
+  || fail "the platform does not report the version of the tag $release_tag"
 echo "ok: rebuilt from $second and up"
 
 step "Key-only SSH (setup-server.sh --key-only-ssh)"
