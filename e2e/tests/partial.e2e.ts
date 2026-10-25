@@ -55,7 +55,7 @@ test('a partial analysis is a preview for visitors until its owner makes it priv
     await expect(visitor).toHaveURL(/\/$/)
     await expect(visitor.getByPlaceholder('Username')).toHaveCount(0)
     await expect(visitor.getByRole('heading', { name: 'Multi-agent stock analysis' })).toBeVisible()
-    const card = visitor.getByRole('link', { name: new RegExp(ticker) })
+    const card = visitor.locator(`a[href="/preview/${id}"]`)
     await expect(card).toBeVisible()
     expect(await visitor.content()).not.toContain(nameA)
 
@@ -64,7 +64,7 @@ test('a partial analysis is a preview for visitors until its owner makes it priv
     await expect(visitor.getByText(ticker).first()).toBeVisible()
     await expect(visitor.getByText('Market Analysis')).toBeVisible()
     await expect(visitor.getByText('Sentiment report')).toBeVisible()
-    await expect(visitor.getByText('Final decision')).toBeVisible()
+    await expect(visitor.getByRole('heading', { name: 'Final decision' })).toBeVisible()
     const source = await (await visitorContext.request.get(`/api/public/analyses/${id}`)).text()
     expect(source).not.toContain('Retail sentiment')
     expect(source).not.toContain('Export-control')
