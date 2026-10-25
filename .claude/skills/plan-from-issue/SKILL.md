@@ -14,6 +14,25 @@ documented architecture and conventions instead of inventing new ones.
 
 Input: an issue number (`$ARGUMENTS`). Ask for it if none was given.
 
+## The planning always runs on Opus
+
+`model:` in the frontmatter only applies when the developer types the skill. When another skill
+(`develop-issue`) invokes it with the Skill tool, the planning stayed on the session's model. So the
+skill does not rely on it: the work of sections 1 to 4, and every change to a plan in section 5, is
+done by a subagent started with the Agent tool (`subagent_type: "general-purpose"`,
+`model: "opus"`), whatever model this session runs on. This session passes the input, shows the
+plans, asks the developer's questions and relays the answers; it does not read the issue or write a
+plan itself.
+
+- **Writing (sections 1 to 4)**: the prompt names the issue, the folder to work in (absolute, every
+  command starts with `cd <dir> &&`) and this file ("follow sections 1 to 4, never ask the
+  developer, write an open question into the plan's "Open questions", never delegate again"). It
+  returns the plan files and the pull request links.
+- **Changes (section 5, steps 2 and 3)**: the prompt carries the developer's answers and the output
+  of `plan-comments.sh`, and asks for the change, the commit, the push and the replies.
+- If the Agent tool cannot start the subagent on Opus, stop and say so. Never fall back to this
+  session's model.
+
 ## 1. Read the issue
 
 ```sh

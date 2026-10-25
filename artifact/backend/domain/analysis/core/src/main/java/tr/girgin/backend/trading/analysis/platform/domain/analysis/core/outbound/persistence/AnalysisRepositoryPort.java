@@ -8,6 +8,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.PartialAnalysisPage;
 
 /** Stores analysis runs. */
 public interface AnalysisRepositoryPort {
@@ -30,6 +31,9 @@ public interface AnalysisRepositoryPort {
 
     /** Newest first. */
     List<Analysis> findAll(AnalysisFilter filter);
+
+    /** Newest first; {@code page} counts from 0, and {@code hasMore} tells whether a next page has rows. */
+    PartialAnalysisPage findPage(AnalysisFilter filter, int page, int size);
 
     List<Analysis> findByStatusIn(Collection<AnalysisStatus> statuses);
 

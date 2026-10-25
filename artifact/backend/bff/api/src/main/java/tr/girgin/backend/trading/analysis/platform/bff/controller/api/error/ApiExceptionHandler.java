@@ -1,12 +1,14 @@
 package tr.girgin.backend.trading.analysis.platform.bff.controller.api.error;
 
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.ApiErrorDto;
 
@@ -41,6 +43,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErrorDto> handleBadParameter(MethodArgumentTypeMismatchException ex) {
         return badRequest("Invalid " + ex.getName(), Map.of("field", ex.getName()));
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiErrorDto> handleInvalidParameter(HandlerMethodValidationException ex) {
+        String field = ex.getParameterValidationResults().stream()
+                .map(result -> result.getMethodParameter().getParameterName())
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("request");
+        return badRequest("Invalid " + field, Map.of("field", field));
     }
 
     private ResponseEntity<ApiErrorDto> badRequest(String message, Map<String, Object> params) {

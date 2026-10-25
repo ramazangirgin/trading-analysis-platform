@@ -1,5 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -13,7 +15,7 @@ public record AnalysisAccess(OwnerId user, boolean allUsers, boolean share) {
     }
 
     public boolean canSee(Analysis analysis) {
-        return allUsers || isOwner(analysis) || analysis.visibility() == Visibility.PUBLIC;
+        return allUsers || isOwner(analysis) || analysis.visibility().sharedWithUsers();
     }
 
     /** Stop, run again and read the log. */
@@ -21,18 +23,28 @@ public record AnalysisAccess(OwnerId user, boolean allUsers, boolean share) {
         return allUsers || isOwner(analysis);
     }
 
-    /** Whether the status allows it is for the use case to check. */
-    public boolean canMakePublic(Analysis analysis) {
-        return share && isOwner(analysis);
+    /**
+     * Whether the change is allowed to this caller; whether the status allows it is for the use case to
+     * check. An admin only narrows what someone else shared, never widens it to the internet.
+     */
+    public boolean canChangeTo(Analysis analysis, Visibility target) {
+        Visibility current = analysis.visibility();
+        if (current == target) {
+            return false;
+        }
+        boolean ownerWithShare = share && isOwner(analysis);
+        boolean allUsersWithShare = share && allUsers;
+        return switch (target) {
+            case PRIVATE -> isOwner(analysis) || allUsersWithShare;
+            case PUBLIC -> ownerWithShare || current == Visibility.PARTIAL && allUsersWithShare;
+            case PARTIAL -> ownerWithShare;
+        };
     }
 
-    public boolean canMakePrivate(Analysis analysis) {
-        boolean isAdminWithShare = allUsers && share;
-        return analysis.visibility() == Visibility.PUBLIC && (isOwner(analysis) || isAdminWithShare);
-    }
-
-    public boolean canChangeVisibility(Analysis analysis) {
-        return analysis.visibility() == Visibility.PRIVATE ? canMakePublic(analysis) : canMakePrivate(analysis);
+    public List<Visibility> allowedVisibilities(Analysis analysis) {
+        return Arrays.stream(Visibility.values())
+                .filter(target -> canChangeTo(analysis, target))
+                .toList();
     }
 
     public boolean isOwner(Analysis analysis) {

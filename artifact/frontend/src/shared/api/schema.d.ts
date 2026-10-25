@@ -436,6 +436,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/public/analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPublicAnalyses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/analyses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPublicAnalysis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -583,7 +615,7 @@ export interface components {
         };
         ChangeVisibilityRequest: {
             /** @enum {string} */
-            visibility: "PRIVATE" | "PUBLIC";
+            visibility: "PRIVATE" | "PUBLIC" | "PARTIAL";
             /** Format: int64 */
             version: number;
         };
@@ -625,13 +657,14 @@ export interface components {
             errorMessage?: string;
             owner?: components["schemas"]["AnalysisOwnerDto"];
             /** @enum {string} */
-            visibility?: "PRIVATE" | "PUBLIC";
+            visibility?: "PRIVATE" | "PUBLIC" | "PARTIAL";
             /** Format: date-time */
             visibilityChangedAt?: string;
             /** Format: int64 */
             version?: number;
             canManage?: boolean;
             canChangeVisibility?: boolean;
+            allowedVisibilities?: ("PRIVATE" | "PUBLIC" | "PARTIAL")[];
         };
         AnalysisOwnerDto: {
             id?: string;
@@ -758,6 +791,31 @@ export interface components {
         SseEmitter: {
             /** Format: int64 */
             timeout?: number;
+        };
+        AnalysisPreviewPageDto: {
+            items?: components["schemas"]["AnalysisPreviewSummaryDto"][];
+            hasMore?: boolean;
+        };
+        AnalysisPreviewSummaryDto: {
+            id?: string;
+            ticker?: string;
+            /** Format: date */
+            analysisDate?: string;
+            /** @enum {string} */
+            rating?: "BUY" | "OVERWEIGHT" | "HOLD" | "UNDERWEIGHT" | "SELL" | "REVIEW";
+            excerpt?: string;
+        };
+        AnalysisPreviewDto: {
+            id?: string;
+            ticker?: string;
+            /** Format: date */
+            analysisDate?: string;
+            /** @enum {string} */
+            rating?: "BUY" | "OVERWEIGHT" | "HOLD" | "UNDERWEIGHT" | "SELL" | "REVIEW";
+            sections?: {
+                [key: string]: string;
+            };
+            lockedSections?: string[];
         };
     };
     responses: never;
@@ -1596,6 +1654,51 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["SseEmitter"];
+                };
+            };
+        };
+    };
+    listPublicAnalyses: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisPreviewPageDto"];
+                };
+            };
+        };
+    };
+    getPublicAnalysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisPreviewDto"];
                 };
             };
         };
