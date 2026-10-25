@@ -12,7 +12,8 @@
 #       - the UI answers through the SSH tunnel of tunnel.sh (mise run server:tunnel)
 #       - port 8080 listens on 127.0.0.1 only, ufw lets only SSH in
 #       - the backup script writes a dump
-#       - a deploy of another commit rebuilds and comes up again
+#       - a deploy of another commit, given as the tag of this version, rebuilds, comes up again
+#         and reports that version (the version check of the playbook)
 #   key-only SSH (setup-server.sh --key-only-ssh): passwords off, the deploy user still logs in
 #
 # It changes the machine for good (users, sudoers, firewall, Docker, swap): run it only on a
@@ -100,6 +101,8 @@ git -C "$ROOT" push -q "$work/repo.git" "HEAD:refs/heads/server-test"
 second=$(GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com GIT_COMMITTER_NAME=test \
   GIT_COMMITTER_EMAIL=test@example.com git -C "$ROOT" commit-tree "HEAD^{tree}" -p HEAD -m "server test: another commit")
 git -C "$ROOT" push -q "$work/repo.git" "$second:refs/heads/server-test-2"
+release_tag="v$(cd "$ROOT" && scripts/version.sh)"
+git -C "$ROOT" push -q "$work/repo.git" "$second:refs/tags/$release_tag"
 chmod -R a+rX "$work/repo.git"
 sudo git config --system --add safe.directory '*'
 
@@ -132,7 +135,7 @@ dump=$(sudo sh -c 'ls -t /srv/trading-analysis-platform/backups/*.sql.gz | head 
 sudo zcat "$dump" | grep 'PostgreSQL database dump' > /dev/null || fail "$dump is not a database dump"
 echo "ok: $dump"
 
-deploy server-test-2 third
+deploy "$release_tag" third
 [ "$(recap "$work/third.log" changed)" != 0 ] || fail "a deploy of another commit changed nothing"
 [ "$(sudo cat /etc/trading-analysis-platform/built-commit)" = "$second" ] || fail "the images were not rebuilt from $second"
 health "http://127.0.0.1:8080"

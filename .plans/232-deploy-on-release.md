@@ -179,12 +179,13 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 
 ### WP1: Version check in the playbook
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `deploy/server/roles/app/tasks/main.yml`, `deploy/server/test-deploy.sh`
 - **Steps**:
-  - [ ] Add *Check the version the platform reports* after *Wait for the platform to be healthy*, as
+  - [x] Add *Check the version the platform reports* after *Wait for the platform to be healthy*, as
         in the Design.
-  - [ ] In `test-deploy.sh`, also push the second commit as tag `v$(scripts/version.sh)` (annotated
+  - [x] In `test-deploy.sh`, also push the second commit as tag `v$(scripts/version.sh)` (annotated
         or light, in the throwaway bare repository only) and deploy that tag instead of the branch
         `server-test-2` in the "third" deploy, so the end-to-end test runs the version check against
         a tag; the header list of what it checks names it. The first and second deploys stay on the

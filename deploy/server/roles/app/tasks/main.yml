@@ -171,6 +171,24 @@
   delay: 10
   changed_when: false
 
+# On the server: Caddy does not serve /actuator/info, only 127.0.0.1:8080 does.
+- name: Check the version the platform reports
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ platform_port }}/actuator/info"
+    return_content: true
+  register: app_info
+  changed_when: false
+  when: app_ref is match('^v[0-9]+\.[0-9]+\.[0-9]+$')
+
+- name: Fail when the platform reports another version than the tag
+  ansible.builtin.assert:
+    that: app_reported_version == app_ref[1:]
+    fail_msg: "The platform reports version '{{ app_reported_version }}', the tag {{ app_ref }} is '{{ app_ref[1:] }}'."
+    quiet: true
+  vars:
+    app_reported_version: "{{ ((app_info.json | default({})).build | default({})).version | default('none') }}"
+  when: app_ref is match('^v[0-9]+\.[0-9]+\.[0-9]+$')
+
 # From this machine, not the server: it proves DNS, the provider's firewall, the server's firewall
 # and the certificate, which the first request makes Caddy get (a few minutes at most).
 - name: Check the platform over HTTPS
