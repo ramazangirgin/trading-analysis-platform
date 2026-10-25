@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Browser } from '@playwright/test'
+import { expect, type APIRequestContext, type Browser, type Page } from '@playwright/test'
 
 /** The first admin that start-platform.sh configures (PLATFORM_ADMIN_USERNAME / _PASSWORD). */
 export const E2E_USER = 'admin'
@@ -34,6 +34,11 @@ export async function loginAsNewUser(browser: Browser, username: string, oneTime
   await page.getByRole('button', { name: 'Change password' }).click()
   await expect(page).toHaveURL('/')
   return { page, context }
+}
+
+/** The select that sets who sees an analysis, not the language select of the header. */
+export function visibilitySelect(page: Page) {
+  return page.locator('.n-select:not([aria-label="Language"])')
 }
 
 /** The trade date of the replayed recording (artifact/ta-runner/tests/fixtures/replay-run). */

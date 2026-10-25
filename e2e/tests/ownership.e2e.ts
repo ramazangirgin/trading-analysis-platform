@@ -9,7 +9,7 @@ test("an analyst does not see the admin's run, and the admin sees it with its ow
   request,
   browser,
 }) => {
-  const ticker = 'ORCL'
+  const ticker = 'MU'
   const id = await completedAnalysis(request, ticker)
 
   const username = `e2e-analyst-${Date.now()}`

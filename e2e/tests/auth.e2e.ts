@@ -54,7 +54,7 @@ test('logging out returns to the login page and the back button shows no data', 
   await expect(page).toHaveURL('/login')
 
   await page.goBack()
-  await expect(page).toHaveURL(/\/login/)
-  await expect(page.getByPlaceholder('Username')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Multi-agent stock analysis' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Dashboard' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: E2E_USER, exact: true })).toHaveCount(0)
 })

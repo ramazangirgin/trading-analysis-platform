@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test'
-import { completedAnalysis, csrfHeaders, DECISION_TEXT, loginAsNewUser } from './support'
+import {
+  completedAnalysis,
+  csrfHeaders,
+  DECISION_TEXT,
+  loginAsNewUser,
+  visibilitySelect,
+} from './support'
 
 // Runs as the shared admin, whose session must not change. The two users are created here with
 // unique names, because the tests run in parallel and are retried.
@@ -36,10 +42,10 @@ test('a published analysis is read-only for another user until its owner makes i
     })
 
     await publisher.page.goto(`/analyses/${id}`)
-    await publisher.page.locator('.n-select').click()
+    await visibilitySelect(publisher.page).click()
     await publisher.page.getByText('Public (logged-in users)').click()
     await publisher.page.getByRole('button', { name: 'Confirm' }).click()
-    await expect(publisher.page.locator('.n-select')).toContainText('Public')
+    await expect(visibilitySelect(publisher.page)).toContainText('Public')
 
     await reader.page.goto('/analyses')
     await reader.page.locator('.n-tabs-tab', { hasText: 'Shared with everyone' }).click()
@@ -56,12 +62,12 @@ test('a published analysis is read-only for another user until its owner makes i
     await expect(reader.page.getByRole('button', { name: 'Run again' })).toHaveCount(0)
     await expect(reader.page.locator('.n-tabs-tab', { hasText: 'Reports' })).toBeVisible()
     await expect(reader.page.locator('.n-tabs-tab', { hasText: 'Log' })).toHaveCount(0)
-    await expect(reader.page.locator('.n-select')).toHaveCount(0)
+    await expect(visibilitySelect(reader.page)).toHaveCount(0)
     await expect(reader.page.getByRole('button', { name: 'Make private' })).toHaveCount(0)
 
-    await publisher.page.locator('.n-select').click()
+    await visibilitySelect(publisher.page).click()
     await publisher.page.getByText('Private', { exact: true }).click()
-    await expect(publisher.page.locator('.n-select')).toContainText('Private')
+    await expect(visibilitySelect(publisher.page)).toContainText('Private')
 
     await reader.page.reload()
     await expect(reader.page.getByText('Analysis not found.')).toBeVisible()

@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test'
-import { completedAnalysis, csrfHeaders, DECISION_TEXT, loginAsNewUser } from './support'
+import {
+  completedAnalysis,
+  csrfHeaders,
+  DECISION_TEXT,
+  loginAsNewUser,
+  visibilitySelect,
+} from './support'
 
 // Runs as the shared admin, whose session must not change. The two users are created here with
 // unique names, because the tests run in parallel and are retried.
@@ -37,13 +43,13 @@ test('a partial analysis is a preview for visitors until its owner makes it priv
     })
 
     await owner.page.goto(`/analyses/${id}`)
-    await owner.page.locator('.n-select').click()
+    await visibilitySelect(owner.page).click()
     await owner.page.getByText('Partial (preview for visitors)').click()
     await expect(
       owner.page.getByText('Anyone on the internet will see the preview of this analysis.'),
     ).toBeVisible()
     await owner.page.getByRole('button', { name: 'Confirm' }).click()
-    await expect(owner.page.locator('.n-select')).toContainText('Partial')
+    await expect(visibilitySelect(owner.page)).toContainText('Partial')
 
     await visitor.goto('/')
     await expect(visitor).toHaveURL(/\/$/)
@@ -83,11 +89,11 @@ test('a partial analysis is a preview for visitors until its owner makes it priv
     await expect(visitor.getByText(DECISION_TEXT).first()).toBeVisible()
     await expect(visitor.getByRole('button', { name: 'Stop' })).toHaveCount(0)
     await expect(visitor.getByRole('button', { name: 'Run again' })).toHaveCount(0)
-    await expect(visitor.locator('.n-select')).toHaveCount(0)
+    await expect(visibilitySelect(visitor)).toHaveCount(0)
 
-    await owner.page.locator('.n-select').click()
+    await visibilitySelect(owner.page).click()
     await owner.page.getByText('Private', { exact: true }).click()
-    await expect(owner.page.locator('.n-select')).toContainText('Private')
+    await expect(visibilitySelect(owner.page)).toContainText('Private')
 
     const anonymous = await browser.newContext({ storageState: { cookies: [], origins: [] } })
     try {
