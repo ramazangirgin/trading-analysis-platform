@@ -178,16 +178,16 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Screenshot report instead of reading PNGs
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `scripts/agent/screenshot_report.py` (new), `scripts/agent/test_screenshot_report.py`
   (new), `mise.toml`, `scripts/agent/lib.sh`, `scripts/agent/prompts/implement.md`,
   `scripts/agent/prompts/fix.md`, `scripts/agent/prompts/review.md`
 - **Steps**:
-  - [ ] `screenshot_report.py` as in the design
-  - [ ] the `screenshots` task writes the stamp first and runs the report last
-  - [ ] `"Read(**/*.png)"` in `AGENT_DENIED_TOOLS`
-  - [ ] the screenshot lines of `implement.md`, `fix.md` and `review.md` as in the design
+  - [x] `screenshot_report.py` as in the design
+  - [x] the `screenshots` task writes the stamp first and runs the report last
+  - [x] `"Read(**/*.png)"` in `AGENT_DENIED_TOOLS`
+  - [x] the screenshot lines of `implement.md`, `fix.md` and `review.md` as in the design
 - **Tests**: `test_screenshot_report.py`: PNGs written by the test (a minimal valid PNG built with
   `zlib` and `struct`: a large noisy one, a uniform 1440×900 one, a 50×50 one) in a temporary Git
   repository: dimensions and size are read from IHDR; new / changed / unchanged come out right; a

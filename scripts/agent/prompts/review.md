@@ -36,7 +36,9 @@ documents of every part the change touches before judging it.
   plan's "Docs to update" is done; and independently of the plan: a new user-visible feature is
   described in the README where users look for it; a new page or view has a screenshot in
   `docs/screenshots/` shown in the README, and a page whose look changed has its screenshot
-  retaken (open the PNGs with the Read tool and check they show the change); documents the change
+  retaken (check that every screenshot the plan lists is in the diff,
+  `git diff --stat origin/main...HEAD -- docs/screenshots`, with a `.shot.ts` that sets up the state
+  the plan describes; you cannot open PNGs, and how it looks is the developer's review); documents the change
   makes wrong are corrected (README, `docs/`, API types). A missing or
   outdated screenshot or description of a user-visible change is `MAJOR`. English only.
 

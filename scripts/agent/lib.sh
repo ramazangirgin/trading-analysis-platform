@@ -371,12 +371,13 @@ DEFAULT_MODEL_NAME="Claude Code's default model"
 model_name() { echo "${1:-$DEFAULT_MODEL_NAME}"; }
 
 # Tools no agent may use, whatever else it is allowed: agents never merge, never push (the scripts
-# push, to the agent's own branch only) and never skip the Git hooks.
+# push, to the agent's own branch only), never skip the Git hooks and never open a screenshot (the
+# report of `mise run screenshots` tells what they need).
 AGENT_DENIED_TOOLS=(
   "Bash(git push:*)" "Bash(gh pr merge:*)" "Bash(gh api:*)" "Bash(gh repo:*)"
   "Bash(git commit --no-verify:*)" "Bash(git commit -n:*)" "Bash(LEFTHOOK=0:*)"
   "Bash(git checkout main:*)" "Bash(git switch main:*)" "Bash(git reset --hard:*)"
-  "Bash(git rebase:*)" "WebSearch"
+  "Bash(git rebase:*)" "WebSearch" "Read(**/*.png)"
 )
 
 # Tools the developer agents (implement, fix) may use.
