@@ -241,7 +241,7 @@ while true; do
           echo '```'
         fi
       fi
-      if [ -n "$dirty" ]; then resume_section "$dirty" "${previous:-$package}"; fi
+      if [ -n "$dirty" ]; then resume_section "$dirty" "$([ "$continuation" -gt 0 ] && echo "$package" || echo "${previous:-$package}")"; fi
     } | package_prompt "$package" "$label" "$name" "$open_count" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" >"$AGENT_TMP/implement-$package.md"
 
     AGENT_ALLOW_MAX_TURNS=1 run_agent "$AGENT_MODEL" "$AGENT_TMP/implement-$package.md" "$result" "${AGENT_DEV_TOOLS[@]}" -- --max-turns "$AGENT_WP_MAX_TURNS" --json-schema "$schema"
