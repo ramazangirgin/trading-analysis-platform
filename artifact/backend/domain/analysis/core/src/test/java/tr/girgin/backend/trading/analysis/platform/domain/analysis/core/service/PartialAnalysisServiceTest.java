@@ -84,6 +84,14 @@ class PartialAnalysisServiceTest {
         assertThat(service.list(0, 10).items()).containsExactly(partial);
     }
 
+    @Test
+    void listDoesNotHoldAPartialAnalysisThatIsNotCompleted() {
+        Analysis partial = store(Visibility.PARTIAL, AnalysisStatus.COMPLETED);
+        store(Visibility.PARTIAL, AnalysisStatus.QUEUED);
+
+        assertThat(service.list(0, 10).items()).containsExactly(partial);
+    }
+
     private void assertNotFound(AnalysisId id) {
         assertThatThrownBy(() -> service.get(id))
                 .isInstanceOfSatisfying(

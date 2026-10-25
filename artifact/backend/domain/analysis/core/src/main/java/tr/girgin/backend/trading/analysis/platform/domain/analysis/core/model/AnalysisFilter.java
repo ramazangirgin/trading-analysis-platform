@@ -20,7 +20,7 @@ public record AnalysisFilter(
     }
 
     public static AnalysisFilter partial() {
-        return new AnalysisFilter(null, null, null, Set.of(Visibility.PARTIAL), null);
+        return new AnalysisFilter(AnalysisStatus.COMPLETED, null, null, Set.of(Visibility.PARTIAL), null);
     }
 
     public AnalysisFilter ownedBy(OwnerId user) {
