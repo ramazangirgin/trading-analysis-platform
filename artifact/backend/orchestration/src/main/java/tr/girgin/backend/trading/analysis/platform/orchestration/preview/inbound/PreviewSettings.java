@@ -5,10 +5,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
 
-/**
- * What a visitor reads of a partial analysis: the report sections in full, and the length of the excerpt on a list
- * card (1 to 5,000 characters).
- */
 @ConfigurationProperties("platform.analysis.preview")
 public record PreviewSettings(
         @DefaultValue("market_report") Set<ReportSection> sections,

@@ -13,13 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * A sliding window of the requests of each client address to the routes open to visitors, in memory like the
- * sessions (a restart clears it). An address that has made {@code max-requests} requests (60 by default, 1 to
- * 10,000) within {@code window} (1 minute by default, 1 second to 24 hours) is blocked until the oldest request
- * leaves the window. A refused request is not counted, so it does not extend the block.
- *
- * <p>At most {@value #MAX_TRACKED_ADDRESSES} addresses are tracked: when the table is full, addresses without a
- * request in the window are dropped first, then the one whose latest request is the oldest.
+ * A refused request is not counted, so it does not extend the block. When the table of addresses is full,
+ * addresses without a request in the window are dropped first, then the one whose latest request is the oldest.
  */
 @Component
 class PublicRequestLimiter {
@@ -77,7 +72,6 @@ class PublicRequestLimiter {
         return Optional.ofNullable(blocked.get());
     }
 
-    /** How many addresses are tracked now, for the tests of the memory bound. */
     int trackedAddresses() {
         return requests.size();
     }

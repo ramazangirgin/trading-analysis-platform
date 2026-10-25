@@ -54,7 +54,6 @@ final class PublicRateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    // Rounded up, and at least one second.
     private static long seconds(Duration duration) {
         long seconds = duration.getSeconds() + (duration.getNano() > 0 ? 1 : 0);
         return Math.max(1, seconds);

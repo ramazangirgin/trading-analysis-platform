@@ -16,7 +16,6 @@ public class ListAnalysisPreviewsUseCase {
         this.cutter = cutter;
     }
 
-    /** Newest first; {@code page} counts from 0. */
     public AnalysisPreviewPage list(int page, int size) {
         PartialAnalysisPage partial = listPartialAnalyses.list(page, size);
         return new AnalysisPreviewPage(
