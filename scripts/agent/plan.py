@@ -5,11 +5,14 @@
     plan.py check <plan> <id> problems with package <id> after its run, or nothing
     plan.py remaining <plan>  the packages that are neither done nor "not done", or nothing
     plan.py not-done <plan>   "- <id>: <reason>" per package marked "not done", for the PR body
+    plan.py files <plan>      one line per package: "<id>\\t<number of files>" of its Files line
+    plan.py oversized <plan> <max>  "- <id>: <n> files (more than <max>)" per package over the limit
 
 A package is a `### WP<id>: <name>` heading (outside code fences) with a `- **Status**:` line
 (`open`, `done`, or `not done: <reason>`), a `- **Depends on**:` line (`none`, a list `WP1, WP1c`,
 a range `WP2-WP4` or `WP2–WP4` in document order, text in parentheses is ignored) and `- [ ]` /
-`- [x]` steps. A missing Status line counts as `open`. A plan without any such heading is one
+`- [x]` steps. A `- **Files**:` line (with the lines continuing it) counts one file per backtick span
+that looks like a path (contains `/` or `.`). A missing Status line counts as `open`. A plan without any such heading is one
 package, `all`, whose Status line is in the lines before the first `##` heading.
 
 The implementation order is a topological order of the Depends-on lines that keeps the order of the
@@ -25,6 +28,7 @@ import sys
 HEADING = re.compile(r"^### (WP[0-9][0-9A-Za-z]*):\s*(.*?)\s*$")
 STATUS = re.compile(r"^\s*- \*\*Status\*\*:\s*(.*?)\s*$")
 DEPENDS = re.compile(r"^\s*- \*\*Depends on\*\*:\s*(.*?)\s*$")
+FILES = re.compile(r"^\s*- \*\*Files\*\*:\s*(.*?)\s*$")
 STEP = re.compile(r"^\s*- \[([ xX])\]\s*(.*)$")
 ID = re.compile(r"WP[0-9][0-9A-Za-z]*")
 RANGE = re.compile(r"(WP[0-9][0-9A-Za-z]*)\s*[–—-]\s*(WP[0-9][0-9A-Za-z]*)")
@@ -48,6 +52,12 @@ class Package:
         self.depends_line = line
         self.depends = []
         self.steps = []  # (ticked, text)
+        self.files_text = ""
+
+    @property
+    def file_count(self):
+        spans = (s for s in re.findall(r"`([^`]+)`", self.files_text) if "/" in s or "." in s)
+        return len(set(spans))
 
     @property
     def status(self):
@@ -71,6 +81,7 @@ def parse(text):
     packages = []
     current = None
     in_fence = False
+    continuing = False
     for number, line in enumerate(text.splitlines(), 1):
         if line.lstrip().startswith("```"):
             in_fence = not in_fence
@@ -88,6 +99,15 @@ def parse(text):
             continue
         if current is None:
             continue
+        files = FILES.match(line)
+        if files:
+            current.files_text = files.group(1)
+            continuing = True
+            continue
+        if continuing and line.strip() and not line.lstrip().startswith("- "):
+            current.files_text += " " + line
+            continue
+        continuing = False
         status, depends, step = STATUS.match(line), DEPENDS.match(line), STEP.match(line)
         if status and current.status_text is None:
             current.status_text = status.group(1)
@@ -227,6 +247,11 @@ def lines_of(command, packages, args):
         return problems(find(packages, args[0]))
     if command == "remaining":
         return [line_of(p) for p in packages if p.status not in FINISHED]
+    if command == "files":
+        return [f"{p.id}\t{p.file_count}" for p in packages]
+    if command == "oversized":
+        limit = int(args[0])
+        return [f"- {p.id}: {p.file_count} files (more than {limit})" for p in packages if p.file_count > limit]
     if command == "not-done":
         return [f"- {p.id}: {p.reason}" for p in packages if p.status == NOT_DONE_STATUS]
     return None

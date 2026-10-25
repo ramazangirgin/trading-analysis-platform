@@ -13,6 +13,7 @@
 #   AGENT_MAX_TOKENS     tokens (input, cached and output) over the whole pull request; default 50000000
 #   AGENT_WP_MAX_TURNS   turns of one work package agent run before a fresh agent continues; default 40
 #   AGENT_WP_MAX_CONTINUATIONS  fresh agents that may continue a package after the first; default 3
+#   AGENT_MAX_WP_FILES   files (tests included) a work package may name before plan-branch.sh warns; default 8
 #   AGENT_MAX_BUDGET_USD per agent call, passed to claude --max-budget-usd when set
 #   AGENT_GITHUB_LOGIN   the account the agents comment as; default the gh login
 #   AGENT_CI_CHECK       the required check; default "CI passed"
@@ -91,6 +92,7 @@ AGENT_MAX_CI_FIXES=${AGENT_MAX_CI_FIXES:-3}
 AGENT_MAX_TOKENS=${AGENT_MAX_TOKENS:-50000000}
 AGENT_WP_MAX_TURNS=${AGENT_WP_MAX_TURNS:-40}
 AGENT_WP_MAX_CONTINUATIONS=${AGENT_WP_MAX_CONTINUATIONS:-3}
+AGENT_MAX_WP_FILES=${AGENT_MAX_WP_FILES:-8}
 AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
 AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}

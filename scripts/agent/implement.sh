@@ -56,7 +56,11 @@ if $dry_run; then
   echo "Plan $plan on $branch"
   echo
   echo "Work packages:"
-  plan_py packages "$file" | awk -F'\t' '{ printf "  %-6s %-9s %s\n", $1, $2, $3 }'
+  plan_py files "$file" >"$AGENT_TMP/dry-run-files.tsv"
+  plan_py packages "$file" | awk -F'\t' -v max="$AGENT_MAX_WP_FILES" '
+    NR == FNR { files[$1] = $2; next }
+    { printf "  %-6s %-9s %2d files%s  %s\n", $1, $2, files[$1], (files[$1] > max ? "!" : " "), $3 }
+  ' "$AGENT_TMP/dry-run-files.tsv" -
   next=$(plan_py next "$file")
   total=$(plan_py packages "$file" | wc -l | tr -d ' ')
   echo

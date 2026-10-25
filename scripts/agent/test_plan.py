@@ -199,5 +199,28 @@ class ListingTest(unittest.TestCase):
         self.assertEqual(plan.lines_of("remaining", plan.ordered(plan.parse(text)), []), [])
 
 
+class SizeTest(unittest.TestCase):
+    TEXT = (
+        "# Plan: size\n\n## Work packages\n\n"
+        "### WP1: big\n\n- **Status**: open\n- **Depends on**: none\n"
+        "- **Files**: `a/B.java` (new), `a/B.java` again, `open`, `c.py`\n"
+        "  `d/e.txt`, `Foo`\n"
+        "- **Steps**:\n  - [ ] one\n\n"
+        "### WP2: small\n\n- **Status**: open\n- **Depends on**: none\n"
+        "- **Files**: `x.py`\n- **Steps**:\n  - [ ] two\n\n"
+        "### WP3: no files\n\n- **Status**: open\n- **Depends on**: none\n- **Steps**:\n  - [ ] three\n"
+    )
+
+    def lines(self, command, *args):
+        return plan.lines_of(command, plan.ordered(plan.parse(self.TEXT)), list(args))
+
+    def test_counts_each_path_once_over_continuation_lines(self):
+        self.assertEqual(self.lines("files"), ["WP1\t3", "WP2\t1", "WP3\t0"])
+
+    def test_oversized_lists_only_packages_over_the_limit(self):
+        self.assertEqual(self.lines("oversized", "2"), ["- WP1: 3 files (more than 2)"])
+        self.assertEqual(self.lines("oversized", "3"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

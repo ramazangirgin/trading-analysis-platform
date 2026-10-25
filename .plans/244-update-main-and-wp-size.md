@@ -232,14 +232,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP5: Work package size check
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP4
 - **Files**: `scripts/agent/plan.py`, `scripts/agent/test_plan.py`, `scripts/agent/plan-branch.sh`,
   `scripts/agent/implement.sh`, `scripts/agent/lib.sh`
 - **Steps**:
-  - [ ] `plan.py files` and `oversized`; the module docstring lists them
-  - [ ] `AGENT_MAX_WP_FILES` in `lib.sh`
-  - [ ] `plan-branch.sh` warns; `implement.sh --dry-run` shows the counts
+  - [x] `plan.py files` and `oversized`; the module docstring lists them
+  - [x] `AGENT_MAX_WP_FILES` in `lib.sh`
+  - [x] `plan-branch.sh` warns; `implement.sh --dry-run` shows the counts
 - **Tests**: `test_plan.py`: a Files line with backticked paths over two lines counts each once; a
   backtick span that is no path (`open`) is not counted; a package without a Files line counts 0;
   `oversized` lists only the packages over the limit.
