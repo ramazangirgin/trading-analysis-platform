@@ -200,20 +200,14 @@ landing page (see [step 3](#3-log-in)); the confirmation says that anyone on the
 it. The owner makes it private again at any time, also after losing the permission, and an admin
 can make any public or partial analysis private with the same select.
 
-<<<<<<< HEAD
-![The confirmation before an analysis is made partial](docs/screenshots/run-share.png)
-=======
-The owner can also make a completed analysis **Partial** (same permission). Users who are logged in
-see a partial analysis in full, exactly like a public one. A visitor who is not logged in gets a
-preview only, through `GET /api/public/analyses`: the ticker, the date, the rating, the report
-sections the platform is configured to show (by default the market report) and the names of the
-sections that stay hidden. The hidden text is cut on the server and never sent. Only the owner
-makes an analysis partial; an admin can move a partial analysis to public or private, but never
-makes someone else's analysis partial. Which sections a visitor reads is a setting (see
-[Login](#login)) and needs a restart to change.
+A visitor who is not logged in gets a preview only, through `GET /api/public/analyses`: the ticker,
+the date, the rating, the report sections the platform is configured to show (by default the market
+report) and the names of the sections that stay hidden. The hidden text is cut on the server and
+never sent. Only the owner makes an analysis partial; an admin can move a partial analysis to public
+or private, but never makes someone else's analysis partial. Which sections a visitor reads is a
+setting (see [Login](#login)) and needs a restart to change.
 
-![The confirmation before an analysis is made public](docs/screenshots/run-share.png)
->>>>>>> origin/main
+![The confirmation before an analysis is made partial](docs/screenshots/run-share.png)
 
 ### 7. Past analyses
 
