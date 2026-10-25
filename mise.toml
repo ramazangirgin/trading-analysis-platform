@@ -208,7 +208,7 @@ run = "scripts/agent/next.sh"
 
 [tasks."agent:update-main"]
 description = "Merge main into an agent PR's branch (version-only conflicts by script, others by an agent), bump the version, push: mise run agent:update-main <pr | plan/<issue>-<slug>> [--bump major|minor|patch]"
-run = "bash scripts/agent/update-main.sh"
+run = "scripts/agent/update-main.sh"
 
 [tasks."agent:detach"]
 description = "Start an agent script detached from the terminal, its output in the plan branch's run.log: mise run agent:detach <script> plan/<issue>-<slug> (or a PR number)"
