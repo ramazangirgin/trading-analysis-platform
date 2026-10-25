@@ -221,12 +221,13 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 
 ### WP4: Docs and version
 
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3
 - **Files**: `deploy/server/README.md`, `README.md`,
   `docs/coding-convention/repository-versioning-and-releases.md`, `docs/agentic-development.md`,
   `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] `deploy/server/README.md`: the new section *Automatic deploys on release* (how it is
+  - [x] `deploy/server/README.md`: the new section *Automatic deploys on release* (how it is
         triggered, that each deploy waits for the required reviewer's approval and where to give
         it, the one-time setup and the table above, re-running a failed deploy and rolling
         back from the Actions tab or with `gh workflow run deploy.yml --ref main -f tag=vX.Y.Z`,
@@ -234,17 +235,17 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
         for the GitHub key and the environment; *Troubleshooting* entries for a host key mismatch
         (`Host key verification failed`: the server was recreated, update `DEPLOY_KNOWN_HOSTS`) and
         an SSH timeout from the runner (the security list).
-  - [ ] Rollback caveat in that section: migrations only go forward; an older release on a database a
+  - [x] Rollback caveat in that section: migrations only go forward; an older release on a database a
         newer one migrated may refuse to start, then restore the dump taken before the upgrade
         (*Backups*).
-  - [ ] `README.md` *Versioning and releases*: after the release paragraph, one sentence that a new
+  - [x] `README.md` *Versioning and releases*: after the release paragraph, one sentence that a new
         release is deployed to analystock.app by `deploy.yml`, linking the deploy README section.
-  - [ ] `repository-versioning-and-releases.md`: the *Release* row says it starts *Deploy* for a
+  - [x] `repository-versioning-and-releases.md`: the *Release* row says it starts *Deploy* for a
         newly created latest release; a new *Deploy* row (`deploy.yml`: the tag to the server in the
         `production` environment, version checked at `/actuator/info`); the "Only the workflow's
         `GITHUB_TOKEN`" sentence notes that the deploy additionally uses the environment's secrets.
-  - [ ] `docs/agentic-development.md` step 10: the release is then deployed.
-  - [ ] `mise run version:bump minor`.
+  - [x] `docs/agentic-development.md` step 10: the release is then deployed.
+  - [x] `mise run version:bump minor`.
 - **Tests**: `mise run check` (the version files in sync).
 
 ## Tests
