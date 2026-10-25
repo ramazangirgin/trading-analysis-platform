@@ -183,7 +183,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: The update step script
 
-- **Status**: done
+- **Status**: not done: the by-hand run in a throwaway clone could not be done with the agent's allowed commands (no git init/clone/push); the script is only syntax-checked
 - **Depends on**: WP1
 - **Files**: `scripts/agent/update-main.sh` (new), `scripts/agent/prompts/update-main.md` (new),
   `mise.toml`
