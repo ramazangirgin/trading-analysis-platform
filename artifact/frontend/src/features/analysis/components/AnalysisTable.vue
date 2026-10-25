@@ -28,11 +28,11 @@ const columns = computed<DataTableColumns<Analysis>>(() => {
       render: (row) =>
         h('span', [
           h('strong', row.spec.ticker),
-          row.visibility === 'PUBLIC'
+          row.visibility !== 'PRIVATE'
             ? h(
                 NTag,
                 { size: 'tiny', type: 'info', bordered: false, style: 'margin-left: 6px' },
-                () => t('runs.public'),
+                () => t(row.visibility === 'PARTIAL' ? 'runs.partial' : 'runs.public'),
               )
             : null,
         ]),

@@ -97,6 +97,7 @@ three visibility options and the confirmation, the Partial tag, the link on the 
 
 ### WP1: API calls, routes, the guard and the visibility control
 
+- **Status**: done
 - **Depends on**: none (the backend plan is merged first)
 - **Files**:
   - `artifact/frontend/src/features/preview/api.ts`, `index.ts`, `model/lockedTitles.ts`, `model/loginTarget.ts` and their specs (new)
@@ -105,9 +106,9 @@ three visibility options and the confirmation, the Partial tag, the link on the 
   - `artifact/frontend/src/shared/api/types.ts`
   - `artifact/frontend/src/shared/i18n/locales/en.json`, `tr.json`
 - **Steps**:
-  - [ ] The preview API and the two pure models.
-  - [ ] The routes and the guard with the `visitors` flag.
-  - [ ] The select model, the Partial tag, the translations.
+  - [x] The preview API and the two pure models.
+  - [x] The routes and the guard with the `visitors` flag.
+  - [x] The select model, the Partial tag, the translations.
 - **Tests**:
   - `api.spec.ts` for the preview calls (path, page and size in the query).
   - `lockedTitles.spec.ts`, `loginTarget.spec.ts`: keys, the fallback, the redirect.

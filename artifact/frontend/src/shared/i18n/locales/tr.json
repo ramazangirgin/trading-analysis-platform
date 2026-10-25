@@ -41,7 +41,42 @@
     "title": "Giriş yap",
     "username": "Kullanıcı adı",
     "password": "Parola",
-    "submit": "Giriş yap"
+    "submit": "Giriş yap",
+    "backToLanding": "Başlangıç sayfasına dön"
+  },
+  "landing": {
+    "headline": "Çok ajanlı hisse analizi",
+    "description": "Analist ajanlar piyasayı, haberleri, duyarlılığı ve temel verileri okur; ardından araştırmacı ve yatırımcı ekibi tartışıp bir derecelendirmeye varır. Ziyaretçilerle paylaşılan en son analizlerin önizlemesi aşağıda.",
+    "login": "Giriş yap",
+    "lockedHint": "Analizin tamamını okumak için giriş yapın",
+    "showMore": "Daha fazla göster",
+    "empty": "Henüz ziyaretçilerle paylaşılan bir analiz yok."
+  },
+  "preview": {
+    "callToActionTitle": "Analizin tamamını okuyun",
+    "callToActionText": "Bu analizin tüm bölümlerini, tartışmaları ve nihai kararı okumak için giriş yapın.",
+    "login": "Giriş yap",
+    "notFound": "Analiz bulunamadı.",
+    "backToLanding": "Başlangıç sayfasına dön",
+    "locked": {
+      "market_report": "Piyasa raporu",
+      "sentiment_report": "Duyarlılık raporu",
+      "news_report": "Haber raporu",
+      "fundamentals_report": "Temel analiz raporu",
+      "investment_plan": "Yatırım planı",
+      "trader_investment_plan": "Yatırımcı planı",
+      "final_trade_decision": "Nihai karar",
+      "deep_analysis": "Derin analiz",
+      "bull": "Boğa",
+      "bear": "Ayı",
+      "judge": "Hakem",
+      "aggressive": "Agresif",
+      "conservative": "Muhafazakâr",
+      "neutral": "Tarafsız",
+      "research_judge": "Araştırma Yöneticisi",
+      "risk_judge": "Portföy Yöneticisi",
+      "other": "Analizin devamı"
+    }
   },
   "common": {
     "refresh": "Yenile",
@@ -150,6 +185,7 @@
       "ALL": "Tüm kullanıcılar"
     },
     "public": "Herkese açık",
+    "partial": "Kısmi",
     "owner": "Sahip",
     "rescan": "Veri klasörünü tara",
     "rescanned": "{scanned} rapor tarandı: {created} yeni, {updated} güncellendi.",
@@ -213,11 +249,14 @@
     "stop": "Durdur",
     "rerun": "Yeniden çalıştır",
     "stopConfirm": "Analiz durdurulsun mu?",
-    "public": "Herkese açık",
+    "visibility": {
+      "PRIVATE": "Özel",
+      "PUBLIC": "Herkese açık (giriş yapanlar)",
+      "PARTIAL": "Kısmi (ziyaretçiler için önizleme)"
+    },
     "publicConfirm": "Platformdaki herkes bu analizi görecek.",
-    "notCompletedNote": "Yalnızca tamamlanmış bir analiz herkese açık yapılabilir",
-    "makePrivate": "Özel yap",
-    "makePrivateConfirm": "Bu analizi yalnızca sahibi görecek.",
+    "partialConfirm": "İnternetteki herkes bu analizin önizlemesini görecek.",
+    "notCompletedNote": "Yalnızca tamamlanmış bir analizin görünürlüğü değiştirilebilir",
     "sharedBy": "Paylaşan: {username}",
     "visibilityConflict": "Analiz arada değişti ve yeniden yüklendi.",
     "pipeline": "Akış",

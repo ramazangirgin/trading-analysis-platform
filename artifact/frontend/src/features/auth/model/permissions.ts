@@ -26,6 +26,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     permission?: Permission | Permission[]
     public?: boolean
+    visitors?: boolean
   }
 }
 
