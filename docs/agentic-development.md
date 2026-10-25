@@ -51,11 +51,11 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | 3 | Plan review: comment on the pull request (inline on the plan's lines, or a comment) or in the session; the session reads both (`plan-comments.sh`), changes the plan on its branch and answers each comment; or approve it | Developer, the skill | Plan commits, replies |
 | 4 | Start the agents (the approval) | Developer: `mise run agent:run plan/<issue>-<slug>` | — |
 | 5 | Implement one work package per agent run, with tests, and push after each; `mise run check`, version bump; the plan's pull request becomes the implementation's (label `plan` → `agent`); fix a red CI | Developer agent: `implement.sh`, `fix-ci.sh` | Draft PR labelled `agent`, **CI passed** green |
-| 6 | Review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | Review agent: `review.sh` | PR review + summary comment |
+| 6 | When the branch is behind `main`, update it first (merge `main` in); then review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | `update-main.sh` (run by `next.sh`); review agent: `review.sh` | Merge commit, PR review + summary comment |
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
-| 9 | Finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `finalise.sh` | PR ready for review |
-| 10 | Review, bring up to date with `main`, merge; the release follows | Developer | Change on `main`, released |
+| 9 | Update with `main` when behind, then finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `update-main.sh` (run by `next.sh`), `finalise.sh` | PR ready for review |
+| 10 | Review, merge (the branch is usually up to date with `main` already, see 6 and 9); the release follows | Developer | Change on `main`, released |
 
 Agents never merge and never push to `main`: the scripts push only to the plan branch, the agents
 cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's approval and
