@@ -64,8 +64,9 @@ mise run dev            # backend :8080 + Vite :5173
 mise run gradle :backend:domain:analysis:adapter:test --tests '*SomeTest'   # one module's tests
 ```
 
-With `AGENT_QUIET=1` (set for the agents) these tasks print `ok:` lines; a failure prints an excerpt
-and the path of the full log in `build/quiet/`.
+With `AGENT_QUIET=1` (set for the agents) `check`, `format`, `format-check`, `runner-test` and
+`gradle` print `ok:` lines; a failure prints an excerpt and the path of the full log in
+`build/quiet/`. `build`, `test`, `e2e` and `dev` are not wrapped and print everything.
 
 On macOS the engine is Podman: set
 `DOCKER_HOST=unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')`
