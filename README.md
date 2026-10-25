@@ -616,7 +616,7 @@ The backend:
   |---|---|
   | `POST /api/auth/password` | a session only (everyone changes their own password) |
   | `POST /api/analyses`, `…/{id}/stop`, `…/{id}/rerun`, `POST /api/reports/rescan` | `analysis:run` |
-  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all`, unless it is public (not its `…/logs`) |
+  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all`, unless it is public or partial (not its `…/logs`) |
   | `PUT /api/analyses/{id}/visibility` | `analysis:read`; making it public or partial needs `analysis:share` too, checked by the use case |
   | `GET /api/catalog`, `GET /api/health` | `analysis:run` or `settings:read` |
   | `GET /api/secrets` | `settings:read` |
