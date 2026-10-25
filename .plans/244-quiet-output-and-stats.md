@@ -267,9 +267,8 @@ Packages without a dependency between them can be implemented in parallel.
 
 ## Open questions
 
-- `AGENT_QUIET` makes the output quiet only inside the agents; developers and CI keep the full
-  output. Should the quiet form be the default for everyone instead (with `VERBOSE=1` for the full
-  output)? The plan assumes agents only.
-- Is `build/quiet/<name>.log` the right place for the logs (gitignored, removed by
-  `./gradlew clean`)? The alternative is the plan branch's state directory, which only exists for
-  agent runs.
+None open. Decided in review:
+
+- Quiet output only inside the agents: `run_agent` sets `AGENT_QUIET=1`; developers and CI keep the
+  full output.
+- The logs go to `build/quiet/<name>.log`.
