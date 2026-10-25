@@ -170,11 +170,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Version-only conflict resolver
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/agent/merge_versions.py` (new), `scripts/agent/test_merge_versions.py` (new)
 - **Steps**:
-  - [ ] `merge_versions.py resolve` and `is-version-file` as in the design
+  - [x] `merge_versions.py resolve` and `is-version-file` as in the design
 - **Tests**: `test_merge_versions.py`: a conflicted `gradle.properties`, `package.json` and
   `__init__.py` with version-only hunks (two-way and `diff3` style) come out as `main`'s side; a
   `package.json` whose hunk also holds a dependency line is left unchanged and makes it exit 1; a
