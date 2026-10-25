@@ -97,7 +97,7 @@ three visibility options and the confirmation, the Partial tag, the link on the 
 
 ### WP1: API calls, routes, the guard and the visibility control
 
-- **Depends on**: none inside this plan (the backend plan is merged first)
+- **Depends on**: none (the backend plan is merged first)
 - **Files**:
   - `artifact/frontend/src/features/preview/api.ts`, `index.ts`, `model/lockedTitles.ts`, `model/loginTarget.ts` and their specs (new)
   - `artifact/frontend/src/app/router/index.ts`, `router/index.spec.ts` (new)
