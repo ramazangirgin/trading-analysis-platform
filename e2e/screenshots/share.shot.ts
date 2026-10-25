@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { visibilitySelect } from '../tests/support'
 import { replayedRun } from './runs'
 import { shot } from './support'
 
@@ -7,7 +8,7 @@ test('run detail with the share confirmation', async ({ page, request }) => {
   const id = await replayedRun(request, 'NVDA', '2026-09-25')
 
   await page.goto(`/analyses/${id}`)
-  await page.locator('.n-select').click()
+  await visibilitySelect(page).click()
   await page.getByText('Partial (preview for visitors)').click()
   await expect(
     page.getByText('Anyone on the internet will see the preview of this analysis.'),
