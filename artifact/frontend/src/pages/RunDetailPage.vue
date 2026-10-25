@@ -163,6 +163,11 @@ const visibilityOptions = computed(() =>
       }))
     : [],
 )
+const visibilityBlockedUntilCompleted = computed(
+  () =>
+    control.value.kind === 'select' &&
+    control.value.options.some((option) => option.disabledReason === 'notCompleted'),
+)
 const sharedBy = computed(() => {
   const owner = analysis.value?.owner
   return analysis.value?.visibility !== 'PRIVATE' && owner && owner.id !== session.user?.id
@@ -254,15 +259,19 @@ async function rerun() {
       </template>
       <template #header-extra>
         <NSpace align="center">
-          <NSelect
-            v-if="control.kind === 'select'"
-            :value="analysis.visibility"
-            :options="visibilityOptions"
-            :disabled="acting"
-            :loading="acting"
-            style="width: 260px"
-            @update:value="chooseVisibility"
-          />
+          <NTooltip v-if="control.kind === 'select'" :disabled="!visibilityBlockedUntilCompleted">
+            <template #trigger>
+              <NSelect
+                :value="analysis.visibility"
+                :options="visibilityOptions"
+                :disabled="acting"
+                :loading="acting"
+                style="width: 260px"
+                @update:value="chooseVisibility"
+              />
+            </template>
+            {{ t('detail.notCompletedNote') }}
+          </NTooltip>
         </NSpace>
         <NModal
           :show="pendingVisibility !== null"
