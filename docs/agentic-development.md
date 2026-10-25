@@ -538,9 +538,29 @@ mise run screenshots             # every screenshot
 mise run screenshots compare     # those whose file or title matches "compare"
 ```
 
-`SCREENSHOT_DIR=<dir>` writes them elsewhere, to try one out. The agents look at the saved PNGs
-with Claude Code's Read tool. Screenshots taken by hand from real runs stay until a change retakes
-them.
+`SCREENSHOT_DIR=<dir>` writes them elsewhere (a relative path counts from the repository root), to
+try one out. The agents never open a PNG
+(`Read(**/*.png)` is denied): `mise run screenshots` ends with a report, one line per written image
+(dimensions, size, new, changed or unchanged), and fails on a likely blank or tiny image (under 100
+pixels, or nearly uniform). Whether a screenshot looks right is checked by the developer in the pull
+request. Screenshots taken by hand from real runs stay until a change retakes them.
+
+## Measuring the usage
+
+`mise run agent:stats <issue>` summarises the agent transcripts of an issue, as Markdown ready to
+paste into an issue comment: a table per step (implement, review, fix, CI fix, update with main,
+session) and per transcript with turns, maximum context, cached, uncached and output tokens and
+cost; the tools table (calls, output characters, share, images); and the files read more than twice.
+
+- It reads Claude Code's transcripts in `~/.claude/projects/<folder>/`, by default the folder of
+  the issue's worktree (`--folder` for another), and matches each session to a step through the
+  results in `.git/agent/<issue>-*/` (`--state` for another directory).
+- The orchestration session runs in the main checkout and is shared by every issue: add it with
+  `--transcript <file>` and cut it to the issue's run with `--since` / `--until` (epochs, from the
+  progress comment's start and end).
+- `--json` prints the same numbers as JSON.
+
+Issue #244 holds the baseline to compare a run with.
 
 ## Settings
 
@@ -559,6 +579,11 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_ISSUE_PROGRESS` | 1 | 1: keep the [progress comment](#progress-on-the-issue) on the issue up to date; 0: `progress.tsv` only |
 | `AGENT_NTFY_TOPIC` | none | An ntfy topic that also receives each milestone; sends progress lines to an external service (`AGENT_NTFY_SERVER`, default `https://ntfy.sh`) |
 
+`run_agent` also sets `AGENT_QUIET=1` for every agent (a developer may set it too): `mise run check`,
+`format`, `format-check`, `runner-test` and `gradle` then print one `ok:` line on
+success, and on a failure an excerpt and the path of the full log in `build/quiet/<name>.log`
+([`scripts/quiet.sh`](../scripts/quiet.sh)). Without it they print everything, as before.
+
 Costs in the final comment are Claude Code's own figures at API prices; with a subscription login
 they show the usage, not a bill. The usage of runs from before the state directory existed, or of
 a state directory that is gone (another machine), is not available; the implement comment says so.
@@ -572,6 +597,8 @@ a state directory that is gone (another machine), is not available; the implemen
   not comments by other accounts.
 - The agents run real commands (Gradle, pnpm, uv) on the developer's machine, like a developer
   would; run them only on plans you reviewed.
+- Reading a PNG is denied (`Read(**/*.png)`): screenshots cost many tokens, and the agents check
+  the report of `mise run screenshots` instead.
 
 ## Not done yet
 
