@@ -17,10 +17,6 @@ other tool, in one file at the repository root: [`lefthook.yml`](../../lefthook.
 - There is only a pre-commit hook; no hook runs a test suite or the frontend type-check. Those run
   in `mise run check`, the build and CI.
 
-- The jobs run through [`scripts/quiet.sh`](../../scripts/quiet.sh): with `AGENT_QUIET=1` (set for
-  the agents) a job prints one `ok:` line, or on a failure an excerpt and the path of its log in
-  `build/quiet/`; otherwise the output is unchanged.
-
 ## Installing
 
 Once per clone:
