@@ -41,7 +41,42 @@
     "title": "Log in",
     "username": "Username",
     "password": "Password",
-    "submit": "Log in"
+    "submit": "Log in",
+    "backToLanding": "Back to the start page"
+  },
+  "landing": {
+    "headline": "Multi-agent stock analysis",
+    "description": "Analyst agents read the market, news, sentiment and fundamentals, then a team of researchers and traders debates and reaches a rating. Here is a preview of the latest analyses shared with visitors.",
+    "login": "Log in",
+    "lockedHint": "Log in to read the full analysis",
+    "showMore": "Show more",
+    "empty": "No analyses are shared with visitors yet."
+  },
+  "preview": {
+    "callToActionTitle": "Read the full analysis",
+    "callToActionText": "Log in to read every section of this analysis, the debates and the final decision.",
+    "login": "Log in",
+    "notFound": "Analysis not found.",
+    "backToLanding": "Back to the start page",
+    "locked": {
+      "market_report": "Market report",
+      "sentiment_report": "Sentiment report",
+      "news_report": "News report",
+      "fundamentals_report": "Fundamentals report",
+      "investment_plan": "Investment plan",
+      "trader_investment_plan": "Trader plan",
+      "final_trade_decision": "Final decision",
+      "deep_analysis": "Deep analysis",
+      "bull": "Bull",
+      "bear": "Bear",
+      "judge": "Judge",
+      "aggressive": "Aggressive",
+      "conservative": "Conservative",
+      "neutral": "Neutral",
+      "research_judge": "Research Manager",
+      "risk_judge": "Portfolio Manager",
+      "other": "More of the analysis"
+    }
   },
   "common": {
     "refresh": "Refresh",
@@ -49,6 +84,8 @@
     "none": "—",
     "retry": "Retry",
     "back": "Back",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
     "durationMinutes": "{minutes}m {seconds}s",
     "durationSeconds": "{seconds}s"
   },
@@ -150,6 +187,7 @@
       "ALL": "All users"
     },
     "public": "Public",
+    "partial": "Partial",
     "owner": "Owner",
     "rescan": "Scan data dir",
     "rescanned": "Scanned {scanned} reports: {created} new, {updated} updated.",
@@ -213,11 +251,14 @@
     "stop": "Stop",
     "rerun": "Run again",
     "stopConfirm": "Stop this analysis?",
-    "public": "Public",
+    "visibility": {
+      "PRIVATE": "Private",
+      "PUBLIC": "Public (logged-in users)",
+      "PARTIAL": "Partial (preview for visitors)"
+    },
     "publicConfirm": "Everyone on the platform will see this analysis.",
-    "notCompletedNote": "Only a completed analysis can be made public",
-    "makePrivate": "Make private",
-    "makePrivateConfirm": "Only its owner will see this analysis again.",
+    "partialConfirm": "Anyone on the internet will see the preview of this analysis.",
+    "notCompletedNote": "Only a completed analysis can change its visibility",
     "sharedBy": "Shared by {username}",
     "visibilityConflict": "The analysis was changed in the meantime and has been reloaded.",
     "pipeline": "Pipeline",

@@ -86,6 +86,21 @@ you lost it while `admin` is still the only user, delete the user
 Every page shows a short investment disclaimer under the header; the About page (`/about`, linked
 from the footer and the login page) shows the full text and opens without a login.
 
+![The login page, with the link back to the landing page](docs/screenshots/login.png)
+
+Without a login, the main page is a **landing page**: what the platform does, a **Log in** button
+and cards of the latest analyses that their owners made **Partial** (see
+[step 6](#6-watch-it-and-read-the-results)), each with the start of its text faded and locked. A card opens
+the **preview page**: the parts the owner allows in full, the other sections as blurred
+placeholders with their titles, and a **Log in** button. No text of a locked section ever reaches
+the visitor's browser. After logging in, the visitor lands on the full analysis they were looking
+at. A logged-in user who opens `/` sees the dashboard, and `/preview/<id>` leads to the analysis
+itself. There is no self-registration yet: only an admin creates users.
+
+![The landing page as a visitor sees it](docs/screenshots/landing.png)
+
+![The preview page of a partial analysis](docs/screenshots/preview.png)
+
 More users are added in the UI, under **Admin → Users**: **New user** takes a username, roles and
 a one-time password, generated or entered. A generated one is shown once, to pass on; the user
 must change it at the first login. Per row an admin edits the roles, disables or enables the
@@ -176,22 +191,23 @@ and report tables that are series over periods (quarterly or yearly figures) get
 ![A fundamentals table with its chart](docs/screenshots/run-table-chart.png)
 
 A user with the permission `analysis:share` (ADMIN, or anyone with the PUBLISHER role) can make
-their own completed analysis public with the **Public** switch on its page, after a confirmation.
-Everyone who may read analyses then sees it under **Shared with everyone**, read-only: they can open,
-read, compare and export it, but not stop it, run it again or read its log. The owner makes it
-private again at any time, also after losing the permission, and an admin can make any public
-analysis private with **Make private**.
+their own completed analysis public with the visibility select on its page (**Private**, **Public
+(logged-in users)** or **Partial (preview for visitors)**), after a confirmation. With **Public**,
+everyone who may read analyses sees it under **Shared with everyone**, read-only: they can open,
+read, compare and export it, but not stop it, run it again or read its log. With **Partial**, the
+logged-in users see it the same way, and visitors without a login see a preview of it on the
+landing page (see [step 3](#3-log-in)); the confirmation says that anyone on the internet will see
+it. The owner makes it private again at any time, also after losing the permission, and an admin
+can make any public or partial analysis private with the same select.
 
-The owner can also make a completed analysis **Partial** (same permission). Users who are logged in
-see a partial analysis in full, exactly like a public one. A visitor who is not logged in gets a
-preview only, through `GET /api/public/analyses`: the ticker, the date, the rating, the report
-sections the platform is configured to show (by default the market report) and the names of the
-sections that stay hidden. The hidden text is cut on the server and never sent. Only the owner
-makes an analysis partial; an admin can move a partial analysis to public or private, but never
-makes someone else's analysis partial. Which sections a visitor reads is a setting (see
-[Login](#login)) and needs a restart to change.
+A visitor who is not logged in gets a preview only, through `GET /api/public/analyses`: the ticker,
+the date, the rating, the report sections the platform is configured to show (by default the market
+report) and the names of the sections that stay hidden. The hidden text is cut on the server and
+never sent. Only the owner makes an analysis partial; an admin can move a partial analysis to public
+or private, but never makes someone else's analysis partial. Which sections a visitor reads is a
+setting (see [Login](#login)) and needs a restart to change.
 
-![The confirmation before an analysis is made public](docs/screenshots/run-share.png)
+![The confirmation before an analysis is made partial](docs/screenshots/run-share.png)
 
 ### 7. Past analyses
 
@@ -199,7 +215,7 @@ makes someone else's analysis partial. Which sections a visitor reads is a setti
 duration, filterable by ticker and status, under the tab **My analyses**. **Shared with everyone**
 lists the analyses other users have made public (see [step 6](#6-watch-it-and-read-the-results)),
 and a user with `analysis:read:all` (ADMIN) also gets an **All users** tab with everyone's runs.
-Both show an **Owner** column, and a public analysis carries a **Public** tag.
+Both show an **Owner** column, and a public analysis carries a **Public** tag and a partial one a **Partial** tag.
 Runs made outside the platform are imported (read-only) and show up by themselves within about
 10 seconds, as the data dir is watched; they belong to the first admin. **Scan data dir** forces a
 rescan:

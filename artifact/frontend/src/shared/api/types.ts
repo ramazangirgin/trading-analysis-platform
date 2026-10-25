@@ -29,7 +29,17 @@ export type Analysis = Omit<
     | 'visibilityChangedAt'
   >,
   'spec' | 'stats'
-> & { spec: AnalysisSpec; stats: RunStats }
+> & {
+  spec: AnalysisSpec
+  stats: RunStats
+}
+export type AnalysisPreviewSummary = Present<Schemas['AnalysisPreviewSummaryDto']>
+export type AnalysisPreview = Omit<Present<Schemas['AnalysisPreviewDto']>, 'sections'> & {
+  sections: Record<string, string>
+}
+export type AnalysisPreviewPage = Omit<Present<Schemas['AnalysisPreviewPageDto']>, 'items'> & {
+  items: AnalysisPreviewSummary[]
+}
 export type StartAnalysisRequest = Schemas['StartAnalysisRequest']
 export type ChangeVisibilityRequest = Schemas['ChangeVisibilityRequest']
 export type Provider = Omit<

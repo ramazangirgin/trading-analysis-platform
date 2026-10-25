@@ -11,10 +11,11 @@ import {
   NDescriptions,
   NDescriptionsItem,
   NEmpty,
+  NModal,
   NPopconfirm,
+  NSelect,
   NSpace,
   NStatistic,
-  NSwitch,
   NTabPane,
   NTabs,
   NTag,
@@ -151,16 +152,46 @@ async function stop() {
 }
 
 const control = computed(() =>
-  analysis.value
-    ? visibilityControl(analysis.value, session.user?.id ?? null)
-    : ({ kind: 'none' } as const),
+  analysis.value ? visibilityControl(analysis.value) : ({ kind: 'none' } as const),
+)
+const visibilityOptions = computed(() =>
+  control.value.kind === 'select'
+    ? control.value.options.map((option) => ({
+        value: option.value,
+        label: t(`detail.visibility.${option.value}`),
+        disabled: option.disabled && option.value !== analysis.value?.visibility,
+      }))
+    : [],
+)
+const visibilityBlockedUntilCompleted = computed(
+  () =>
+    control.value.kind === 'select' &&
+    control.value.options.some((option) => option.disabledReason === 'notCompleted'),
 )
 const sharedBy = computed(() => {
   const owner = analysis.value?.owner
-  return analysis.value?.visibility === 'PUBLIC' && owner && owner.id !== session.user?.id
+  return analysis.value?.visibility !== 'PRIVATE' && owner && owner.id !== session.user?.id
     ? owner.username
     : null
 })
+
+const CONFIRMED: Partial<Record<Visibility, string>> = {
+  PUBLIC: 'detail.publicConfirm',
+  PARTIAL: 'detail.partialConfirm',
+}
+const pendingVisibility = ref<Visibility | null>(null)
+
+function chooseVisibility(visibility: Visibility) {
+  if (visibility === analysis.value?.visibility) return
+  if (CONFIRMED[visibility]) pendingVisibility.value = visibility
+  else void changeVisibility(visibility)
+}
+
+async function confirmVisibility() {
+  const visibility = pendingVisibility.value
+  pendingVisibility.value = null
+  if (visibility) await changeVisibility(visibility)
+}
 
 async function changeVisibility(visibility: Visibility) {
   if (!analysis.value) return
@@ -210,8 +241,8 @@ async function rerun() {
           }}</span>
           <StatusTag :status="analysis.status" />
           <RatingTag :rating="rating" size="medium" />
-          <NTag v-if="analysis.visibility === 'PUBLIC'" size="small" type="info" :bordered="false">
-            {{ t('runs.public') }}
+          <NTag v-if="analysis.visibility !== 'PRIVATE'" size="small" type="info" :bordered="false">
+            {{ analysis.visibility === 'PARTIAL' ? t('runs.partial') : t('runs.public') }}
           </NTag>
           <span v-if="sharedBy" class="subtitle subtitle--small">{{
             t('detail.sharedBy', { username: sharedBy })
@@ -228,38 +259,32 @@ async function rerun() {
       </template>
       <template #header-extra>
         <NSpace align="center">
-          <template v-if="control.kind === 'switch'">
-            <NTooltip v-if="control.disabled">
-              <template #trigger>
-                <span><NSwitch :value="false" disabled /> {{ t('detail.public') }}</span>
-              </template>
-              {{ t('detail.notCompletedNote') }}
-            </NTooltip>
-            <span v-else-if="analysis.visibility === 'PUBLIC'">
-              <NSwitch
-                :value="true"
-                :loading="acting"
-                @update:value="changeVisibility('PRIVATE')"
-              />
-              {{ t('detail.public') }}
-            </span>
-            <NPopconfirm v-else @positive-click="changeVisibility('PUBLIC')">
-              <template #trigger>
-                <span><NSwitch :value="false" :loading="acting" /> {{ t('detail.public') }}</span>
-              </template>
-              {{ t('detail.publicConfirm') }}
-            </NPopconfirm>
-          </template>
-          <NPopconfirm
-            v-else-if="control.kind === 'makePrivate'"
-            @positive-click="changeVisibility('PRIVATE')"
-          >
+          <NTooltip v-if="control.kind === 'select'" :disabled="!visibilityBlockedUntilCompleted">
             <template #trigger>
-              <NButton secondary :loading="acting">{{ t('detail.makePrivate') }}</NButton>
+              <NSelect
+                :value="analysis.visibility"
+                :options="visibilityOptions"
+                :disabled="acting"
+                :loading="acting"
+                style="width: 260px"
+                @update:value="chooseVisibility"
+              />
             </template>
-            {{ t('detail.makePrivateConfirm') }}
-          </NPopconfirm>
+            {{ t('detail.notCompletedNote') }}
+          </NTooltip>
         </NSpace>
+        <NModal
+          :show="pendingVisibility !== null"
+          preset="dialog"
+          :title="pendingVisibility ? t(`detail.visibility.${pendingVisibility}`) : ''"
+          :content="pendingVisibility ? t(CONFIRMED[pendingVisibility] ?? '') : ''"
+          :positive-text="t('common.confirm')"
+          :negative-text="t('common.cancel')"
+          @positive-click="confirmVisibility"
+          @negative-click="pendingVisibility = null"
+          @close="pendingVisibility = null"
+          @mask-click="pendingVisibility = null"
+        />
         <NSpace v-if="analysis.canManage && session.can(PERMISSIONS.analysisRun)">
           <NPopconfirm v-if="active" @positive-click="stop">
             <template #trigger>

@@ -1,18 +1,31 @@
-import type { Analysis } from '@/shared/api/types'
+import type { Analysis, Visibility } from '@/shared/api/types'
 
-export type VisibilityControl =
-  { kind: 'switch'; disabled: boolean } | { kind: 'makePrivate' } | { kind: 'none' }
+const ORDER: Visibility[] = ['PRIVATE', 'PUBLIC', 'PARTIAL']
 
-/** What the detail page offers for the analysis's visibility; the backend decides `canChangeVisibility`. */
+export interface VisibilityOption {
+  value: Visibility
+  disabled: boolean
+  disabledReason: 'notCompleted' | null
+}
+
+export type VisibilityControl = { kind: 'select'; options: VisibilityOption[] } | { kind: 'none' }
+
+/**
+ * What the detail page offers for the analysis's visibility: the backend decides who may change it
+ * (`canChangeVisibility`) and to which values (`allowedVisibilities`).
+ */
 export function visibilityControl(
-  analysis: Pick<Analysis, 'owner' | 'status' | 'visibility' | 'canChangeVisibility'>,
-  userId: string | null,
+  analysis: Pick<Analysis, 'status' | 'canChangeVisibility' | 'allowedVisibilities'>,
 ): VisibilityControl {
   if (!analysis.canChangeVisibility) return { kind: 'none' }
-  const isOwner = userId !== null && analysis.owner?.id === userId
-  if (!isOwner) return { kind: 'makePrivate' }
-  return {
-    kind: 'switch',
-    disabled: analysis.visibility === 'PRIVATE' && analysis.status !== 'COMPLETED',
-  }
+  const options = ORDER.map((value) => {
+    const disabled = !analysis.allowedVisibilities.includes(value)
+    return {
+      value,
+      disabled,
+      disabledReason:
+        disabled && analysis.status !== 'COMPLETED' ? ('notCompleted' as const) : null,
+    }
+  })
+  return { kind: 'select', options }
 }
