@@ -34,7 +34,7 @@ in your final message.
   and retake it until it shows what the plan describes. Show new screenshots in the README section
   the plan names. Commit the `.shot.ts` and the PNG.
 - Before you finish, `mise run check` and the tests of every part you changed must pass:
-  `./gradlew --console=plain :backend:test` (backend), `./gradlew --console=plain :frontend:build`
+  `mise run gradle :backend:test` (backend), `mise run gradle :frontend:build`
   (frontend), `mise run runner-test` (ta-runner). Fix formatting with `mise run format`.
 - Do not push, do not open pull requests, do not touch other branches: the script does that.
 - Do not change files outside your package's scope. If the plan is wrong or impossible somewhere,

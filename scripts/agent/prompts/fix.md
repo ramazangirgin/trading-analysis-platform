@@ -6,7 +6,7 @@ answer questions.
   part it touches (`docs/coding-convention/`).
 - If the finding is right: change the code, and the tests where the finding concerns behaviour.
   Run the checks of the part you changed (`mise run check`, and its tests:
-  `./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build` or
+  `mise run gradle :backend:test`, `mise run gradle :frontend:build` or
   `mise run runner-test`). Fix formatting with `mise run format`. Comments follow
   `docs/coding-convention/repository-code-comments.md`: add one only when it is really needed (why,
   or what the code cannot show), never one that repeats the code or one copied from the code around.

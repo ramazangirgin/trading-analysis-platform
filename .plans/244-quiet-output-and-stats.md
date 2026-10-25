@@ -165,14 +165,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Prompts: read less, quiet output, Gradle through mise
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/prompts/tools.md`, `scripts/agent/prompts/implement.md`,
   `scripts/agent/prompts/fix.md`, `scripts/agent/prompts/fix-ci.md`
 - **Steps**:
-  - [ ] `tools.md`: the section "Reading files and output" from the design; list `mise run gradle`
+  - [x] `tools.md`: the section "Reading files and output" from the design; list `mise run gradle`
     among the example commands
-  - [ ] `implement.md`, `fix.md`, `fix-ci.md`: Gradle checks as `mise run gradle …`
+  - [x] `implement.md`, `fix.md`, `fix-ci.md`: Gradle checks as `mise run gradle …`
 - **Tests**: `mise run agent:test` (the prompts are read by no test; `lib.sh`'s `prompt` still
   concatenates them). The effect is measured with WP4's script on the first run after the merge.
 
