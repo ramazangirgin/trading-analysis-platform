@@ -11,6 +11,7 @@ import {
   NDescriptions,
   NDescriptionsItem,
   NEmpty,
+  NModal,
   NPopconfirm,
   NSelect,
   NSpace,
@@ -169,6 +170,24 @@ const sharedBy = computed(() => {
     : null
 })
 
+const CONFIRMED: Partial<Record<Visibility, string>> = {
+  PUBLIC: 'detail.publicConfirm',
+  PARTIAL: 'detail.partialConfirm',
+}
+const pendingVisibility = ref<Visibility | null>(null)
+
+function chooseVisibility(visibility: Visibility) {
+  if (visibility === analysis.value?.visibility) return
+  if (CONFIRMED[visibility]) pendingVisibility.value = visibility
+  else void changeVisibility(visibility)
+}
+
+async function confirmVisibility() {
+  const visibility = pendingVisibility.value
+  pendingVisibility.value = null
+  if (visibility) await changeVisibility(visibility)
+}
+
 async function changeVisibility(visibility: Visibility) {
   if (!analysis.value) return
   acting.value = true
@@ -242,9 +261,21 @@ async function rerun() {
             :disabled="acting"
             :loading="acting"
             style="width: 260px"
-            @update:value="changeVisibility"
+            @update:value="chooseVisibility"
           />
         </NSpace>
+        <NModal
+          :show="pendingVisibility !== null"
+          preset="dialog"
+          :title="pendingVisibility ? t(`detail.visibility.${pendingVisibility}`) : ''"
+          :content="pendingVisibility ? t(CONFIRMED[pendingVisibility] ?? '') : ''"
+          :positive-text="t('common.confirm')"
+          :negative-text="t('common.cancel')"
+          @positive-click="confirmVisibility"
+          @negative-click="pendingVisibility = null"
+          @close="pendingVisibility = null"
+          @mask-click="pendingVisibility = null"
+        />
         <NSpace v-if="analysis.canManage && session.can(PERMISSIONS.analysisRun)">
           <NPopconfirm v-if="active" @positive-click="stop">
             <template #trigger>

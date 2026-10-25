@@ -56,7 +56,7 @@ watchEffect(() => {
         <NLayoutHeader bordered class="app__header">
           <div class="app__header-row">
             <RouterLink to="/" class="app__brand">{{ t('app.title') }}</RouterLink>
-            <nav v-if="!bare" class="app__nav">
+            <nav v-if="!bare && session.user" class="app__nav">
               <RouterLink :to="{ name: 'dashboard' }">{{ t('nav.dashboard') }}</RouterLink>
               <RouterLink v-if="session.can(PERMISSIONS.analysisRead)" :to="{ name: 'analyses' }">{{
                 t('nav.analyses')
@@ -91,6 +91,12 @@ watchEffect(() => {
             </nav>
             <span v-else class="app__nav" />
             <UserMenu v-if="!route.meta.bare" />
+            <RouterLink
+              v-if="!session.user && route.name !== 'login'"
+              :to="{ name: 'login' }"
+              class="app__login"
+              >{{ t('landing.login') }}</RouterLink
+            >
             <LocaleSwitcher />
           </div>
           <DisclaimerNotice compact class="app__disclaimer" />
@@ -139,6 +145,10 @@ body {
   font-weight: 600;
   color: inherit;
   text-decoration: none;
+}
+
+.app__login {
+  color: inherit;
 }
 
 .app__nav {

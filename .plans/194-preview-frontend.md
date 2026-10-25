@@ -120,6 +120,7 @@ three visibility options and the confirmation, the Partial tag, the link on the 
 
 ### WP2: The landing page, the preview page and the control in the detail page
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/frontend/src/features/preview/components/PreviewCard.vue`, `LockedSection.vue`, `SignUpCallToAction.vue` (new)
@@ -127,9 +128,9 @@ three visibility options and the confirmation, the Partial tag, the link on the 
   - `artifact/frontend/src/app/App.vue`
   - `artifact/frontend/src/features/reports/index.ts` (exports `MarkdownView` if it does not yet)
 - **Steps**:
-  - [ ] The components and the two pages, the empty state and the 404.
-  - [ ] The header for a visitor and the link on the login page.
-  - [ ] The select, its confirmations and the translated error codes in `RunDetailPage.vue`.
+  - [x] The components and the two pages, the empty state and the 404.
+  - [x] The header for a visitor and the link on the login page.
+  - [x] The select, its confirmations and the translated error codes in `RunDetailPage.vue`.
 - **Tests**:
   - Component specs: `LockedSection` renders the title and no text from its props other than the title;
     `PreviewCard` links to `/preview/:id`; `SignUpCallToAction` links to the login route with the

@@ -84,6 +84,8 @@
     "none": "—",
     "retry": "Retry",
     "back": "Back",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
     "durationMinutes": "{minutes}m {seconds}s",
     "durationSeconds": "{seconds}s"
   },

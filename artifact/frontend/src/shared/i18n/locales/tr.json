@@ -84,6 +84,8 @@
     "none": "—",
     "retry": "Tekrar dene",
     "back": "Geri",
+    "cancel": "Vazgeç",
+    "confirm": "Onayla",
     "durationMinutes": "{minutes} dk {seconds} sn",
     "durationSeconds": "{seconds} sn"
   },
