@@ -82,7 +82,9 @@ run_agent_task=""
 agent_files=()
 check_excerpt=""
 
-commit_quiet() { AGENT_QUIET=1 git commit --quiet "$@"; }
+# --no-verify: a hook that rejects the merge would leave MERGE_HEAD set and skip the agent; the
+# clean merge is checked by `mise run check` below, and the agents' own --no-verify stays denied.
+commit_quiet() { AGENT_QUIET=1 git commit --quiet --no-verify "$@"; }
 
 if [ ${#conflicted[@]} -eq 0 ]; then
   commit_quiet -m "Merge $base into $branch"
@@ -128,8 +130,8 @@ else
     run_agent_task=resolve
     commit_subject="Resolve merge conflicts with $base"
     # The markers are committed on purpose (as /merge-main-into-branch does), so the resolution is a
-    # commit of its own; the hook would reject them. The agents' --no-verify stays denied.
-    commit_quiet --no-verify -m "Merge $base into $branch" \
+    # commit of its own.
+    commit_quiet -m "Merge $base into $branch" \
       -m "Conflicts, resolved in the next commit:
 $(printf '%s\n' "${agent_files[@]}")"
   fi
