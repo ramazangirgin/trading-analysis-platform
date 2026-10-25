@@ -209,13 +209,14 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 
 ### WP3: Release starts the deploy
 
+- **Status**: done
 - **Depends on**: none (WP2 must be in the same pull request, which it is)
 - **Files**: `.github/workflows/release.yml`
 - **Steps**:
-  - [ ] Add `actions: write` to the `release` job's `permissions`, with a one-line reason.
-  - [ ] Add the step *Deploy the release* after *GitHub Release*, with the three conditions of the
+  - [x] Add `actions: write` to the `release` job's `permissions`, with a one-line reason.
+  - [x] Add the step *Deploy the release* after *GitHub Release*, with the three conditions of the
         Design, `TAG` through `env:`.
-  - [ ] Extend the header comment: a new release is then deployed by `deploy.yml`.
+  - [x] Extend the header comment: a new release is then deployed by `deploy.yml`.
 - **Tests**: as WP2: the first release after the merge.
 
 ### WP4: Docs and version
