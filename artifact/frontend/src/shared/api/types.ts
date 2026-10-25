@@ -9,7 +9,7 @@ type Present<T, Nullable extends keyof T = never> = {
 }
 
 export type AnalysisStatus = NonNullable<Schemas['AnalysisDto']['status']>
-export type Visibility = NonNullable<Schemas['AnalysisDto']['visibility']> | 'PARTIAL'
+export type Visibility = NonNullable<Schemas['AnalysisDto']['visibility']>
 export type AnalysisScope = NonNullable<
   NonNullable<operations['listAnalyses']['parameters']['query']>['scope']
 >
@@ -28,36 +28,20 @@ export type Analysis = Omit<
     | 'errorMessage'
     | 'visibilityChangedAt'
   >,
-  'spec' | 'stats' | 'visibility'
+  'spec' | 'stats'
 > & {
   spec: AnalysisSpec
   stats: RunStats
-  visibility: Visibility
-  allowedVisibilities: Visibility[]
 }
-
-// The public preview endpoints (`/api/public/analyses`), written by hand until the generated
-// schema carries them.
-export type AnalysisPreviewSummary = {
-  id: string
-  ticker: string
-  analysisDate: string
-  rating: Rating
-  excerpt: string
-}
-export type AnalysisPreviewPage = { items: AnalysisPreviewSummary[]; hasMore: boolean }
-export type AnalysisPreview = {
-  id: string
-  ticker: string
-  analysisDate: string
-  rating: Rating
+export type AnalysisPreviewSummary = Present<Schemas['AnalysisPreviewSummaryDto']>
+export type AnalysisPreview = Omit<Present<Schemas['AnalysisPreviewDto']>, 'sections'> & {
   sections: Record<string, string>
-  lockedSections: string[]
+}
+export type AnalysisPreviewPage = Omit<Present<Schemas['AnalysisPreviewPageDto']>, 'items'> & {
+  items: AnalysisPreviewSummary[]
 }
 export type StartAnalysisRequest = Schemas['StartAnalysisRequest']
-export type ChangeVisibilityRequest = Omit<Schemas['ChangeVisibilityRequest'], 'visibility'> & {
-  visibility: Visibility
-}
+export type ChangeVisibilityRequest = Schemas['ChangeVisibilityRequest']
 export type Provider = Omit<
   Present<Schemas['ProviderDto'], 'apiKeyEnv'>,
   'quickModels' | 'deepModels'
