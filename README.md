@@ -856,8 +856,8 @@ A branch that fell behind `main` with conflicts is brought up to date by the Cla
 commits the merge as it is, conflict markers included, and resolves the conflicts in a second
 commit of its own, from the branch's commits, `main`'s commits on the same lines and the branch's
 plan; the reviewer sees each resolution with `git show`. It bumps the version again when `main`
-caught up, and stops and asks when a conflict cannot be resolved with confidence. `develop-issue`
-uses it to update its pull requests. A branch with such a merge commit is merged with
+caught up, and stops and asks when a conflict cannot be resolved with confidence. The agent loop
+and `develop-issue` use its unattended form, `scripts/agent/update-main.sh`. A branch with such a merge commit is merged with
 `gh pr merge <pr> --merge`: GitHub cannot rebase-merge it.
 
 Every version raised on `main` is a release. After **CI passed** on `main`,
@@ -905,7 +905,8 @@ mise run agent:run plan/32-compare-runs
 
 # 4. Review the PR (start with the final comment: open and declined findings), then
 git fetch origin && git switch plan/32-compare-runs && git pull
-/merge-main-into-branch            # in Claude Code, if main moved: merge, resolve, push; CI again
+mise run agent:update-main <pr>    # if main moved: merge, resolve, push; CI again
+/merge-main-into-branch            # or by hand in Claude Code
 gh pr merge <pr> --merge --delete-branch     # --rebase when main was not merged in
 #    CI on main releases vX.Y.Z; "Closes #32" closes the issue.
 ```

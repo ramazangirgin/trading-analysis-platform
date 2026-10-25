@@ -256,22 +256,22 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP7: The skills (by hand, not by the agents)
 
-- **Status**: not done: manual: files under `.claude/` are edited by the developer by hand, since the headless agents may not edit them
+- **Status**: done (by hand, in the develop-issue session)
 - **Depends on**: WP6
 - **Files**: `.claude/skills/develop-issue/SKILL.md`, `.claude/skills/merge-main-into-branch/SKILL.md`,
   `.claude/skills/plan-from-issue/SKILL.md`
 - **Steps**:
-  - [ ] `develop-issue`: frontmatter `model: claude-sonnet-5-5`; step 3 (scripts changed since the
+  - [x] `develop-issue`: frontmatter `model: claude-sonnet-5-5`; step 3 (scripts changed since the
     plan branch was cut) runs `scripts/agent/update-main.sh plan/<n>-<slug>` instead of the skill;
     step 5's "Version job / BEHIND" case and step 6 run `scripts/agent/detach.sh update-main.sh <pr>`
     with a Monitor on `>> (failed:|updated with|.*up to date with)`, then the background CI wait as
     today; the "Progress on the issue" table loses the update row (the script records it); the
     session never merges itself and never reads a diff or a whole log (`tail -n 40` only); for step 7
     it reads only the finalise comment (the newest agent comment), not every comment
-  - [ ] `merge-main-into-branch`: section 2's version files are resolved with
+  - [x] `merge-main-into-branch`: section 2's version files are resolved with
     `scripts/agent/merge_versions.py resolve` first (no reading of their history); a pointer that
     `scripts/agent/update-main.sh` is the unattended form; `develop-issue` no longer invokes it
-  - [ ] `plan-from-issue` section 3, "Work packages": a package creates or changes at most 8 files
+  - [x] `plan-from-issue` section 3, "Work packages": a package creates or changes at most 8 files
     (tests included) and stays in one module or layer; split a larger one; `plan-branch.sh` warns
     about one over the cap, and the review shows the warning
 - **Tests**: none (Markdown read by Claude Code); the first `/develop-issue` run after the merge
