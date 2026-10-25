@@ -456,14 +456,15 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void theSharedScopeHoldsOtherUsersPublicRunsOnly() {
+    void theSharedScopeHoldsOtherUsersPublicAndPartialRunsOnly() {
         Analysis ownPublic = publicRun("NVDA", Fakes.OWNER);
         Analysis othersPublic = publicRun("MU", Fakes.OTHER);
+        Analysis othersPartial = sharedRun("AMD", Fakes.OTHER, Visibility.PARTIAL);
         Analysis othersPrivate = service.start(Fakes.spec("GOOG"), Fakes.OTHER);
 
         assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.OWN))
                 .extracting(Analysis::id)
-                .containsExactly(othersPublic.id());
+                .containsExactlyInAnyOrder(othersPublic.id(), othersPartial.id());
         assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.OTHERS))
                 .extracting(Analysis::id)
                 .containsExactly(ownPublic.id())
@@ -496,12 +497,14 @@ class AnalysisServiceTest {
     }
 
     @Test
-    void anotherUsersPublicRunCanBeReadButNotStoppedOrRunAgain() {
-        Analysis shared = publicRun("NVDA", Fakes.OWNER);
+    void anotherUsersPublicOrPartialRunCanBeReadButNotStoppedOrRunAgain() {
+        for (Visibility visibility : List.of(Visibility.PUBLIC, Visibility.PARTIAL)) {
+            Analysis shared = sharedRun("NVDA" + visibility, Fakes.OWNER, visibility);
 
-        assertThat(service.get(shared.id(), Fakes.OTHERS).id()).isEqualTo(shared.id());
-        assertNotFound(() -> service.stop(shared.id(), Fakes.OTHERS), shared.id());
-        assertNotFound(() -> service.rerun(shared.id(), Fakes.OTHERS), shared.id());
+            assertThat(service.get(shared.id(), Fakes.OTHERS).id()).isEqualTo(shared.id());
+            assertNotFound(() -> service.stop(shared.id(), Fakes.OTHERS), shared.id());
+            assertNotFound(() -> service.rerun(shared.id(), Fakes.OTHERS), shared.id());
+        }
     }
 
     @Test
@@ -512,10 +515,14 @@ class AnalysisServiceTest {
     }
 
     private Analysis publicRun(String ticker, OwnerId owner) {
+        return sharedRun(ticker, owner, Visibility.PUBLIC);
+    }
+
+    private Analysis sharedRun(String ticker, OwnerId owner, Visibility visibility) {
         Analysis run = service.start(Fakes.spec(ticker), owner);
         runner.sink(run.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(run.id()).onExit(0);
-        Analysis shared = repository.rows.get(run.id()).withVisibility(Visibility.PUBLIC, NOW);
+        Analysis shared = repository.rows.get(run.id()).withVisibility(visibility, NOW);
         repository.rows.put(shared.id(), shared);
         return shared;
     }

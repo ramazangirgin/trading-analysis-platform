@@ -182,6 +182,15 @@ read, compare and export it, but not stop it, run it again or read its log. The 
 private again at any time, also after losing the permission, and an admin can make any public
 analysis private with **Make private**.
 
+The owner can also make a completed analysis **Partial** (same permission). Users who are logged in
+see a partial analysis in full, exactly like a public one. A visitor who is not logged in gets a
+preview only, through `GET /api/public/analyses`: the ticker, the date, the rating, the report
+sections the platform is configured to show (by default the market report) and the names of the
+sections that stay hidden. The hidden text is cut on the server and never sent. Only the owner
+makes an analysis partial; an admin can move a partial analysis to public or private, but never
+makes someone else's analysis partial. Which sections a visitor reads is a setting (see
+[Login](#login)) and needs a restart to change.
+
 ![The confirmation before an analysis is made public](docs/screenshots/run-share.png)
 
 ### 7. Past analyses
@@ -481,6 +490,28 @@ The backend:
   | `PLATFORM_LOGIN_IP_MAX_FAILED_ATTEMPTS` | `20` | 1 to 10,000 |
   | `PLATFORM_LOGIN_IP_WINDOW` | `5m` | 1 minute to 24 hours |
 
+- Two routes are open to visitors without a session or a CSRF token, and only `GET`:
+  - `GET /api/public/analyses?page=0&size=12` answers 200 with `{"items", "hasMore"}`, the partial
+    analyses newest first, each with `id`, `ticker`, `analysisDate`, `rating` and an `excerpt` (the
+    start of the first shown section, null when there is none). `page` is at least 0 and `size`
+    1 to 24, or the answer is 400 `invalid_request`.
+  - `GET /api/public/analyses/{id}` answers 200 with `id`, `ticker`, `analysisDate`, `rating`,
+    `sections` (the shown report sections, keyed like the report: `market_report`) and
+    `lockedSections` (the keys of the report sections and debate speakers that are cut, e.g.
+    `sentiment_report`, `bull`; no text, sources, prices or owner). Anything but a partial
+    analysis, a private or public one included, answers 404 `not_found`.
+  - Each client address may make 60 requests per minute to `/api/public/**`; after that it gets
+    429 `too_many_requests` with `Retry-After` until the window frees up. The address and the
+    memory of the counts are as for the login limit. Every other route under `/api` still answers
+    401 to a visitor, and `POST /api/public/**` is not open. The settings, checked at startup:
+
+  | Variable | Default | Range |
+  |---|---|---|
+  | `PLATFORM_PUBLIC_RATE_LIMIT_MAX_REQUESTS` | `60` | 1 to 10,000 |
+  | `PLATFORM_PUBLIC_RATE_LIMIT_WINDOW` | `1m` | 1 second to 24 hours |
+  | `PLATFORM_ANALYSIS_PREVIEW_SECTIONS` | `market_report` | comma separated report sections (`market_report`, `sentiment_report`, `news_report`, `fundamentals_report`, …); an unknown name fails startup |
+  | `PLATFORM_ANALYSIS_PREVIEW_EXCERPT_LENGTH` | `400` | 1 to 5,000 characters of the first shown section on a list card |
+
 - Admins manage accounts through `/api/users`. Reading needs `user:read`, every change
   `user:manage`; without the permission the answer is 403 `forbidden`. A user has no hard delete: an
   admin disables the account instead. A `UserDto` has the `id`, `username`, `roles` (`id` and `name`,
@@ -579,14 +610,14 @@ The backend:
   delegate method. The build fails (Checkstyle rule `TAP-A1`) while a delegate method has neither
   `@RequiresPermission` nor `@NoPermissionRequired("reason")`, the marker of the auth routes, and
   `EndpointPermissionsIntegrationTest` checks it at runtime. The static UI,
-  `/actuator/**` and `/api/openapi/**` stay open. The permissions per endpoint group:
+  `/actuator/**`, `/api/openapi/**` and `GET /api/public/**` stay open. The permissions per endpoint group:
 
   | Endpoints | Permission |
   |---|---|
   | `POST /api/auth/password` | a session only (everyone changes their own password) |
   | `POST /api/analyses`, `…/{id}/stop`, `…/{id}/rerun`, `POST /api/reports/rescan` | `analysis:run` |
-  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all`, unless it is public (not its `…/logs`) |
-  | `PUT /api/analyses/{id}/visibility` | `analysis:read`; making it public needs `analysis:share` too, checked by the use case |
+  | `GET /api/analyses`, `…/{id}`, `…/report`, `…/prices`, `…/logs`, `…/events` | `analysis:read`; another user's analysis answers 404 without `analysis:read:all`, unless it is public or partial (not its `…/logs`) |
+  | `PUT /api/analyses/{id}/visibility` | `analysis:read`; making it public or partial needs `analysis:share` too, checked by the use case |
   | `GET /api/catalog`, `GET /api/health` | `analysis:run` or `settings:read` |
   | `GET /api/secrets` | `settings:read` |
   | `PUT` and `DELETE /api/secrets/{name}` | `settings:keys:write` |
@@ -621,12 +652,15 @@ The backend:
   without that permission lists the own ones. Admins can add custom roles with any set of
   permissions. The permissions of ANALYST, VIEWER and PUBLISHER can be changed, ADMIN's cannot, and
   no built-in role can be renamed or deleted.
-- `PUT /api/analyses/{id}/visibility` with `{"visibility": "PUBLIC" | "PRIVATE", "version"}` makes
-  an analysis public or private (the `AnalysisDto` has `visibility`, `visibilityChangedAt`,
-  `version`, and `canManage` and `canChangeVisibility` for the caller). Only the owner makes an
-  analysis public, and only a `COMPLETED` one, with `analysis:share`. The owner makes it private
+- `PUT /api/analyses/{id}/visibility` with `{"visibility": "PUBLIC" | "PARTIAL" | "PRIVATE",
+  "version"}` makes an analysis public, partial or private (the `AnalysisDto` has `visibility`,
+  `visibilityChangedAt`, `version`, and `canManage`, `canChangeVisibility` and
+  `allowedVisibilities`, the values the caller may change it to). Only the owner makes an analysis
+  public or partial, and only a `COMPLETED` one, with `analysis:share`. The owner makes it private
   again at any time, also without the permission; an admin with `analysis:share` makes any public
-  analysis private. Answers: 200 with the `AnalysisDto`; 403 `analysis_share_forbidden` (the owner
+  or partial analysis private, and a partial one public, but never makes another user's analysis
+  partial (404). A partial analysis is readable by every user with `analysis:read` like a public
+  one. Answers: 200 with the `AnalysisDto`; 403 `analysis_share_forbidden` (the owner
   lacks `analysis:share`); 404 (not visible to the caller, or someone else's analysis made public);
   409 `analysis_not_shareable` (`params.status`, the analysis is not completed); 409
   `concurrent_update` (a stale `version`). Asking for the visibility the analysis has changes
