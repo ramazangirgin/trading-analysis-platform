@@ -62,7 +62,7 @@ if git merge-base --is-ancestor "origin/$base" HEAD; then
 fi
 
 if [ -z "$bump" ]; then
-  bump=$(sed -n 's/^- \*\*Version bump\*\*: *\([a-z]*\).*/\1/p' "$plan" 2>/dev/null | head -n 1)
+  bump=$(sed -n 's/^- \*\*Version bump\*\*: *\([a-z]*\).*/\1/p' "$plan" 2>/dev/null | head -n 1) || true
   case $bump in major | minor | patch) ;; *) bump=minor ;; esac
 fi
 
