@@ -100,7 +100,6 @@ git init -q --bare "$work/repo.git"
 git -C "$ROOT" push -q "$work/repo.git" "HEAD:refs/heads/server-test"
 second=$(GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com GIT_COMMITTER_NAME=test \
   GIT_COMMITTER_EMAIL=test@example.com git -C "$ROOT" commit-tree "HEAD^{tree}" -p HEAD -m "server test: another commit")
-git -C "$ROOT" push -q "$work/repo.git" "$second:refs/heads/server-test-2"
 release_tag="v$(cd "$ROOT" && scripts/version.sh)"
 git -C "$ROOT" push -q "$work/repo.git" "$second:refs/tags/$release_tag"
 chmod -R a+rX "$work/repo.git"
