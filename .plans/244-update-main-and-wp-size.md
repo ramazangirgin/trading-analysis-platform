@@ -183,14 +183,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: The update step script
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/update-main.sh` (new), `scripts/agent/prompts/update-main.md` (new),
   `mise.toml`
 - **Steps**:
-  - [ ] `update-main.sh` as in the design (usage comment at the top, as the other step scripts)
-  - [ ] `prompts/update-main.md`
-  - [ ] task `agent:update-main`
+  - [x] `update-main.sh` as in the design (usage comment at the top, as the other step scripts)
+  - [x] `prompts/update-main.md`
+  - [x] task `agent:update-main`
   - [ ] check by hand in a throwaway clone (a local bare repository as `origin`, no GitHub: a plan
     branch without a pull request): up to date; a merge without conflicts; a merge whose only
     conflict is the version lines (resolved with no agent, bumped, pushed)
