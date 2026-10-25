@@ -196,13 +196,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Transcript stats
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/transcript_stats.py` (new), `scripts/agent/test_transcript_stats.py`
   (new), `mise.toml`
 - **Steps**:
-  - [ ] `transcript_stats.py` as in the design
-  - [ ] task `agent:stats`
+  - [x] `transcript_stats.py` as in the design
+  - [x] task `agent:stats`
 - **Tests**: `test_transcript_stats.py` with transcripts written by the test into a temporary
   projects folder and a temporary state directory: two sessions (one matched to `wp-WP1.json`, one
   to `review-1.json`) and a subagent transcript; a message repeated with the same ID counts once;

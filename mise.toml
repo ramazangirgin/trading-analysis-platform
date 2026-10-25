@@ -218,6 +218,10 @@ run = "scripts/agent/status.sh"
 description = "Print the progress comment of an agent run (steps, durations, iterations, tokens), as it is on the issue: mise run agent:progress plan/<issue>-<slug> (or a PR number)"
 run = "scripts/agent/progress.sh show"
 
+[tasks."agent:stats"]
+description = "Turns, tokens, tool calls and tool output of an issue's agent transcripts, as Markdown: mise run agent:stats <issue> [--transcript FILE --since EPOCH --until EPOCH] [--json]"
+run = "uv run --no-project python scripts/agent/transcript_stats.py"
+
 [tasks."agent:test"]
 description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser, the plan comments, the usage figures and the progress comment"
 run = "bash scripts/quiet.sh agent-test uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
