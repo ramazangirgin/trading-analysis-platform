@@ -199,6 +199,7 @@ class PartialPreviewIntegrationTest {
         assertError(plain(PUBLIC_LIST + "/not-an-id"), 404, NOT_FOUND);
         assertThat(plain(PUBLIC_LIST + "?size=25").statusCode()).isEqualTo(400);
         assertThat(plain(PUBLIC_LIST + "?page=-1").statusCode()).isEqualTo(400);
+        assertThat(plain(PUBLIC_LIST + "?page=100000000").statusCode()).isEqualTo(400);
 
         for (String path : List.of(
                 "/api/analyses",

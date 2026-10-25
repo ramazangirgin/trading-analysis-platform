@@ -24,7 +24,7 @@ public class PublicAnalysesApiController {
     /** The partial analyses, newest first. */
     @GetMapping
     public AnalysisPreviewPageDto listPublicAnalyses(
-            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(10_000) int page,
             @RequestParam(defaultValue = "12") @Min(1) @Max(24) int size) {
         return delegate.listPublicAnalyses(page, size);
     }
