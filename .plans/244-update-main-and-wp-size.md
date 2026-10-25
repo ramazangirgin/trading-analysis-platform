@@ -200,14 +200,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Update before review and finalise in the loop
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `scripts/agent/next.sh`, `scripts/agent/agent_json.py`,
   `scripts/agent/test_agent_json.py`
 - **Steps**:
-  - [ ] `next.sh` runs `update-main.sh` before a review or finalise when behind, once per round
-  - [ ] `approved-head` follows the `update-main` markers
-  - [ ] `next.sh --dry-run` prints `update with main` as the next step when it would run it
+  - [x] `next.sh` runs `update-main.sh` before a review or finalise when behind, once per round
+  - [x] `approved-head` follows the `update-main` markers
+  - [x] `next.sh --dry-run` prints `update with main` as the next step when it would run it
 - **Tests**: `test_agent_json.py`: `approved-head` with an approving review followed by an
   `update-main` marker from that head gives the new head; a chain of two updates; an update from
   another head does not change it; an update before the approving review is ignored; `steps` lists

@@ -30,7 +30,8 @@ that was interrupted) adds its tokens only, and marks the total partial (`partia
 
     agent_json.py steps < comment bodies            "<step> <round> <tokens>" per marker found
     agent_json.py usage-table < comment bodies      Markdown table of the tokens, model and limits per step
-    agent_json.py approved-head < comment bodies    the commit the latest review approved, if any
+    agent_json.py approved-head < comment bodies    the commit the latest review approved, if any,
+                                                    moved along the updates with main after it
 
 Standard library only: run with `uv run --no-project python`.
 """
@@ -485,6 +486,19 @@ def markers(stream):
         yield parse_marker(match.group(1))
 
 
+def approved_head(ms):
+    """The commit the latest review approved, moved along the updates with main that followed it."""
+    ms = list(ms)
+    last = max((i for i, m in enumerate(ms) if m.get("step") == "review"), default=None)
+    if last is None or ms[last].get("approved") != "1":
+        return ""
+    head = ms[last].get("head", "")
+    for m in ms[last + 1 :]:
+        if m.get("step") == "update-main" and head and m.get("from") == head:
+            head = m.get("head", "")
+    return head
+
+
 def main(argv):
     command, args = argv[1], argv[2:]
     if command == "stream":
@@ -520,9 +534,9 @@ def main(argv):
         for m in markers(sys.stdin):
             print(m.get("step", "?"), m.get("round", "0"), m.get("tokens", "0"))
     elif command == "approved-head":
-        reviews = [m for m in markers(sys.stdin) if m.get("step") == "review"]
-        if reviews and reviews[-1].get("approved") == "1":
-            print(reviews[-1].get("head", ""))
+        head = approved_head(markers(sys.stdin))
+        if head:
+            print(head)
     elif command == "usage-table":
         print(usage_table(list(markers(sys.stdin))))
     else:
