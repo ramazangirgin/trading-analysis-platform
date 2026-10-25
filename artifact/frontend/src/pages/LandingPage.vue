@@ -15,6 +15,7 @@ const failure = ref<unknown>(null)
 let page = 0
 
 async function loadNext() {
+  if (loading.value) return
   loading.value = true
   try {
     const result = await previewApi.list(page, PAGE_SIZE)
