@@ -10,7 +10,10 @@ When the `Release` workflow publishes a new release `vX.Y.Z`, a new `Deploy` wor
 tag to the Oracle VM behind https://analystock.app with the same playbook as
 `mise run server:deploy -- -e public_domain=analystock.app -e acme_email=<mail>`, without anyone
 running it from a laptop. The deploy runs in a `production` environment whose secrets hold the SSH
-key, the host and its pinned host key; it runs one at a time, is never cancelled halfway, fails
+key, the host and its pinned host key, and which requires the developer's approval: each deploy
+waits until the developer clicks *Approve and deploy*, then runs on its own. That one click departs
+from the issue's "without any manual step"; it is the developer's choice (answer on the plan's
+review). The deploy runs one at a time, is never cancelled halfway, fails
 visibly, and ends by checking that the platform answers over HTTPS and reports the released version.
 The same workflow can be started from the Actions tab for any released tag, which is also how a
 failed deploy is re-run and how a release is rolled back.
@@ -69,11 +72,18 @@ Release run ──gh workflow run deploy.yml -f tag=vX.Y.Z──▶ Deploy (envi
 - One job, `deploy` (name *Deploy to production*), `runs-on: ubuntu-24.04`, `timeout-minutes: 90`
   (the image build on the arm64 VM runs inside Ansible's `async: 3600`),
   `environment: { name: production, url: "https://${{ vars.PUBLIC_DOMAIN }}" }`.
+- **Approval**: the `production` environment has the developer as required reviewer. The job waits
+  in *Waiting* until it is approved on the run's page (GitHub also notifies the reviewer); nothing
+  of the job runs and no secret is handed out before that. `timeout-minutes` counts only from the
+  approval; an unapproved deploy waits up to GitHub's limit of 30 days, then fails. A rejected
+  deploy ends the run as failed and changes nothing on the server.
 - `concurrency: { group: deploy-production, cancel-in-progress: false }`: deploys run one at a time
   and a running one is never cancelled. GitHub keeps one pending run per group and replaces it with
   a newer one, so of several releases queued behind a running deploy only the newest is deployed
   next; Release dispatches in release order (it runs one at a time itself), so the server always
-  ends on the newest release. The header comment says so.
+  ends on the newest release. This also holds for runs waiting for approval: a deploy still waiting
+  when a newer release is dispatched is cancelled and replaced by the newer one, so the developer
+  approves only the newest. The header comment says so.
 - Steps:
   1. **Check the tag**: `TAG` from `inputs.tag` via `env:`. It must match
      `^v[0-9]+\.[0-9]+\.[0-9]+$` and `gh release view "$TAG"` must succeed (only released tags are
@@ -140,14 +150,16 @@ existing scripts:
    `ssh-keygen -F <server>` (with a port: `ssh-keygen -F '[<server>]:<port>'`); compare its
    fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
 4. The environment and its values with `gh` (or Settings → Environments): create `production`,
-   restrict its deployment branches to `main`, then
+   add yourself under *Required reviewers* (every deploy then waits for your approval; leave
+   *Prevent self-review* off, since you start the releases yourself), restrict its deployment
+   branches to `main`, then
    `gh secret set DEPLOY_SSH_KEY --env production < ~/.ssh/platform-deploy-github`,
    `gh secret set DEPLOY_HOST --env production`, `gh secret set DEPLOY_KNOWN_HOSTS --env production`,
    `gh secret set ACME_EMAIL --env production`, `gh variable set PUBLIC_DOMAIN --env production
    --body analystock.app`, and optionally `DEPLOY_USER`, `DEPLOY_PORT`.
 5. SSH must reach the VM from GitHub's runners: the OCI security list must allow TCP 22 from
-   `0.0.0.0/0` (GitHub-hosted runners have no fixed addresses). With key-only SSH on
-   (`setup-remote.sh … --key-only-ssh`) that is the usual setup.
+   `0.0.0.0/0` (GitHub-hosted runners have no fixed addresses; analystock.app's does). With
+   key-only SSH on (`setup-remote.sh … --key-only-ssh`) that is the usual setup.
 
 | Name | Kind | Value |
 |---|---|---|
@@ -187,7 +199,7 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 - **Files**: `.github/workflows/deploy.yml` (new)
 - **Steps**:
   - [ ] Write the workflow as in the Design: header comment (what, why `workflow_dispatch` only, the
-        concurrency behaviour), `workflow_dispatch` with input `tag`, `run-name`, `permissions`,
+        approval of the `production` environment, the concurrency behaviour), `workflow_dispatch` with input `tag`, `run-name`, `permissions`,
         `concurrency`, the `production` environment, the steps 1 to 7.
 - **Tests**: no workflow test harness exists. CI's *Server deploy (Ansible)* job runs because
   `.github/` changed (it checks the playbook, not the workflow). The proof is the first real run:
@@ -212,7 +224,8 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
   `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
   - [ ] `deploy/server/README.md`: the new section *Automatic deploys on release* (how it is
-        triggered, the one-time setup and the table above, re-running a failed deploy and rolling
+        triggered, that each deploy waits for the required reviewer's approval and where to give
+        it, the one-time setup and the table above, re-running a failed deploy and rolling
         back from the Actions tab or with `gh workflow run deploy.yml --ref main -f tag=vX.Y.Z`,
         and the rollback caveat below); a line in *Upgrading* pointing to it; *Secrets* table rows
         for the GitHub key and the environment; *Troubleshooting* entries for a host key mismatch
@@ -238,9 +251,10 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 - `mise run check`: version sync and the rest of the quick check.
 - The issue's "done when" can only be proven on the real server: set up the `production`
   environment (README steps) **before** merging this pull request; merging it raises the version,
-  Release creates `vX.Y.Z` and starts Deploy, and the Deploy run ends green with the version check
-  and the HTTPS check passed. Then start Deploy by hand with the previous tag and the new one again
-  to prove re-run and rollback. If the environment is not set up yet, that first Deploy run fails
+  Release creates `vX.Y.Z` and starts Deploy, which waits for approval; the developer approves it,
+  and the Deploy run ends green with the version check and the HTTPS check passed. Then start Deploy
+  by hand with the previous tag and the new one again (approving each) to prove re-run and
+  rollback. If the environment is not set up yet, that first Deploy run fails
   at *Check the tag* with a message naming the missing values, and is re-run by hand after the
   setup.
 
@@ -248,7 +262,7 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 
 | What | Where | Change |
 |---|---|---|
-| Text | `deploy/server/README.md`, new section "Automatic deploys on release"; "Upgrading", "Secrets", "Troubleshooting" | Trigger, one-time setup (key, host key, environment, secrets and variables, SSH reachability), re-run and rollback, the migration caveat |
+| Text | `deploy/server/README.md`, new section "Automatic deploys on release"; "Upgrading", "Secrets", "Troubleshooting" | Trigger, the approval each deploy waits for, one-time setup (key, host key, environment with its required reviewer, secrets and variables, SSH reachability), re-run and rollback, the migration caveat |
 | Text | `README.md`, "Versioning and releases" | A new release is deployed automatically; link to the section above |
 | Text | `docs/coding-convention/repository-versioning-and-releases.md`, "Where it is checked and used" and "Why" | Release starts Deploy; the Deploy row; the environment's secrets |
 | Text | `docs/agentic-development.md`, step 10 | The release is deployed after it is published |
@@ -258,20 +272,18 @@ WP1, WP2 and WP3 have no dependency between them; WP4 documents all three.
 
 - The OCI security list for TCP 80, TCP 443 and UDP 443 (already set up), and changing the TCP 22
   rule (a manual check in the setup steps).
-- A self-hosted runner, a VPN (Tailscale, WireGuard) or the OCI Bastion service as the route to
-  SSH: only if GitHub-hosted runners must not reach port 22 (see Open questions).
+- A self-hosted runner, a VPN or the OCI Bastion service as the route to SSH: TCP 22 is open to
+  GitHub-hosted runners.
 - Publishing images to GHCR so the server stops building them: the deploy keeps building on the
   server as `server:deploy` does.
 - Exposing `/actuator/info` through Caddy.
 
 ## Open questions
 
-- **Required reviewers on `production`**: the plan creates the environment without required
-  reviewers, since the acceptance criteria ask for no manual step. Adding yourself as a required
-  reviewer would make every deploy wait for an approval click. Keep it without?
-- **SSH from GitHub-hosted runners**: the plan assumes the OCI security list allows TCP 22 from
-  `0.0.0.0/0` (the OCI default). If it is restricted to your own address, either open it (with
-  key-only SSH on) or choose another route (self-hosted runner on another machine, Tailscale's
-  GitHub action, OCI Bastion), which would be a follow-up issue. Which applies?
-- **`ACME_EMAIL` as a secret**: the issue allows a variable; the plan makes it a secret so the
-  address does not show in the public repository's logs. Fine?
+None. The developer's answers on the plan's review, recorded as decisions:
+
+- **Required reviewer on `production`**: yes, the developer. Every deploy waits for one approval
+  click (see Design, *Approval*); this departs from the issue's "no manual step" by choice.
+- **SSH from GitHub-hosted runners**: TCP 22 is open to them on the OCI security list; no other
+  route is needed.
+- **`ACME_EMAIL`**: stays a secret.
