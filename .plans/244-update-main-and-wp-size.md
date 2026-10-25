@@ -311,8 +311,8 @@ Packages without a dependency between them can be implemented in parallel.
 
 ## Open questions
 
-- Turn limit default 40 and 3 continuations: right numbers? The plan picks 40 from #194 (25–30 turns
-  ≈ 2M tokens per package, 85 turns 13.4M).
-- Work package cap of 8 files (tests included): right size, and a warning only (not a refusal)?
-- `develop-issue` on Sonnet (`model: claude-sonnet-5-5`): accepted, or keep the session's model?
-  `model:` only applies when the skill is typed, which is how it is usually started.
+None open. Decided in review:
+
+- Turn limit `AGENT_WP_MAX_TURNS` 40, and `AGENT_WP_MAX_CONTINUATIONS` 3 fresh continuations.
+- Work package cap `AGENT_MAX_WP_FILES` 8 files (tests included), a warning only, not a refusal.
+- `develop-issue` runs on Sonnet (`model: claude-sonnet-5-5`); the plan writing stays on Opus.
