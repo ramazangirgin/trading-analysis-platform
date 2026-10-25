@@ -613,7 +613,7 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_NTFY_TOPIC` | none | An ntfy topic that also receives each milestone; sends progress lines to an external service (`AGENT_NTFY_SERVER`, default `https://ntfy.sh`) |
 
 `run_agent` also sets `AGENT_QUIET=1` for every agent (a developer may set it too): `mise run check`,
-`format`, `format-check`, `runner-test` and `gradle` then print one `ok:` line on
+`format`, `format-check`, `runner-test`, `gradle` and the Git hooks then print one `ok:` line on
 success, and on a failure an excerpt and the path of the full log in `build/quiet/<name>.log`
 ([`scripts/quiet.sh`](../scripts/quiet.sh)). Without it they print everything, as before.
 
