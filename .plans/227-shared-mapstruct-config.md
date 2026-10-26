@@ -241,11 +241,12 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP12: Identity adapter, role and timestamp mappers
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `artifact/backend/domain/identity/adapter/build.gradle.kts`; in artifact/backend/domain/identity/adapter/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/identity/adapter/persistence/mapper: `InstantToOptionalInstantMapper.java`, `OptionalInstantToInstantMapper.java`, `RoleEntityToRoleMapper.java`, `RoleIdEmbeddableToRoleIdMapper.java`, `RoleIdToRoleIdEmbeddableMapper.java`, `RoleToRoleEntityMapper.java`
 - **Steps**:
-  - [ ] `implementation(project(":backend:library:mapper"))`.
-  - [ ] Put the shared config on each mapper.
+  - [x] `implementation(project(":backend:library:mapper"))`.
+  - [x] Put the shared config on each mapper.
 - **Tests**: the identity persistence adapter tests pass (Testcontainers).
 
 ### WP13: Identity adapter, user mappers
