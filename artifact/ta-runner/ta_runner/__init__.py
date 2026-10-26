@@ -1,6 +1,6 @@
 """Headless runner for TradingAgents: spec.json in, JSONL events out."""
 
-__version__ = "5.14.0"
+__version__ = "5.15.0"
 
 # Version of the runner <-> platform event protocol (docs/event-protocol.md).
 PROTOCOL_VERSION = 1

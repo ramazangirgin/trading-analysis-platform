@@ -88,6 +88,30 @@ close once that submission has run on `main` after the merge, and `alerts.py aft
 reports each one as fixed or says why it is still open. The helper's tests run with
 `mise run skill:test`.
 
+## Setting up the repository on GitHub
+
+The rules above, and what the workflows and scripts expect from GitHub, are set by
+[`scripts/github-setup.sh`](../scripts/github-setup.sh), run by an admin with `gh` logged in. It
+creates what is missing and resets what drifted, so it is safe to run again; a new copy of the
+repository needs it once:
+
+```sh
+mise run github:setup
+```
+
+| What | Setting |
+|---|---|
+| Merging | Merge commits, squash and rebase allowed; auto-merge off; branches are not deleted on merge |
+| Ruleset "main" | The rules listed under [Continuous integration](#continuous-integration); the required check is **CI passed** from GitHub Actions, so a check of the same name from elsewhere does not count |
+| Actions | The workflows' token is read-only unless a workflow asks for more (`release.yml` does), and cannot approve pull requests |
+| Security | Dependabot alerts (for `dependabot-fix`), secret scanning with push protection, private vulnerability reporting |
+| Labels | `agent` and `plan` (the agent scripts), and the labels [`.github/release.yml`](../.github/release.yml) sorts the release notes by |
+| Environment `production` | Its required reviewer (you), deployments from `main` only, and the values of the `Deploy` workflow when given: `DEPLOY_KEY`, `DEPLOY_HOST`, `ACME_EMAIL`, `PUBLIC_DOMAIN` ([automatic deploys](../deploy/server/README.md#one-time-setup)) |
+
+Two things it cannot do: install the [Renovate app](https://github.com/apps/renovate) on the
+repository (once, from the app's page), and name the code owners: [`.github/CODEOWNERS`](../.github/CODEOWNERS)
+must name the admins, and the script warns when it does not name you.
+
 ## Versioning and releases
 
 The whole repository has one [Semantic Versioning](https://semver.org/) version, `MAJOR.MINOR.PATCH`:
