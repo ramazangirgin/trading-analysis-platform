@@ -273,14 +273,15 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP15: Rule `TAP-M1`, compiler arguments, docs, version
 
+- **Status**: done
 - **Depends on**: WP3, WP4, WP5, WP6, WP7, WP8, WP9, WP10, WP11, WP13, WP14
 - **Files**: `config/checkstyle/checkstyle.xml`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M1/Violation.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M1/Compliant.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M1/Suppressed.java`, `build-logic/src/main/kotlin/tradinganalysisplatform.mapstruct.gradle.kts`, `docs/coding-convention/backend-java-checkstyle.md`
 - **Steps**:
-  - [ ] Add the `TAP-M1` module at the end of the project rules in `checkstyle.xml` as in the design.
-  - [ ] Fixtures: `Violation.java` (`@Mapper` and `@Mapper(uses = ...)` without `config`, marked), `Compliant.java` (`@Mapper(config = SharedMapperConfig.class)`, also with `uses`; an unrelated `Mapper` annotation), `Suppressed.java` (`@SuppressWarnings("checkstyle:TAP-M1")` with a reason).
-  - [ ] Remove `defaultComponentModel`, `defaultInjectionStrategy` and `unmappedTargetPolicy` from the plugin's compiler arguments; keep `suppressGeneratorTimestamp`.
-  - [ ] Checkstyle convention: add `M` (MapStruct) to the id groups; a catalogue row for `TAP-M1` (main and test, `RequiredAnnotationAttributeCheck`, `annotations = org.mapstruct.Mapper`, `attributes = config`, reason: one place sets deep copying and the unmapped policies, a mapper without it silently shares state and drops fields; bad `@Mapper(uses = X.class)` / good `@Mapper(config = SharedMapperConfig.class, uses = X.class)`).
-  - [ ] `mise run version:bump minor`.
+  - [x] Add the `TAP-M1` module at the end of the project rules in `checkstyle.xml` as in the design.
+  - [x] Fixtures: `Violation.java` (`@Mapper` and `@Mapper(uses = ...)` without `config`, marked), `Compliant.java` (`@Mapper(config = SharedMapperConfig.class)`, also with `uses`; an unrelated `Mapper` annotation), `Suppressed.java` (`@SuppressWarnings("checkstyle:TAP-M1")` with a reason).
+  - [x] Remove `defaultComponentModel`, `defaultInjectionStrategy` and `unmappedTargetPolicy` from the plugin's compiler arguments; keep `suppressGeneratorTimestamp`.
+  - [x] Checkstyle convention: add `M` (MapStruct) to the id groups; a catalogue row for `TAP-M1` (main and test, `RequiredAnnotationAttributeCheck`, `annotations = org.mapstruct.Mapper`, `attributes = config`, reason: one place sets deep copying and the unmapped policies, a mapper without it silently shares state and drops fields; bad `@Mapper(uses = X.class)` / good `@Mapper(config = SharedMapperConfig.class, uses = X.class)`).
+  - [x] `mise run version:bump minor`.
 - **Tests**: `ProjectRulesTest` runs `TAP-M1` on its fixtures; `DocumentationTest` finds the catalogue row; `mise run build` passes with no `TAP-M1` finding and with the compiler arguments gone (the generated mappers are still Spring beans with constructor injection, so the application context and every integration test still start).
 
 ## Tests
