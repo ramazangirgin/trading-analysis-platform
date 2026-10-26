@@ -1,6 +1,7 @@
 # Shared library: mapper
 
-`:backend:library:mapper` holds generic MapStruct scalar mappers that more than one module needs. Like
+`:backend:library:mapper` holds the MapStruct configuration every mapper uses, with its mapping control, and the generic
+scalar mappers that more than one module needs. Like
 every shared library it holds no domain type and no business rule, and names no domain, not even in
 its tests ([package structure](../../../../docs/coding-convention/backend-java-package-structure.md#shared-libraries)).
 
