@@ -7,4 +7,7 @@ description = "Shared library: generic MapStruct scalar mappers, no project type
 dependencies {
     // The generated mappers are Spring beans (@Component).
     implementation(libs.spring.context)
+
+    // SharedMapperConfigTest generates a mapper over made-up types.
+    testAnnotationProcessor(libs.mapstruct.processor)
 }

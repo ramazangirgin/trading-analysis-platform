@@ -142,14 +142,15 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP2: The shared config in the mapper library
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `artifact/backend/library/mapper/src/main/java/tr/girgin/backend/trading/analysis/platform/library/mapper/SharedMapperConfig.java`, `artifact/backend/library/mapper/src/main/java/tr/girgin/backend/trading/analysis/platform/library/mapper/DeepCloneWithConversions.java`, `artifact/backend/library/mapper/src/main/java/tr/girgin/backend/trading/analysis/platform/library/mapper/DurationToMillisMapper.java`, `artifact/backend/library/mapper/src/main/java/tr/girgin/backend/trading/analysis/platform/library/mapper/EnumToLowerCaseNameMapper.java`, `artifact/backend/library/mapper/build.gradle.kts`, `artifact/backend/library/mapper/src/test/java/tr/girgin/backend/trading/analysis/platform/library/mapper/SharedMapperConfigTest.java`, `artifact/backend/library/mapper/README.md`
 - **Steps**:
-  - [ ] Add `DeepCloneWithConversions` and `SharedMapperConfig` as in the design.
-  - [ ] Put `config = SharedMapperConfig.class` on the two library mappers.
-  - [ ] `build.gradle.kts`: `testAnnotationProcessor(libs.mapstruct.processor)`.
-  - [ ] `SharedMapperConfigTest`, with a test-only mapper nested in it (made-up names, no domain, e.g. `SampleToSampleMapper` over a mutable `Sample` holding a mutable `Part` and a `List<Part>`, and a `BigDecimal` mapped to `String`), using the shared config.
-  - [ ] README: the table lists `SharedMapperConfig` and `DeepCloneWithConversions` ("used by every mapper"); "Only MapStruct mappers live here" becomes mappers, the shared config and its mapping control; a decision "One configuration for every mapper" (deep copy, both unmapped policies at `ERROR`, why `DeepCloneWithConversions` and not `DeepClone`, no `uses`, a source property left out on purpose is listed in `@BeanMapping(ignoreUnmappedSourceProperties = ...)`, enforced by `TAP-M1`).
+  - [x] Add `DeepCloneWithConversions` and `SharedMapperConfig` as in the design.
+  - [x] Put `config = SharedMapperConfig.class` on the two library mappers.
+  - [x] `build.gradle.kts`: `testAnnotationProcessor(libs.mapstruct.processor)`.
+  - [x] `SharedMapperConfigTest`, with a test-only mapper nested in it (made-up names, no domain, e.g. `SampleToSampleMapper` over a mutable `Sample` holding a mutable `Part` and a `List<Part>`, and a `BigDecimal` mapped to `String`), using the shared config.
+  - [x] README: the table lists `SharedMapperConfig` and `DeepCloneWithConversions` ("used by every mapper"); "Only MapStruct mappers live here" becomes mappers, the shared config and its mapping control; a decision "One configuration for every mapper" (deep copy, both unmapped policies at `ERROR`, why `DeepCloneWithConversions` and not `DeepClone`, no `uses`, a source property left out on purpose is listed in `@BeanMapping(ignoreUnmappedSourceProperties = ...)`, enforced by `TAP-M1`).
 - **Tests**: `SharedMapperConfigTest` proves the copy is equal to the source but its nested `Part`, its list and the list's elements are not the same instances (`isNotSameAs`), and that the built-in conversion still applies. Existing `DurationToMillisMapperTest`, `EnumToLowerCaseNameMapperTest` pass.
 
 ### WP3: BFF mappers, part 1

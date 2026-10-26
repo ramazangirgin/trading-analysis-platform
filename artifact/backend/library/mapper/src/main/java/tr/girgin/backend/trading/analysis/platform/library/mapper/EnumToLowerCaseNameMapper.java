@@ -9,7 +9,7 @@ import org.mapstruct.Named;
  * applied where a mapping asks for it with {@code qualifiedByName = "lowerCaseName"}, so no other
  * enum to String mapping changes.
  */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface EnumToLowerCaseNameMapper {
 
     @Named("lowerCaseName")

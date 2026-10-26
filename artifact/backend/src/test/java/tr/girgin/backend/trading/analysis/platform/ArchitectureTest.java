@@ -4,7 +4,6 @@ import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.annotatedWith;
-import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.metaAnnotatedWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -28,6 +27,7 @@ import java.util.Map;
 import org.mapstruct.Mapper;
 import org.mapstruct.MapperConfig;
 import org.mapstruct.control.MappingControl;
+import org.mapstruct.control.MappingControls;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
@@ -85,8 +85,9 @@ class ArchitectureTest {
     private static final DescribedPredicate<JavaClass> MAPPER_CONFIG =
             annotatedWith(MapperConfig.class).forSubtype();
 
-    private static final DescribedPredicate<JavaClass> MAPPING_CONTROL =
-            metaAnnotatedWith(MappingControl.class).forSubtype();
+    private static final DescribedPredicate<JavaClass> MAPPING_CONTROL = annotatedWith(MappingControl.class)
+            .or(annotatedWith(MappingControls.class))
+            .forSubtype();
 
     private static final DescribedPredicate<JavaClass> MAPSTRUCT_CONFIG = MAPPER_CONFIG.or(MAPPING_CONTROL);
 
