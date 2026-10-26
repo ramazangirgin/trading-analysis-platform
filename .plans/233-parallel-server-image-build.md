@@ -141,16 +141,17 @@ written into the pull request description.
 
 ### WP1: Split the docker-build task
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `mise.toml`, `docs/development.md`, `gradle.properties`,
   `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
 - **Steps**:
-  - [ ] Add `[tasks."docker-build:platform"]` and `[tasks."docker-build:runner"]` with the current
+  - [x] Add `[tasks."docker-build:platform"]` and `[tasks."docker-build:runner"]` with the current
         commands and a `description` each; make `[tasks.docker-build]` run the two as
         `{ task = ... }` entries, one after the other; keep its comment, and say that the server
         deploy builds them side by side.
-  - [ ] `docs/development.md`: add the two tasks to the task list next to `docker-build`.
-  - [ ] `mise run version:bump minor` (writes the three version files).
+  - [x] `docs/development.md`: add the two tasks to the task list next to `docker-build`.
+  - [x] `mise run version:bump minor` (writes the three version files).
 - **Tests**: `mise run docker-build` still builds both images with both tags
   (`docker image ls trading-analysis-platform` and `ta-runner` show the version and `latest`);
   `mise tasks` lists the two new tasks; `mise run check` passes (version sync).

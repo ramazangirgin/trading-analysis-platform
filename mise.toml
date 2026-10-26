@@ -161,15 +161,26 @@ run = [
   "./gradlew --console=plain :frontend:pnpmApiTypes",
 ]
 
-[tasks.docker-build]
-description = "Build the Docker images: the platform (backend + UI jar) and ta-runner (see deploy/)"
-# One after the other: both are bound by writing image layers, and building them side by side only
-# makes them compete for the disk (slow inside Podman's VM on macOS).
-# Tagged with the version and latest; the Compose setup uses latest unless deploy/.env says otherwise.
+[tasks."docker-build:platform"]
+description = "Build the platform Docker image (backend + UI jar, see deploy/)"
 run = [
   "./gradlew --console=plain :backend:bootJar",
   "v=$(scripts/version.sh) && docker build -f deploy/Dockerfile --build-arg VERSION=$v -t trading-analysis-platform:$v -t trading-analysis-platform:latest .",
-  "v=$(scripts/version.sh) && docker build --build-arg VERSION=$v -t ta-runner:$v -t ta-runner:latest artifact/ta-runner",
+]
+
+[tasks."docker-build:runner"]
+description = "Build the ta-runner Docker image (see deploy/)"
+run = "v=$(scripts/version.sh) && docker build --build-arg VERSION=$v -t ta-runner:$v -t ta-runner:latest artifact/ta-runner"
+
+[tasks.docker-build]
+description = "Build the Docker images: the platform (backend + UI jar) and ta-runner (see deploy/)"
+# One after the other: both are bound by writing image layers, and building them side by side only
+# makes them compete for the disk (slow inside Podman's VM on macOS). The server deploy builds them
+# side by side, since the ta-runner image needs neither the jar nor the platform image.
+# Tagged with the version and latest; the Compose setup uses latest unless deploy/.env says otherwise.
+run = [
+  { task = "docker-build:platform" },
+  { task = "docker-build:runner" },
 ]
 
 # One version for the whole repository (docs/coding-convention/repository-versioning-and-releases.md): every
