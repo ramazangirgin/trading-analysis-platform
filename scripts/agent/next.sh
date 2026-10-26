@@ -21,7 +21,8 @@
 #                                                  update-main.sh (its push starts CI again)
 #   CI pending, the pull request conflicts with the base
 #                                                  update-main.sh (GitHub runs no CI on a conflict);
-#                                                  stop if it cannot resolve it. Only behind: wait
+#                                                  stop if it cannot resolve it. Only behind: wait.
+#                                                  A head counts only after one 30-second wait
 #
 # A pull request still in the plan stage (labelled "plan") prints "waiting for: plan approval" and
 # nothing runs. Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
@@ -95,7 +96,11 @@ next_step() {
     ;;
   wait)
     # A pull request that conflicts with its base gets no CI run: waiting could only time out.
-    if [ "$(gh pr view "$pr" --json mergeable,mergeStateStatus 2>/dev/null | py "$AGENT_DIR/merge_state.py" wait-step)" = update ]; then
+    # GitHub computes the merge state in the background, so a head's state counts only once the
+    # loop has waited for that head: right after our own push it may still show the old conflict.
+    head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+    if { $dry_run || [ "$head" = "$waiting_head" ]; } &&
+      [ "$(gh pr view "$pr" --json mergeable,mergeStateStatus 2>/dev/null | py "$AGENT_DIR/merge_state.py" wait-step)" = update ]; then
       echo update-main-conflict
       return
     fi
