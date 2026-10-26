@@ -158,17 +158,18 @@ written into the pull request description.
 
 ### WP2: Build the images side by side in the playbook, and document it
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `deploy/server/roles/app/tasks/main.yml`, `.github/workflows/ci.yml`,
   `deploy/server/test-deploy.sh`, `deploy/server/README.md`, `docs/ci-and-releases.md`
 - **Steps**:
-  - [ ] Replace *Build the images* with the three tasks of "Playbook" above.
-  - [ ] `ci.yml`: `server-e2e` `timeout-minutes: 20`; correct its comment (duration, images built
+  - [x] Replace *Build the images* with the three tasks of "Playbook" above.
+  - [x] `ci.yml`: `server-e2e` `timeout-minutes: 20`; correct its comment (duration, images built
         side by side on the runner as on a server, no CI cache).
-  - [ ] `test-deploy.sh`: replace "Takes 20 to 30 minutes" in the header with the measured
+  - [x] `test-deploy.sh`: replace "Takes 20 to 30 minutes" in the header with the measured
         duration on a CI runner (about 5 to 6 minutes; the images are still built on the "server").
-  - [ ] `deploy/server/README.md`: see "Docs to update".
-  - [ ] `docs/ci-and-releases.md`: see "Docs to update".
+  - [x] `deploy/server/README.md`: see "Docs to update".
+  - [x] `docs/ci-and-releases.md`: see "Docs to update".
   - [ ] After CI ran: the before/after table in the pull request description ("Measuring the
         result").
 - **Tests**: `mise run server:check` (ansible-lint production profile, the playbook's syntax);

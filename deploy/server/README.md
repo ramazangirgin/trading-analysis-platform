@@ -109,7 +109,8 @@ which mise installs from [`mise.toml`](../../mise.toml) on first use, and sends 
 
 ```
 your computer: mise run server:deploy ──ssh deploy@<server>──▶ server: apt, Docker, git checkout,
-               (ansible-playbook)       ◀── each task's result ──      mise run docker-build,
+               (ansible-playbook)       ◀── each task's result ──      mise run docker-build:runner
+                                                                        beside docker-build:platform,
                                                                         docker compose up
 ```
 
@@ -119,7 +120,7 @@ The playbook ([`site.yml`](site.yml)) runs four roles as root:
 |---|---|
 | `base` | A full package upgrade on the first deploy (later ones: `-e upgrade_packages=true`), automatic daily security updates (no automatic reboot), a swap file, the `ufw` firewall (deny incoming, the SSH port allowed; with `public_domain` also 80/tcp, 443/tcp and 443/udp, plus Oracle Cloud's iptables rules) |
 | `docker` | Docker from its own apt repository, and the `platform` user in the `docker` group |
-| `app` | mise, the repository in `/opt/trading-analysis-platform` at `app_ref`, `deploy/.env` (the database password is generated on the server and never leaves it), the Docker images built on the server, `docker compose up` (with the Caddy overlay when `public_domain` is set), and a wait for `/actuator/health` (with `public_domain`, also over HTTPS from your computer) |
+| `app` | mise, the repository in `/opt/trading-analysis-platform` at `app_ref`, `deploy/.env` (the database password is generated on the server and never leaves it), the Docker images built on the server (the ta-runner image, `mise run docker-build:runner`, beside the jar and the platform image, `mise run docker-build:platform`), `docker compose up` (with the Caddy overlay when `public_domain` is set), and a wait for `/actuator/health` (with `public_domain`, also over HTTPS from your computer) |
 | `backup` | A daily `pg_dump` (see below) |
 
 Every task is idempotent: a second `server:deploy` on an unchanged server reports `changed=0`. The
@@ -370,7 +371,7 @@ Deploy the new server as above, copy the latest dump over and restore it as in
 |---|---|---|
 | `mise run server:check` | anywhere | `ansible-lint` (production profile) and the playbook's syntax |
 | `mise run server:test-setup` | your computer, with Docker or Podman | The setup scripts against a throwaway Ubuntu 24.04 container ([`test-setup.sh`](test-setup.sh)): key, deploy user, sudoers and modes, a second run that changes nothing, the login test, the inventory, a deploy user that needs a sudo password caught, key-only SSH. About a minute. |
-| `mise run server:test` | a throwaway machine only | The whole deployment with that machine as the server, over SSH to `127.0.0.1` ([`test-deploy.sh`](test-deploy.sh)): the setup scripts, a deploy of the checked-out commit, a second deploy with `changed=0`, the UI through the tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH. It skips the first deploy's package upgrade, which on a CI runner takes as long as the runner image has updates pending. 20 to 30 minutes. |
+| `mise run server:test` | a throwaway machine only | The whole deployment with that machine as the server, over SSH to `127.0.0.1` ([`test-deploy.sh`](test-deploy.sh)): the setup scripts, a deploy of the checked-out commit, a second deploy with `changed=0`, the UI through the tunnel, only SSH open, a backup, a deploy of another commit that rebuilds, key-only SSH. It skips the first deploy's package upgrade, which on a CI runner takes as long as the runner image has updates pending. The images are built as on a fresh server, with no cache. About 6 minutes on a CI runner. |
 
 CI runs the first two when `deploy/`, `mise.toml` or `.github/` changed (job *Server deploy
 (Ansible)*), and `server:test` on a fresh runner when the deployment changed (job *Server deploy
@@ -416,7 +417,11 @@ multipass delete --purge platform-test
 - **`sudo asked for a password` in step 3, or `Missing sudo password` in the deploy.** The
   deploy user's sudoers file is missing or changed: run step 2 again.
 - **SSH is not on port 22.** Set `ansible_port` in the inventory; the firewall allows that port.
-- **The build on the server fails or is slow.** It runs `mise run docker-build` there. On arm64,
+- **The build on the server fails or is slow.** It runs `mise run docker-build:runner` and
+  `mise run docker-build:platform` there side by side. Read the output of the task *Build the
+  platform image* or *Wait for the ta-runner image* (it carries the ta-runner build's output).
+  To retry one, run its task alone on the server as `platform` in `/opt/trading-analysis-platform`.
+  On arm64,
   the [ta-runner image (arm64)](../../docs/ci-and-releases.md#continuous-integration) CI job catches
   dependencies without arm64 wheels earlier. Retry the deploy; see `docker compose … logs` on the
   server.

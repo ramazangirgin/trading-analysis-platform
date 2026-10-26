@@ -130,9 +130,23 @@
   when: app_build_needed
   changed_when: true
 
-# The first build takes a while on the server; async keeps the SSH connection from timing out.
-- name: Build the images
-  ansible.builtin.command: mise run docker-build
+# The first build takes a while on the server; async keeps the SSH connection from timing out. The
+# ta-runner image needs neither the jar nor the platform image, so it builds beside Gradle.
+- name: Start building the ta-runner image
+  ansible.builtin.command: mise run docker-build:runner
+  args:
+    chdir: "{{ app_dir }}"
+  become: true
+  become_user: "{{ app_user }}"
+  environment: "{{ app_user_environment }}"
+  async: 3600
+  poll: 0
+  register: app_runner_build
+  when: app_build_needed
+  changed_when: true
+
+- name: Build the platform image
+  ansible.builtin.command: mise run docker-build:platform
   args:
     chdir: "{{ app_dir }}"
   become: true
@@ -142,6 +156,20 @@
   poll: 15
   when: app_build_needed
   changed_when: true
+
+# Same become_user as the start: the job's status file is in that user's ~/.ansible_async.
+- name: Wait for the ta-runner image
+  ansible.builtin.async_status:
+    jid: "{{ app_runner_build.ansible_job_id }}"
+  become: true
+  become_user: "{{ app_user }}"
+  environment: "{{ app_user_environment }}"
+  register: app_runner_build_result
+  until: app_runner_build_result.finished
+  retries: 240
+  delay: 15
+  when: app_build_needed
+  changed_when: false
 
 - name: Record the commit the images were built from
   ansible.builtin.copy:
