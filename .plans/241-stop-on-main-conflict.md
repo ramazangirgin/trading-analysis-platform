@@ -102,12 +102,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Merge state helper
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/agent/merge_state.py` (new), `scripts/agent/test_merge_state.py` (new)
 - **Steps**:
-  - [ ] `merge_state.py` with the `wait-step` command as in the design (module docstring with the
+  - [x] `merge_state.py` with the `wait-step` command as in the design (module docstring with the
         usage, like `merge_versions.py`; standard library only)
-  - [ ] a function the test calls directly (state dict → `update | wait`)
+  - [x] a function the test calls directly (state dict → `update | wait`)
 - **Tests**: `test_merge_state.py`: `DIRTY` → `update`; `mergeable` `CONFLICTING` with
   `mergeStateStatus` `UNKNOWN` or `DRAFT` → `update`; `BEHIND`, `BLOCKED`, `CLEAN`, `UNSTABLE`,
   `UNKNOWN` → `wait`; missing fields or empty input → `wait`; the command line (`main(argv)` with
