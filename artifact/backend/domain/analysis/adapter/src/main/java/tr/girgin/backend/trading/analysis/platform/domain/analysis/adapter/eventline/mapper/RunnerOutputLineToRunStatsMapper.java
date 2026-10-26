@@ -5,9 +5,10 @@ import java.time.Duration;
 import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.json.RunnerOutputLine;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 /** Stats exist only on STATS lines; other lines map to null. */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface RunnerOutputLineToRunStatsMapper {
 
     default RunStats map(RunnerOutputLine source) {
