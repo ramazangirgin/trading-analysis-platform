@@ -87,7 +87,10 @@ do not read other plans in `.plans/` as models.
   `*ExceptionToApiExceptionMapper` and a handler method there. Never plan a `try` / `catch` in a
   delegate that maps an exception.
 - **Work packages**: list the files each one creates or changes, so packages without a dependency
-  can be implemented in parallel. Every package names its tests.
+  can be implemented in parallel. Every package names its tests. A package creates or changes at
+  most 8 files, tests included (`AGENT_MAX_WP_FILES`), and stays in one module or layer: split a
+  larger one. One agent implements a package in one run, and a large package makes that run's
+  context, and its tokens, grow with every turn.
 - **Conventions**: for each affected part, name the conventions that apply and where the new code
   goes according to them (package, folder, layer). Do not propose a new layer, tool or pattern
   without saying so explicitly in "Open questions".
@@ -121,7 +124,10 @@ scripts/agent/plan-branch.sh .plans/<issue>-<slug>.md
 
 It creates `plan/<issue>-<slug>` from `origin/main` with exactly one commit that adds only that
 plan file, pushes it, opens a **draft pull request** labelled `plan` (the plan as its only change,
-no closing keyword) and comments the pull request's link on the issue. It never touches `main`. Run
+no closing keyword) and comments the pull request's link on the issue. It never touches `main`. It
+warns about a work package that names more files than the cap (`agent: WP3 names 12 files (more
+than 8): consider splitting it`) and pushes anyway: split the package, or show the warning in the
+review (step 5) when the package cannot be split. Run
 it from a clean working tree; the plan file may be untracked. Once pushed, the script removes the
 untracked local copy: the branch holds the plan, and a leftover file would make `mise run agent:run`
 stop with "the working tree is not clean".

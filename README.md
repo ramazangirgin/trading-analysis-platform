@@ -718,9 +718,15 @@ mise run server:check  # ansible-lint and the playbook's syntax, without a serve
 mise run server:test-setup  # the server setup scripts against a throwaway Ubuntu container (needs Docker or Podman)
 mise run server:test   # the whole server deployment with THIS machine as the server: throwaway machines only (CI)
 mise run ci:test-changes  # the tests of scripts/ci-changes.sh, which decides the CI jobs a change needs
+mise run gradle :backend:test   # Gradle with --console=plain; the arguments after the task name go to Gradle
+mise run agent:stats 244       # token, tool and context statistics of an issue's agent transcripts (docs/agentic-development.md)
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases
 ```
+
+With `AGENT_QUIET=1` (set for the agents) `check`, `format`, `format-check`, `runner-test` and `gradle`
+print one `ok:` line per command, or on a failure an excerpt and the path of the full log in
+`build/quiet/`.
 
 `run`, `dev`, `build`, `test`, `e2e` and `screenshots` need Docker or Podman (a PostgreSQL container;
 the backend tests start theirs through Testcontainers; on a Podman machine the build points
@@ -850,8 +856,8 @@ A branch that fell behind `main` with conflicts is brought up to date by the Cla
 commits the merge as it is, conflict markers included, and resolves the conflicts in a second
 commit of its own, from the branch's commits, `main`'s commits on the same lines and the branch's
 plan; the reviewer sees each resolution with `git show`. It bumps the version again when `main`
-caught up, and stops and asks when a conflict cannot be resolved with confidence. `develop-issue`
-uses it to update its pull requests. A branch with such a merge commit is merged with
+caught up, and stops and asks when a conflict cannot be resolved with confidence. The agent loop
+and `develop-issue` use its unattended form, `scripts/agent/update-main.sh`. A branch with such a merge commit is merged with
 `gh pr merge <pr> --merge`: GitHub cannot rebase-merge it.
 
 Every version raised on `main` is a release. After **CI passed** on `main`,
@@ -894,10 +900,13 @@ mise run agent:run plan/32-compare-runs
 #    after CI passed: review agent comments R1-1, R1-2, ... (CRITICAL / MAJOR / MINOR)
 #    developer agent: one "Address R1-n: ..." commit or a reasoned reply per finding; CI again
 #    a second review → fix round, then a final comment and the PR is marked ready for review
+#    before each review round and before finalising, main is merged in when the branch is behind
+#    (update-main.sh: version-only conflicts by script, other conflicts by a fresh agent)
 
 # 4. Review the PR (start with the final comment: open and declined findings), then
 git fetch origin && git switch plan/32-compare-runs && git pull
-/merge-main-into-branch            # in Claude Code, if main moved: merge, resolve, push; CI again
+mise run agent:update-main <pr>    # if main moved: merge, resolve, push; CI again
+/merge-main-into-branch            # or by hand in Claude Code
 gh pr merge <pr> --merge --delete-branch     # --rebase when main was not merged in
 #    CI on main releases vX.Y.Z; "Closes #32" closes the issue.
 ```

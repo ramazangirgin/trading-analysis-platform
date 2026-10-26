@@ -30,11 +30,12 @@ in your final message.
 - Screenshots: for each one your package needs, write `e2e/screenshots/<name>.shot.ts` (a Playwright
   test: set up the data over the API as `e2e/tests/support.ts` does, open the page, bring it into
   the state the plan describes, then `shot(page, '<name>')` from `e2e/screenshots/support.ts`), run
-  `mise run screenshots <name>`, look at the saved `docs/screenshots/<name>.png` with the Read tool
-  and retake it until it shows what the plan describes. Show new screenshots in the README section
-  the plan names. Commit the `.shot.ts` and the PNG.
+  `mise run screenshots <name>`. Never open a PNG: check the report line the task prints (dimensions,
+  new or changed, not blank) and that your `.shot.ts` brings the page into the state the plan
+  describes (the selectors you wait for are visible before `shot()`). Show new screenshots in the
+  README section the plan names. Commit the `.shot.ts` and the PNG.
 - Before you finish, `mise run check` and the tests of every part you changed must pass:
-  `./gradlew --console=plain :backend:test` (backend), `./gradlew --console=plain :frontend:build`
+  `mise run gradle :backend:test` (backend), `mise run gradle :frontend:build`
   (frontend), `mise run runner-test` (ta-runner). Fix formatting with `mise run format`.
 - Do not push, do not open pull requests, do not touch other branches: the script does that.
 - Do not change files outside your package's scope. If the plan is wrong or impossible somewhere,
@@ -47,6 +48,11 @@ in your final message.
   `Compare view for two or more runs`. Every commit of your package ends with the trailer
   `Work-package: <id>` as a last line of its own, after a blank line (`<id>` is your package's, for
   example `WP2`). Do not commit build output or secrets.
+- Commit each finished step of the package as soon as its tests pass, with the `Work-package`
+  trailer and the plan's step ticked in that same commit (the `Status` line only with the last one).
+  A run is cut off after a number of turns and a fresh agent continues from the commits and the
+  plan, so uncommitted work is what gets lost. If your prompt has a "Continue" section, read the
+  listed commits and the plan's ticks instead of the whole code again, and do only the open steps.
 - With your last commit, record the progress in the plan file (`.plans/<issue>-<slug>.md`), in the
   same commit as the code: tick the package's steps (`- [x]`) and set its status line
   `- **Status**: done` (add the line under the `### WP…` heading if the package has none). If you

@@ -8,7 +8,7 @@ current branch. The failing jobs' log follows. Make CI pass. Nobody will answer 
 - Comments follow `docs/coding-convention/repository-code-comments.md`: add one only when it is
   really needed, never one that repeats the code or one copied from the code around.
 - Reproduce and check locally what you can: `mise run check`, and the failing part's tests
-  (`./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build`,
+  (`mise run gradle :backend:test`, `mise run gradle :frontend:build`,
   `mise run runner-test`, `mise run e2e`). Fix formatting with `mise run format`. A version check
   failure is fixed with `scripts/version.sh bump minor` (unless the plan says otherwise).
 - Commit with `git add` and `git commit` (the pre-commit hook must pass), subject

@@ -1,6 +1,7 @@
 ---
 name: develop-issue
 description: Take a GitHub issue of this repository through the whole agentic development flow (a folder of its own checked out from main, plan, plan branch and draft pull request reviewed on GitHub or in the session, developer agent, CI, review → fix rounds, finalise, update with main) in one run. It asks the developer only to approve the plan (and, when a plan branch exists already, whether to use that plan instead of writing one), runs every other step without asking, keeps a progress comment on the issue (each step's start, end, duration, tokens and result), and sends a notification when the pull request is ready for the developer's review. It never touches the current checkout and never merges unless asked. Use when the user asks to develop, implement or run the agents on an issue end to end, e.g. "/develop-issue 61", "/develop-issue https://github.com/<owner>/<repo>/issues/61" or "develop issue #61".
+model: claude-sonnet-5-5
 ---
 
 # Develop an issue
@@ -68,7 +69,11 @@ re-reads the whole context, so it is woken only when it has something to do.
    step 6; `failed:` and `stopping:` end the run (see below).
 5. **On a failure** (`>> failed: …`), show `tail -n 40` of `run.log`. Each agent's full stream is
    `.git/agent/<n>-<slug>/<step>.jsonl` (`wp-WP1.jsonl`, `review-1.jsonl`, `fix-R1-2.jsonl`,
-   `fix-ci-1.jsonl`); read its end only when asked.
+   `fix-ci-1.jsonl`, `update-main-1.jsonl`); read its end only when asked.
+
+This session never merges `main`, resolves a conflict or reads a diff in its own context: the
+update with `main` is a step script too (`update-main.sh`, step 6), with a fresh agent when a
+conflict needs one.
 
 When the developer asks for the status, run `cd <dir> && scripts/agent/status.sh <pr | plan branch>`
 (`mise run agent:status`) and summarise it. Do not poll otherwise.
@@ -78,14 +83,13 @@ When the developer asks for the status, run `cd <dir> && scripts/agent/status.sh
 The issue keeps one progress comment per plan branch (see
 [the walkthrough](../../../docs/agentic-development.md#progress-on-the-issue)): every step with its
 start, end, duration, tokens and result, the iterations, and the slow, repeated or failed steps. The
-step scripts record their own steps and update it themselves. This session records the steps it
-runs on its own, in the issue's folder, with `scripts/agent/progress.sh`. Each call updates the
+step scripts record their own steps and update it themselves, the update with `main` included. This
+session records the steps it runs on its own, in the issue's folder, with `scripts/agent/progress.sh`. Each call updates the
 comment and prints its link:
 
 | Step | Before it | After it |
 |---|---|---|
 | 2. Plan, until approved | `plan_start=$(date +%s)` and `plan_limits=$(scripts/agent/progress.sh probe)`; keep both | on the approval, per plan: `progress.sh begin plan/<n>-<slug> plan --at <plan_start> --limits "<plan_limits>"`, then `progress.sh end plan/<n>-<slug> plan "approved (<k> change rounds)"` |
-| 6. Update with `main` | `progress.sh begin <pr> "update with main"` | `progress.sh end <pr> "update with main" "<merged, N conflicts resolved, bumped to X.Y.Z \| unresolved conflict in <file>>"` |
 
 Steps are named as the scripts name theirs, so the comment counts them with the scripts' own
 (`CI <short sha>`, not `CI wait`). A failed `progress.sh` call never stops the run: say so in one
@@ -223,9 +227,10 @@ scripts check the branch out themselves.
 The scripts run from the plan branch's own checkout, so a plan branch cut before a change to
 `scripts/agent/` runs the old scripts (old step markers, without the model and the limits). So
 before the first run: `git fetch origin && git diff --name-only origin/plan/<n>-<slug>...origin/$base -- scripts/agent`.
-When it prints files, switch the folder to the plan branch, merge `$base` into it with the
-[`merge-main-into-branch`](../merge-main-into-branch/SKILL.md) skill (`--bump <the plan's bump> --no-questions`),
-then switch back to a detached `origin/$base`. Say that it was done and why.
+When it prints files, update the plan branch with `$base` as in [step 6](#6-bring-it-up-to-date-with-main-only-when-needed)
+(`scripts/agent/detach.sh update-main.sh plan/<n>-<slug>`; the script checks the branch out and
+leaves it checked out, so switch the folder back to a detached `origin/$base` afterwards). Say that it
+was done and why.
 
 For a split issue, steps 4 to 7 run once per plan, in the order of their dependencies, all in the
 same folder. A plan that depends on another one waits until that one is merged: run the plans that
@@ -265,19 +270,22 @@ go back to step 2's review loop.
 
 ## 6. Bring it up to date with `main` (only when needed)
 
-Check: `git fetch origin` and `gh pr view <pr> --json mergeStateStatus,headRefName`. When the branch
-is behind `main`, update it in the issue's folder, recorded as the step `update with main`
-([Progress on the issue](#progress-on-the-issue)). Switch the folder to the pull request's branch
-(`git switch <branch> && git merge --ff-only origin/<branch>`), then merge `main` into it with the
-[`merge-main-into-branch`](../merge-main-into-branch/SKILL.md) skill (`Skill`,
-`merge-main-into-branch`, arguments `--bump <minor|major|patch> --no-questions`): it merges
-`origin/main` (never a rebase), commits the merge with its conflict markers, resolves the conflicts
-with the plan in mind in a commit of its own, bumps the version again when `main`'s has caught up,
-runs `mise run check` and pushes (a plain push, no force). A conflict it cannot resolve with
-confidence makes it stop without pushing: then stop and notify, with the files and the reason it
-gives.
+The loop runs the update itself before each review round and before finalising, so the pull request
+usually reaches "ready for review" up to date. Check: `git fetch origin` and
+`gh pr view <pr> --json mergeStateStatus,headRefName`. When the branch is behind `main` (`main`
+moved since), run the step script in the issue's folder, detached like the loop:
+`scripts/agent/detach.sh update-main.sh <pr>` (`mise run agent:update-main`). It checks the branch
+out, merges `origin/main` (never a rebase), resolves version-only conflicts by script and any other
+conflict, or a failed `mise run check`, with a headless agent in a fresh context, bumps the version
+(the plan's "Version bump") when `main`'s caught up, pushes once (no force), and records the step on
+the pull request and in the progress comment. Arm one Monitor on
+`cd <dir> && scripts/agent/status.sh --follow <branch> | grep --line-buffered -E '>> (failed:|updated with|.*up to date with)'`,
+stop it on the first line and read `tail -n 40 <run.log>`. `updated with` or `up to date`: go on.
+`failed:` (an unresolved conflict): nothing is pushed and the merge stays local; show the end of the
+log, notify, and stop. The developer finishes it with `/merge-main-into-branch` or drops it with
+`git reset --keep @{u}`. Never merge or resolve in this session instead.
 
-Pick the bump from the plan's "Version bump". After the update, wait for CI in the background without model turns:
+After the update, wait for CI in the background without model turns:
 `gh pr checks <pr> --watch --interval 30` after a `sleep 30` (the first seconds after a push have no
 checks), as one background Bash call. A red CI: add the `agent` label again, turn the pull request
 back into a draft (`gh pr ready <pr> --undo`) and start the run again (step 4), which fixes it.
@@ -285,7 +293,9 @@ back into a draft (`gh pr ready <pr> --undo`) and start the run again (step 4), 
 ## 7. Ready for the developer's review
 
 The pull request is ready for review, up to date with `main`, and **CI passed** is green on its
-head. Print the final comment's essentials: whether the review agent approved the latest commit,
+head. Read only the newest agent comment, the finalise step's (`gh pr view <pr> --json comments --jq
+'.comments[-1].body'`, up to its **Usage** table), never every comment of the pull request. Print its
+essentials: whether the review agent approved the latest commit,
 the open and declined findings, and the usage. Point at the pull request, at the issue's folder (to
 try the change there) and at
 [the walkthrough's step 6](../../../docs/agentic-development.md#6-review-the-pull-request).

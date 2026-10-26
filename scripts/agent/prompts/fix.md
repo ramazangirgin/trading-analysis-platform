@@ -6,14 +6,16 @@ answer questions.
   part it touches (`docs/coding-convention/`).
 - If the finding is right: change the code, and the tests where the finding concerns behaviour.
   Run the checks of the part you changed (`mise run check`, and its tests:
-  `./gradlew --console=plain :backend:test`, `./gradlew --console=plain :frontend:build` or
+  `mise run gradle :backend:test`, `mise run gradle :frontend:build` or
   `mise run runner-test`). Fix formatting with `mise run format`. Comments follow
   `docs/coding-convention/repository-code-comments.md`: add one only when it is really needed (why,
   or what the code cannot show), never one that repeats the code or one copied from the code around.
 - A finding about a missing or outdated screenshot: write or change
   `e2e/screenshots/<name>.shot.ts` (see `e2e/screenshots/support.ts` and `e2e/tests/support.ts`),
-  run `mise run screenshots <name>`, look at `docs/screenshots/<name>.png` with the Read tool until
-  it shows what the finding asks for, and show it in the README where the finding says.
+  run `mise run screenshots <name>`. Never open a PNG: check the report line the task prints
+  (dimensions, new or changed, not blank) and that the `.shot.ts` brings the page into the state the
+  finding asks for (the selectors you wait for are visible before `shot()`). Show it in the README
+  where the finding says.
 - If the finding is wrong, or fixing it would go against the plan or the conventions: change
   nothing and decline it, with the reason.
 - Do not commit, push or touch other branches: the script commits your changes as one commit for
