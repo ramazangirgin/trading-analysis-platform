@@ -145,6 +145,7 @@ Packages without a dependency between them can be implemented in parallel.
 ### WP1: Repository LSP plugin
 
 - **Depends on**: none
+- **Status**: not done: Write was denied for `pyrightconfig.json` at the repository root; the rest is done
 - **Files**:
   - `scripts/agent/lsp/.claude-plugin/plugin.json` (new)
   - `scripts/agent/lsp/.lsp.json` (new)
@@ -154,9 +155,9 @@ Packages without a dependency between them can be implemented in parallel.
   - `pyrightconfig.json` (new)
   - `scripts/agent/test_lsp_plugin.py` (new)
 - **Steps**:
-  - [ ] Write `plugin.json` and `.lsp.json` as in the design; every command is `bash` with
+  - [x] Write `plugin.json` and `.lsp.json` as in the design; every command is `bash` with
         `${CLAUDE_PLUGIN_ROOT}/<wrapper>.sh` as its first argument.
-  - [ ] Write the three wrappers (Bash 3.2, pinned versions in variables at the top, clear message
+  - [x] Write the three wrappers (Bash 3.2, pinned versions in variables at the top, clear message
         and non-zero exit when a prerequisite is missing).
   - [ ] Write `pyrightconfig.json` as in the design.
 - **Tests**: `test_lsp_plugin.py` (unittest, standard library, picked up by `mise run agent:test`):

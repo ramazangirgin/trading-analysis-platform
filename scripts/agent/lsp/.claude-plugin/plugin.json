@@ -1,0 +1,5 @@
+{
+  "name": "tap-agent-lsp",
+  "version": "0.1.0",
+  "description": "Language servers for the headless agents (scripts/agent): jdtls for Java, the TypeScript server for TypeScript and Vue, pyright for Python"
+}
