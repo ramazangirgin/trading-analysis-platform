@@ -32,7 +32,7 @@ mise run db:reset      # remove the container and its volume: the next start is 
 mise run test          # backend + frontend + ta-runner tests
 mise run runner-test   # ta-runner lint, import contracts, dependency check (deptry) and tests only
 mise run e2e           # end-to-end tests: the jar on a throwaway PostgreSQL container, in Google Chrome with login on (a seeded user), ta-runner replaying a recording
-mise run screenshots   # retake the README's screenshots (e2e/screenshots/*.shot.ts), the same way
+mise run screenshots   # retake the docs' screenshots (e2e/screenshots/*.shot.ts), the same way
 mise run check         # quick check before pushing: package structure, every domain with persistence has its conventions test, lint, formatting, type-check, dependency declarations (Gradle analysis, Knip, deptry), the agent scripts' and skill helpers' Python tests (`agent:test`, `skill:test`; no other tests)
 mise run format        # format every Java (Spotless), frontend and e2e (Prettier) file
 mise run format-check  # check the formatting of every Java, frontend and e2e file, as CI does
