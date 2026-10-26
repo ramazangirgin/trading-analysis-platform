@@ -54,13 +54,8 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | 6 | When the branch is behind `main`, update it first (merge `main` in); then review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | `update-main.sh` (run by `next.sh`); review agent: `review.sh` | Merge commit, PR review + summary comment |
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
-<<<<<<< HEAD
-| 9 | Finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `finalise.sh` | PR ready for review |
-| 10 | Review, bring up to date with `main`, merge; the release follows and is deployed | Developer | Change on `main`, released |
-=======
 | 9 | Update with `main` when behind, then finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `update-main.sh` (run by `next.sh`), `finalise.sh` | PR ready for review |
-| 10 | Review, merge (the branch is usually up to date with `main` already, see 6 and 9); the release follows | Developer | Change on `main`, released |
->>>>>>> origin/main
+| 10 | Review, merge (the branch is usually up to date with `main` already, see 6 and 9); the release follows and is deployed | Developer | Change on `main`, released |
 
 Agents never merge and never push to `main`: the scripts push only to the plan branch, the agents
 cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's approval and
