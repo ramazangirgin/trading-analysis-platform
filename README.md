@@ -77,7 +77,7 @@ Next: [log in, add an API key and start an analysis](docs/user-guide.md#3-log-in
 | [docs/configuration.md](docs/configuration.md) | Where the platform keeps its data, and the LLM prices | Users, operators |
 | [docs/login-and-backend.md](docs/login-and-backend.md) | The session login, password policy, lockout, public routes, users, roles, permissions and the endpoints behind them | Operators, developers |
 | [docs/development.md](docs/development.md) | Dev servers, the `mise` tasks, coding conventions, before pushing, ta-runner, testing the Docker runner | Developers |
-| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The CI jobs and the rules on `main`, dependency updates, versioning and releases | Developers |
+| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The CI jobs and the rules on `main`, dependency updates, setting up the repository on GitHub, versioning and releases | Developers |
 | [docs/agentic-development.md](docs/agentic-development.md) | Taking an issue to a reviewed pull request with agents | Developers |
 | [docs/event-protocol.md](docs/event-protocol.md) | The contract between the backend and ta-runner | Developers |
 | [docs/coding-convention/README.md](docs/coding-convention/README.md) | Where each kind of class, component or module belongs, and the rules the build checks | Developers |

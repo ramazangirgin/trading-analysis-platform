@@ -242,6 +242,10 @@ run = "scripts/quiet.sh skill-test uv run --no-project python -m unittest discov
 description = "Test scripts/ci-changes.sh, which decides the CI jobs a change needs, against a throwaway Git repository"
 run = "bash scripts/test-ci-changes.sh"
 
+[tasks."github:setup"]
+description = "Set up the repository on GitHub (settings, ruleset main, labels, the production environment of Deploy) with gh, as an admin; safe to run again (docs/ci-and-releases.md)"
+run = "scripts/github-setup.sh"
+
 # Deployment to a server over SSH (deploy/server/README.md): Ansible sets the server up and deploys
 # the Compose setup on it. server:deploy needs deploy/server/inventory.ini; server:check needs nothing.
 [tasks."server:deploy"]

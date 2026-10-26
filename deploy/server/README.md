@@ -271,22 +271,32 @@ older one than the latest, starts nothing.
    DEPLOY_KEY=~/.ssh/platform-deploy-github deploy/server/setup-remote.sh <you>@<server>
    ```
 
-   `DEPLOY_KEY` picks the public key that is installed; you log in as before (add `-i …` only to
-   choose the login key). To revoke it, delete its line from `/home/deploy/.ssh/authorized_keys`.
+   `DEPLOY_KEY` picks the public key that is installed, not the one you log in with: ssh tries
+   your default keys. When the only login left is the `deploy` user itself, name its key:
+
+   ```sh
+   DEPLOY_KEY=~/.ssh/platform-deploy-github deploy/server/setup-remote.sh deploy@<server> \
+     -i ~/.ssh/platform-deploy -o IdentitiesOnly=yes
+   ```
+
+   Check the new key on its own, as the runner logs in:
+   `ssh -i ~/.ssh/platform-deploy-github -o IdentitiesOnly=yes deploy@<server> true`. To revoke it,
+   delete its line from `/home/deploy/.ssh/authorized_keys`.
 3. **The host key to pin**, from your own `known_hosts`, which your deploys already verified:
    `ssh-keygen -F <server>` (with a port: `ssh-keygen -F '[<server>]:<port>'`). Compare its
    fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
-4. **The environment and its values**, with `gh` or under Settings → Environments: create
-   `production`, add yourself under *Required reviewers* (leave *Prevent self-review* off, since you
-   start the releases yourself), restrict its deployment branches to `main`, then:
+4. **The environment and its values**: [`scripts/github-setup.sh`](../../scripts/github-setup.sh)
+   creates `production` with you as its required reviewer (*Prevent self-review* off, since you
+   start the releases yourself) and deployments from `main` only, and stores the values below; the
+   host key is the one of step 3, read from your `known_hosts`:
 
    ```sh
-   gh secret set DEPLOY_SSH_KEY --env production < ~/.ssh/platform-deploy-github
-   gh secret set DEPLOY_HOST --env production
-   gh secret set DEPLOY_KNOWN_HOSTS --env production
-   gh secret set ACME_EMAIL --env production
-   gh variable set PUBLIC_DOMAIN --env production --body analystock.app
+   DEPLOY_KEY=~/.ssh/platform-deploy-github DEPLOY_HOST=<server> ACME_EMAIL=<address> \
+     PUBLIC_DOMAIN=analystock.app mise run github:setup
    ```
+
+   It ends with one `ok:` line per secret. By hand, under Settings → Environments, or with
+   `gh secret set <NAME> --env production` and `gh variable set PUBLIC_DOMAIN --env production`.
 5. **SSH must reach the server from GitHub's runners.** They have no fixed addresses, so the
    provider's firewall must allow TCP 22 from anywhere (on Oracle Cloud, the subnet's security
    list: `0.0.0.0/0`). With key-only SSH on (`setup-remote.sh … --key-only-ssh`) that is the usual
