@@ -453,7 +453,10 @@ reads where the issue stands from its plan branches and pull requests and contin
   conflicted with `main` while CI was awaited, and the update with `main` could not resolve it. The
   merge stays local. Finish it with `/merge-main-into-branch`, or drop it with
   `git reset --keep @{u}`; then add the `agent` label again and run
-  `mise run agent:next plan/<issue>-<slug>`.
+  `mise run agent:next plan/<issue>-<slug>`. When the message says the branch already contains
+  `main` and merges cleanly locally, nothing is merged locally: GitHub's view of the merge state
+  differs from the local merge. Check the merge box of the pull request on GitHub, then add the
+  `agent` label again and run `agent:next`.
 - **To stop it yourself**: Ctrl+C, or remove the `agent` label (the loop does nothing on the pull
   request any more).
 
