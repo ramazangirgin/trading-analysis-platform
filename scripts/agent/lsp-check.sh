@@ -26,7 +26,7 @@ schema='{"type": "object", "required": ["tool_seen", "answer"], "properties": {
 
 # check <name> <prompt text>
 check() {
-  local name=$1 file=$AGENT_TMP/lsp-check-$1.md out=$AGENT_TMP/lsp-check-$1.json started elapsed listed
+  local name=$1 subtype answer file=$AGENT_TMP/lsp-check-$1.md out=$AGENT_TMP/lsp-check-$1.json started elapsed listed
   {
     echo "This is a check of the LSP tool. Call the \`$AGENT_LSP_TOOL\` tool as described below, do not use"
     echo "Grep or Bash to find the answer, and make no other call than the ones asked."
@@ -37,15 +37,25 @@ check() {
     echo "was missing or failed, and answer: the first lines of what it returned (or its error message)."
   } >"$file"
   started=$(date +%s)
-  run_agent "$AGENT_MODEL" "$file" "$out" "${AGENT_REVIEW_TOOLS[@]}" -- --max-turns 12 --json-schema "$schema"
+  AGENT_ALLOW_MAX_TURNS=1 run_agent "$AGENT_MODEL" "$file" "$out" "${AGENT_REVIEW_TOOLS[@]}" -- --max-turns 12 --json-schema "$schema"
   elapsed=$(($(date +%s) - started))
   listed=no
   if py "$AGENT_DIR/agent_json.py" tools "${out}l" | grep -qx "$AGENT_LSP_TOOL"; then listed=yes; fi
-  printf '%s: %s in the tool list: %s; answered: %s; %ss; %s turns; %s; %s\n' "$name" "$AGENT_LSP_TOOL" "$listed" \
-    "$(py "$AGENT_DIR/agent_json.py" get "$out" structured_output | py -c 'import json, sys; print((json.load(sys.stdin) or {}).get("tool_seen"))')" \
-    "$elapsed" "$(py "$AGENT_DIR/agent_json.py" get "$out" num_turns)" \
+  subtype=$(py "$AGENT_DIR/agent_json.py" get "$out" subtype)
+  # No structured_output (a turn limit, say) reaches the parser as the text "None".
+  answer=$(py "$AGENT_DIR/agent_json.py" get "$out" structured_output | py -c '
+import json, sys
+try:
+    data = json.load(sys.stdin) or {}
+except ValueError:
+    data = {}
+print(data.get("tool_seen"))
+print(next(iter((data.get("answer") or "").splitlines()), ""))')
+  printf '%s: %s in the tool list: %s; answered: %s; %ss; %s turns; %s; %s%s\n' "$name" "$AGENT_LSP_TOOL" "$listed" \
+    "$(head -n 1 <<<"$answer")" "$elapsed" "$(py "$AGENT_DIR/agent_json.py" get "$out" num_turns)" \
     "$(py "$AGENT_DIR/agent_json.py" usage-line "$out")" \
-    "$(py "$AGENT_DIR/agent_json.py" get "$out" structured_output | py -c 'import json, sys; print(((json.load(sys.stdin) or {}).get("answer") or "").splitlines()[:1] or "")' | cut -c1-160)"
+    "$(tail -n +2 <<<"$answer" | cut -c1-160)" \
+    "$([ "$subtype" = error_max_turns ] && echo " [stopped at the turn limit]")"
 }
 
 java_prompt="Operation findReferences on the class DomainExceptionHandler in
