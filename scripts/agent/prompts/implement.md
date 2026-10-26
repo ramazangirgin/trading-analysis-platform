@@ -6,11 +6,12 @@ in your final message.
 
 ## Rules
 
-- Read first: the root `README.md`, `docs/coding-convention/README.md`, and every document the plan
-  lists under "Affected parts and their conventions". Follow the documented architecture and
-  conventions; do not invent new layers, tools or patterns. Read the existing code you build on and
-  match its style and naming, but not its comments: existing comments are no model to copy. Earlier
-  packages are already committed: build on them.
+- Read first: `docs/coding-convention/README.md`, every document the plan lists under "Affected
+  parts and their conventions", and only the topic file of `docs/` that the plan's "Docs to update"
+  names (the root `README.md` is the index: read it only to find the topic file). Follow the
+  documented architecture and conventions; do not invent new layers, tools or patterns. Read the
+  existing code you build on and match its style and naming, but not its comments: existing comments
+  are no model to copy. Earlier packages are already committed: build on them.
 - Comments follow `docs/coding-convention/repository-code-comments.md`. Add a comment only when it
   is really needed: it says why, or what the code cannot show (a race, a
   rule that is not obvious, a workaround). Never one that repeats a name, a signature, a type or
@@ -33,7 +34,7 @@ in your final message.
   `mise run screenshots <name>`. Never open a PNG: check the report line the task prints (dimensions,
   new or changed, not blank) and that your `.shot.ts` brings the page into the state the plan
   describes (the selectors you wait for are visible before `shot()`). Show new screenshots in the
-  README section the plan names. Commit the `.shot.ts` and the PNG.
+  docs section the plan names. Commit the `.shot.ts` and the PNG.
 - Before you finish, `mise run check` and the tests of every part you changed must pass:
   `mise run gradle :backend:test` (backend), `mise run gradle :frontend:build`
   (frontend), `mise run runner-test` (ta-runner). Fix formatting with `mise run format`.

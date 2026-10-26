@@ -6,7 +6,7 @@ import type { Locator, Page } from '@playwright/test'
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 /**
- * Where the README's screenshots live; SCREENSHOT_DIR writes them elsewhere (to try a shot out). A
+ * Where the docs' screenshots live; SCREENSHOT_DIR writes them elsewhere (to try a shot out). A
  * relative one is taken from the repository root, where the report looks, not from e2e/.
  */
 const DIR = resolve(REPO_ROOT, process.env.SCREENSHOT_DIR ?? join('docs', 'screenshots'))

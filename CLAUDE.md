@@ -2,8 +2,10 @@
 
 A web platform that runs [TradingAgents](https://github.com/TauricResearch/TradingAgents) analyses:
 a Spring Boot backend and a Vue UI shipped as one jar, and `ta-runner`, the Python process that is
-the only code importing TradingAgents. [README.md](README.md) is the user and developer manual;
-this file is the map an agent needs before reading code.
+the only code importing TradingAgents. [README.md](README.md) is the entry point; its
+"Documentation" table lists the topic files under `docs/` (user guide, Docker Compose,
+configuration, login and backend, development, CI and releases). This file is the map an agent
+needs before reading code.
 
 ## Where things are
 
@@ -16,6 +18,7 @@ this file is the map an agent needs before reading code.
 | Deployment | `deploy/`, `deploy/server/` | Docker Compose, Ansible | `deploy/server/README.md` |
 | Build logic, custom Checkstyle checks | `build-logic/` | Gradle convention plugins | `build-logic/checkstyle-rules/README.md` |
 | Agent scripts and prompts | `scripts/agent/`, `.claude/skills/` | Bash, Python | [agentic-development.md](docs/agentic-development.md) |
+| Docs | `README.md`, `docs/` | Markdown | [README.md](README.md) (Documentation table) |
 | Implementation plans | `.plans/<issue>-<slug>.md` | | |
 
 ### Backend modules

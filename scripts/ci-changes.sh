@@ -9,7 +9,8 @@
 #
 #   app         anything but the non-application set (docs, plans, agent pipeline): the jar, the
 #               images and the end-to-end tests
-#   runner      app, or the agent scripts and skills (their tests run in the runner job)
+#   runner      app, or the agent scripts, skills and Markdown documents (their tests and the link
+#               check run in the runner job)
 #   deploy      deploy/, mise.toml, .github/
 #   server_e2e  deploy/, the ta-runner Dockerfile, the CI workflow, this script
 #
@@ -39,7 +40,7 @@ else
       *) app=true ;;
     esac
     case $file in
-      scripts/agent/* | .claude/skills/*) runner=true ;;
+      scripts/agent/* | .claude/skills/* | docs/* | README.md | CLAUDE.md) runner=true ;;
     esac
     case $file in
       deploy/* | mise.toml | .github/*) deploy=true ;;

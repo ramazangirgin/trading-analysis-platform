@@ -6,7 +6,8 @@
 #              scripts/test-ci-changes.sh); the jobs below skip what the change cannot affect:
 #                app         anything but docs, plans, the agent pipeline: build, jar, e2e, images,
 #                            runner-image, runner-image-arm64
-#                runner      app, or scripts/agent and .claude/skills: runner
+#                runner      app, or scripts/agent, .claude/skills and the Markdown documents
+#                            (README.md, CLAUDE.md, docs/): runner
 #                deploy      deploy/, mise.toml, .github/: server
 #                server_e2e  deploy/, the ta-runner Dockerfile, this workflow, scripts/ci-changes.sh:
 #                            server-e2e

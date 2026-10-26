@@ -146,10 +146,10 @@ ssh -i ~/.ssh/platform-deploy deploy@<server> \
 
 The log keeps the password only until the platform container is recreated (an upgrade, a rebuilt
 image or a changed `.env`) or the log rotates. Log in before you upgrade; if the password is gone,
-set `PLATFORM_ADMIN_PASSWORD` or reset the admin as the [main README](../../README.md#3-log-in)
+set `PLATFORM_ADMIN_PASSWORD` or reset the admin as the [user guide](../../docs/user-guide.md#3-log-in)
 describes.
 
-Then add an API key under **Settings** as in the [main README](../../README.md#4-add-an-api-key).
+Then add an API key under **Settings** as in the [user guide](../../docs/user-guide.md#4-add-an-api-key).
 
 ### HTTPS on a domain
 
@@ -230,7 +230,7 @@ again with its data:
 mise run server:deploy -- -e app_ref=v4.4.0
 ```
 
-Read the main README's upgrade notes for the versions in between first.
+Read the upgrade notes in [Docker Compose](../../docs/docker-compose.md) for the versions in between first.
 
 ## Backups
 
@@ -298,7 +298,7 @@ multipass delete --purge platform-test
 | `inventory.ini` | On your machine, gitignored ([`.gitignore`](.gitignore)); [`inventory.ini.example`](inventory.ini.example) shows the shape |
 | The SSH key | On your machine, outside the repository (`~/.ssh/`) |
 | The database password | Generated on the server in `/etc/trading-analysis-platform/postgres-password` (owner-only), written to `deploy/.env` there; never leaves the server |
-| API keys of the platform, the admin password | On the server, under `platform_data` (see the main README) |
+| API keys of the platform, the admin password | On the server, under `platform_data` (see [Configuration](../../docs/configuration.md)) |
 
 ## Troubleshooting
 
@@ -316,7 +316,7 @@ multipass delete --purge platform-test
   deploy user's sudoers file is missing or changed: run step 2 again.
 - **SSH is not on port 22.** Set `ansible_port` in the inventory; the firewall allows that port.
 - **The build on the server fails or is slow.** It runs `mise run docker-build` there. On arm64,
-  the [ta-runner image (arm64)](../../README.md#continuous-integration) CI job catches
+  the [ta-runner image (arm64)](../../docs/ci-and-releases.md#continuous-integration) CI job catches
   dependencies without arm64 wheels earlier. Retry the deploy; see `docker compose … logs` on the
   server.
 - **The health wait times out.** The first start takes a minute or more; read the platform's log

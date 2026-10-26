@@ -47,7 +47,7 @@ already done or planned elsewhere. Stop and tell the user if the issue is closed
 Find the affected parts from the issue and from the code (search for the classes, components and
 endpoints it names). Before designing anything, read:
 
-| Always | Root `README.md`, `docs/coding-convention/README.md`, `docs/coding-convention/repository-versioning-and-releases.md` |
+| Always | Root `README.md` (the index: its Documentation table names the topic files of `docs/`), the topic files the issue touches (not the whole manual), `docs/coding-convention/README.md`, `docs/coding-convention/repository-versioning-and-releases.md` |
 |---|---|
 | Backend (`artifact/backend`) | `docs/coding-convention/backend-*.md` |
 | Frontend (`artifact/frontend`) | `docs/coding-convention/frontend-*.md` |
@@ -98,13 +98,14 @@ do not read other plans in `.plans/` as models.
   `patch`).
 - **Docs to update**: every document and screenshot the change makes wrong or incomplete; the change
   is documented in the same pull request, never "later" or "separately". Go through:
-  - the root `README.md`: the section describing the feature (a new feature gets a paragraph where
-    users look for it), the CI table when tests or jobs change, the task list when `mise.toml`
-    changes;
+  - the topic file of `docs/` describing the feature (`README.md`'s Documentation table lists them;
+    a new feature gets a paragraph where users look for it), the CI table
+    (`docs/ci-and-releases.md`) when tests or jobs change, the task list (`docs/development.md`)
+    when `mise.toml` changes;
   - `docs/` and `docs/coding-convention/` when a convention, tool or flow changes;
     `docs/event-protocol.md` when the runner ↔ backend contract changes; `openapi.json` and the
     frontend's API types when the REST API changes (`mise run api-types`);
-  - **screenshots**: the README shows every page (`docs/screenshots/*.png`). A new page or view gets
+  - **screenshots**: the docs show every page (`docs/screenshots/*.png`). A new page or view gets
     a new screenshot, and a page whose look changes (a new button, column, tab, panel) gets its
     screenshot retaken. Name the file, the page and state it shows, and the data it needs. The
     developer agent takes them with `mise run screenshots` (a `e2e/screenshots/<name>.shot.ts` per

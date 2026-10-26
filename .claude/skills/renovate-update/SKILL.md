@@ -5,7 +5,7 @@ description: Run a dependency update of this repository end to end without askin
 
 # Renovate update, end to end
 
-The hosted Renovate app ([`.github/renovate.json5`](../../../.github/renovate.json5), README
+The hosted Renovate app ([`.github/renovate.json5`](../../../.github/renovate.json5), [`docs/ci-and-releases.md`](../../../docs/ci-and-releases.md#dependency-updates)
 "Dependency updates") puts every update in one pull request (`renovate/all`), plus one for lock file
 maintenance (`renovate/lock-file-maintenance`). This skill drives it to a green pull request: it
 asks for a run through the dependency dashboard issue, waits for the pull requests, and hands them

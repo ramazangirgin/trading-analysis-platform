@@ -14,7 +14,7 @@ answer questions.
   `e2e/screenshots/<name>.shot.ts` (see `e2e/screenshots/support.ts` and `e2e/tests/support.ts`),
   run `mise run screenshots <name>`. Never open a PNG: check the report line the task prints
   (dimensions, new or changed, not blank) and that the `.shot.ts` brings the page into the state the
-  finding asks for (the selectors you wait for are visible before `shot()`). Show it in the README
+  finding asks for (the selectors you wait for are visible before `shot()`). Show it in the docs
   where the finding says.
 - If the finding is wrong, or fixing it would go against the plan or the conventions: change
   nothing and decline it, with the reason.
