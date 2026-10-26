@@ -14,7 +14,9 @@
     agent_json.py progress-usage <result.json>      the usage marker with the run's duration_ms and
                                                     num_turns, for progress.tsv (progress.py)
 
-    agent_json.py limits <stream.jsonl>             "limit5h=<n> limit7d=<n>" of a probe's stream (last
+    agent_json.py tools <stream.jsonl>              the tool names of the stream's init message, one per
+                                                    line (nothing without an init message)
+    agent_json.py limits <stream.jsonl>            "limit5h=<n> limit7d=<n>" of a probe's stream (last
                                                     event; empty when it has none)
     agent_json.py transcript <session directory>    the newest session transcript of that directory
     agent_json.py session-usage <transcript> <from> <to>
@@ -240,6 +242,19 @@ def stream_result(path):
         for field, value in seen.items():
             summed[field] = summed.get(field, 0) + value
     return {"usage": summed}, False
+
+
+def stream_tools(path):
+    """The tool names the first init message of a stream-json log lists, or []."""
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if event.get("type") == "system" and event.get("subtype") == "init":
+                return [t for t in event.get("tools") or [] if isinstance(t, str)]
+    return []
 
 
 WINDOWS = {"5h": "five_hour", "7d": "seven_day"}
@@ -518,6 +533,9 @@ def main(argv):
     elif command == "limits":
         _, limits = stream_facts(args[0]) if os.path.exists(args[0]) else ([], {})
         print(" ".join(f"limit{key}={last}" for key, (_, last) in limits.items()))
+    elif command == "tools":
+        for name in stream_tools(args[0]):
+            print(name)
     elif command == "transcript":
         print(latest_transcript(args[0]) or "")
     elif command == "session-usage":

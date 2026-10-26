@@ -204,6 +204,23 @@ class LimitsTest(unittest.TestCase):
         self.assertTrue(total["partial"])
 
 
+class ToolsTest(unittest.TestCase):
+    def tools_of(self, events):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "a.jsonl")
+            with open(path, "w", encoding="utf-8") as f:
+                for event in events:
+                    f.write(json.dumps(event) + "\n")
+            return agent_json.stream_tools(path)
+
+    def test_tools_of_the_init_message(self):
+        event = dict(init("m1"), tools=["Read", "Grep", "LSP"])
+        self.assertEqual(self.tools_of([message("a", 1, 1), event, RESULT]), ["Read", "Grep", "LSP"])
+
+    def test_stream_without_init_message_has_no_tools(self):
+        self.assertEqual(self.tools_of([message("a", 1, 1), RESULT]), [])
+
+
 class UsageTableTest(unittest.TestCase):
     def test_row_shows_model_and_limits(self):
         row = {"step": "review", "round": "1", "model": "m1,m2", "tokens_in": "1", "tokens_cached": "2", "tokens_out": "3",

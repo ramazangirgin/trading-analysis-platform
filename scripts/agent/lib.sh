@@ -22,6 +22,8 @@
 #                        Steps on an existing pull request use its base instead.
 #   AGENT_ISSUE_PROGRESS 1 (default): keep the progress comment on the issue up to date
 #                        (progress.sh); 0: record the progress in progress.tsv only
+#   AGENT_LSP            1: the agents get Claude Code's LSP tool (the plugin scripts/agent/lsp/) and
+#                        the "find symbols first" rule (prompts/tools-lsp.md); default 0 (issue #251)
 #
 #   AGENT_NTFY_TOPIC     an ntfy topic: each milestone is also sent to it (AGENT_NTFY_SERVER, default
 #                        https://ntfy.sh). This sends progress lines to an external service: off
@@ -97,6 +99,9 @@ AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
 AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 AGENT_ISSUE_PROGRESS=${AGENT_ISSUE_PROGRESS:-1}
+AGENT_LSP=${AGENT_LSP:-0}
+# The name of the tool in Claude Code's tool list and allow-list; agent:lsp-check confirms it.
+AGENT_LSP_TOOL=LSP
 AGENT_NTFY_SERVER=${AGENT_NTFY_SERVER:-https://ntfy.sh}
 # Label on an agent's pull request; removing it stops the loop.
 AGENT_LABEL=agent
@@ -331,10 +336,14 @@ issue_reference() {
 # Steps on an existing pull request work against its base branch.
 use_pr_base() { AGENT_BASE_BRANCH=$(gh pr view "$1" --json baseRefName --jq .baseRefName); }
 
+lsp_enabled() { [ "$AGENT_LSP" = 1 ]; }
+
 # A prompt file with {{BASE}} replaced by the base branch, followed by how to work within the
-# agents' tool allow-list (prompts/tools.md).
+# agents' tool allow-list (prompts/tools.md, and with the LSP tool prompts/tools-lsp.md).
 prompt() {
-  cat "$AGENT_DIR/prompts/$1" "$AGENT_DIR/prompts/tools.md" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g"
+  local -a files=("$AGENT_DIR/prompts/$1" "$AGENT_DIR/prompts/tools.md")
+  if lsp_enabled; then files+=("$AGENT_DIR/prompts/tools-lsp.md"); fi
+  cat "${files[@]}" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g"
   echo
 }
 
@@ -424,9 +433,17 @@ run_agent() {
   extra=("$@")
   [ -n "${AGENT_MAX_BUDGET_USD:-}" ] && extra+=(--max-budget-usd "$AGENT_MAX_BUDGET_USD")
   [ -z "$model" ] || extra+=(--model "$model")
+  local -a lsp_env=()
+  local lsp_note=""
+  if lsp_enabled; then
+    tools+=("$AGENT_LSP_TOOL")
+    extra+=(--plugin-dir "$AGENT_DIR/lsp")
+    lsp_env=(ENABLE_LSP_TOOL=1)
+    lsp_note=", LSP tools on"
+  fi
 
   use_claude_login
-  log "running $(model_name "$model") ($(basename "$prompt")); stream: ${out}l"
+  log "running $(model_name "$model") ($(basename "$prompt")$lsp_note); stream: ${out}l"
   if [ -e "$out" ] || [ -e "${out}l" ]; then
     local old
     old="${out%.json}.$(date +%Y%m%d%H%M%S)-$$"
@@ -435,7 +452,7 @@ run_agent() {
   fi
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
-  env -u GH_TOKEN -u GITHUB_TOKEN AGENT_QUIET=1 claude -p --output-format stream-json --verbose --permission-mode dontAsk \
+  env -u GH_TOKEN -u GITHUB_TOKEN AGENT_QUIET=1 ${lsp_env[@]+"${lsp_env[@]}"} claude -p --output-format stream-json --verbose --permission-mode dontAsk \
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
     ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}" || true
   [ -s "$out" ] || die "the agent wrote no result ($out)"
