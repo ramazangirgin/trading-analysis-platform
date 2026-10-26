@@ -78,7 +78,9 @@ nothing in this plan goes under `.claude/`, and every new shell script is starte
   - `typescript.sh` and `pyright.sh`: the Node.js and pnpm the Gradle build downloaded
     (`artifact/frontend/with-node.sh` finds them; `mise run setup` must have run), then
     `pnpm dlx` of a pinned `typescript-language-server` (plus `@vue/typescript-plugin` at the
-    version matching the frontend's `vue-tsc` 3.3.x) and a pinned `pyright` (`pyright-langserver
+    version matching the frontend's `vue-tsc` 3.3.x; `typescript.sh` uses `pnpm add` into a
+    stamped cache folder instead, because the Vue plugin needs a fixed path, and starts the
+    frontend's own `tsserver.js`) and a pinned `pyright` (`pyright-langserver
     --stdio`). Pinned versions sit in variables at the top of each wrapper. Nothing is added to the
     frontend's `package.json` (Knip would flag an unused package) or to `mise.toml`'s `[tools]`
     (every developer and CI would install them).
