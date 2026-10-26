@@ -45,8 +45,6 @@ class SharedMapperConfigTest {
     interface SampleToSampleViewMapper {
 
         SampleView map(Sample source);
-
-        Part map(Part source);
     }
 
     static class Sample {
