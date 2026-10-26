@@ -1,6 +1,7 @@
 # User guide
 
-Steps 1 and 2 (prerequisites and starting the platform) are in the [README's Quick start](../README.md#quick-start); this guide continues from the running platform.
+Steps 1 and 2 (prerequisites and starting the platform) are in the
+[README's Quick start](../README.md#quick-start); this guide continues from the running platform.
 
 ## 3. Log in
 

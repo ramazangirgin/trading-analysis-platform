@@ -8,10 +8,10 @@ in your final message.
 
 - Read first: `docs/coding-convention/README.md`, every document the plan lists under "Affected
   parts and their conventions", and only the topic file of `docs/` that the plan's "Docs to update"
-  names (the root `README.md` is the index: read it only to find the topic file). Follow the documented architecture and
-  conventions; do not invent new layers, tools or patterns. Read the existing code you build on and
-  match its style and naming, but not its comments: existing comments are no model to copy. Earlier
-  packages are already committed: build on them.
+  names (the root `README.md` is the index: read it only to find the topic file). Follow the
+  documented architecture and conventions; do not invent new layers, tools or patterns. Read the
+  existing code you build on and match its style and naming, but not its comments: existing comments
+  are no model to copy. Earlier packages are already committed: build on them.
 - Comments follow `docs/coding-convention/repository-code-comments.md`. Add a comment only when it
   is really needed: it says why, or what the code cannot show (a race, a
   rule that is not obvious, a workaround). Never one that repeats a name, a signature, a type or

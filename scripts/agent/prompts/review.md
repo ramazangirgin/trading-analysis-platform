@@ -36,8 +36,8 @@ documents of every part the change touches and the topic files of `docs/` the ch
 - **Docs and screenshots**: the change is documented in this pull request. Every item under the
   plan's "Docs to update" is done; and independently of the plan: a new user-visible feature is
   described in the topic file of `docs/` where users look for it (the README links it); a new page
-  or view has a screenshot in `docs/screenshots/` shown in the docs, and a page whose look changed has its screenshot
-  retaken (check that every screenshot the plan lists is in the diff,
+  or view has a screenshot in `docs/screenshots/` shown in the docs, and a page whose look changed
+  has its screenshot retaken (check that every screenshot the plan lists is in the diff,
   `git diff --stat {{BASE}}...HEAD -- docs/screenshots`, with a `.shot.ts` that sets up the state
   the plan describes; you cannot open PNGs, and how it looks is the developer's review);
   documents the change makes wrong are corrected (README, `docs/`, API types). A missing or
