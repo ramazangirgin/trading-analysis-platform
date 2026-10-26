@@ -132,20 +132,21 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Docs
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `docs/agentic-development.md`
 - **Steps**:
-  - [ ] "Decision", the bullet "Update with `main` is a step script with a fresh agent": `next.sh`
+  - [x] "Decision", the bullet "Update with `main` is a step script with a fresh agent": `next.sh`
         also runs it during a CI wait when the pull request conflicts with `main` (GitHub runs no CI
         then); a branch that is only behind keeps waiting
-  - [ ] "The flow" table, steps 6 and 9: add the update on a conflict during the CI wait
-  - [ ] "4. Start the agents" (the milestone list): the milestone `<branch> conflicts with main`,
+  - [x] "The flow" table, steps 6 and 9: add the update on a conflict during the CI wait
+  - [x] "4. Start the agents" (the milestone list): the milestone `<branch> conflicts with main`,
         and that the CI wait step then ends with that result
-  - [ ] "Progress on the issue": a CI wait step's result can be `conflicts with main`
-  - [ ] "5. When a run stops early", "The loop gave up": add the conflict stop (the update could not
+  - [x] "Progress on the issue": a CI wait step's result can be `conflicts with main`
+  - [x] "5. When a run stops early", "The loop gave up": add the conflict stop (the update could not
         resolve it) and what to do (`/merge-main-into-branch`, or drop the local merge with
         `git reset --keep @{u}`, then the label and `agent:next`)
-  - [ ] "From Claude Code, with one approval": the Monitor paragraph says the session reads the end
+  - [x] "From Claude Code, with one approval": the Monitor paragraph says the session reads the end
         of `run.log` when its Monitor expires and says when the run is still only waiting
 - **Tests**: `mise run check` (the link check of `doc_links.py` in `agent:test`).
 
