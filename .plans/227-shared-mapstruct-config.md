@@ -230,12 +230,13 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP11: Settings adapter mappers
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `artifact/backend/domain/settings/adapter/build.gradle.kts`; in artifact/backend/domain/settings/adapter/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/settings/adapter/persistence/mapper: `AnalysisDefaultsEntityToAnalysisDefaultsMapper.java`, `AnalysisDefaultsToAnalysisDefaultsEntityMapper.java`, `PresetEntityToPresetMapper.java`, `PresetIdEmbeddableToPresetIdMapper.java`, `PresetIdToPresetIdEmbeddableMapper.java`, `PresetToPresetEntityMapper.java`
 - **Steps**:
-  - [ ] `implementation(project(":backend:library:mapper"))`.
-  - [ ] Put the shared config on each mapper.
-  - [ ] `AnalysisDefaultsEntityToAnalysisDefaultsMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = "id")`; `PresetToPresetEntityMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = "updatedAt")`.
+  - [x] `implementation(project(":backend:library:mapper"))`.
+  - [x] Put the shared config on each mapper.
+  - [x] `AnalysisDefaultsEntityToAnalysisDefaultsMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = "id")`; `PresetToPresetEntityMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = "updatedAt")`.
 - **Tests**: the settings persistence adapter tests pass (Testcontainers).
 
 ### WP12: Identity adapter, role and timestamp mappers
