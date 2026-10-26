@@ -19,6 +19,10 @@
 #                                                  with main keeps the approval of its old head)
 #   before a review or the finalise, branch behind the base, not updated in this round yet
 #                                                  update-main.sh (its push starts CI again)
+#   CI pending, the pull request conflicts with the base
+#                                                  update-main.sh (GitHub runs no CI on a conflict);
+#                                                  stop if it cannot resolve it. Only behind: wait.
+#                                                  A head counts only after one 30-second wait
 #
 # A pull request still in the plan stage (labelled "plan") prints "waiting for: plan approval" and
 # nothing runs. Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
@@ -87,6 +91,17 @@ next_step() {
     if ! pr_steps "$pr" | awk -v r="$reviews" '$1 == "update-main" && $2 == r { found = 1 } END { exit !found }' &&
       behind "$head"; then
       echo update-main
+      return
+    fi
+    ;;
+  wait)
+    # A pull request that conflicts with its base gets no CI run: waiting could only time out.
+    # GitHub computes the merge state in the background, so a head's state counts only once the
+    # loop has waited for that head: right after our own push it may still show the old conflict.
+    head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+    if { $dry_run || [ "$head" = "$waiting_head" ]; } &&
+      [ "$(gh pr view "$pr" --json mergeable,mergeStateStatus 2>/dev/null | py "$AGENT_DIR/merge_state.py" wait-step)" = update ]; then
+      echo update-main-conflict
       return
     fi
     ;;
@@ -174,9 +189,17 @@ while true; do
     fi
     ;;
   esac
+  if [ "$step" = update-main-conflict ]; then
+    if $dry_run; then
+      log "#$pr: $branch conflicts with $AGENT_BASE_BRANCH"
+    else
+      milestone "#$pr: $branch conflicts with $AGENT_BASE_BRANCH"
+      step_end "conflicts with $AGENT_BASE_BRANCH"
+    fi
+  fi
   $dry_run || step_end # a CI wait the next step does not depend on (fix, stop, none)
   case $step in
-    update-main) milestone "#$pr: next step: update with main" ;;
+    update-main | update-main-conflict) milestone "#$pr: next step: update with main" ;;
     *) milestone "#$pr: next step: $step" ;;
   esac
   $dry_run && exit 0
@@ -186,6 +209,10 @@ while true; do
     stop*) stop "${step#stop }" ;;
     fix-ci) "$AGENT_DIR/fix-ci.sh" "$pr" ;;
     update-main) "$AGENT_DIR/update-main.sh" "$pr" ;;
+    update-main-conflict)
+      "$AGENT_DIR/update-main.sh" "$pr" ||
+        stop "$branch conflicts with $AGENT_BASE_BRANCH and the update with $AGENT_BASE_BRANCH could not resolve it (see run.log). The merge stays local: finish it with /merge-main-into-branch or drop it with git reset --keep @{u}, then add the agent label and run the agent loop again."
+      ;;
     review) "$AGENT_DIR/review.sh" "$pr" ;;
     fix) "$AGENT_DIR/fix.sh" "$pr" ;;
     finalise)
@@ -196,5 +223,9 @@ while true; do
   # Without a push CI does not run again: a red CI would stay red.
   if [ "$step" = fix-ci ] && [ "$(gh pr view "$pr" --json headRefOid --jq .headRefOid)" = "$before" ]; then
     stop "The developer agent found no fix for the failing CI (see its comment above)."
+  fi
+  # An update that pushed nothing cannot clear the conflict, and asking again would loop at once.
+  if [ "$step" = update-main-conflict ] && [ "$(gh pr view "$pr" --json headRefOid --jq .headRefOid)" = "$before" ]; then
+    stop "GitHub reports a conflict with $AGENT_BASE_BRANCH but $branch already contains it and merges cleanly locally; check the pull request on GitHub, then run the agent loop again."
   fi
 done

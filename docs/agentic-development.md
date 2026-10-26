@@ -51,10 +51,10 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | 3 | Plan review: comment on the pull request (inline on the plan's lines, or a comment) or in the session; the session reads both (`plan-comments.sh`), changes the plan on its branch and answers each comment; or approve it | Developer, the skill | Plan commits, replies |
 | 4 | Start the agents (the approval) | Developer: `mise run agent:run plan/<issue>-<slug>` | — |
 | 5 | Implement one work package per agent run, with tests, and push after each; `mise run check`, version bump; the plan's pull request becomes the implementation's (label `plan` → `agent`); fix a red CI | Developer agent: `implement.sh`, `fix-ci.sh` | Draft PR labelled `agent`, **CI passed** green |
-| 6 | When the branch is behind `main`, update it first (merge `main` in); then review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | `update-main.sh` (run by `next.sh`); review agent: `review.sh` | Merge commit, PR review + summary comment |
+| 6 | When the branch is behind `main`, or conflicts with it while CI is awaited, update it first (merge `main` in); then review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | `update-main.sh` (run by `next.sh`); review agent: `review.sh` | Merge commit, PR review + summary comment |
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
-| 9 | Update with `main` when behind, then finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `update-main.sh` (run by `next.sh`), `finalise.sh` | PR ready for review |
+| 9 | Update with `main` when behind (or conflicting during the CI wait), then finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `update-main.sh` (run by `next.sh`), `finalise.sh` | PR ready for review |
 | 10 | Review, merge (the branch is usually up to date with `main` already, see 6 and 9); the release follows and is deployed | Developer | Change on `main`, released |
 
 Agents never merge and never push to `main`: the scripts push only to the plan branch, the agents
@@ -106,7 +106,10 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   (`scripts/agent/merge_versions.py`, no agent); any other conflict by a headless agent in a fresh
   context, which commits the resolution but never pushes. `next.sh` runs it before each review
   round and before finalising when the branch is behind (at most once per round), and an approval
-  survives an update that only brought in `main`.
+  survives an update that only brought in `main`. It also runs it during a CI wait when the pull
+  request conflicts with `main`: GitHub starts no CI then, so the wait could only time out. A branch
+  that is only behind keeps waiting, because its CI runs. When that update pushes nothing (GitHub
+  reports a conflict the branch does not have), the loop stops instead of asking again at once.
 - **The state directory is inside `.git`.** Everything a run leaves behind goes to
   `.git/agent/<issue>-<slug>/` of the plan branch: `run.log` (the scripts' and agents' progress
   lines, with the milestone lines `agent: >> …` next to the tool lines), `progress.tsv` (the steps,
@@ -254,10 +257,12 @@ as the first lines of every step.
 Between the tool lines, one **milestone line** per event starts with `agent: >> `: a work package
 started or done, tests, `mise run check` and its result, a commit, a push, the draft pull request,
 CI waiting, passed or failed (with the failed jobs), a review round and its findings, a fix round and
-each finding's outcome, finalise, and a stop with its reason. `grep '^agent: >> ' run.log` lists
-them. `mise run agent:status plan/32-compare-runs` (or a pull request number) shows where a run is:
-the active process, the pull request and its stage (plan review, agent loop, ready for review),
-the work package, the latest milestones and the end of `run.log`.
+each finding's outcome, `<branch> conflicts with main` (the pull request conflicts while CI is
+awaited; the CI wait step ends with that result and the update with `main` follows), finalise, and a
+stop with its reason. `grep '^agent: >> ' run.log` lists them.
+`mise run agent:status plan/32-compare-runs` (or a pull request number) shows where a run is: the
+active process, the pull request and its stage (plan review, agent loop, ready for review), the work
+package, the latest milestones and the end of `run.log`.
 `scripts/agent/status.sh --follow <branch | pr>` prints only the milestones written from now on.
 A second run on the same branch is refused while one is active (the lock,
 `run.pid` in the same directory).
@@ -295,7 +300,8 @@ It holds no tool calls and no file-level detail, only:
   time, the tokens and the cost at API prices;
 - **steps**: every step (plan, implement with each work package and the final checks, each CI wait,
   CI fix, review round, fix round, finalise, update with `main`) with its start, end, duration,
-  tokens, cost and result (its last milestone, or why it failed);
+  tokens, cost and result (its last milestone, or why it failed; a CI wait can end with
+  `conflicts with main`);
 - **iterations**: per kind of step, the runs (out of `AGENT_MAX_ROUNDS` and `AGENT_MAX_CI_FIXES`),
   the time, the tokens and the outcomes (work packages done / not done, CI passed / failed, the
   findings per review round);
@@ -415,8 +421,10 @@ milestone or CI wait: one Monitor on `status.sh --follow`, filtered to the end o
 (`failed:`, `stopping:`, ready for review), wakes it. The developer sees the milestones as they
 happen in [the `agent-progress` mod and the ntfy push](#progress-while-it-runs), and can follow
 `tail -f .git/agent/<issue>-<slug>/run.log` in a terminal; ask the session for the status at any time
-(`status.sh`). The loop already updates the pull request with `main` before each review round and
-before finalising (step 8), so when the run ends ready for review the branch is usually up to date;
+(`status.sh`). When the Monitor expires with the run still active, the session reads the end of
+`run.log` before it re-arms the Monitor, and says so when the run is only waiting for CI. The loop
+already updates the pull request with `main` before each review round and before finalising
+(step 8), so when the run ends ready for review the branch is usually up to date;
 when `main` moved since, the session starts `detach.sh update-main.sh <pr>` and waits for it, so the
 run stops there only on a conflict that cannot be resolved with confidence. It then posts the run
 summary and sends the notification. The agents may not edit the skills
@@ -441,6 +449,14 @@ reads where the issue stands from its plan branches and pull requests and contin
   fix, CI took longer than `AGENT_CI_TIMEOUT`, or the run went over `AGENT_MAX_TOKENS`. Fix the
   cause by hand on the plan branch (or not at all), then either continue by hand, or add the
   `agent` label again and run `mise run agent:next plan/<issue>-<slug>`.
+- **The loop stopped on a conflict** (`stopping: <branch> conflicts with main`): the pull request
+  conflicted with `main` while CI was awaited, and the update with `main` could not resolve it. The
+  merge stays local. Finish it with `/merge-main-into-branch`, or drop it with
+  `git reset --keep @{u}`; then add the `agent` label again and run
+  `mise run agent:next plan/<issue>-<slug>`. When the message says the branch already contains
+  `main` and merges cleanly locally, nothing is merged locally: GitHub's view of the merge state
+  differs from the local merge. Check the merge box of the pull request on GitHub, then add the
+  `agent` label again and run `agent:next`.
 - **To stop it yourself**: Ctrl+C, or remove the `agent` label (the loop does nothing on the pull
   request any more).
 
