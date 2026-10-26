@@ -261,13 +261,14 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP14: Custom check `RequiredAnnotationAttributeCheck`
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/RequiredAnnotationAttributeCheck.java`, `build-logic/checkstyle-rules/src/main/resources/tr/girgin/checkstyle/messages.properties`, `build-logic/checkstyle-rules/src/test/java/tr/girgin/checkstyle/RequiredAnnotationAttributeCheckTest.java`, `build-logic/checkstyle-rules/src/test/resources/checks/RequiredAnnotationAttributeCheck/Basic.java`, `build-logic/checkstyle-rules/src/test/resources/checks/RequiredAnnotationAttributeCheck/Qualified.java`, `build-logic/checkstyle-rules/docs/RequiredAnnotationAttributeCheck.md`, `build-logic/checkstyle-rules/README.md`
 - **Steps**:
-  - [ ] Write the check as in the design, following the module's contract.
-  - [ ] Add the message key.
-  - [ ] Fixtures: `Basic.java` (marker annotation, other attributes only, the attribute set, several required attributes with one missing, the single-element form as `value`, an unrelated annotation, on a class, a method and a parameter); `Qualified.java` (qualified parameter matched through an explicit import, an on-demand import and the qualified annotation in the source; a same-named annotation from another import not reported).
-  - [ ] Reference document from `docs/_template.md` (what it matches, every parameter, two configuration examples, the message) and a row in the README's check table.
+  - [x] Write the check as in the design, following the module's contract.
+  - [x] Add the message key.
+  - [x] Fixtures: `Basic.java` (marker annotation, other attributes only, the attribute set, several required attributes with one missing, the single-element form as `value`, an unrelated annotation, on a class, a method and a parameter); `Qualified.java` (qualified parameter matched through an explicit import, an on-demand import and the qualified annotation in the source; a same-named annotation from another import not reported).
+  - [x] Reference document from `docs/_template.md` (what it matches, every parameter, two configuration examples, the message) and a row in the README's check table.
 - **Tests**: `RequiredAnnotationAttributeCheckTest` (each fixture reports exactly its marked lines; missing and invalid `annotations` / `attributes` throw; message with and without `suggestion`); `DocumentationTest`; the module's 100% coverage gate (`mise run check` runs `checkstyleRulesCheck`).
 
 ### WP15: Rule `TAP-M1`, compiler arguments, docs, version
