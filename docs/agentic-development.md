@@ -257,12 +257,12 @@ as the first lines of every step.
 Between the tool lines, one **milestone line** per event starts with `agent: >> `: a work package
 started or done, tests, `mise run check` and its result, a commit, a push, the draft pull request,
 CI waiting, passed or failed (with the failed jobs), a review round and its findings, a fix round and
-each finding's outcome, `<branch> conflicts with main` (the pull request conflicts while CI is awaited;
-the CI wait step ends with that result and the update with `main` follows), finalise, and a stop
-with its reason. `grep '^agent: >> ' run.log` lists
-them. `mise run agent:status plan/32-compare-runs` (or a pull request number) shows where a run is:
-the active process, the pull request and its stage (plan review, agent loop, ready for review),
-the work package, the latest milestones and the end of `run.log`.
+each finding's outcome, `<branch> conflicts with main` (the pull request conflicts while CI is
+awaited; the CI wait step ends with that result and the update with `main` follows), finalise, and a
+stop with its reason. `grep '^agent: >> ' run.log` lists them.
+`mise run agent:status plan/32-compare-runs` (or a pull request number) shows where a run is: the
+active process, the pull request and its stage (plan review, agent loop, ready for review), the work
+package, the latest milestones and the end of `run.log`.
 `scripts/agent/status.sh --follow <branch | pr>` prints only the milestones written from now on.
 A second run on the same branch is refused while one is active (the lock,
 `run.pid` in the same directory).
@@ -422,8 +422,9 @@ milestone or CI wait: one Monitor on `status.sh --follow`, filtered to the end o
 happen in [the `agent-progress` mod and the ntfy push](#progress-while-it-runs), and can follow
 `tail -f .git/agent/<issue>-<slug>/run.log` in a terminal; ask the session for the status at any time
 (`status.sh`). When the Monitor expires with the run still active, the session reads the end of
-`run.log` before it re-arms the Monitor, and says so when the run is only waiting for CI. The loop already updates the pull request with `main` before each review round and
-before finalising (step 8), so when the run ends ready for review the branch is usually up to date;
+`run.log` before it re-arms the Monitor, and says so when the run is only waiting for CI. The loop
+already updates the pull request with `main` before each review round and before finalising
+(step 8), so when the run ends ready for review the branch is usually up to date;
 when `main` moved since, the session starts `detach.sh update-main.sh <pr>` and waits for it, so the
 run stops there only on a conflict that cannot be resolved with confidence. It then posts the run
 summary and sends the notification. The agents may not edit the skills
