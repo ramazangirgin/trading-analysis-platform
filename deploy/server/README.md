@@ -421,10 +421,9 @@ multipass delete --purge platform-test
   `mise run docker-build:platform` there side by side. Read the output of the task *Build the
   platform image* or *Wait for the ta-runner image* (it carries the ta-runner build's output).
   To retry one, run its task alone on the server as `platform` in `/opt/trading-analysis-platform`.
-  On arm64,
-  the [ta-runner image (arm64)](../../docs/ci-and-releases.md#continuous-integration) CI job catches
-  dependencies without arm64 wheels earlier. Retry the deploy; see `docker compose … logs` on the
-  server.
+  On arm64, the [ta-runner image (arm64)](../../docs/ci-and-releases.md#continuous-integration) CI
+  job catches dependencies without arm64 wheels earlier. Retry the deploy; see
+  `docker compose … logs` on the server.
 - **The health wait times out.** The first start takes a minute or more; read the platform's log
   as above.
 - **The page does not open.** Is `mise run server:tunnel` still running, without an error, and
