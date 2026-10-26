@@ -11,6 +11,9 @@
 #   AGENT_MAX_ROUNDS     review → fix rounds; default 2
 #   AGENT_MAX_CI_FIXES   attempts to fix a red CI over the whole pull request; default 3
 #   AGENT_MAX_TOKENS     tokens (input, cached and output) over the whole pull request; default 50000000
+#   AGENT_WP_MAX_TURNS   turns of one work package agent run before a fresh agent continues; default 40
+#   AGENT_WP_MAX_CONTINUATIONS  fresh agents that may continue a package after the first; default 3
+#   AGENT_MAX_WP_FILES   files (tests included) a work package may name before plan-branch.sh warns; default 8
 #   AGENT_MAX_BUDGET_USD per agent call, passed to claude --max-budget-usd when set
 #   AGENT_GITHUB_LOGIN   the account the agents comment as; default the gh login
 #   AGENT_CI_CHECK       the required check; default "CI passed"
@@ -19,6 +22,8 @@
 #                        Steps on an existing pull request use its base instead.
 #   AGENT_ISSUE_PROGRESS 1 (default): keep the progress comment on the issue up to date
 #                        (progress.sh); 0: record the progress in progress.tsv only
+#   AGENT_LSP            1: the agents get Claude Code's LSP tool (the plugin scripts/agent/lsp/) and
+#                        the "find symbols first" rule (prompts/tools-lsp.md); default 0 (issue #251)
 #
 #   AGENT_NTFY_TOPIC     an ntfy topic: each milestone is also sent to it (AGENT_NTFY_SERVER, default
 #                        https://ntfy.sh). This sends progress lines to an external service: off
@@ -26,6 +31,8 @@
 #
 #   AGENT_STEP_LABEL     set by a step before run_agent: the label of the milestone lines for the
 #                        agent's phases (tests, mise run check, commit); none without it
+#   AGENT_QUIET          set to 1 by run_agent for every agent: the mise tasks print one line per
+#                        command, the output goes to build/quiet/ (scripts/quiet.sh)
 #
 # Everything a run leaves behind (prompts, agent results and streams, run.log, progress.tsv, the lock
 # run.pid, the package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
@@ -85,10 +92,16 @@ fi
 AGENT_MAX_ROUNDS=${AGENT_MAX_ROUNDS:-2}
 AGENT_MAX_CI_FIXES=${AGENT_MAX_CI_FIXES:-3}
 AGENT_MAX_TOKENS=${AGENT_MAX_TOKENS:-50000000}
+AGENT_WP_MAX_TURNS=${AGENT_WP_MAX_TURNS:-40}
+AGENT_WP_MAX_CONTINUATIONS=${AGENT_WP_MAX_CONTINUATIONS:-3}
+AGENT_MAX_WP_FILES=${AGENT_MAX_WP_FILES:-8}
 AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
 AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 AGENT_ISSUE_PROGRESS=${AGENT_ISSUE_PROGRESS:-1}
+AGENT_LSP=${AGENT_LSP:-0}
+# The name of the tool in Claude Code's tool list and allow-list; agent:lsp-check confirms it.
+AGENT_LSP_TOOL=LSP
 AGENT_NTFY_SERVER=${AGENT_NTFY_SERVER:-https://ntfy.sh}
 # Label on an agent's pull request; removing it stops the loop.
 AGENT_LABEL=agent
@@ -323,10 +336,14 @@ issue_reference() {
 # Steps on an existing pull request work against its base branch.
 use_pr_base() { AGENT_BASE_BRANCH=$(gh pr view "$1" --json baseRefName --jq .baseRefName); }
 
+lsp_enabled() { [ "$AGENT_LSP" = 1 ]; }
+
 # A prompt file with {{BASE}} replaced by the base branch, followed by how to work within the
-# agents' tool allow-list (prompts/tools.md).
+# agents' tool allow-list (prompts/tools.md, and with the LSP tool prompts/tools-lsp.md).
 prompt() {
-  cat "$AGENT_DIR/prompts/$1" "$AGENT_DIR/prompts/tools.md" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g"
+  local -a files=("$AGENT_DIR/prompts/$1" "$AGENT_DIR/prompts/tools.md")
+  if lsp_enabled; then files+=("$AGENT_DIR/prompts/tools-lsp.md"); fi
+  cat "${files[@]}" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g"
   echo
 }
 
@@ -369,12 +386,13 @@ DEFAULT_MODEL_NAME="Claude Code's default model"
 model_name() { echo "${1:-$DEFAULT_MODEL_NAME}"; }
 
 # Tools no agent may use, whatever else it is allowed: agents never merge, never push (the scripts
-# push, to the agent's own branch only) and never skip the Git hooks.
+# push, to the agent's own branch only), never skip the Git hooks and never open a screenshot (the
+# report of `mise run screenshots` tells what they need).
 AGENT_DENIED_TOOLS=(
   "Bash(git push:*)" "Bash(gh pr merge:*)" "Bash(gh api:*)" "Bash(gh repo:*)"
   "Bash(git commit --no-verify:*)" "Bash(git commit -n:*)" "Bash(LEFTHOOK=0:*)"
   "Bash(git checkout main:*)" "Bash(git switch main:*)" "Bash(git reset --hard:*)"
-  "Bash(git rebase:*)" "WebSearch"
+  "Bash(git rebase:*)" "WebSearch" "Read(**/*.png)"
 )
 
 # Tools the developer agents (implement, fix) may use.
@@ -397,7 +415,9 @@ AGENT_REVIEW_TOOLS=(
 
 # run_agent <model> <prompt file> <output json> [tool...] [-- extra claude args...]
 # Runs Claude Code headless and writes its JSON result (result, structured_output, usage,
-# session_id) to <output json>. Fails if the agent reports an error. While it runs, each step of
+# session_id) to <output json>. Fails if the agent reports an error, except a turn limit
+# (subtype error_max_turns) when the caller sets AGENT_ALLOW_MAX_TURNS=1: it returns normally and the
+# caller reads the subtype. While it runs, each step of
 # the agent (tool calls, messages, to-dos) is logged; the full stream goes to <output json>l. The
 # files of an earlier run of the same name (an interrupted one has a stream and no result) are kept
 # under a name with the time, so that its usage still counts.
@@ -413,9 +433,17 @@ run_agent() {
   extra=("$@")
   [ -n "${AGENT_MAX_BUDGET_USD:-}" ] && extra+=(--max-budget-usd "$AGENT_MAX_BUDGET_USD")
   [ -z "$model" ] || extra+=(--model "$model")
+  local -a lsp_env=()
+  local lsp_note=""
+  if lsp_enabled; then
+    tools+=("$AGENT_LSP_TOOL")
+    extra+=(--plugin-dir "$AGENT_DIR/lsp")
+    lsp_env=(ENABLE_LSP_TOOL=1)
+    lsp_note=", LSP tools on"
+  fi
 
   use_claude_login
-  log "running $(model_name "$model") ($(basename "$prompt")); stream: ${out}l"
+  log "running $(model_name "$model") ($(basename "$prompt")$lsp_note); stream: ${out}l"
   if [ -e "$out" ] || [ -e "${out}l" ]; then
     local old
     old="${out%.json}.$(date +%Y%m%d%H%M%S)-$$"
@@ -424,11 +452,15 @@ run_agent() {
   fi
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
-  env -u GH_TOKEN -u GITHUB_TOKEN claude -p --output-format stream-json --verbose --permission-mode dontAsk \
+  env -u GH_TOKEN -u GITHUB_TOKEN AGENT_QUIET=1 ${lsp_env[@]+"${lsp_env[@]}"} claude -p --output-format stream-json --verbose --permission-mode dontAsk \
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
     ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}" || true
   [ -s "$out" ] || die "the agent wrote no result ($out)"
   progress_event usage "${AGENT_STEP:-}" "${AGENT_SUBSTEP:-}" "$(py "$AGENT_DIR/agent_json.py" progress-usage "$out")"
+  if [ "${AGENT_ALLOW_MAX_TURNS:-}" = 1 ] && [ "$(py "$AGENT_DIR/agent_json.py" get "$out" subtype)" = error_max_turns ]; then
+    log "the agent stopped at its turn limit: $(py "$AGENT_DIR/agent_json.py" usage-line "$out")"
+    return 0
+  fi
   if [ "$(py "$AGENT_DIR/agent_json.py" get "$out" is_error)" = True ]; then
     die "the agent failed: $(py "$AGENT_DIR/agent_json.py" get "$out" result)"
   fi

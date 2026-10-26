@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test'
 import base from './playwright.config'
 
-// The README's screenshots (docs/screenshots/), taken the way the end-to-end tests run: the built
+// The docs' screenshots (docs/screenshots/), taken the way the end-to-end tests run: the built
 // jar, started by start-platform.sh with a throwaway home and ta-runner replaying a recording, in
 // the installed Google Chrome. Each screenshots/*.shot.ts sets up what a page needs (over the API)
 // and saves it with shot(). `mise run screenshots` builds what they need and takes them all;

@@ -76,7 +76,7 @@ install_engine() {
     brew install podman
     podman machine init --volume "$HOME:$HOME"
     podman machine start
-    say "Podman is installed and its machine runs (README, \"Run with Docker Compose\", Notes)."
+    say "Podman is installed and its machine runs (docs/docker-compose.md, Notes)."
   else
     say "no container engine found, and none can be installed here automatically."
     say "Install Docker (https://docs.docker.com/engine/install/) or Podman (https://podman.io/docs/installation)."

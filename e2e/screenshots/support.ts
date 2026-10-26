@@ -1,12 +1,15 @@
 import { mkdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Locator, Page } from '@playwright/test'
 
-/** Where the README's screenshots live; SCREENSHOT_DIR writes them elsewhere (to try a shot out). */
-const DIR =
-  process.env.SCREENSHOT_DIR ??
-  join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'screenshots')
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+/**
+ * Where the docs' screenshots live; SCREENSHOT_DIR writes them elsewhere (to try a shot out). A
+ * relative one is taken from the repository root, where the report looks, not from e2e/.
+ */
+const DIR = resolve(REPO_ROOT, process.env.SCREENSHOT_DIR ?? join('docs', 'screenshots'))
 
 /**
  * Saves the page (or one element of it) as docs/screenshots/<name>.png, once the page has settled:

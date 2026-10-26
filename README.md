@@ -20,7 +20,7 @@ then read the decision, the reports and the debates, and export them. The roadma
 
 Two ways to run it: on your machine with `mise run run` ([Quick start](#quick-start)), or with
 Docker Compose, where each analysis runs in its own container and the data is kept in PostgreSQL
-([Run with Docker Compose](#run-with-docker-compose)).
+([Run with Docker Compose](docs/docker-compose.md)).
 
 ## Quick start
 
@@ -58,383 +58,32 @@ Open **http://127.0.0.1:8080**. One process serves both the UI and the API; keep
 while you use it, and stop it with Ctrl+C. The first start takes a few minutes (Gradle's
 dependencies, Node, building the UI and the backend); after that it starts in seconds, and after a
 `git pull` it rebuilds only what changed. Analyses, presets and keys live on disk
-([Where things live](#where-things-live)), so they survive restarts.
+([Where things live](docs/configuration.md#where-things-live)), so they survive restarts.
 
 If the platform stops while an analysis runs (a crash, a `kill`), the analysis keeps going; the
 restarted platform follows it again, or records its result if it finished meanwhile, and starts
 queued analyses again. Ctrl+C in the terminal stops the running analyses too.
 
-Changing the code instead? See [Development](#development) — it runs the UI with hot reload.
+Changing the code instead? See [Development](docs/development.md) — it runs the UI with hot reload.
 
-### 3. Log in
+Next: [log in, add an API key and start an analysis](docs/user-guide.md#3-log-in).
 
-The first start creates the user `admin` and prints a generated password once in the terminal:
+## Documentation
 
-```
-First start: created the admin user "admin" with the generated password <password>. It is shown only this once; change it after the first login.
-```
-
-Log in at **http://127.0.0.1:8080** with it. The first admin has the ADMIN role, with every
-permission. To choose the name and password instead, set
-`PLATFORM_ADMIN_USERNAME` and `PLATFORM_ADMIN_PASSWORD` before the first start; the password must
-meet the password policy (at least 12 characters, not a common password, not the username), or the
-platform does not start and says why. Later starts change nothing. A generated password is flagged
-to be changed: after logging in with it, the UI asks for a new password before anything else. If
-you lost it while `admin` is still the only user, delete the user
-(`DELETE FROM "IDENTITY"."USERS";` in the database) and restart to get a new one.
-
-Every page shows a short investment disclaimer under the header; the About page (`/about`, linked
-from the footer and the login page) shows the full text and opens without a login.
-
-![The login page, with the link back to the landing page](docs/screenshots/login.png)
-
-Without a login, the main page is a **landing page**: what the platform does, a **Log in** button
-and cards of the latest analyses that their owners made **Partial** (see
-[step 6](#6-watch-it-and-read-the-results)), each with the start of its text faded and locked. A card opens
-the **preview page**: the parts the owner allows in full, the other sections as blurred
-placeholders with their titles, and a **Log in** button. No text of a locked section ever reaches
-the visitor's browser. After logging in, the visitor lands on the full analysis they were looking
-at. A logged-in user who opens `/` sees the dashboard, and `/preview/<id>` leads to the analysis
-itself. There is no self-registration yet: only an admin creates users.
-
-![The landing page as a visitor sees it](docs/screenshots/landing.png)
-
-![The preview page of a partial analysis](docs/screenshots/preview.png)
-
-More users are added in the UI, under **Admin → Users**: **New user** takes a username, roles and
-a one-time password, generated or entered. A generated one is shown once, to pass on; the user
-must change it at the first login. Per row an admin edits the roles, disables or enables the
-account (there is no delete), resets the password and unlocks a locked account. The UI explains
-beforehand what the platform refuses: disabling yourself, removing your own ADMIN role, or
-disabling or demoting the last enabled ADMIN. The page needs the permission `user:read`, its
-changes `user:manage`.
-
-![Admin → Users: an admin, an analyst who can also publish and a disabled viewer](docs/screenshots/users.png)
-
-**Admin → Roles** (permission `role:manage`) lists every role with its permissions and its number
-of users. **New role** takes a name, a description and the permissions, chosen from a checklist
-grouped by area (analysis, presets, settings, users and roles, audit). **Edit** changes a custom
-role's name, description and permissions; **Delete** removes it. On the built-in roles the name and
-description cannot be changed, ADMIN keeps all its permissions, and none of them can be deleted; a
-role that users still hold cannot be deleted either. The page explains this beforehand. A change to
-a role applies to the users who are logged in on their next request, without logging in again.
-
-![Admin → Roles: the four built-in roles and a custom read-only role](docs/screenshots/roles.png)
-
-### 4. Add an API key
-
-Open **Settings**, paste the key next to its provider and press **Save**. Keys are stored in
-`~/.tradingagents-platform/secrets.env` (owner-only) and are never shown back. A key already in
-`artifact/ta-runner/.env` is picked up too (read-only).
-
-The **Analysis defaults** card below the keys holds the provider, the deep- and quick-thinking
-model and the two round counts that every analysis uses. Only users with
-`analysis:defaults:manage` (ADMIN) see it. Until an admin saves once, the catalog's defaults apply
-with one round each. If another admin saved meanwhile, the save fails with a message and the card
-reloads their values.
-
-![Settings: provider API keys and analysis defaults](docs/screenshots/settings.png)
-
-### 5. Start an analysis
-
-Open **New analysis** and fill in:
-
-| Field | What to enter |
-|---|---|
-| Ticker | Any Yahoo Finance symbol: `NVDA`, `THYAO.IS`, `BTC-USD` (crypto pairs switch the asset type automatically) |
-| Analysis date | Defaults to the last weekday; future dates are rejected |
-| Analysts | Market, Sentiment, News, Fundamentals — fewer analysts means a faster, cheaper run |
-| Provider, models | A deep-thinking model (research/portfolio managers) and a quick-thinking one (everyone else). They start from the platform's analysis defaults: read-only ("Set by the administrator") without `analysis:override-models`, editable with it, where **Reset to defaults** restores them. A model id that is not listed can be typed only for providers that allow custom ids |
-| Debate rounds | The debate and risk rounds (1 to 10) come from the same defaults; every extra round adds LLM calls |
-| Report language | The language of the reports and the decision; follows the UI language by default |
-
-Press **Start analysis**. **Save as preset** keeps the provider, model and analyst choices for next
-time; **Settings** lists your own presets with what each holds, and renames or deletes them. With
-`preset:read:all` (ADMIN) an **All users** switch lists everyone's presets, with an **Owner** column.
-Without `analysis:override-models`, applying a preset leaves the provider, models and rounds at the
-platform values and saving one stores the other fields only.
-Renaming a preset that someone else changed meanwhile fails with a message and the list reloads.
-**Run again** keeps the values of the original analysis.
-
-![New analysis form](docs/screenshots/new-analysis.png)
-
-![New analysis form for a user without analysis:override-models](docs/screenshots/new-analysis-readonly.png)
-
-![Presets in Settings](docs/screenshots/presets.png)
-
-### 6. Watch it and read the results
-
-The analysis page updates live: the agent pipeline (analysts → research debate → trader → risk
-debate → portfolio manager), a feed of agent messages and tool calls, the runner log, and token
-counts. A full run with all four analysts can take 20 minutes or more, depending on the model and
-the debate rounds (the example above: 41 LLM calls, ~1.1M input tokens, 18 minutes). **Stop** ends it; **Run again**
-repeats it with the same settings.
-
-![A running analysis: pipeline status and the live feed](docs/screenshots/run-live.png)
-
-When it finishes, the decision card shows the portfolio manager's rating (Buy / Overweight / Hold /
-Underweight / Sell) with its reasoning, and the tabs hold everything behind it:
-
-| Reports — one per analyst and manager | Debates — bull vs. bear, then the risk debate |
-|---|---|
-| ![Reports tab](docs/screenshots/run-reports.png) | ![Debates tab](docs/screenshots/run-debates.png) |
-
-![Stats tab: calls, tokens, cost, duration and the run's settings](docs/screenshots/run-stats.png)
-
-The cost is worked out per LLM call from the provider's published prices
-([LLM prices](#llm-prices)); a model without a known price shows no cost.
-
-The market report opens with a price chart — close, 10 EMA, 50 SMA and 200 SMA with volume, over
-3 months to a year up to the analysis date, from the price data TradingAgents itself downloaded —
-and report tables that are series over periods (quarterly or yearly figures) get a chart beside them:
-
-![A fundamentals table with its chart](docs/screenshots/run-table-chart.png)
-
-A user with the permission `analysis:share` (ADMIN, or anyone with the PUBLISHER role) can make
-their own completed analysis public with the visibility select on its page (**Private**, **Public
-(logged-in users)** or **Partial (preview for visitors)**), after a confirmation. With **Public**,
-everyone who may read analyses sees it under **Shared with everyone**, read-only: they can open,
-read, compare and export it, but not stop it, run it again or read its log. With **Partial**, the
-logged-in users see it the same way, and visitors without a login see a preview of it on the
-landing page (see [step 3](#3-log-in)); the confirmation says that anyone on the internet will see
-it. The owner makes it private again at any time, also after losing the permission, and an admin
-can make any public or partial analysis private with the same select.
-
-A visitor who is not logged in gets a preview only, through `GET /api/public/analyses`: the ticker,
-the date, the rating, the report sections the platform is configured to show (by default the market
-report) and the names of the sections that stay hidden. The hidden text is cut on the server and
-never sent. Only the owner makes an analysis partial; an admin can move a partial analysis to public
-or private, but never makes someone else's analysis partial. Which sections a visitor reads is a
-setting (see [Login](#login)) and needs a restart to change.
-
-![The confirmation before an analysis is made partial](docs/screenshots/run-share.png)
-
-### 7. Past analyses
-
-**Analyses** lists your own runs with their analysis date and start time, decision, model and
-duration, filterable by ticker and status, under the tab **My analyses**. **Shared with everyone**
-lists the analyses other users have made public (see [step 6](#6-watch-it-and-read-the-results)),
-and a user with `analysis:read:all` (ADMIN) also gets an **All users** tab with everyone's runs.
-Both show an **Owner** column, and a public analysis carries a **Public** tag and a partial one a **Partial** tag.
-Runs made outside the platform are imported (read-only) and show up by themselves within about
-10 seconds, as the data dir is watched; they belong to the first admin. **Scan data dir** forces a
-rescan:
-
-- reports the TradingAgents CLI (or another UI) left in `~/.tradingagents/logs`;
-- a third-party UI's run history, `~/.tradingagents/runs.json`: its failed runs with their errors,
-  and the models, token counts, cost and timing of the finished ones;
-- deep-analysis write-ups, `~/.tradingagents/reports/<TICKER>_deep_<DATE>.md`, as a
-  *Deep analysis* section of that ticker and date's report.
-
-A run whose report files are still being written is not shown as failed; it appears once it
-finishes.
-
-![Analyses list of all users with the Owner column, a public run and two runs ticked for comparing](docs/screenshots/analyses.png)
-
-To compare runs, tick two to four of them and press **Compare**: the compare view shows them side
-by side, one column per run, with the settings (ticker, date, provider and models, analysts,
-debate rounds), the decision, the stats and the report sections. Rows whose values differ between
-the runs are highlighted, so the same ticker run with another model or date can be compared at a
-glance. The run ids are in the page's URL, so a comparison can be bookmarked or shared.
-
-![Compare view: two runs of the same ticker with different models](docs/screenshots/compare.png)
-
-The **Dashboard** shows the running analyses and the latest decisions at a glance.
-
-![Dashboard](docs/screenshots/dashboard.png)
-
-### 8. Reports and export
-
-**Reports** gathers every finished report in one place: the list of tickers and dates on the left,
-the report's contents in the middle (each section with its headings, then the debates), and the
-report itself with its charts on the right. The data dir keeps one report per ticker and date, so
-when a ticker and date ran several times, this is the newest run's report.
-
-**Markdown**, **HTML** and **PDF** export the open report: the HTML file is a single page that
-opens anywhere, and PDF goes through the browser's print dialog (*Save as PDF*). On a phone the page
-folds into one column, with the list as a picker and the contents folded above the report.
-
-Every report, on screen and in every export, ends with the investment disclaimer, in the report's
-language rather than the screen language.
-
-![Reports: list, contents and the report](docs/screenshots/reports.png)
-
-### Language
-
-The UI is in English. Reports are written in the language chosen in the New Analysis form's
-"Report language" field; the analysis page shows it as a tag.
-
-## Run with Docker Compose
-
-For a server (or any machine with Docker or Podman): the platform, PostgreSQL and a socket proxy
-run as containers, and every analysis runs in a container of its own that is removed afterwards.
-
-```
-browser ──▶ 127.0.0.1:8080 ──▶ platform ──▶ postgres
-                                  │
-                                  └──▶ docker-socket-proxy ──▶ Docker / Podman engine
-                                                                  │  one per analysis
-                                                                  ▼
-                                                          ta-runner container
-```
-
-**Needs:** Docker with Compose v2, or Podman with `docker compose` pointed at its socket; and
-[mise](https://mise.jdx.dev/) to build the images. To run it on a server instead of your own machine,
-[`deploy/server/`](deploy/server/README.md) sets up any Ubuntu server you can reach over SSH and
-deploys this setup on it.
-
-```sh
-cp deploy/.env.example deploy/.env      # set PLATFORM_DATA and POSTGRES_PASSWORD
-mise run docker-build                   # builds trading-analysis-platform and ta-runner, tagged latest and with the version
-docker compose -f deploy/docker-compose.yml up -d
-```
-
-Open **http://127.0.0.1:8080** (or the `PLATFORM_PORT` you set), log in and add an API key under
-**Settings**, as in the [Quick start](#4-add-an-api-key). `.env` may set `PLATFORM_ADMIN_USERNAME` and
-`PLATFORM_ADMIN_PASSWORD` for the first admin; without them the generated password is in
-`docker compose -f deploy/docker-compose.yml logs platform`. It may also set
-`PLATFORM_PASSWORD_MIN_LENGTH` (8 to 64, default 12). `docker compose -f
-deploy/docker-compose.yml down` stops everything; `up -d` brings it back with all data.
-
-**Data** stays on the machine, in the folder named by `PLATFORM_DATA` (an absolute path):
-
-| Folder | What |
-|---|---|
-| `postgres/` | The database: analyses, presets and users. Survives restarts, `down` and image updates. |
-| `platform/` | `secrets.env` (API keys, owner-only), `runs/<id>/` (events and runner logs), optional `prices.json` |
-| `tradingagents/` | TradingAgents' reports, price cache and memory log, written by the analysis containers |
-
-Back up the whole folder; for the database alone, `docker compose -f deploy/docker-compose.yml exec
-postgres pg_dump -U platform platform > platform.sql`. Table and column names are uppercase and
-stored quoted, so a hand query quotes them too: `SELECT * FROM "ANALYSIS"."ANALYSES";`.
-
-**How analyses run:** the platform asks the engine, through docker-socket-proxy, for one
-`ta-runner` container per analysis: read-only root filesystem, no Linux capabilities, a non-root
-user, 2 GB of memory and 2 CPUs, and only the `tradingagents/` folder mounted. The proxy lets the
-platform create, start, stop and remove containers and nothing else (no `exec`, images, volumes or
-networks). If the platform restarts during an analysis, the container keeps running and the
-platform picks it up again.
-
-**Notes**
-
-- **SELinux** (Fedora, RHEL, Podman machines): the Compose file labels its folders with `:z`, and
-  the proxy runs without SELinux labelling so it can reach the socket.
-- **Podman on macOS:** `PLATFORM_DATA` must be a folder the Podman machine can see. A machine
-  created without `--volume` shares no macOS folders; use a path inside the machine (e.g.
-  `/var/home/core/trading-analysis-platform`) or recreate it with `podman machine init --volume
-  $HOME:$HOME`. `DOCKER_SOCKET` is the socket path inside the machine (`/var/run/docker.sock` on a
-  rootful one).
-- **Exposing it beyond localhost** needs HTTPS first. Login is always on (see [Login](#login)). The
-  port is published on 127.0.0.1 only, and a plain Compose run stays that way. For a machine with a
-  domain, [`deploy/docker-compose.public.yml`](deploy/docker-compose.public.yml) adds a Caddy
-  container that gets a Let's Encrypt certificate and serves the platform on 80/443: set
-  `PLATFORM_DOMAIN` and `ACME_EMAIL` in `deploy/.env` and run `docker compose -f docker-compose.yml
-  -f docker-compose.public.yml up -d`. The [server setup](deploy/server/README.md) does this with
-  `-e public_domain=…`, or you open the platform through an SSH tunnel instead.
-- The first start takes about a minute (longer under Podman's VM on macOS).
-
-### Upgrading to 5.0.0
-
-`GET /api/analyses?allUsers=true` is gone: a client sends `scope=ALL` instead (without `scope` it
-gets its own analyses, as `allUsers=true` would now). Existing analyses stay private. The migrations
-give ADMIN the new permission `analysis:share` and add the built-in role PUBLISHER.
-
-### Upgrading to 4.0.0
-
-Login is always on and `PLATFORM_AUTH_ENABLED` is gone. An installation without users gets the first
-admin on its next start (see [Quick start](#3-log-in)). Scripts that call the API need a session and
-the CSRF header: `GET /api/auth/me` sets the `XSRF-TOKEN` cookie, `POST /api/auth/login` takes it
-back in `X-XSRF-TOKEN`, and every later unsafe request sends the header too.
-
-### Upgrading to 3.0.0
-
-Each domain's tables now live in a database schema of its own (`"ANALYSIS"`, `"SETTINGS"`,
-`"IDENTITY"`), each with its own migrations and history table, so **an existing database is reset,
-not migrated**. Started on an old database, the platform would create the three schemas next to the
-old tables in `public` and ignore them. Runs the platform started, presets and users are lost;
-analyses that TradingAgents' CLI left in the data folder are imported again on startup. For Docker
-Compose, reset as for 1.0.0:
-
-```sh
-docker compose -f deploy/docker-compose.yml down
-# optional, to keep a copy: start only postgres, run the pg_dump above, then down again
-rm -rf "$PLATFORM_DATA/postgres"        # the folder PLATFORM_DATA names in deploy/.env
-docker compose -f deploy/docker-compose.yml up -d
-```
-
-For runs on your machine (`mise run run`), `mise run db:reset` empties the local database; the next
-start is a fresh one. On your own PostgreSQL server, drop and recreate the database.
-
-### Upgrading to 2.0.0
-
-The database is migrated in place on the first start: enum columns become PostgreSQL enum types, an
-analysis's analysts an array, and a role's permissions an array on the role (the `ROLE_PERMISSIONS`
-table goes away). No data is lost, and nothing needs to be done. An older release cannot run on the
-migrated database, so take a copy first if you may want to go back (the `pg_dump` above, with the
-platform stopped).
-
-### Upgrading to 1.0.0
-
-PostgreSQL is now the platform's only database, and its schema was recreated, so **an existing
-database is reset, not migrated**: the platform does not start on the old one (Flyway rejects its
-history). Analyses that TradingAgents' CLI left in the data folder are imported again on startup;
-runs the platform started, presets and users are lost. To reset:
-
-```sh
-docker compose -f deploy/docker-compose.yml down
-# optional, to keep a copy: start only postgres, run the pg_dump above, then down again
-rm -rf "$PLATFORM_DATA/postgres"        # the folder PLATFORM_DATA names in deploy/.env
-docker compose -f deploy/docker-compose.yml up -d
-```
-
-For runs on your machine (`mise run run`) nothing is needed on a first start; a
-`~/.tradingagents-platform/platform.db` file from an earlier version is no longer used and can be
-deleted. `mise run db:reset` empties the local database later, whenever you want a fresh one.
-
-## Where things live
-
-
-| Path | What |
-|---|---|
-| PostgreSQL | Analyses, presets and users: in the local container's volume `trading-analysis-platform-db`, or on your own server ([Prerequisites](#1-prerequisites)) |
-| `~/.tradingagents-platform/runs/<id>/` | `spec.json`, `events.jsonl` (replayed to the UI), `run.log` (runner stderr) |
-| `~/.tradingagents-platform/prices.json` | Optional: your own LLM prices, over the ones ta-runner ships (see below) |
-| `~/.tradingagents/logs/` | TradingAgents' own reports, shared with its CLI; runs found here are imported (read-only) |
-
-Override with `PLATFORM_HOME`, `TRADINGAGENTS_HOME` or `TRADINGAGENTS_RESULTS_DIR`. With Docker
-Compose everything is under `PLATFORM_DATA` instead ([Run with Docker Compose](#run-with-docker-compose)).
-
-### LLM prices
-
-A run's cost is worked out per LLM call from
-[`artifact/ta-runner/ta_runner/pricing/prices.json`](artifact/ta-runner/ta_runner/pricing/prices.json): DeepSeek,
-OpenAI, Anthropic and Google, read from their official pricing pages on 2026-09-30 (peak hours,
-long-context tiers and cached input included). A model without a price shows no cost rather than
-a guess. To add or correct prices, create `~/.tradingagents-platform/prices.json` in the same shape;
-its models replace the shipped ones one by one:
-
-```json
-{"providers": {"ollama": {"models": {"qwen3:latest": [{"input": 0, "output": 0}]}},
-               "openai": {"models": {"gpt-5.6": [{"input": 2.0, "cached_input": 0.2, "output": 12.0}]}}}}
-```
-
-Prices are USD per 1M tokens. New runs pick the file up; finished runs keep their cost.
-
-## Development
-
-### Dev servers
-
-```sh
-mise run dev
-```
-
-This starts two processes, and keeps them running until Ctrl+C:
-
-| Process | Port | What it does |
+| File | What it covers | Who reads it |
 |---|---|---|
-| Spring Boot backend | 8080 | The API (`/api/...`), the database, starting and stopping analyses (it launches ta-runner) |
-| Vite dev server | 5173 | Serves the Vue UI straight from `artifact/frontend/src`, reloads the browser on every change, and forwards `/api/...` to the backend |
+| [docs/user-guide.md](docs/user-guide.md) | Quick start steps 3 to 8: log in and users, API keys, starting an analysis, watching and sharing it, past analyses, reports and export, language | Users |
+| [docs/docker-compose.md](docs/docker-compose.md) | Running the platform, PostgreSQL and the analyses as containers, data, security notes, upgrading between major versions | Operators |
+| [docs/configuration.md](docs/configuration.md) | Where the platform keeps its data, and the LLM prices | Users, operators |
+| [docs/login-and-backend.md](docs/login-and-backend.md) | The session login, password policy, lockout, public routes, users, roles, permissions and the endpoints behind them | Operators, developers |
+| [docs/development.md](docs/development.md) | Dev servers, the `mise` tasks, coding conventions, before pushing, ta-runner, testing the Docker runner | Developers |
+| [docs/ci-and-releases.md](docs/ci-and-releases.md) | The CI jobs and the rules on `main`, dependency updates, versioning and releases | Developers |
+| [docs/agentic-development.md](docs/agentic-development.md) | Taking an issue to a reviewed pull request with agents | Developers |
+| [docs/event-protocol.md](docs/event-protocol.md) | The contract between the backend and ta-runner | Developers |
+| [docs/coding-convention/README.md](docs/coding-convention/README.md) | Where each kind of class, component or module belongs, and the rules the build checks | Developers |
+| [deploy/server/README.md](deploy/server/README.md) | Setting up an Ubuntu server over SSH and deploying the Compose stack on it | Operators |
 
+<<<<<<< HEAD
 Open **http://localhost:5173** (not :8080) while developing. UI changes show up immediately; backend
 changes need a restart of `mise run dev`. Nothing listens on 5173 unless `mise run dev` is running —
 to just use the app, `mise run run` is enough. `mise run dev` needs a login too, with the same first
@@ -866,121 +515,15 @@ both merge: the second one must be updated with `main` and bumped again. The rul
 [versioning and releases](docs/coding-convention/repository-versioning-and-releases.md).
 
 ### Agentic development
+=======
+## Agentic development
+>>>>>>> origin/main
 
 An issue can be taken to a reviewed pull request by agents, with you deciding at two points:
 approving the plan and merging the pull request. Everything runs on your machine with Claude Code
 and your own Claude Code login: Sonnet as the developer agent, Opus as the review agent. Agents
-never merge.
-
-Start Claude Code from a shell where mise is active in this repository (`mise activate` in your
-shell, or `mise exec -- claude`). `mise.toml` sets `CLAUDE_CODE_PLUGIN_DIRS` for the
-`agent-progress` mod; a `claude` started without mise shows no progress in the status bar.
-
-A sample flow, for issue #32 (compare runs):
-
-```text
-# 1. Plan it: in Claude Code, in this repository
-/plan-from-issue 32
-#    Claude reads the issue and the docs of every part it touches, writes .plans/32-compare-runs.md,
-#    and, when it is ready for review, pushes it alone on branch plan/32-compare-runs, opens a
-#    draft pull request labelled plan for it and links that on #32.
-```
-
-```sh
-# 2. Review the plan on that pull request (inline on its lines, or as a comment) or in the Claude
-#    Code session; Claude changes the plan on its branch and answers each comment, until it is right.
-
-# 3. Let the agents implement it and take it to a pull request ready for review
-mise run agent:run plan/32-compare-runs
-#    developer agent: implements with tests, mise run check, version bump; the plan's draft PR
-#    carries on (label plan → agent)
-#    after CI passed: review agent comments R1-1, R1-2, ... (CRITICAL / MAJOR / MINOR)
-#    developer agent: one "Address R1-n: ..." commit or a reasoned reply per finding; CI again
-#    a second review → fix round, then a final comment and the PR is marked ready for review
-
-# 4. Review the PR (start with the final comment: open and declined findings), then
-git fetch origin && git switch plan/32-compare-runs && git pull
-/merge-main-into-branch            # in Claude Code, if main moved: merge, resolve, push; CI again
-gh pr merge <pr> --merge --delete-branch     # --rebase when main was not merged in
-#    CI on main releases vX.Y.Z; "Closes #32" closes the issue.
-```
-
-To go through the same flow from Claude Code, use the `develop-issue` skill instead:
-`/develop-issue 32` or `/develop-issue <issue link>`. It works in a folder of its own (a worktree
-`../<checkout>-32` from `origin/main`) and leaves your checkout alone. It pushes the plan as a
-draft pull request, reads your comments on it (or in the session) until you approve the plan,
-runs every later step without asking (implementation, every CI fix, review
-and fix round, finalising, updating with `main`), and notifies you when the pull request is ready
-for your review. It never merges unless you ask it to. It continues where the issue stands when
-started again; when a plan branch exists already, it asks whether to use that plan (you still
-approve it) or to write it again. It starts the run once, in the background, and is woken only when the run ends or stops; the
-milestones (package, tests, check, review findings, CI) reach you without a model turn: the
-`agent-progress` Claude Code mod (status line, `/agent-progress` pane, a toast per milestone;
-`mise.toml` loads it through `CLAUDE_CODE_PLUGIN_DIRS`, so start `claude` from a shell with mise
-active, see the note above the sample flow), and, only when you set a topic, ntfy (`export AGENT_NTFY_TOPIC=<topic>`). `mise run agent:status
-<branch>` shows where a run is. The issue keeps one
-progress comment per plan, updated as the run goes: every step with its start, end, duration,
-tokens and result, the iterations per kind of step, and the slow, repeated or failed steps.
-
-Each step, what to check at each decision, how to stop, continue or redo a run, and the settings:
-[docs/agentic-development.md](docs/agentic-development.md).
-
-### Coding conventions
-
-Where each kind of class, component or module belongs, and what may import what, is written down in
-[docs/coding-convention/](docs/coding-convention/README.md) and checked by the build (ArchUnit,
-ESLint, import-linter) and by CI. The backend's Java code is also checked by Checkstyle
-([rules and suppressions](docs/coding-convention/backend-java-checkstyle.md)) and formatted with
-Spotless and Palantir Java Format ([formatting](docs/coding-convention/backend-java-formatting.md));
-the frontend is formatted with Prettier. The dependency declarations are checked too: each part
-declares what it uses and nothing else ([dependency hygiene](docs/coding-convention/repository-dependency-hygiene.md)).
-Git hooks run the static checks on staged files before a
-commit; the backend's formatting check (changed files only), Checkstyle and ArchUnit rules run in
-that hook too when Java files are staged, and CI checks the formatting of every file.
-`mise run check` runs every structure check, lint, formatting check and the type-check by hand;
-`mise run format` fixes the formatting.
-
-### Before pushing
-
-- `mise run test` must pass.
-- After changing the REST API: with `mise run dev` running (restarted after the change), run
-  `mise run api-types`. It saves the backend's OpenAPI spec as `artifact/frontend/openapi.json` and
-  regenerates `artifact/frontend/src/shared/api/schema.d.ts`; commit both.
-
-### ta-runner
-
-```sh
-cd artifact/ta-runner
-uv sync
-uv run pytest                       # unit, SIGTERM and upstream contract tests (no LLM calls)
-uv run python -m ta_runner version
-
-# Real analysis: needs the provider key in the environment (e.g. OPENAI_API_KEY).
-# Edit example-spec.json (ticker, date, provider, models) first.
-uv run python -m ta_runner run --spec example-spec.json --out /tmp/ta-run
-```
-
-Events stream to stdout as JSONL and are copied to `<out>/events.jsonl`; reports land under
-`~/.tradingagents/logs/<TICKER>/<DATE>/reports/` (override with `TRADINGAGENTS_RESULTS_DIR`).
-
-`TA_RUNNER_RECORD=<dir>` also records a run; `TA_RUNNER_REPLAY=<dir>` plays a recording back
-through the same code path without calling an LLM (`TA_RUNNER_REPLAY_SPEED` speeds it up). The
-end-to-end tests replay [`tests/fixtures/replay-run`](artifact/ta-runner/tests/fixtures/replay-run).
-
-In a container the spec comes from an environment variable instead of a file:
-
-```sh
-docker run --rm -e TA_RUNNER_SPEC="$(cat example-spec.json)" -e OPENAI_API_KEY \
-  ta-runner:latest run --spec-env TA_RUNNER_SPEC --out /tmp/run
-```
-
-### Testing the Docker runner
-
-`DockerRunnerAdapterTest` and `DockerEngineInfoAdapterTest` run against a real engine at
-`DOCKER_HOST` (Docker, or Podman's socket) and are skipped when there is none; the latter also
-needs the `ta-runner:latest` image. To run the platform on your machine with the Docker runner
-instead of the local venv: `PLATFORM_RUNNER=docker mise run run` (with a `tradingagents-data`
-volume, or `TA_RUNNER_DATA_MOUNT` set to a folder the engine can mount).
+never merge. Each step, what to check at each decision, how to stop, continue or redo a run, and
+the settings: [docs/agentic-development.md](docs/agentic-development.md).
 
 ## License
 

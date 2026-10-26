@@ -4,6 +4,7 @@
 # staged, and the custom Checkstyle checks' tests when that module is staged. `mise run check`
 # runs every structure check, lint, formatting check and the type-check by hand. CI runs every
 # check either way, since hooks can be skipped (`git commit --no-verify`).
+# Every job runs through scripts/quiet.sh: one line per job inside an agent (AGENT_QUIET=1).
 # See docs/coding-convention/repository-git-hooks.md.
 
 # Run lefthook, and the commands below, with the tools from mise.toml on PATH (uv, Java).
@@ -18,27 +19,27 @@ pre-commit:
     - name: frontend lint
       root: artifact/frontend/
       glob: "artifact/frontend/**/*.{ts,vue,js}"
-      run: ./with-node.sh pnpm exec eslint {staged_files}
+      run: ../../scripts/quiet.sh hook-frontend-lint ./with-node.sh pnpm exec eslint {staged_files}
 
     - name: frontend format
       root: artifact/frontend/
       glob: "artifact/frontend/**/*"
-      run: ./with-node.sh pnpm exec prettier --check --ignore-unknown {staged_files}
+      run: ../../scripts/quiet.sh hook-frontend-format ./with-node.sh pnpm exec prettier --check --ignore-unknown {staged_files}
 
     - name: e2e format
       root: e2e/
       glob: "e2e/**/*"
-      run: ./with-node.sh pnpm exec prettier --check --ignore-unknown {staged_files}
+      run: ../scripts/quiet.sh hook-e2e-format ./with-node.sh pnpm exec prettier --check --ignore-unknown {staged_files}
 
     - name: ta-runner lint
       root: artifact/ta-runner/
       glob: "artifact/ta-runner/**/*.py"
-      run: uv run ruff check {staged_files}
+      run: ../../scripts/quiet.sh hook-ta-runner-lint uv run ruff check {staged_files}
 
     - name: ta-runner import contracts
       root: artifact/ta-runner/
       glob: ["artifact/ta-runner/**/*.py", "artifact/ta-runner/pyproject.toml"]
-      run: uv run lint-imports
+      run: ../../scripts/quiet.sh hook-ta-runner-imports uv run lint-imports
 
     # Formatting (Spotless) of the Java files changed since HEAD, Checkstyle on every backend module,
     # and only ArchitectureTest, no other test: one Gradle run. CI checks the formatting of every
@@ -49,11 +50,11 @@ pre-commit:
     - name: backend format (Spotless), Checkstyle and package structure (ArchUnit)
       glob: ["artifact/backend/**/*.java", "config/checkstyle/**", "build-logic/checkstyle-rules/**"]
       run: >-
-        ./gradlew --console=plain spotlessCheck -PspotlessRatchetFrom=HEAD
+        scripts/quiet.sh hook-backend ./gradlew --console=plain spotlessCheck -PspotlessRatchetFrom=HEAD
         checkstyleMain checkstyleTest :backend:test --tests '*ArchitectureTest'
 
     # The custom Checkstyle checks' tests, their 100% coverage gate and their formatting
     # (build-logic/checkstyle-rules/README.md).
     - name: custom Checkstyle checks (tests, coverage, formatting)
       glob: "build-logic/checkstyle-rules/**"
-      run: ./gradlew --console=plain checkstyleRulesCheck
+      run: scripts/quiet.sh hook-checkstyle-rules ./gradlew --console=plain checkstyleRulesCheck

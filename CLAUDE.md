@@ -2,8 +2,10 @@
 
 A web platform that runs [TradingAgents](https://github.com/TauricResearch/TradingAgents) analyses:
 a Spring Boot backend and a Vue UI shipped as one jar, and `ta-runner`, the Python process that is
-the only code importing TradingAgents. [README.md](README.md) is the user and developer manual;
-this file is the map an agent needs before reading code.
+the only code importing TradingAgents. [README.md](README.md) is the entry point; its
+"Documentation" table lists the topic files under `docs/` (user guide, Docker Compose,
+configuration, login and backend, development, CI and releases). This file is the map an agent
+needs before reading code.
 
 ## Where things are
 
@@ -16,6 +18,7 @@ this file is the map an agent needs before reading code.
 | Deployment | `deploy/`, `deploy/server/` | Docker Compose, Ansible | `deploy/server/README.md` |
 | Build logic, custom Checkstyle checks | `build-logic/` | Gradle convention plugins | `build-logic/checkstyle-rules/README.md` |
 | Agent scripts and prompts | `scripts/agent/`, `.claude/skills/` | Bash, Python | [agentic-development.md](docs/agentic-development.md) |
+| Docs | `README.md`, `docs/` | Markdown | [README.md](README.md) (Documentation table) |
 | Implementation plans | `.plans/<issue>-<slug>.md` | | |
 
 ### Backend modules
@@ -61,8 +64,12 @@ mise run runner-test    # ta-runner: ruff, import-linter, deptry, pytest
 mise run test           # build + runner-test
 mise run e2e            # Playwright against the jar
 mise run dev            # backend :8080 + Vite :5173
-./gradlew :backend:domain:analysis:adapter:test --tests '*SomeTest'   # one module's tests
+mise run gradle :backend:domain:analysis:adapter:test --tests '*SomeTest'   # one module's tests
 ```
+
+With `AGENT_QUIET=1` (set for the agents) `check`, `format`, `format-check`, `runner-test` and
+`gradle` print `ok:` lines; a failure prints an excerpt and the path of the full log in
+`build/quiet/`. `build`, `test`, `e2e` and `dev` are not wrapped and print everything.
 
 On macOS the engine is Podman: set
 `DOCKER_HOST=unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')`

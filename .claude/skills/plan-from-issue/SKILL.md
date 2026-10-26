@@ -47,7 +47,7 @@ already done or planned elsewhere. Stop and tell the user if the issue is closed
 Find the affected parts from the issue and from the code (search for the classes, components and
 endpoints it names). Before designing anything, read:
 
-| Always | Root `README.md`, `docs/coding-convention/README.md`, `docs/coding-convention/repository-versioning-and-releases.md` |
+| Always | Root `README.md` (the index: its Documentation table names the topic files of `docs/`), the topic files the issue touches (not the whole manual), `docs/coding-convention/README.md`, `docs/coding-convention/repository-versioning-and-releases.md` |
 |---|---|
 | Backend (`artifact/backend`) | `docs/coding-convention/backend-*.md` |
 | Frontend (`artifact/frontend`) | `docs/coding-convention/frontend-*.md` |
@@ -87,7 +87,10 @@ do not read other plans in `.plans/` as models.
   `*ExceptionToApiExceptionMapper` and a handler method there. Never plan a `try` / `catch` in a
   delegate that maps an exception.
 - **Work packages**: list the files each one creates or changes, so packages without a dependency
-  can be implemented in parallel. Every package names its tests.
+  can be implemented in parallel. Every package names its tests. A package creates or changes at
+  most 8 files, tests included (`AGENT_MAX_WP_FILES`), and stays in one module or layer: split a
+  larger one. One agent implements a package in one run, and a large package makes that run's
+  context, and its tokens, grow with every turn.
 - **Conventions**: for each affected part, name the conventions that apply and where the new code
   goes according to them (package, folder, layer). Do not propose a new layer, tool or pattern
   without saying so explicitly in "Open questions".
@@ -95,13 +98,14 @@ do not read other plans in `.plans/` as models.
   `patch`).
 - **Docs to update**: every document and screenshot the change makes wrong or incomplete; the change
   is documented in the same pull request, never "later" or "separately". Go through:
-  - the root `README.md`: the section describing the feature (a new feature gets a paragraph where
-    users look for it), the CI table when tests or jobs change, the task list when `mise.toml`
-    changes;
+  - the topic file of `docs/` describing the feature (`README.md`'s Documentation table lists them;
+    a new feature gets a paragraph where users look for it), the CI table
+    (`docs/ci-and-releases.md`) when tests or jobs change, the task list (`docs/development.md`)
+    when `mise.toml` changes;
   - `docs/` and `docs/coding-convention/` when a convention, tool or flow changes;
     `docs/event-protocol.md` when the runner ↔ backend contract changes; `openapi.json` and the
     frontend's API types when the REST API changes (`mise run api-types`);
-  - **screenshots**: the README shows every page (`docs/screenshots/*.png`). A new page or view gets
+  - **screenshots**: the docs show every page (`docs/screenshots/*.png`). A new page or view gets
     a new screenshot, and a page whose look changes (a new button, column, tab, panel) gets its
     screenshot retaken. Name the file, the page and state it shows, and the data it needs. The
     developer agent takes them with `mise run screenshots` (a `e2e/screenshots/<name>.shot.ts` per
@@ -121,7 +125,10 @@ scripts/agent/plan-branch.sh .plans/<issue>-<slug>.md
 
 It creates `plan/<issue>-<slug>` from `origin/main` with exactly one commit that adds only that
 plan file, pushes it, opens a **draft pull request** labelled `plan` (the plan as its only change,
-no closing keyword) and comments the pull request's link on the issue. It never touches `main`. Run
+no closing keyword) and comments the pull request's link on the issue. It never touches `main`. It
+warns about a work package that names more files than the cap (`agent: WP3 names 12 files (more
+than 8): consider splitting it`) and pushes anyway: split the package, or show the warning in the
+review (step 5) when the package cannot be split. Run
 it from a clean working tree; the plan file may be untracked. Once pushed, the script removes the
 untracked local copy: the branch holds the plan, and a leftover file would make `mise run agent:run`
 stop with "the working tree is not clean".

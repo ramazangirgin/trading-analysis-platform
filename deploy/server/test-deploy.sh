@@ -78,6 +78,13 @@ for f in /etc/apt/sources.list.d/*.list; do
   fi
 done
 
+# The first deploy upgrades every installed package (the base role). A runner image has hundreds
+# installed and a varying number pending, so that took from minutes to the job's timeout, or failed
+# in dpkg, with nothing of this repository's in it. The role's own marker skips it, as on a server
+# deployed before.
+sudo install -d -m 0755 /var/lib/trading-analysis-platform
+sudo touch /var/lib/trading-analysis-platform/packages-upgraded
+
 step "1: setup-key.sh"
 "$DIR/setup-key.sh" --no-passphrase
 

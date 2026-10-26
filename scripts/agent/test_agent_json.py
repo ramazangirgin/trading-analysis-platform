@@ -125,6 +125,20 @@ class UsageTest(unittest.TestCase):
         self.assertTrue(cut.endswith(" partial=1"))
         self.assertEqual(agent_json.parse_marker(cut)["tokens"], "195")
 
+    def test_get_reads_the_subtype_of_a_max_turns_result(self):
+        result = self.write_result("wp-WP1.json", dict(RESULT, subtype="error_max_turns", is_error=True))
+        out = io.StringIO()
+        with mock.patch("sys.stdout", out):
+            agent_json.main(["agent_json.py", "get", result, "subtype"])
+        self.assertEqual(out.getvalue().strip(), "error_max_turns")
+
+    def test_usage_marker_sums_a_package_and_its_continuation(self):
+        first = self.write_result("wp-WP1.json", dict(RESULT, subtype="error_max_turns", is_error=True))
+        second = self.write_result("wp-WP1-2.json")
+        marker = agent_json.parse_marker(agent_json.usage_marker(agent_json.usage([first, second])))
+        self.assertEqual(marker["tokens"], str(2 * 510))
+        self.assertNotIn("partial", agent_json.usage_marker(agent_json.usage([first, second])))
+
 
 def init(model):
     return {"type": "system", "subtype": "init", "model": model}
@@ -188,6 +202,23 @@ class LimitsTest(unittest.TestCase):
         total = agent_json.usage([path])
         self.assertEqual(total["limits"], {"5h": [50, 52], "7d": [60, 61]})
         self.assertTrue(total["partial"])
+
+
+class ToolsTest(unittest.TestCase):
+    def tools_of(self, events):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "a.jsonl")
+            with open(path, "w", encoding="utf-8") as f:
+                for event in events:
+                    f.write(json.dumps(event) + "\n")
+            return agent_json.stream_tools(path)
+
+    def test_tools_of_the_init_message(self):
+        event = dict(init("m1"), tools=["Read", "Grep", "LSP"])
+        self.assertEqual(self.tools_of([message("a", 1, 1), event, RESULT]), ["Read", "Grep", "LSP"])
+
+    def test_stream_without_init_message_has_no_tools(self):
+        self.assertEqual(self.tools_of([message("a", 1, 1), RESULT]), [])
 
 
 class UsageTableTest(unittest.TestCase):
@@ -437,6 +468,52 @@ class PhaseTest(unittest.TestCase):
         for command, phase in cases:
             with self.subTest(command=command):
                 self.assertEqual(agent_json.phase_of(command), phase)
+
+
+def comments(*markers):
+    return "\n".join(f"<!-- agent-step {m} -->\nbody" for m in markers)
+
+
+class ApprovedHeadTest(unittest.TestCase):
+    def approved(self, *markers):
+        with mock.patch("sys.stdin", io.StringIO(comments(*markers))), mock.patch("sys.stdout", io.StringIO()) as out:
+            agent_json.main(["", "approved-head"])
+        return out.getvalue().strip()
+
+    def steps(self, *markers):
+        with mock.patch("sys.stdin", io.StringIO(comments(*markers))), mock.patch("sys.stdout", io.StringIO()) as out:
+            agent_json.main(["", "steps"])
+        return out.getvalue().splitlines()
+
+    APPROVE = "step=review round=1 approved=1 head=aaa"
+
+    def test_an_update_from_the_approved_head_moves_the_approval(self):
+        self.assertEqual(self.approved(self.APPROVE, "step=update-main round=1 from=aaa head=bbb"), "bbb")
+
+    def test_a_chain_of_updates_is_followed(self):
+        self.assertEqual(
+            self.approved(
+                self.APPROVE,
+                "step=update-main round=1 from=aaa head=bbb",
+                "step=update-main round=1 from=bbb head=ccc",
+            ),
+            "ccc",
+        )
+
+    def test_an_update_from_another_head_changes_nothing(self):
+        self.assertEqual(self.approved(self.APPROVE, "step=update-main round=1 from=zzz head=bbb"), "aaa")
+
+    def test_an_update_before_the_approval_is_ignored(self):
+        self.assertEqual(self.approved("step=update-main round=0 from=aaa head=bbb", self.APPROVE), "aaa")
+
+    def test_a_review_with_findings_approves_nothing(self):
+        self.assertEqual(
+            self.approved(self.APPROVE, "step=review round=2 approved=0 head=bbb", "step=update-main round=2 from=bbb head=ccc"),
+            "",
+        )
+
+    def test_steps_lists_the_update_with_its_round(self):
+        self.assertEqual(self.steps("step=update-main round=2 from=aaa head=bbb tokens=70"), ["update-main 2 70"])
 
 
 if __name__ == "__main__":

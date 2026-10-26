@@ -14,7 +14,9 @@
     agent_json.py progress-usage <result.json>      the usage marker with the run's duration_ms and
                                                     num_turns, for progress.tsv (progress.py)
 
-    agent_json.py limits <stream.jsonl>             "limit5h=<n> limit7d=<n>" of a probe's stream (last
+    agent_json.py tools <stream.jsonl>              the tool names of the stream's init message, one per
+                                                    line (nothing without an init message)
+    agent_json.py limits <stream.jsonl>            "limit5h=<n> limit7d=<n>" of a probe's stream (last
                                                     event; empty when it has none)
     agent_json.py transcript <session directory>    the newest session transcript of that directory
     agent_json.py session-usage <transcript> <from> <to>
@@ -30,7 +32,8 @@ that was interrupted) adds its tokens only, and marks the total partial (`partia
 
     agent_json.py steps < comment bodies            "<step> <round> <tokens>" per marker found
     agent_json.py usage-table < comment bodies      Markdown table of the tokens, model and limits per step
-    agent_json.py approved-head < comment bodies    the commit the latest review approved, if any
+    agent_json.py approved-head < comment bodies    the commit the latest review approved, if any,
+                                                    moved along the updates with main after it
 
 Standard library only: run with `uv run --no-project python`.
 """
@@ -239,6 +242,19 @@ def stream_result(path):
         for field, value in seen.items():
             summed[field] = summed.get(field, 0) + value
     return {"usage": summed}, False
+
+
+def stream_tools(path):
+    """The tool names the first init message of a stream-json log lists, or []."""
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if event.get("type") == "system" and event.get("subtype") == "init":
+                return [t for t in event.get("tools") or [] if isinstance(t, str)]
+    return []
 
 
 WINDOWS = {"5h": "five_hour", "7d": "seven_day"}
@@ -485,6 +501,19 @@ def markers(stream):
         yield parse_marker(match.group(1))
 
 
+def approved_head(ms):
+    """The commit the latest review approved, moved along the updates with main that followed it."""
+    ms = list(ms)
+    last = max((i for i, m in enumerate(ms) if m.get("step") == "review"), default=None)
+    if last is None or ms[last].get("approved") != "1":
+        return ""
+    head = ms[last].get("head", "")
+    for m in ms[last + 1 :]:
+        if m.get("step") == "update-main" and head and m.get("from") == head:
+            head = m.get("head", "")
+    return head
+
+
 def main(argv):
     command, args = argv[1], argv[2:]
     if command == "stream":
@@ -504,6 +533,9 @@ def main(argv):
     elif command == "limits":
         _, limits = stream_facts(args[0]) if os.path.exists(args[0]) else ([], {})
         print(" ".join(f"limit{key}={last}" for key, (_, last) in limits.items()))
+    elif command == "tools":
+        for name in stream_tools(args[0]):
+            print(name)
     elif command == "transcript":
         print(latest_transcript(args[0]) or "")
     elif command == "session-usage":
@@ -520,9 +552,9 @@ def main(argv):
         for m in markers(sys.stdin):
             print(m.get("step", "?"), m.get("round", "0"), m.get("tokens", "0"))
     elif command == "approved-head":
-        reviews = [m for m in markers(sys.stdin) if m.get("step") == "review"]
-        if reviews and reviews[-1].get("approved") == "1":
-            print(reviews[-1].get("head", ""))
+        head = approved_head(markers(sys.stdin))
+        if head:
+            print(head)
     elif command == "usage-table":
         print(usage_table(list(markers(sys.stdin))))
     else:

@@ -1,6 +1,6 @@
 ---
 name: merge-main-into-branch
-description: Bring the current branch of this repository up to date with main by merging origin/main into it (never a rebase), and resolve the conflicts with what the branch is meant to do - its commits since the merge base, main's commits on the same lines, and its plan (.plans/<issue>-<slug>.md) when it has one. The merge is committed as it is, conflict markers included, and the resolution in a commit of its own, so a reviewer sees how each conflict was resolved; then the version is bumped when main caught up, and everything is pushed in one plain push. It stops and asks instead of guessing when a conflict cannot be resolved with confidence, and never force-pushes, rewrites history or merges the pull request. Use when the user asks to merge main into a branch, update a branch with main or resolve its conflicts with main, e.g. "/merge-main-into-branch", "/merge-main-into-branch --bump minor", "merge main into this branch" or "resolve the conflicts with main". develop-issue uses it to update a pull request with main.
+description: Bring the current branch of this repository up to date with main by merging origin/main into it (never a rebase), and resolve the conflicts with what the branch is meant to do - its commits since the merge base, main's commits on the same lines, and its plan (.plans/<issue>-<slug>.md) when it has one. The merge is committed as it is, conflict markers included, and the resolution in a commit of its own, so a reviewer sees how each conflict was resolved; then the version is bumped when main caught up, and everything is pushed in one plain push. It stops and asks instead of guessing when a conflict cannot be resolved with confidence, and never force-pushes, rewrites history or merges the pull request. Use when the user asks to merge main into a branch, update a branch with main or resolve its conflicts with main, e.g. "/merge-main-into-branch", "/merge-main-into-branch --bump minor", "merge main into this branch" or "resolve the conflicts with main". Its unattended form, run by the agent loop and develop-issue, is scripts/agent/update-main.sh.
 ---
 
 # Merge `main` into the branch
@@ -22,8 +22,12 @@ Input (`$ARGUMENTS`): nothing (the current branch). Options:
 - `--bump major|minor|patch`: the bump when `main`'s version caught up (default: the plan's
   "Version bump" when the branch has a plan, `minor` otherwise);
 - `--no-push`: commit, but do not push (for trying it out on a local branch);
-- `--no-questions`: never ask; stop and report instead (for a caller that runs unattended,
-  `develop-issue`).
+- `--no-questions`: never ask; stop and report instead (for a caller that runs unattended).
+
+Unattended, the same merge is a step script: `scripts/agent/update-main.sh <pr | plan branch>`
+(`mise run agent:update-main`) resolves version-only conflicts by script and the others with a
+headless agent, and records the step on the pull request. The agent loop and `develop-issue` use it;
+this skill is for doing it by hand, or finishing an update the script left unresolved.
 
 ## Ground rules
 
@@ -102,7 +106,11 @@ and, when there is a plan, its design and the work package that names the file.
   changed, also outside the conflicted hunks when the merge left them inconsistent (a call to a
   method `main` renamed, an import of a moved class, a test of changed behaviour).
 - **The version files** (`gradle.properties`, `artifact/frontend/package.json`,
-  `artifact/ta-runner/ta_runner/__init__.py`): take `main`'s side and nothing else; 4 bumps again.
+  `artifact/ta-runner/ta_runner/__init__.py`): resolve them first, without reading their history:
+  `uv run --no-project python scripts/agent/merge_versions.py resolve <conflicted version files>`
+  takes `main`'s side of every version-only hunk and prints the files it left (a hunk with other
+  lines, such as a dependency in `package.json`: resolve those lines as any other file, and take
+  `main`'s version line). 4 bumps again.
 - **Generated files** (`openapi.json`, the frontend's API types, lock files): regenerate them from
   the resolved sources (`mise run api-types`, the package manager), never merge them by hand.
 

@@ -19,12 +19,14 @@ flowchart TD
     ci -- "red" --> fixCi["Developer agent (Sonnet)<br/>fix CI from the failed job's log<br/>(up to 3 attempts)"]
     fixCi --> ci
     ci -- "green" --> rounds{"Review rounds<br/>left? (2)"}
-    rounds -- "yes" --> review["Review agent (Opus)<br/>diff against the plan and the conventions"]
+    rounds -- "yes" --> update["Update with main<br/>update-main.sh, only when the branch is behind"]
+    update --> review["Review agent (Opus)<br/>diff against the plan and the conventions"]
     review --> findings{"Findings?"}
     findings -- "R1-1, R1-2, ...<br/>CRITICAL / MAJOR / MINOR" --> fix["Developer agent (Sonnet)<br/>per finding: one commit Address R1-n,<br/>or a reply declining it"]
     fix --> ci
-    findings -- "none: approved" --> finalise
-    rounds -- "no" --> finalise["Finalise<br/>summary, findings and outcomes, usage;<br/>PR out of draft: ready for review"]
+    findings -- "none: approved" --> updateFinal["Update with main<br/>when the branch is behind"]
+    rounds -- "no" --> updateFinal
+    updateFinal --> finalise["Finalise<br/>summary, findings and outcomes, usage;<br/>PR out of draft: ready for review"]
     finalise --> reviewPr{"Developer:<br/>review the pull request"}
     reviewPr -- "more changes: commit by hand,<br/>or another agent round" --> ci
     reviewPr -- "approve, update with main, merge" --> main[("main")]
@@ -34,7 +36,7 @@ flowchart TD
     classDef agent fill:#dbeafe,stroke:#1d4ed8,color:#000
     classDef github fill:#e5e7eb,stroke:#4b5563,color:#000
     class approvePlan,reviewPr developer
-    class skill,implement,fixCi,review,fix agent
+    class skill,implement,fixCi,review,fix,update,updateFinal agent
     class issue,plan,draft,ci,rounds,findings,finalise,main,release github
 ```
 
@@ -49,11 +51,16 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | 3 | Plan review: comment on the pull request (inline on the plan's lines, or a comment) or in the session; the session reads both (`plan-comments.sh`), changes the plan on its branch and answers each comment; or approve it | Developer, the skill | Plan commits, replies |
 | 4 | Start the agents (the approval) | Developer: `mise run agent:run plan/<issue>-<slug>` | — |
 | 5 | Implement one work package per agent run, with tests, and push after each; `mise run check`, version bump; the plan's pull request becomes the implementation's (label `plan` → `agent`); fix a red CI | Developer agent: `implement.sh`, `fix-ci.sh` | Draft PR labelled `agent`, **CI passed** green |
-| 6 | Review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | Review agent: `review.sh` | PR review + summary comment |
+| 6 | When the branch is behind `main`, update it first (merge `main` in); then review against the plan and the conventions: one inline comment per finding, with priority and possible solutions | `update-main.sh` (run by `next.sh`); review agent: `review.sh` | Merge commit, PR review + summary comment |
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
+<<<<<<< HEAD
 | 9 | Finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `finalise.sh` | PR ready for review |
 | 10 | Review, bring up to date with `main`, merge; the release follows and is deployed | Developer | Change on `main`, released |
+=======
+| 9 | Update with `main` when behind, then finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `update-main.sh` (run by `next.sh`), `finalise.sh` | PR ready for review |
+| 10 | Review, merge (the branch is usually up to date with `main` already, see 6 and 9); the release follows | Developer | Change on `main`, released |
+>>>>>>> origin/main
 
 Agents never merge and never push to `main`: the scripts push only to the plan branch, the agents
 cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's approval and
@@ -92,7 +99,19 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   the order of the `Depends on` lines, each in a fresh session, and pushes the branch after each
   one. The context of a run stays small, the work survives the machine, and an interrupted
   implementation starts again at the package it was on: the packages the plan on the branch marks
-  `done` or `not done` are skipped.
+  `done` or `not done` are skipped. A run stops at `AGENT_WP_MAX_TURNS` turns, so one session never
+  grows past a few hundred thousand tokens; a fresh agent then continues from the package's commits,
+  the uncommitted work and the plan (up to `AGENT_WP_MAX_CONTINUATIONS` times), and the retries of an
+  unfinished package or a failed final check start fresh too, instead of resuming the large
+  session. The developer agent commits each finished step as soon as its tests pass, so a cut loses
+  little. `plan-branch.sh` warns about a package that names more than `AGENT_MAX_WP_FILES` files.
+- **Update with `main` is a step script with a fresh agent.** `update-main.sh` merges `main` into
+  the branch outside the `develop-issue` session's context and is recorded like every other step.
+  A conflict that is only the version lines is resolved by a script
+  (`scripts/agent/merge_versions.py`, no agent); any other conflict by a headless agent in a fresh
+  context, which commits the resolution but never pushes. `next.sh` runs it before each review
+  round and before finalising when the branch is behind (at most once per round), and an approval
+  survives an update that only brought in `main`.
 - **The state directory is inside `.git`.** Everything a run leaves behind goes to
   `.git/agent/<issue>-<slug>/` of the plan branch: `run.log` (the scripts' and agents' progress
   lines, with the milestone lines `agent: >> …` next to the tool lines), `progress.tsv` (the steps,
@@ -188,11 +207,13 @@ This is the first of the two decisions that are yours. Read the plan on the draf
 - each part names the right conventions, and the design puts the code where they say;
 - every work package has its tests, and the tests prove the issue's "done when"; every `Status` is
   `open` and the `Depends on` lines are right (they decide the order the agent works in, and each
-  package is pushed on its own, so it should leave the repository green);
+  package is pushed on its own, so it should leave the repository green); no package names more
+  than `AGENT_MAX_WP_FILES` files (8, tests included; `plan-branch.sh` prints a warning for one
+  that does, and the planning session shows it);
 - the version bump (`minor`, `major` for a breaking change);
-- "Docs to update" covers the README text for the feature and every screenshot: a new page gets
-  one, a page whose look changes gets it retaken. "Later" is not an option: the review agent checks
-  the docs and screenshots, and a missing one is a `MAJOR` finding;
+- "Docs to update" covers the text of the feature's topic file in `docs/` and every screenshot: a
+  new page gets one, a page whose look changes gets it retaken. "Later" is not an option: the
+  review agent checks the docs and screenshots, and a missing one is a `MAJOR` finding;
 - the open questions: answer them in the plan.
 
 Say what to change where you prefer: inline on the plan's lines or as a comment on the pull request,
@@ -363,7 +384,8 @@ Git worktree `../<checkout>-<issue>` checked out from `origin/main` (reused when
 never switches branches or writes in the checkout the session started in, and several issues can
 run side by side. It asks the developer only to approve the plan; when the issue has a plan branch
 already, it first asks whether to use that plan, skipping the writing, or to write it again. Every later step runs without asking: pushing the plan branch, the implementation, each CI
-fix, review, fix round and the finalising, and the update with `main`. When the pull request is
+fix, review, fix round and the finalising, and the update with `main` (run by `update-main.sh`, not in
+the session's own context; the session runs on Sonnet, its turns are routine). When the pull request is
 ready for review (up to date with `main`, **CI passed** green), it first posts a run summary on
 the pull request ("Run summary (develop-issue session)": the review outcome, what is worth checking,
 the checks it ran itself, the steps and the usage), then sends a notification; when the run stops
@@ -398,10 +420,11 @@ milestone or CI wait: one Monitor on `status.sh --follow`, filtered to the end o
 (`failed:`, `stopping:`, ready for review), wakes it. The developer sees the milestones as they
 happen in [the `agent-progress` mod and the ntfy push](#progress-while-it-runs), and can follow
 `tail -f .git/agent/<issue>-<slug>/run.log` in a terminal; ask the session for the status at any time
-(`status.sh`). When the run ends ready for review, it updates the pull request with `main` with the
-`merge-main-into-branch` skill (step 8), which resolves the conflicts itself, so the run stops there
-only on a conflict that cannot be resolved with confidence, then posts the run summary and sends the
-notification. The agents may not edit the skills
+(`status.sh`). The loop already updates the pull request with `main` before each review round and
+before finalising (step 8), so when the run ends ready for review the branch is usually up to date;
+when `main` moved since, the session starts `detach.sh update-main.sh <pr>` and waits for it, so the
+run stops there only on a conflict that cannot be resolved with confidence. It then posts the run
+summary and sends the notification. The agents may not edit the skills
 under `.claude/`, so a plan item there comes back "not done" and is done by hand. Started again, it
 reads where the issue stands from its plan branches and pull requests and continues there.
 
@@ -438,8 +461,9 @@ summary" comment after it: what the session checked itself and what is worth che
   its thread. Decide each.
 - Read the diff as you would any pull request: against the plan, with the conventions in mind. The
   agents' review covered it twice, but it is not a substitute for yours.
-- The docs: the README describes the feature, and the screenshots in `docs/screenshots/` show it
-  (the pull request's *Files changed* shows the PNGs side by side with the old ones).
+- The docs: the topic file of `docs/` describes the feature, and the screenshots in
+  `docs/screenshots/` show it (the pull request's *Files changed* shows the PNGs side by side with
+  the old ones).
 - Try it: `git switch plan/<issue>-<slug>` and `mise run dev` (or `mise run run`).
 
 ### 7. More changes
@@ -462,8 +486,21 @@ summary" comment after it: what the session checked itself and what is worth che
 ### 8. Bring it up to date with `main`
 
 The `main` ruleset merges only a pull request whose branch is up to date with `main`, whose
-**CI passed** is green, and that a code owner approved (see the root README). If `main` moved while
-the agents worked, merge `main` into the branch with the Claude Code skill
+**CI passed** is green, and that a code owner approved (see
+[CI and releases](ci-and-releases.md#continuous-integration)). If `main` moved while the agents
+worked, merge `main` into the branch. Unattended, `mise run agent:update-main <pr | plan
+branch>` (or `scripts/agent/detach.sh update-main.sh <pr>`) does it as a recorded step: up to date →
+nothing happens; a merge without conflicts is committed and checked (`mise run check`, an agent
+adapts the code when it fails); conflicts that are only the version lines are taken from `main` by
+a script; any other conflict is committed as it is (markers included, `--no-verify`) and resolved
+in a commit of its own by a headless agent. The version is bumped again when `main` caught up, and
+the merge, the resolution and the bump are pushed together; `--bump major|minor|patch` overrides
+the plan's "Version bump". The review → fix loop (`next.sh`) runs it itself before each review
+round and before finalising when the branch is behind, so this step is usually already done. An
+unresolved conflict stops the run with the merge left local; finish it by hand or drop it with
+`git reset --keep @{u}`.
+
+By hand, with the Claude Code skill
 [`merge-main-into-branch`](../.claude/skills/merge-main-into-branch/SKILL.md), in a checkout of the
 branch:
 
@@ -530,19 +567,76 @@ affects ("Docs to update"), the developer agent updates them, and the review age
 against the plan and on its own (a user-visible change without its description or screenshot is a
 `MAJOR` finding).
 
-The README's screenshots (`docs/screenshots/*.png`) are taken by Playwright, the way the end-to-end
-tests run: the built jar with a throwaway home and ta-runner replaying a recording, in Google
-Chrome, at 1440×900 in the dark theme. One `e2e/screenshots/<name>.shot.ts` per screenshot sets up
-the data it needs over the API, opens the page and saves it with `shot(page, '<name>')`:
+The docs' screenshots (`docs/screenshots/*.png`, shown in the topic files of `docs/` and the
+README) are taken by Playwright, the way the end-to-end tests run: the built jar with a throwaway
+home and ta-runner replaying a recording, in Google Chrome, at 1440×900 in the dark theme. One
+`e2e/screenshots/<name>.shot.ts` per screenshot sets up the data it needs over the API, opens
+the page and saves it with `shot(page, '<name>')`:
 
 ```sh
 mise run screenshots             # every screenshot
 mise run screenshots compare     # those whose file or title matches "compare"
 ```
 
-`SCREENSHOT_DIR=<dir>` writes them elsewhere, to try one out. The agents look at the saved PNGs
-with Claude Code's Read tool. Screenshots taken by hand from real runs stay until a change retakes
-them.
+`SCREENSHOT_DIR=<dir>` writes them elsewhere (a relative path counts from the repository root), to
+try one out. The agents never open a PNG
+(`Read(**/*.png)` is denied): `mise run screenshots` ends with a report, one line per written image
+(dimensions, size, new, changed or unchanged), and fails on a likely blank or tiny image (under 100
+pixels, or nearly uniform). Whether a screenshot looks right is checked by the developer in the pull
+request. Screenshots taken by hand from real runs stay until a change retakes them.
+
+## Measuring the usage
+
+`mise run agent:stats <issue>` summarises the agent transcripts of an issue, as Markdown ready to
+paste into an issue comment: a table per step (implement, review, fix, CI fix, update with main,
+session) and per transcript with turns, maximum context, cached, uncached and output tokens and
+cost; the tools table (calls, output characters, share, images); and the files read more than twice.
+
+- It reads Claude Code's transcripts in `~/.claude/projects/<folder>/`, by default the folder of
+  the issue's worktree (`--folder` for another), and matches each session to a step through the
+  results in `.git/agent/<issue>-*/` (`--state` for another directory).
+- The orchestration session runs in the main checkout and is shared by every issue: add it with
+  `--transcript <file>` and cut it to the issue's run with `--since` / `--until` (epochs, from the
+  progress comment's start and end).
+- `--json` prints the same numbers as JSON.
+
+Issue #244 holds the baseline to compare a run with.
+
+### Trying the LSP tool
+
+Issue #251 asks whether an LSP symbol tool saves the agents tokens and turns. `AGENT_LSP=1` switches
+it on for the headless agents (implement, fix-ci, fix, review, update with main); off, the default,
+they run exactly as before. On, `run_agent` adds the `LSP` tool to the tool list, loads the
+repository's plugin [`scripts/agent/lsp/`](../scripts/agent/lsp) (jdtls for Java, the TypeScript
+server for `.ts` and `.vue`, pyright for Python) with `--plugin-dir`, and appends
+[`prompts/tools-lsp.md`](../scripts/agent/prompts/tools-lsp.md): look symbols up before reading files.
+
+Prerequisites, once per machine:
+
+- `brew install jdtls`.
+- `mise run setup`, which downloads the Node.js and pnpm the wrappers use. pyright is fetched by
+  `pnpm dlx` at the version pinned in its wrapper on first use. The TypeScript server and the Vue
+  plugin are installed once into `~/.cache/tap-agent-lsp/typescript` (delete that folder to
+  reinstall them) and use the frontend's own TypeScript.
+
+`mise run agent:lsp-check` runs one short read-only agent per language (a `findReferences` in Java,
+TypeScript and Python, a `documentSymbol` of a `.vue` file) and prints one line each: whether the
+`LSP` tool was in the agent's tool list, the wall time, turns and tokens, and the first line of the
+answer. `--twice` runs the Java check a second time. A language server starts with the `claude`
+process and ends with it, so its start-up is paid once per agent run. jdtls is the slow one, as it
+imports the Gradle build: its index lives in `~/.cache/tap-agent-jdtls/<hash of the worktree path>`,
+so the first run in a worktree is cold and later runs of the same issue are warm.
+
+The evaluation, by the developer, in #251:
+
+1. Baseline: run the next application issue as today (`AGENT_LSP` unset), then
+   `mise run agent:stats <issue>` and post the numbers.
+2. Trial: `mise run agent:lsp-check` once, then the next comparable issue with `AGENT_LSP=1`
+   (`AGENT_LSP=1 mise run agent:run plan/<issue>-<slug>`, or `export AGENT_LSP=1` before
+   `/develop-issue`). Post its `agent:stats`: tokens per step, `Read` characters, the `LSP` row,
+   turns, cost and the step durations.
+3. Decide in #251: keep (a follow-up makes `1` the default) or drop (a follow-up removes the plugin,
+   the switch and this section).
 
 ## Settings
 
@@ -554,12 +648,21 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_REVIEW_MODEL` | `claude-opus-5-5` (`deepseek-v4-pro` on the DeepSeek endpoint) | The review agent's model |
 | `AGENT_MAX_ROUNDS` | 2 | Review → fix rounds |
 | `AGENT_MAX_CI_FIXES` | 3 | Attempts at a red CI, per pull request |
+| `AGENT_WP_MAX_TURNS` | 40 | Turns of one work package agent run; at the limit a fresh agent continues |
+| `AGENT_WP_MAX_CONTINUATIONS` | 3 | Fresh continuations of a work package after a turn limit, before it counts as unfinished |
+| `AGENT_MAX_WP_FILES` | 8 | Files a work package may name (tests included); `plan-branch.sh` warns about more |
 | `AGENT_MAX_TOKENS` | 50 000 000 | Tokens per pull request, cached input included |
 | `AGENT_MAX_BUDGET_USD` | none | Per agent call (`claude --max-budget-usd`) |
 | `AGENT_CI_TIMEOUT` | 60 | Minutes to wait for CI after a push |
 | `AGENT_BASE_BRANCH` | `main` | Where plan branches start and pull requests go |
 | `AGENT_ISSUE_PROGRESS` | 1 | 1: keep the [progress comment](#progress-on-the-issue) on the issue up to date; 0: `progress.tsv` only |
+| `AGENT_LSP` | 0 | 1: the agents get the LSP tool (`scripts/agent/lsp/`: jdtls, TypeScript with Vue, pyright) and the "find symbols first" rule; under evaluation in #251 |
 | `AGENT_NTFY_TOPIC` | none | An ntfy topic that also receives each milestone; sends progress lines to an external service (`AGENT_NTFY_SERVER`, default `https://ntfy.sh`) |
+
+`run_agent` also sets `AGENT_QUIET=1` for every agent (a developer may set it too): `mise run check`,
+`format`, `format-check`, `runner-test`, `gradle` and the Git hooks then print one `ok:` line on
+success, and on a failure an excerpt and the path of the full log in `build/quiet/<name>.log`
+([`scripts/quiet.sh`](../scripts/quiet.sh)). Without it they print everything, as before.
 
 Costs in the final comment are Claude Code's own figures at API prices; with a subscription login
 they show the usage, not a bill. The usage of runs from before the state directory existed, or of
@@ -574,6 +677,10 @@ a state directory that is gone (another machine), is not available; the implemen
   not comments by other accounts.
 - The agents run real commands (Gradle, pnpm, uv) on the developer's machine, like a developer
   would; run them only on plans you reviewed.
+- Reading a PNG is denied (`Read(**/*.png)`): screenshots cost many tokens, and the agents check
+  the report of `mise run screenshots` instead.
+- With `AGENT_LSP=1` the agents also get the `LSP` tool. It only reads (definitions, references,
+  symbols); the language servers run locally on the developer's machine.
 
 ## Not done yet
 

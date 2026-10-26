@@ -5,7 +5,7 @@ description: Fix the open Renovate pull requests of this repository whose CI is 
 
 # Fix the Renovate pull requests
 
-The hosted Renovate app ([`.github/renovate.json5`](../../../.github/renovate.json5), README
+The hosted Renovate app ([`.github/renovate.json5`](../../../.github/renovate.json5), [`docs/ci-and-releases.md`](../../../docs/ci-and-releases.md#dependency-updates)
 "Dependency updates") puts every update in one pull request (`renovate/all`), plus one for lock file
 maintenance (`renovate/lock-file-maintenance`). This skill takes those pull requests **one by one**
 to a green CI: it reads why CI failed, fixes it on the update branch and waits for CI again. It runs

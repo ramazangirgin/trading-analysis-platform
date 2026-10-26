@@ -239,4 +239,4 @@
       if app_postgres_password_file is changed
       else 'The admin password generated on the first start is in the log of the platform only until
       the container is recreated (an upgrade, a rebuilt image or a changed .env) or the log rotates;
-      if it is gone, see "Log in" in the main README to reset the admin. The log (on the server):' }}
+      if it is gone, see "3. Log in" in docs/user-guide.md to reset the admin. The log (on the server):' }}

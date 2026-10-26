@@ -1,0 +1,40 @@
+{
+  "jdtls": {
+    "command": "bash",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/jdtls.sh"],
+    "extensionToLanguage": {
+      ".java": "java"
+    },
+    "startupTimeout": 120000
+  },
+  "typescript": {
+    "command": "bash",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/typescript.sh"],
+    "extensionToLanguage": {
+      ".ts": "typescript",
+      ".mts": "typescript",
+      ".cts": "typescript",
+      ".js": "javascript",
+      ".mjs": "javascript",
+      ".vue": "vue"
+    },
+    "initializationOptions": {
+      "plugins": [
+        {
+          "name": "@vue/typescript-plugin",
+          "location": "${HOME}/.cache/tap-agent-lsp/typescript/node_modules/@vue/typescript-plugin",
+          "languages": ["vue"]
+        }
+      ]
+    },
+    "startupTimeout": 120000
+  },
+  "pyright": {
+    "command": "bash",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/pyright.sh"],
+    "extensionToLanguage": {
+      ".py": "python",
+      ".pyi": "python"
+    }
+  }
+}

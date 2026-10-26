@@ -15,7 +15,10 @@
 #   CI green, reviews > fixes                      fix.sh
 #   CI green, reviews = fixes = AGENT_MAX_ROUNDS   finalise.sh
 #   CI green, the latest review approved the head  finalise.sh (no findings: no fix round, and no
-#                                                  further review of the same commit)
+#                                                  further review of the same commit; an update
+#                                                  with main keeps the approval of its old head)
+#   before a review or the finalise, branch behind the base, not updated in this round yet
+#                                                  update-main.sh (its push starts CI again)
 #
 # A pull request still in the plan stage (labelled "plan") prints "waiting for: plan approval" and
 # nothing runs. Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
@@ -64,7 +67,34 @@ stop() {
   exit 0
 }
 
+use_pr_base "$pr"
+
+# behind <head>: the pull request's head lacks commits of the base branch.
+behind() {
+  git fetch --quiet origin "$AGENT_BASE_BRANCH" "$branch" || return 1
+  ! git merge-base --is-ancestor "origin/$AGENT_BASE_BRANCH" "$1"
+}
+
+# A review or the finalise, when the branch is behind its base and was not updated in this round
+# yet, becomes an update with main first (at most one per round, so a busy base cannot keep the
+# loop merging).
 next_step() {
+  local step head reviews
+  step=$(planned_step)
+  case $step in review | finalise)
+    head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+    reviews=$(count_steps "$pr" review)
+    if ! pr_steps "$pr" | awk -v r="$reviews" '$1 == "update-main" && $2 == r { found = 1 } END { exit !found }' &&
+      behind "$head"; then
+      echo update-main
+      return
+    fi
+    ;;
+  esac
+  echo "$step"
+}
+
+planned_step() {
   local info head ci reviews fixes
   info=$(gh pr view "$pr" --json state,isDraft,labels,headRefOid \
     --jq "[.state, .isDraft, ([.labels[].name] | index(\"$AGENT_LABEL\") != null), .headRefOid] | @tsv")
@@ -129,7 +159,7 @@ while true; do
   fi
   waited=0
   # CI's result on the head, once per head, where the next step depends on it.
-  case $step in review | finalise | fix-ci)
+  case $step in review | finalise | fix-ci | update-main)
     head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
     if ! $dry_run && [ "$head" != "$reported_head" ]; then
       reported_head=$head
@@ -145,13 +175,17 @@ while true; do
     ;;
   esac
   $dry_run || step_end # a CI wait the next step does not depend on (fix, stop, none)
-  milestone "#$pr: next step: $step"
+  case $step in
+    update-main) milestone "#$pr: next step: update with main" ;;
+    *) milestone "#$pr: next step: $step" ;;
+  esac
   $dry_run && exit 0
   before=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
   case $step in
     none) exit 0 ;;
     stop*) stop "${step#stop }" ;;
     fix-ci) "$AGENT_DIR/fix-ci.sh" "$pr" ;;
+    update-main) "$AGENT_DIR/update-main.sh" "$pr" ;;
     review) "$AGENT_DIR/review.sh" "$pr" ;;
     fix) "$AGENT_DIR/fix.sh" "$pr" ;;
     finalise)

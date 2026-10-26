@@ -20,9 +20,13 @@
 # Milestone lines (agent: >> …, see lib.sh) say how far it is: a package started / done, the final
 # checks, the pushes, the draft pull request; the agent's tests, mise run check and commits too.
 #
+# A package agent stops at AGENT_WP_MAX_TURNS turns; a fresh agent (never a resumed session) then
+# continues from the package's commits and the plan, at most AGENT_WP_MAX_CONTINUATIONS times. The
+# retries of an unfinished package and of the final checks start fresh too.
+#
 # Interrupted (usage limit, Ctrl+C, a crash), started again, it skips the packages the plan says
 # are done, keeps the uncommitted work on the branch and lets the agent continue it. Its files are
-# in .git/agent/<issue>-<slug>/: run.log, the agents' results and streams (wp-<id>.json), `current`
+# in .git/agent/<issue>-<slug>/: run.log, the agents' results and streams (wp-<id>.json, wp-<id>-<k>.json), `current`
 # (the package it is on) and the lock run.pid.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -52,7 +56,11 @@ if $dry_run; then
   echo "Plan $plan on $branch"
   echo
   echo "Work packages:"
-  plan_py packages "$file" | awk -F'\t' '{ printf "  %-6s %-9s %s\n", $1, $2, $3 }'
+  plan_py files "$file" >"$AGENT_TMP/dry-run-files.tsv"
+  plan_py packages "$file" | awk -F'\t' -v max="$AGENT_MAX_WP_FILES" '
+    NR == FNR { files[$1] = $2; next }
+    { printf "  %-6s %-9s %2d files%s  %s\n", $1, $2, files[$1], (files[$1] > max ? "!" : " "), $3 }
+  ' "$AGENT_TMP/dry-run-files.tsv" -
   next=$(plan_py next "$file")
   total=$(plan_py packages "$file" | wc -l | tr -d ' ')
   echo
@@ -135,7 +143,61 @@ package_problems() {
   fi
 }
 
-session=""
+# The prompt of a fresh agent for package $1 ($2 label, $3 name, $4 packages still open): the header,
+# the extra sections from stdin, then the plan.
+package_prompt() {
+  local id=$1 label=$2 name=$3 open_count=$4
+  prompt implement.md
+  echo
+  echo "## Your package: $label, $name"
+  echo
+  echo "Your package ID, for the commit trailer and the plan: \`$id\`."
+  if [ "$open_count" -le 1 ]; then
+    echo
+    echo "This is the last open package. With it, raise the version as the plan says (\`scripts/version.sh"
+    echo "bump <major|minor|patch>\`, once) unless \`scripts/version.sh check-bump {{BASE}}\` already passes,"
+    echo "and do the docs and screenshots that no earlier package covers."
+  else
+    echo
+    echo "Other packages are open after this one: do not bump the version yet."
+  fi
+  cat
+  echo
+  echo "## The plan ($plan, approved; the status lines and ticks are the progress so far)"
+  echo
+  cat "$plan"
+}
+
+# The "Resume" section for the uncommitted files $1 of a run that stopped on package $2.
+resume_section() {
+  echo
+  echo "### Resume: uncommitted work from an interrupted run"
+  echo
+  echo "The working tree holds uncommitted work from an interrupted run, which was on package"
+  echo "\`${2:-unknown}\`$([ -n "$2" ] || echo " (not recorded)"). Read \`git status\` and \`git diff\` first, and keep what is right and finish it."
+  echo "Commit it with the trailer of the package it belongs to. If it covers several open packages"
+  echo "(an interrupted run of the old single-session flow), finish and commit them one after the other"
+  echo "in dependency order, each with its status in the plan and its own trailer. Never discard work"
+  echo "that you did not check: use \`git restore\` only on files you have read."
+  echo
+  echo "Uncommitted files:"
+  echo
+  echo '```'
+  echo "$1"
+  echo '```'
+}
+
+# The result of the last agent that worked on package $1: wp-<id>.json, or wp-<id>-<k>.json of its
+# latest continuation.
+final_result() {
+  local k=1 last=$AGENT_TMP/wp-$1.json
+  while [ -e "$AGENT_TMP/wp-$1-$k.json" ]; do
+    last=$AGENT_TMP/wp-$1-$k.json
+    k=$((k + 1))
+  done
+  echo "$last"
+}
+
 total=$(plan_py packages "$plan" | wc -l | tr -d ' ')
 while true; do
   package=$(plan_py next "$plan")
@@ -149,57 +211,55 @@ while true; do
   echo "package=$package" >"$AGENT_STATE/current"
   substep_begin "$label"
   milestone "$label: started${dirty:+ (on uncommitted work)}"
-
-  {
-    prompt implement.md
-    echo
-    echo "## Your package: $label, $name"
-    echo
-    echo "Your package ID, for the commit trailer and the plan: \`$package\`."
-    if [ "$open_count" -le 1 ]; then
-      echo
-      echo "This is the last open package. With it, raise the version as the plan says (\`scripts/version.sh"
-      echo "bump <major|minor|patch>\`, once) unless \`scripts/version.sh check-bump {{BASE}}\` already passes,"
-      echo "and do the docs and screenshots that no earlier package covers."
-    else
-      echo
-      echo "Other packages are open after this one: do not bump the version yet."
-    fi
-    if [ -n "$dirty" ]; then
-      echo
-      echo "### Resume: uncommitted work from an interrupted run"
-      echo
-      echo "The working tree holds uncommitted work from an interrupted run, which was on package"
-      echo "\`${previous:-unknown}\`$([ -n "$previous" ] || echo " (not recorded)"). Read \`git status\` and \`git diff\` first, and keep what is right and finish it."
-      echo "Commit it with the trailer of the package it belongs to. If it covers several open packages"
-      echo "(an interrupted run of the old single-session flow), finish and commit them one after the other"
-      echo "in dependency order, each with its status in the plan and its own trailer. Never discard work"
-      echo "that you did not check: use \`git restore\` only on files you have read."
-      echo
-      echo "Uncommitted files:"
-      echo
-      echo '```'
-      echo "$dirty"
-      echo '```'
-    fi
-    echo
-    echo "## The plan ($plan, approved; the status lines and ticks are the progress so far)"
-    echo
-    cat "$plan"
-  } | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" >"$AGENT_TMP/implement-$package.md"
-
-  result=$AGENT_TMP/wp-$package.json
   export AGENT_STEP_LABEL=$label
-  run_agent "$AGENT_MODEL" "$AGENT_TMP/implement-$package.md" "$result" "${AGENT_DEV_TOOLS[@]}" -- --json-schema "$schema"
-  session=$(py "$AGENT_DIR/agent_json.py" get "$result" session_id)
 
-  # The package must be recorded in the plan and committed. One more try, resuming the session.
+  # A run that reaches the turn limit is followed by a fresh agent that continues from the commits.
+  continuation=0
+  while true; do
+    result=$AGENT_TMP/wp-$package.json
+    [ "$continuation" -eq 0 ] || result=$AGENT_TMP/wp-$package-$continuation.json
+    dirty=$(git status --short)
+    {
+      if [ "$continuation" -gt 0 ]; then
+        echo
+        echo "### Continue: an earlier agent stopped at the turn limit"
+        echo
+        echo "The package is partly done. The plan below shows the steps already ticked; do not redo them."
+        echo "Read these first, then the code you still need, and carry on with the open steps."
+        echo
+        echo "Commits of this package so far:"
+        echo
+        echo '```'
+        git log --format='%h %s' --grep "^Work-package: $package\$" "$plan_commit..HEAD"
+        echo '```'
+        if [ -n "$dirty" ]; then
+          echo
+          echo "Uncommitted changes (\`git diff --stat\`):"
+          echo
+          echo '```'
+          git diff --stat HEAD
+          echo '```'
+        fi
+      fi
+      if [ -n "$dirty" ]; then resume_section "$dirty" "$([ "$continuation" -gt 0 ] && echo "$package" || echo "${previous:-$package}")"; fi
+    } | package_prompt "$package" "$label" "$name" "$open_count" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" >"$AGENT_TMP/implement-$package.md"
+
+    AGENT_ALLOW_MAX_TURNS=1 run_agent "$AGENT_MODEL" "$AGENT_TMP/implement-$package.md" "$result" "${AGENT_DEV_TOOLS[@]}" -- --max-turns "$AGENT_WP_MAX_TURNS" --json-schema "$schema"
+    [ "$(py "$AGENT_DIR/agent_json.py" get "$result" subtype)" = error_max_turns ] || break
+    # Finished right at the limit: nothing to continue.
+    [ -n "$(package_problems "$package")" ] || break
+    continuation=$((continuation + 1))
+    [ "$continuation" -le "$AGENT_WP_MAX_CONTINUATIONS" ] || die "$label: not finished after $((AGENT_WP_MAX_CONTINUATIONS + 1)) agents at the turn limit (the work stays on $branch; run this again to resume)"
+    milestone "$label: turn limit reached, continuing in a fresh agent ($continuation of $AGENT_WP_MAX_CONTINUATIONS)"
+  done
+
+  # The package must be recorded in the plan and committed. One more try, in a fresh agent.
   problems=$(package_problems "$package")
   if [ -n "$problems" ]; then
-    milestone "$label: not finished, resuming the agent"
-    printf 'Package %s is not finished. Fix the problems and commit:\n\n%s\n' "$package" "$problems" >"$AGENT_TMP/retry-$package.md"
-    run_agent "$AGENT_MODEL" "$AGENT_TMP/retry-$package.md" "$AGENT_TMP/wp-$package-retry.json" "${AGENT_DEV_TOOLS[@]}" -- --resume "$session" --json-schema "$schema"
-    session=$(py "$AGENT_DIR/agent_json.py" get "$AGENT_TMP/wp-$package-retry.json" session_id)
+    milestone "$label: not finished, starting a fresh agent"
+    printf '\n### Retry: the package is not finished\n\nAn earlier agent worked on this package. Fix the problems and commit:\n\n%s\n' "$problems" |
+      package_prompt "$package" "$label" "$name" "$open_count" | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" >"$AGENT_TMP/retry-$package.md"
+    run_agent "$AGENT_MODEL" "$AGENT_TMP/retry-$package.md" "$AGENT_TMP/wp-$package-retry.json" "${AGENT_DEV_TOOLS[@]}" -- --json-schema "$schema"
     problems=$(package_problems "$package")
     [ -z "$problems" ] || die "$label: still not finished (the work stays on $branch; run this again to resume):"$'\n'"$problems"
   fi
@@ -239,24 +299,20 @@ for attempt in 1 2 3; do
   fi
   milestone "checks failed (attempt $attempt): $(head -n 1 <<<"$problems")"
   [ "$attempt" -lt 3 ] || die "the implementation still fails its checks:"$'\n'"$problems"
-  log "resuming the agent with the failed checks"
+  log "starting a fresh agent with the failed checks"
   {
-    # Without a session of this run (every package was done before it), the agent starts fresh.
-    if [ -z "$session" ]; then
-      prompt implement.md
-      echo
-      echo "## Your task: fix the problems below. All packages of the plan are done; there is no package to implement."
-      echo
-      echo "## The plan ($plan)"
-      echo
-      cat "$plan"
-      echo
-    fi
+    prompt implement.md
+    echo
+    echo "## Your task: fix the problems below. All packages of the plan are done; there is no package to implement."
+    echo
+    echo "## The plan ($plan)"
+    echo
+    cat "$plan"
+    echo
     printf 'The checks failed. Fix the problems, run the checks again and commit:\n\n%s\n' "$problems"
   } | sed "s|{{BASE}}|origin/$AGENT_BASE_BRANCH|g" >"$AGENT_TMP/retry.md"
   retry=$AGENT_TMP/implement-retry-$attempt.json
-  run_agent "$AGENT_MODEL" "$AGENT_TMP/retry.md" "$retry" "${AGENT_DEV_TOOLS[@]}" -- ${session:+--resume "$session"} --json-schema "$schema"
-  session=$(py "$AGENT_DIR/agent_json.py" get "$retry" session_id)
+  run_agent "$AGENT_MODEL" "$AGENT_TMP/retry.md" "$retry" "${AGENT_DEV_TOOLS[@]}" -- --json-schema "$schema"
   results+=("$retry")
 done
 substep_end
@@ -267,7 +323,7 @@ push_branch
 summary=""
 missing=""
 while IFS=$'\t' read -r id _ pkg_name; do
-  text=$(result_field "$AGENT_TMP/wp-$id.json" summary)
+  text=$(result_field "$(final_result "$id")" summary)
   if [ -z "$text" ]; then
     text="Implemented in an earlier run, see its commits (\`git log --grep '^Work-package: $id\$'\`)."
     [ -e "$AGENT_TMP/wp-$id.jsonl" ] || missing+="${missing:+, }$id"
@@ -280,7 +336,7 @@ while IFS=$'\t' read -r id _ pkg_name; do
 done < <(plan_py packages "$plan")
 not_done=$(plan_py not-done "$plan")
 while IFS=$'\t' read -r id _ pkg_name; do
-  text=$(result_field "$AGENT_TMP/wp-$id.json" not_done)
+  text=$(result_field "$(final_result "$id")" not_done)
   case $(tr '[:upper:]' '[:lower:]' <<<"$text") in "" | nothing | nothing. | none | none.) continue ;; esac
   not_done+="${not_done:+$'\n\n'}**$id**: $text"
 done < <(plan_py packages "$plan")

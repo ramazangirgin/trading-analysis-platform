@@ -5,7 +5,7 @@ description: Get a branch of this repository ready for review as a pull request 
 
 # Pull request, ready for review
 
-`main` is protected (README, [versioning convention](../../../docs/coding-convention/repository-versioning-and-releases.md)):
+`main` is protected ([`docs/ci-and-releases.md`](../../../docs/ci-and-releases.md), [versioning convention](../../../docs/coding-convention/repository-versioning-and-releases.md)):
 a pull request, the required check **CI passed** with the branch up to date, and a code owner's
 review. **Every pull request into `main` raises the version in its own diff**, a documentation or
 skill change too; only Renovate's pull requests (`renovate/*` opened by `renovate[bot]`) are exempt.
