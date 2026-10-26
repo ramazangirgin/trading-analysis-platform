@@ -173,11 +173,12 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP5: BFF mappers, part 3
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: in artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper: `PresetValuesDtoToJsonStringMapper.java`, `PriceHistoryToPriceHistoryDtoMapper.java`, `ReportToAnalysisReportDtoMapper.java`, `RoleSummaryToRoleDtoMapper.java`, `RunEventToRunEventDtoMapper.java`, `RunStatsToRunStatsDtoMapper.java`, `SecretStatusToSecretStatusDtoMapper.java`, `StartAnalysisRequestToRequestedAnalysisMapper.java`
 - **Steps**:
-  - [ ] Put the shared config on each mapper.
-  - [ ] `RunEventToRunEventDtoMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = {"rating", "outcome", "stats", "error"})` on `map`.
+  - [x] Put the shared config on each mapper.
+  - [x] `RunEventToRunEventDtoMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = {"rating", "outcome", "stats", "error"})` on `map`.
 - **Tests**: `RoleSummaryToRoleDtoMapperTest`, `PresetToPresetDtoMapperTest` and the delegate tests pass.
 
 ### WP6: BFF mappers, part 4
