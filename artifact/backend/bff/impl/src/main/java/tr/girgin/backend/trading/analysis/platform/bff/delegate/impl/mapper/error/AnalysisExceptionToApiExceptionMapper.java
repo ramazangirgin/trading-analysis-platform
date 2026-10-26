@@ -6,8 +6,9 @@ import org.springframework.http.HttpStatus;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface AnalysisExceptionToApiExceptionMapper {
 
     default ApiException map(AnalysisException source) {

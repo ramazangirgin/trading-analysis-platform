@@ -164,10 +164,11 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP4: BFF mappers, part 2 (exception mappers included)
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: in artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper: `error/AnalysisExceptionToApiExceptionMapper.java`, `error/CatalogExceptionToApiExceptionMapper.java`, `error/IdentityExceptionToApiExceptionMapper.java`, `error/SettingsExceptionToApiExceptionMapper.java`, `ImportResultToImportResultDtoMapper.java`, `PermissionEnumDtoToPermissionMapper.java`, `PermissionToPermissionEnumDtoMapper.java`, `PresetToPresetDtoMapper.java`
 - **Steps**:
-  - [ ] Put the shared config on each mapper.
+  - [x] Put the shared config on each mapper.
 - **Tests**: the `*ExceptionToApiExceptionMapperTest`s, `DomainExceptionHandlerTest`, `PresetToPresetDtoMapperTest` pass.
 
 ### WP5: BFF mappers, part 3
