@@ -558,7 +558,7 @@ affects ("Docs to update"), the developer agent updates them, and the review age
 against the plan and on its own (a user-visible change without its description or screenshot is a
 `MAJOR` finding).
 
-The README's screenshots (`docs/screenshots/*.png`) are taken by Playwright, the way the end-to-end
+The docs' screenshots (`docs/screenshots/*.png`, shown in the topic files of `docs/` and the README) are taken by Playwright, the way the end-to-end
 tests run: the built jar with a throwaway home and ta-runner replaying a recording, in Google
 Chrome, at 1440×900 in the dark theme. One `e2e/screenshots/<name>.shot.ts` per screenshot sets up
 the data it needs over the API, opens the page and saves it with `shot(page, '<name>')`:

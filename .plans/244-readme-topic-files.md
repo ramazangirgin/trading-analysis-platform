@@ -107,15 +107,15 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Move the sections into topic files
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `README.md`, `docs/user-guide.md` (new), `docs/docker-compose.md` (new),
   `docs/configuration.md` (new), `docs/login-and-backend.md` (new), `docs/development.md` (new),
   `docs/ci-and-releases.md` (new), `docs/agentic-development.md`
 - **Steps**:
-  - [ ] move each section into its topic file as in the design, with its links rewritten
-  - [ ] the README as in "What stays in README.md", with the "Documentation" table
-  - [ ] the "Agentic development" section shortened; anything only it said moved into
+  - [x] move each section into its topic file as in the design, with its links rewritten
+  - [x] the README as in "What stays in README.md", with the "Documentation" table
+  - [x] the "Agentic development" section shortened; anything only it said moved into
     `docs/agentic-development.md`
 - **Tests**: `git diff --stat` shows the README lines moved, not lost: the topic files together with
   the new README hold every paragraph of the old README (the developer agent compares the old
