@@ -310,14 +310,15 @@ jobs:
 
   # The whole deployment, as deploy/server/README.md describes it, with this runner as the server:
   # the setup scripts, then deploys over SSH to 127.0.0.1 (deploy/server/test-deploy.sh). It builds
-  # the images on the "server" (20 to 30 minutes), so it runs only when what it tests changes
+  # the images on the "server" as a fresh one does (no CI cache; the ta-runner image beside the
+  # Gradle build of the jar), about 6 minutes, so it runs only when what it tests changes
   # (the server_e2e area). mise.toml is not one: the server job installs the same tools from it.
   server-e2e:
     name: Server deploy end-to-end
     needs: changes
     if: needs.changes.outputs.server_e2e == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:

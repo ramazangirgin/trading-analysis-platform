@@ -39,6 +39,8 @@ mise run format-check  # check the formatting of every Java, frontend and e2e fi
 mise run hooks         # install the Git hooks (lefthook.yml)
 mise run api-types     # refresh the frontend's API types from the running backend
 mise run docker-build  # the platform and ta-runner Docker images
+mise run docker-build:platform  # only the platform image (builds the jar first)
+mise run docker-build:runner    # only the ta-runner image
 mise run server:deploy # set up the server in deploy/server/inventory.ini over SSH and deploy the Compose stack on it (Ansible)
 mise run server:tunnel # open the deployed UI from this machine: an SSH tunnel, then http://127.0.0.1:8080 (with a domain, https://<domain> works too)
 mise run server:check  # ansible-lint and the playbook's syntax, without a server (not part of check)

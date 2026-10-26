@@ -19,7 +19,7 @@
 # It changes the machine for good (users, sudoers, firewall, Docker, swap): run it only on a
 # throwaway one, such as a CI runner or a fresh VM (multipass launch 24.04). It refuses to start
 # unless CI=true or SERVER_TEST_THROWAWAY=1. Needs Ubuntu 24.04, sudo without a password, and the
-# tools of mise.toml. Takes 20 to 30 minutes: the images are built on the "server".
+# tools of mise.toml. Takes about 6 minutes on a CI runner: the images are built on the "server".
 set -euo pipefail
 
 DIR=$(cd "$(dirname "$0")" && pwd)
