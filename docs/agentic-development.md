@@ -457,7 +457,8 @@ summary" comment after it: what the session checked itself and what is worth che
 - Read the diff as you would any pull request: against the plan, with the conventions in mind. The
   agents' review covered it twice, but it is not a substitute for yours.
 - The docs: the topic file of `docs/` describes the feature, and the screenshots in
-  `docs/screenshots/` show it (the pull request's *Files changed* shows the PNGs side by side with the old ones).
+  `docs/screenshots/` show it (the pull request's *Files changed* shows the PNGs side by side with
+  the old ones).
 - Try it: `git switch plan/<issue>-<slug>` and `mise run dev` (or `mise run run`).
 
 ### 7. More changes
@@ -560,9 +561,10 @@ against the plan and on its own (a user-visible change without its description o
 `MAJOR` finding).
 
 The docs' screenshots (`docs/screenshots/*.png`, shown in the topic files of `docs/` and the
-README) are taken by Playwright, the way the end-to-end tests run: the built jar with a throwaway home and ta-runner replaying a recording, in Google
-Chrome, at 1440×900 in the dark theme. One `e2e/screenshots/<name>.shot.ts` per screenshot sets up
-the data it needs over the API, opens the page and saves it with `shot(page, '<name>')`:
+README) are taken by Playwright, the way the end-to-end tests run: the built jar with a throwaway
+home and ta-runner replaying a recording, in Google Chrome, at 1440×900 in the dark theme. One
+`e2e/screenshots/<name>.shot.ts` per screenshot sets up the data it needs over the API, opens
+the page and saves it with `shot(page, '<name>')`:
 
 ```sh
 mise run screenshots             # every screenshot
