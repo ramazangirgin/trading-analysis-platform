@@ -38,8 +38,10 @@ check() {
 }
 
 #     app   runner deploy server_e2e
-check "false false false false" docs/x.md
-check "false false false false" .plans/1-x.md README.md
+check "false true false false" docs/x.md
+check "false false false false" .plans/1-x.md
+check "false true false false" README.md
+check "false true false false" CLAUDE.md
 check "false true false false" scripts/agent/x.sh
 check "false true false false" .claude/skills/x/SKILL.md
 check "false false false false" .claude/settings.json
