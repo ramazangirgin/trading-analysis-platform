@@ -152,6 +152,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: develop-issue skill (by hand)
 
+- **Status**: not done: headless agents cannot edit `.claude/`; the developer does it by hand
 - **Depends on**: WP2
 - **Files**: `.claude/skills/develop-issue/SKILL.md`
 - **Steps**:
