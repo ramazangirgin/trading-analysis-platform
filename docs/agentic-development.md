@@ -108,7 +108,8 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   round and before finalising when the branch is behind (at most once per round), and an approval
   survives an update that only brought in `main`. It also runs it during a CI wait when the pull
   request conflicts with `main`: GitHub starts no CI then, so the wait could only time out. A branch
-  that is only behind keeps waiting, because its CI runs.
+  that is only behind keeps waiting, because its CI runs. When that update pushes nothing (GitHub
+  reports a conflict the branch does not have), the loop stops instead of asking again at once.
 - **The state directory is inside `.git`.** Everything a run leaves behind goes to
   `.git/agent/<issue>-<slug>/` of the plan branch: `run.log` (the scripts' and agents' progress
   lines, with the milestone lines `agent: >> …` next to the tool lines), `progress.tsv` (the steps,

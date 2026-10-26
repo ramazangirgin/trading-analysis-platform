@@ -215,4 +215,8 @@ while true; do
   if [ "$step" = fix-ci ] && [ "$(gh pr view "$pr" --json headRefOid --jq .headRefOid)" = "$before" ]; then
     stop "The developer agent found no fix for the failing CI (see its comment above)."
   fi
+  # An update that pushed nothing cannot clear the conflict, and asking again would loop at once.
+  if [ "$step" = update-main-conflict ] && [ "$(gh pr view "$pr" --json headRefOid --jq .headRefOid)" = "$before" ]; then
+    stop "GitHub reports a conflict with $AGENT_BASE_BRANCH but $branch already contains it and merges cleanly locally; check the pull request on GitHub, then run the agent loop again."
+  fi
 done
