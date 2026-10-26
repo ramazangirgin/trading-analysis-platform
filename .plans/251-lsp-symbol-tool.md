@@ -69,7 +69,7 @@ nothing in this plan goes under `.claude/`, and every new shell script is starte
     `initializationOptions` name the frontend's TypeScript (`artifact/frontend/node_modules/typescript/lib`)
     and the `@vue/typescript-plugin` for `.vue`, so `.vue` script blocks resolve like `.ts`. If
     `.vue` does not work in WP2's check, `.vue` is left out of the mapping and the check's output says
-    so (see Open questions).
+    so (see Decisions).
   - `pyright`: `.py`, `.pyi` → `python`.
 - Wrappers (Bash 3.2, `set -eu`, repository root from `git rev-parse --show-toplevel`):
   - `jdtls.sh`: fails with "jdtls not found: brew install jdtls" when `jdtls` is not on `PATH`;
@@ -237,31 +237,26 @@ Packages without a dependency between them can be implemented in parallel.
 ## Out of scope
 
 - Running the baseline and the trial and recording the numbers (issue steps 1, 3, 4): done by the
-  developer on the next application issues, in #251.
+  developer on the next application issues, in #251, which therefore stays open after this pull
+  request is merged (`Part of #251`, see Decisions).
 - Making the LSP tool the default, or removing it: a follow-up after the decision.
 - The developer's own interactive sessions and the `develop-issue` orchestration session: the switch
   covers the headless agents only (`run_agent`).
 - Renovate updates of the pinned server versions in the wrappers: only if the tool is kept.
 - An LLM-generated wiki of the code (not planned in the issue).
 
-## Open questions
+## Decisions
 
-- **Closing the issue**: the agent scripts write `Closes #251` into this plan's pull request (it is
-  the only plan), but the issue's measuring and decision come after the merge. Keep it that way and
-  open a new issue for the measurement, or change the pull request body to `Part of #251` by hand
-  before merging so #251 stays open for the numbers?
-- **Server installation**: jdtls from Homebrew (manual, once per machine), the TypeScript server and
-  pyright through `pnpm dlx` with versions pinned in the wrappers. Alternative: pin all three in
-  `mise.toml` `[tools]` (`npm:` backends need a global Node.js, which mise does not provide here, and
-  CI would install them too). Is the Homebrew prerequisite for jdtls acceptable?
-- **`.vue` support**: the plan maps `.vue` to the TypeScript server with `@vue/typescript-plugin`. If
-  WP2's check shows that it does not answer for `.vue` files, is `.ts`-only acceptable for the trial
-  (most frontend reads are `.vue` components), or should a separate `@vue/language-server` be added?
-- **`pyrightconfig.json` at the repository root** also affects editors that use pyright or Pylance.
-  Acceptable, or should pyright get its settings through the wrapper (`--project` is not supported by
-  `pyright-langserver`, so this would mean a config file in a folder the agents do not start in)?
-- **Headless plugin loading**: `mise.toml` already sets `CLAUDE_CODE_PLUGIN_DIRS` to the
-  agent-progress mod, and the agents inherit it. The plan adds `--plugin-dir` next to it; WP2's check
-  shows whether both load. If `--plugin-dir` replaces the environment variable's list for the agents,
-  that is harmless (the mod has no use in a headless run), but say so if you prefer the agents to
-  keep it.
+Answers of the developer to the plan's open questions:
+
+- **Closing the issue**: #251 stays open for the measurement. The pull request says
+  `Part of #251`, not `Closes #251`: the orchestration session edits the pull request body by hand
+  after `implement.sh` (the scripts write `Closes #251`, as this is the issue's only plan).
+- **Server installation**: as planned. jdtls from Homebrew (`brew install jdtls`, manual, once per
+  machine); the TypeScript server and pyright through `pnpm dlx` at versions pinned in the wrappers.
+- **`.vue` support**: if the TypeScript server with `@vue/typescript-plugin` does not answer for
+  `.vue` files in WP2's check, `.vue` is left out of `.lsp.json` (and out of `test_lsp_plugin.py`'s
+  extension list), the trial runs `.ts`-only, and the pull request's final comment says so.
+- **`pyrightconfig.json` at the repository root**: accepted.
+- **Headless plugin loading**: if `--plugin-dir` drops the agent-progress mod from the headless
+  agents, that is accepted.
