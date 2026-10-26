@@ -251,11 +251,12 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP13: Identity adapter, user mappers
 
+- **Status**: done
 - **Depends on**: WP12
 - **Files**: in artifact/backend/domain/identity/adapter/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/identity/adapter/persistence/mapper: `UserEntityToUserMapper.java`, `UserIdEmbeddableToUserIdMapper.java`, `UserIdToUserIdEmbeddableMapper.java`, `UserToUserEntityMapper.java`
 - **Steps**:
-  - [ ] Put the shared config on each mapper.
-  - [ ] `UserToUserEntityMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = {"createdAt", "updatedAt"})`.
+  - [x] Put the shared config on each mapper.
+  - [x] `UserToUserEntityMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = {"createdAt", "updatedAt"})`.
 - **Tests**: the identity persistence adapter tests pass (Testcontainers).
 
 ### WP14: Custom check `RequiredAnnotationAttributeCheck`
