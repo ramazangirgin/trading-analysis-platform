@@ -185,8 +185,12 @@ while true; do
     ;;
   esac
   if [ "$step" = update-main-conflict ]; then
-    milestone "#$pr: $branch conflicts with $AGENT_BASE_BRANCH"
-    $dry_run || step_end "conflicts with $AGENT_BASE_BRANCH"
+    if $dry_run; then
+      log "#$pr: $branch conflicts with $AGENT_BASE_BRANCH"
+    else
+      milestone "#$pr: $branch conflicts with $AGENT_BASE_BRANCH"
+      step_end "conflicts with $AGENT_BASE_BRANCH"
+    fi
   fi
   $dry_run || step_end # a CI wait the next step does not depend on (fix, stop, none)
   case $step in
