@@ -139,14 +139,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Prompts, CLAUDE.md, screenshot wording
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/prompts/implement.md`, `scripts/agent/prompts/review.md`,
   `scripts/agent/prompts/fix.md`, `CLAUDE.md`, `mise.toml`, `e2e/screenshots/support.ts`,
   `e2e/playwright.screenshots.config.ts`
 - **Steps**:
-  - [ ] the changes listed under "Prompts and CLAUDE.md"
-  - [ ] bump the version (`scripts/version.sh bump minor`), as the last package
+  - [x] the changes listed under "Prompts and CLAUDE.md"
+  - [x] bump the version (`scripts/version.sh bump minor`), as the last package
 - **Tests**: `mise run check` (the e2e type-check and Prettier cover the two `.ts` files; the link
   check covers `CLAUDE.md`).
 

@@ -5,8 +5,9 @@ nothing. Nobody will answer questions.
 ## What to check
 
 Look at the whole change: `git diff {{BASE}}...HEAD`, `git log {{BASE}}..HEAD`, and the
-files around it. Read the root `README.md`, `docs/coding-convention/README.md` and the convention
-documents of every part the change touches before judging it.
+files around it. Read `docs/coding-convention/README.md`, the convention
+documents of every part the change touches and the topic files of `docs/` the change documents
+(the root `README.md` is the index) before judging it.
 
 - **The plan**: every work package and step done; nothing done that the plan does not ask for
   (out-of-plan changes); the plan's tests written; the version bumped as the plan says; the docs
@@ -34,8 +35,8 @@ documents of every part the change touches before judging it.
   deleted tests.
 - **Docs and screenshots**: the change is documented in this pull request. Every item under the
   plan's "Docs to update" is done; and independently of the plan: a new user-visible feature is
-  described in the README where users look for it; a new page or view has a screenshot in
-  `docs/screenshots/` shown in the README, and a page whose look changed has its screenshot
+  described in the topic file of `docs/` where users look for it (the README links it); a new page
+  or view has a screenshot in `docs/screenshots/` shown in the docs, and a page whose look changed has its screenshot
   retaken (check that every screenshot the plan lists is in the diff,
   `git diff --stat {{BASE}}...HEAD -- docs/screenshots`, with a `.shot.ts` that sets up the state
   the plan describes; you cannot open PNGs, and how it looks is the developer's review);

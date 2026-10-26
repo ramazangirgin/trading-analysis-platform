@@ -100,7 +100,7 @@ run = [
 ]
 
 [tasks.screenshots]
-description = "Take the README's screenshots (e2e/screenshots/*.shot.ts) into docs/screenshots/: mise run screenshots [name filter]; needs Docker or Podman"
+description = "Take the docs' screenshots (e2e/screenshots/*.shot.ts) into docs/screenshots/: mise run screenshots [name filter]; needs Docker or Podman"
 # Like the end-to-end tests: the built jar on a throwaway PostgreSQL container with ta-runner
 # replaying a recording, in Google Chrome.
 run = [
