@@ -131,12 +131,13 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP1: ArchUnit placement rules for the config
 
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/ArchitectureTest.java`, `docs/coding-convention/backend-java-package-structure.md`
 - **Steps**:
-  - [ ] Widen `mapper_packages_hold_only_mappers` to admit `@MapperConfig` types and annotation types meta-annotated `@MappingControl`.
-  - [ ] Add `mapper_configs_live_in_the_mapper_library` (both kinds reside in `LIBRARY_MAPPER`), in the "Mapping" section.
-  - [ ] In the package-structure document, "Where each class kind goes": the `mapper` package row names the shared config and mapping control; add a row for the new rule; add a row "Every `@Mapper` sets `config = SharedMapperConfig.class`" with `TAP-M1`. In "Alternatives considered", keep the `uses` bullet and say the shared config carries none.
+  - [x] Widen `mapper_packages_hold_only_mappers` to admit `@MapperConfig` types and annotation types meta-annotated `@MappingControl`.
+  - [x] Add `mapper_configs_live_in_the_mapper_library` (both kinds reside in `LIBRARY_MAPPER`), in the "Mapping" section.
+  - [x] In the package-structure document, "Where each class kind goes": the `mapper` package row names the shared config and mapping control; add a row for the new rule; add a row "Every `@Mapper` sets `config = SharedMapperConfig.class`" with `TAP-M1`. In "Alternatives considered", keep the `uses` bullet and say the shared config carries none.
 - **Tests**: `ArchitectureTest` passes on today's code and with WP2's classes.
 
 ### WP2: The shared config in the mapper library
