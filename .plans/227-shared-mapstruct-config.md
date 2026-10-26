@@ -210,11 +210,12 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP9: Analysis adapter, persistence mappers
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: in artifact/backend/domain/analysis/adapter/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/analysis/adapter/persistence/mapper: `AnalysisEntityToAnalysisMapper.java`, `AnalysisIdEmbeddableToAnalysisIdMapper.java`, `AnalysisIdToAnalysisIdEmbeddableMapper.java`, `AnalysisSpecEmbeddableToAnalysisSpecMapper.java`, `AnalysisSpecToAnalysisSpecEmbeddableMapper.java`, `AnalysisToAnalysisEntityMapper.java`, `MillisToDurationMapper.java`
 - **Steps**:
-  - [ ] Put the shared config on each mapper.
-  - [ ] `AnalysisEntityToAnalysisMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = "new")` on `map`.
+  - [x] Put the shared config on each mapper.
+  - [x] `AnalysisEntityToAnalysisMapper`: `@BeanMapping(ignoreUnmappedSourceProperties = "new")` on `map`.
 - **Tests**: the JPA repository adapter tests of `domain:analysis:adapter` pass (Testcontainers).
 
 ### WP10: Catalog adapter mappers
