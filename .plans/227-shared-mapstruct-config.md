@@ -40,12 +40,14 @@ In `:backend:library:mapper`, package `tr.girgin.backend.trading.analysis.platfo
   built-in conversions, which always create a new immutable value (`String`, `BigDecimal`, ...),
   so they cannot share state with the source.
 
-  Why not `DeepClone` itself: a trial run during planning (all 66 mappers with `DeepClone`) failed
+  Why not `DeepClone` itself (decided with the developer): a trial run during planning (all 66 mappers with `DeepClone`) failed
   four mappers on built-in conversions that `DeepClone` forbids:
   `SecretStatusToSecretStatusDtoMapper` and `SystemHealthToSystemHealthDtoMapper` (enum to
   `String`), `RunStatsEmbeddableToRunStatsMapper` / `RunStatsToRunStatsEmbeddableMapper` (`Double`
   ↔ `BigDecimal`), `AnalysisSpecToRunnerSpecMapper` (`LocalDate` to `String`). With
-  `DeepCloneWithConversions` the whole backend compiles and its tests pass (see Open questions).
+  `DeepCloneWithConversions` the whole backend compiles and the tests that ran pass;
+  `AnalysisDefaultsApiIntegrationTest` did not start (no container engine) and is to be confirmed
+  by `mise run build` (WP15).
 
 `DurationToMillisMapper` and `EnumToLowerCaseNameMapper` use the config too. The library's test
 source set gets the MapStruct processor (`testAnnotationProcessor`) so a test can generate a mapper
@@ -117,7 +119,8 @@ test sources:
 </module>
 ```
 
-`M` is a new id group (MapStruct and mapping); the catalogue's group list gets it.
+`M` is a new id group (MapStruct and mapping), decided with the developer; the catalogue's group
+list gets it.
 
 ## Work packages
 
@@ -301,10 +304,4 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ## Open questions
 
-- The issue asks for `mappingControl = DeepClone`. Plain `DeepClone` forbids MapStruct's built-in
-  conversions and fails four mappers (enum to `String`, `Double` ↔ `BigDecimal`, `LocalDate` to
-  `String`). The plan uses `DeepCloneWithConversions` (`DeepClone` plus built-in conversions, which
-  create new immutable values). The alternative is plain `DeepClone` with hand-written converters
-  for those conversions (about four new mappers). Is `DeepCloneWithConversions` acceptable?
-- The rule id `TAP-M1` opens a new group `M` (MapStruct). Is a new group wanted, or should it go in
-  `D`?
+None.
