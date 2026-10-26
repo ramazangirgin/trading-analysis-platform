@@ -51,8 +51,8 @@ the same pull request. "None" only with the reason.
 
 | What | Where | Change |
 |---|---|---|
-| Text | <README.md section "…", docs/<doc>.md, docs/coding-convention/<doc>.md, docs/event-protocol.md, …> | <what to add or correct> |
-| Screenshot | <docs/screenshots/<name>.png, new or retaken> | <the page and state it shows, the data it needs, the README section that shows it> |
+| Text | <docs/<topic>.md section "…", docs/coding-convention/<doc>.md, docs/event-protocol.md, …> | <what to add or correct> |
+| Screenshot | <docs/screenshots/<name>.png, new or retaken> | <the page and state it shows, the data it needs, the docs section that shows it> |
 
 ## Out of scope
 

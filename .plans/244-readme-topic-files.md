@@ -152,20 +152,20 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: The skills (by hand, not by the agents)
 
-- **Status**: not done: manual: files under `.claude/` are edited by the developer by hand, since the headless agents may not edit them
+- **Status**: done (by hand, in the develop-issue session)
 - **Depends on**: WP3
 - **Files**: `.claude/skills/plan-from-issue/SKILL.md`, `.claude/skills/plan-from-issue/plan-template.md`,
   `.claude/skills/dependabot-fix/SKILL.md`, `.claude/skills/renovate-fix/SKILL.md`,
   `.claude/skills/renovate-update/SKILL.md`, `.claude/skills/pr-ready/SKILL.md`
 - **Steps**:
-  - [ ] `plan-from-issue` section 2, "Always" row: `README.md` (the index) and the topic files of
+  - [x] `plan-from-issue` section 2, "Always" row: `README.md` (the index) and the topic files of
     `docs/` the issue touches, not the whole manual; section 3, "Docs to update": "the root
     `README.md`: the section describing the feature" becomes "the topic file of `docs/` describing
     the feature (`README.md`'s Documentation table lists them)"; "the README shows every page"
     becomes "the docs show every page"
-  - [ ] `plan-template.md`: the "Docs to update" table's example `README.md section "…"` becomes
+  - [x] `plan-template.md`: the "Docs to update" table's example `README.md section "…"` becomes
     `docs/<topic>.md section "…"`
-  - [ ] `dependabot-fix`, `renovate-fix`, `renovate-update`: `README "Dependency updates"` becomes
+  - [x] `dependabot-fix`, `renovate-fix`, `renovate-update`: `README "Dependency updates"` becomes
     `docs/ci-and-releases.md` "Dependency updates"; `pr-ready`: the README reference for `main`'s
     protection becomes `docs/ci-and-releases.md`
 - **Tests**: none (Markdown read by Claude Code); `doc_links.py .claude/skills/*/SKILL.md` prints no

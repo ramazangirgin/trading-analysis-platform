@@ -6,7 +6,7 @@ description: Fix the open Dependabot alerts of this repository in one run - grou
 # Fix the Dependabot alerts
 
 Dependabot alerts are on, Dependabot security updates are off: Renovate makes the update pull
-requests ([`renovate-update`](../renovate-update/SKILL.md), README "Dependency updates"). Renovate
+requests ([`renovate-update`](../renovate-update/SKILL.md), [`docs/ci-and-releases.md`](../../../docs/ci-and-releases.md#dependency-updates) "Dependency updates"). Renovate
 only moves direct and pinned dependencies, so alerts on **transitive** ones (a plugin's classpath, a
 library a BOM manages, a lock file entry) stay open. This skill fixes those: it works out which
 version fixes each group of alerts, checks that choice against Renovate's rules, and applies it
