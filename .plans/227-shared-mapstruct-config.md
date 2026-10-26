@@ -220,11 +220,12 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP10: Catalog adapter mappers
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `artifact/backend/domain/catalog/adapter/build.gradle.kts`; in artifact/backend/domain/catalog/adapter/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/catalog/adapter/runner/mapper: `CatalogJsonToCatalogMapper.java`, `VersionJsonToEngineVersionMapper.java`
 - **Steps**:
-  - [ ] `implementation(project(":backend:library:mapper"))`.
-  - [ ] Put the shared config on each mapper.
+  - [x] `implementation(project(":backend:library:mapper"))`.
+  - [x] Put the shared config on each mapper.
 - **Tests**: `TaRunnerEngineInfoAdapterTest`, `DockerEngineInfoAdapterTest` pass; the dependency analysis (`mise run check`) accepts the new dependency.
 
 ### WP11: Settings adapter mappers
