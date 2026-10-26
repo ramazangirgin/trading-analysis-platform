@@ -115,7 +115,8 @@ deploy (another commit) runs them, so "a deploy of another commit rebuilds" hold
 
 Memory: the two builds side by side raise the peak on the server. The README asks for 4 GB plus
 the playbook's 4 GB swap; Gradle (default daemon heap) plus `uv sync` fit in that, and CI runners
-(16 GB) are not the limit. See "Open questions".
+(16 GB) are not the limit. Decided in the review: every server deploy builds side by side, with no
+variable to turn it off; the 4 GB swap covers the peak on a small server.
 
 ### CI job
 
@@ -123,6 +124,7 @@ the playbook's 4 GB swap; Gradle (default daemon heap) plus `uv sync` fit in tha
 - Its `timeout-minutes` drops from 60 to 20: the job takes about 6 minutes, and the unexplained
   60-minute hang of run 40024112997 (issue, "Related") would then fail after 20 minutes instead of
   holding a runner for an hour. The playbook's own `async: 3600` stays (a slow real server).
+  Decided in the review: the timeout drops to 20 minutes.
 - The job comment ("It builds the images on the "server" (20 to 30 minutes)") gets the real
   duration and says the two images are built side by side.
 
@@ -210,10 +212,8 @@ No unit tests: the change is in a mise task, an Ansible role and CI configuratio
 
 ## Open questions
 
-- Building side by side applies to every server deploy, not only CI (the same playbook deploys
-  analystock.app). On a server at the 4 GB minimum the peak memory of Gradle and `uv sync` together
-  is higher than today's; the 4 GB swap covers it, at the cost of some swapping. Is that
-  acceptable, or should the playbook keep the sequential build behind a variable (e.g.
-  `app_parallel_build: true` in `group_vars/all.yml`) that a small server can turn off?
-- The job timeout drops from 60 to 20 minutes. Keep that, or leave 60 (the plan treats the timeout
-  as part of making a hang visible sooner, not of the speed-up)?
+None. The review decided:
+
+- Every server deploy builds the two images side by side, with no `app_parallel_build` variable;
+  the 4 GB swap covers the peak memory on a small server.
+- The `server-e2e` job's timeout drops from 60 to 20 minutes.
