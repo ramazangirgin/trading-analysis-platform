@@ -197,24 +197,25 @@ Packages without a dependency between them can be implemented in parallel.
 ### WP3: Documentation and version
 
 - **Depends on**: WP2
+- **Status**: done
 - **Files**:
   - `docs/agentic-development.md`
   - `docs/development.md`
   - `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py`
     (through `mise run version:bump minor`)
 - **Steps**:
-  - [ ] `docs/agentic-development.md`, Settings table: `AGENT_LSP` | `0` | 1: the agents get the LSP
+  - [x] `docs/agentic-development.md`, Settings table: `AGENT_LSP` | `0` | 1: the agents get the LSP
         tool (`scripts/agent/lsp/`: jdtls, TypeScript with Vue, pyright) and the "find symbols
         first" rule; under evaluation in #251.
-  - [ ] `docs/agentic-development.md`, a subsection "Trying the LSP tool" under "Measuring the
+  - [x] `docs/agentic-development.md`, a subsection "Trying the LSP tool" under "Measuring the
         usage": the prerequisites (`brew install jdtls`, `mise run setup` for Node.js and pnpm; the
         TypeScript and pyright servers are fetched by `pnpm dlx` on first use), `mise run
         agent:lsp-check` and what it prints, the cold and warm jdtls start and where its index
         lives, and the three evaluation steps from the design.
-  - [ ] `docs/agentic-development.md`, Safety: the `LSP` tool only reads (definitions, references,
+  - [x] `docs/agentic-development.md`, Safety: the `LSP` tool only reads (definitions, references,
         symbols); the servers run locally on the developer's machine.
-  - [ ] `docs/development.md`: `mise run agent:lsp-check` in the task list next to `agent:stats`.
-  - [ ] `mise run version:bump minor`.
+  - [x] `docs/development.md`: `mise run agent:lsp-check` in the task list next to `agent:stats`.
+  - [x] `mise run version:bump minor`.
 - **Tests**: `mise run check` (the doc link check of the agent scripts, `doc_links.py`, runs with
   `agent:test`).
 

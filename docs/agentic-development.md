@@ -595,6 +595,40 @@ cost; the tools table (calls, output characters, share, images); and the files r
 
 Issue #244 holds the baseline to compare a run with.
 
+### Trying the LSP tool
+
+Issue #251 asks whether an LSP symbol tool saves the agents tokens and turns. `AGENT_LSP=1` switches
+it on for the headless agents (implement, fix-ci, fix, review, update with main); off, the default,
+they run exactly as before. On, `run_agent` adds the `LSP` tool to the tool list, loads the
+repository's plugin [`scripts/agent/lsp/`](../scripts/agent/lsp) (jdtls for Java, the TypeScript
+server for `.ts` and `.vue`, pyright for Python) with `--plugin-dir`, and appends
+[`prompts/tools-lsp.md`](../scripts/agent/prompts/tools-lsp.md): look symbols up before reading files.
+
+Prerequisites, once per machine:
+
+- `brew install jdtls`.
+- `mise run setup`, which downloads the Node.js and pnpm the wrappers use. The TypeScript server and
+  pyright are fetched by `pnpm dlx` at the versions pinned in the wrappers on first use.
+
+`mise run agent:lsp-check` runs one short read-only agent per language (a `findReferences` in Java,
+TypeScript and Python, a `documentSymbol` of a `.vue` file) and prints one line each: whether the
+`LSP` tool was in the agent's tool list, the wall time, turns and tokens, and the first line of the
+answer. `--twice` runs the Java check a second time. A language server starts with the `claude`
+process and ends with it, so its start-up is paid once per agent run. jdtls is the slow one, as it
+imports the Gradle build: its index lives in `~/.cache/tap-agent-jdtls/<hash of the worktree path>`,
+so the first run in a worktree is cold and later runs of the same issue are warm.
+
+The evaluation, by the developer, in #251:
+
+1. Baseline: run the next application issue as today (`AGENT_LSP` unset), then
+   `mise run agent:stats <issue>` and post the numbers.
+2. Trial: `mise run agent:lsp-check` once, then the next comparable issue with `AGENT_LSP=1`
+   (`AGENT_LSP=1 mise run agent:run plan/<issue>-<slug>`, or `export AGENT_LSP=1` before
+   `/develop-issue`). Post its `agent:stats`: tokens per step, `Read` characters, the `LSP` row,
+   turns, cost and the step durations.
+3. Decide in #251: keep (a follow-up makes `1` the default) or drop (a follow-up removes the plugin,
+   the switch and this section).
+
 ## Settings
 
 Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
@@ -613,6 +647,7 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_CI_TIMEOUT` | 60 | Minutes to wait for CI after a push |
 | `AGENT_BASE_BRANCH` | `main` | Where plan branches start and pull requests go |
 | `AGENT_ISSUE_PROGRESS` | 1 | 1: keep the [progress comment](#progress-on-the-issue) on the issue up to date; 0: `progress.tsv` only |
+| `AGENT_LSP` | 0 | 1: the agents get the LSP tool (`scripts/agent/lsp/`: jdtls, TypeScript with Vue, pyright) and the "find symbols first" rule; under evaluation in #251 |
 | `AGENT_NTFY_TOPIC` | none | An ntfy topic that also receives each milestone; sends progress lines to an external service (`AGENT_NTFY_SERVER`, default `https://ntfy.sh`) |
 
 `run_agent` also sets `AGENT_QUIET=1` for every agent (a developer may set it too): `mise run check`,
@@ -635,6 +670,8 @@ a state directory that is gone (another machine), is not available; the implemen
   would; run them only on plans you reviewed.
 - Reading a PNG is denied (`Read(**/*.png)`): screenshots cost many tokens, and the agents check
   the report of `mise run screenshots` instead.
+- With `AGENT_LSP=1` the agents also get the `LSP` tool. It only reads (definitions, references,
+  symbols); the language servers run locally on the developer's machine.
 
 ## Not done yet
 
