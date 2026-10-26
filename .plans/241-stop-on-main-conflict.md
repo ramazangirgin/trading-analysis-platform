@@ -116,15 +116,16 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: next.sh: end the CI wait on a conflict
 
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/next.sh`, `scripts/agent/run.sh` (header comment only, if it needs a word)
 - **Steps**:
-  - [ ] in `next_step`, the merge state check when the planned step is `wait`, mapped to `wait` or
+  - [x] in `next_step`, the merge state check when the planned step is `wait`, mapped to `wait` or
         `update-main-conflict`
-  - [ ] the main loop's handling of `update-main-conflict` (CI wait step ends with `conflicts with
+  - [x] the main loop's handling of `update-main-conflict` (CI wait step ends with `conflicts with
         <base>`, milestone, `update-main.sh … || stop …`)
-  - [ ] header comment: the new case in the step table
-  - [ ] `--dry-run` prints the next step (`update with main`) without acting, as for the other steps
+  - [x] header comment: the new case in the step table
+  - [x] `--dry-run` prints the next step (`update with main`) without acting, as for the other steps
 - **Tests**: the decision is covered by WP1's tests; `mise run check` (the agent tests) passes. By
   hand, once: `scripts/agent/next.sh --dry-run <pr>` on an open agent pull request prints
   `waiting for …` while it is mergeable.

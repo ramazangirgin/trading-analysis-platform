@@ -19,6 +19,9 @@
 #                                                  with main keeps the approval of its old head)
 #   before a review or the finalise, branch behind the base, not updated in this round yet
 #                                                  update-main.sh (its push starts CI again)
+#   CI pending, the pull request conflicts with the base
+#                                                  update-main.sh (GitHub runs no CI on a conflict);
+#                                                  stop if it cannot resolve it. Only behind: wait
 #
 # A pull request still in the plan stage (labelled "plan") prints "waiting for: plan approval" and
 # nothing runs. Only open draft pull requests labelled "agent" are touched: removing the label stops the loop (at
@@ -87,6 +90,13 @@ next_step() {
     if ! pr_steps "$pr" | awk -v r="$reviews" '$1 == "update-main" && $2 == r { found = 1 } END { exit !found }' &&
       behind "$head"; then
       echo update-main
+      return
+    fi
+    ;;
+  wait)
+    # A pull request that conflicts with its base gets no CI run: waiting could only time out.
+    if [ "$(gh pr view "$pr" --json mergeable,mergeStateStatus 2>/dev/null | py "$AGENT_DIR/merge_state.py" wait-step)" = update ]; then
+      echo update-main-conflict
       return
     fi
     ;;
@@ -174,9 +184,13 @@ while true; do
     fi
     ;;
   esac
+  if [ "$step" = update-main-conflict ]; then
+    milestone "#$pr: $branch conflicts with $AGENT_BASE_BRANCH"
+    $dry_run || step_end "conflicts with $AGENT_BASE_BRANCH"
+  fi
   $dry_run || step_end # a CI wait the next step does not depend on (fix, stop, none)
   case $step in
-    update-main) milestone "#$pr: next step: update with main" ;;
+    update-main | update-main-conflict) milestone "#$pr: next step: update with main" ;;
     *) milestone "#$pr: next step: $step" ;;
   esac
   $dry_run && exit 0
@@ -186,6 +200,10 @@ while true; do
     stop*) stop "${step#stop }" ;;
     fix-ci) "$AGENT_DIR/fix-ci.sh" "$pr" ;;
     update-main) "$AGENT_DIR/update-main.sh" "$pr" ;;
+    update-main-conflict)
+      "$AGENT_DIR/update-main.sh" "$pr" ||
+        stop "$branch conflicts with $AGENT_BASE_BRANCH and the update with $AGENT_BASE_BRANCH could not resolve it (see run.log). The merge stays local: finish it with /merge-main-into-branch or drop it with git reset --keep @{u}, then add the agent label and run the agent loop again."
+      ;;
     review) "$AGENT_DIR/review.sh" "$pr" ;;
     fix) "$AGENT_DIR/fix.sh" "$pr" ;;
     finalise)
