@@ -6,6 +6,8 @@
 # Idempotent: a version that already has a release is left alone, so a rerun of this workflow or
 # of an older CI run never creates a second one. A tag without a release (an interrupted run) gets
 # its release, if the tag is on the same commit.
+#
+# A release this run created, and only if it is the latest one, is then deployed by deploy.yml.
 
 name: Release
 
@@ -32,8 +34,8 @@ jobs:
     permissions:
       # Push the tag and create the release.
       contents: write
-      # Download the jar from the CI run.
-      actions: read
+      # Download the jar from the CI run and start the Deploy workflow (write includes read).
+      actions: write
     env:
       GH_TOKEN: ${{ github.token }}
       SHA: ${{ github.event.workflow_run.head_sha }}
@@ -101,3 +103,21 @@ jobs:
         env:
           TAG: ${{ steps.plan.outputs.tag }}
         run: gh release create "$TAG" dist/* --verify-tag --title "$TAG" --generate-notes
+
+      # Events caused by the workflow's token start no workflow, so Deploy cannot listen for the
+      # release; workflow_dispatch is the one event this token may start.
+      - name: Deploy the release
+        if: >-
+          steps.plan.outputs.release == 'true'
+          && github.repository == 'ramazangirgin/trading-analysis-platform'
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: |
+          # A late run for an older version must not roll the server back.
+          latest=$(gh release view --json tagName -q .tagName)
+          if [ "$latest" != "$TAG" ]; then
+            echo "$TAG is not the latest release ($latest); not deploying it."
+            exit 0
+          fi
+          gh workflow run deploy.yml --ref main -f tag="$TAG"
+          echo "Started Deploy for $TAG, see the Actions tab."

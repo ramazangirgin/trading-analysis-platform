@@ -129,7 +129,10 @@ and `develop-issue` use its unattended form, `scripts/agent/update-main.sh`. A b
 Every version raised on `main` is a release. After **CI passed** on `main`,
 [`.github/workflows/release.yml`](../.github/workflows/release.yml) tags the commit `vX.Y.Z` and
 publishes a [GitHub Release](https://github.com/ramazangirgin/trading-analysis-platform/releases)
-with notes generated from the merged pull requests and the jar with its SHA-256 checksum. Tags are
+with notes generated from the merged pull requests and the jar with its SHA-256 checksum. A new
+latest release is then deployed to analystock.app by
+[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) once the reviewer approves it
+([automatic deploys](../deploy/server/README.md#automatic-deploys-on-release)). Tags are
 created by that workflow only, never by hand. Two pull requests that raise to the same version cannot
 both merge: the second one must be updated with `main` and bumped again. The rules and why:
 [versioning and releases](coding-convention/repository-versioning-and-releases.md).

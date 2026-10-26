@@ -44,7 +44,8 @@ manual step (#58).
 | Where | What |
 |---|---|
 | CI, **Version** job ([`ci.yml`](../../.github/workflows/ci.yml)) | Every run: the three files agree (`scripts/version.sh check-sync`). Pull requests into `main`: the version is higher than `main`'s and than the latest `v*` tag, and `v<version>` does not exist (`check-bump`), except in Renovate's update pull requests (branch `renovate/…` and author `renovate[bot]`) and in pull requests that change only files under `.plans/`. The job is in **CI passed**'s `needs`, so any other pull request without a bump cannot merge. |
-| Release ([`release.yml`](../../.github/workflows/release.yml)) | After **CI passed** on a push to `main`: tags the commit `vX.Y.Z` and creates a GitHub Release with notes generated from the merged pull requests (grouped by label, [`.github/release.yml`](../../.github/release.yml)) and that run's jar as `trading-analysis-platform-X.Y.Z.jar` with its SHA-256. A version that already has a release is skipped, so a rerun never releases twice. Only the workflow's `GITHUB_TOKEN` is used. |
+| Release ([`release.yml`](../../.github/workflows/release.yml)) | After **CI passed** on a push to `main`: tags the commit `vX.Y.Z` and creates a GitHub Release with notes generated from the merged pull requests (grouped by label, [`.github/release.yml`](../../.github/release.yml)) and that run's jar as `trading-analysis-platform-X.Y.Z.jar` with its SHA-256. A version that already has a release is skipped, so a rerun never releases twice. For a newly created release that is also the latest, it starts *Deploy*. Only the workflow's `GITHUB_TOKEN` is used. |
+| Deploy ([`deploy.yml`](../../.github/workflows/deploy.yml)) | Started by *Release*, or by hand for any released tag: deploys the tag to the server in the `production` environment (after the required reviewer approves), one deploy at a time, and checks that the platform answers over HTTPS and reports that version at `/actuator/info`. Besides the workflow's `GITHUB_TOKEN`, it uses the environment's secrets ([deploy README](../../deploy/server/README.md#automatic-deploys-on-release)). |
 | Backend | Spring Boot build info: `/actuator/info` (`build.version`) and the jar manifest (`Implementation-Version`). The jar itself has a fixed name, `platform.jar`, so nothing else depends on the version. |
 | Frontend | Shown at the bottom of every page (`__APP_VERSION__`, from `package.json` at build time). |
 | ta-runner | `ta-runner version` reports it as `runner_version`. `pyproject.toml` reads it from `__init__.py` (hatchling's dynamic version), so a bump changes neither `pyproject.toml` nor `uv.lock`, and the image keeps its cached dependency layer. |
@@ -53,7 +54,8 @@ manual step (#58).
 ## Why
 
 - The bump is part of the reviewed diff, so the author and the reviewer decide "is this breaking?".
-- Releasing needs nothing but a script and a workflow, and only the workflow's `GITHUB_TOKEN`.
+- Releasing needs nothing but a script and a workflow, and only the workflow's `GITHUB_TOKEN`; the deploy additionally uses the `production`
+  environment's secrets.
 - Every version raised on `main` traces to a tag, a release and a jar.
 - Dependency updates are many and small, and the hosted Renovate app cannot bump the version, so
   they are exempt instead of waiting for a hand-made bump each; they reach a release with the next

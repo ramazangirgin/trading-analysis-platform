@@ -55,7 +55,7 @@ session; the agents headless, with the developer's login). Grey: GitHub, CI and 
 | 7 | One commit per finding (`Address R1-3: …`), or a reply declining it; reply on each thread; push | Developer agent: `fix.sh` | Commits, thread replies |
 | 8 | Second review → fix round (6–7 again) | Agents | — |
 | 9 | Update with `main` when behind, then finalise: what the plan asked for, what was done, findings fixed / declined / open, usage; the PR leaves draft (ready for review), `agent` label removed | `update-main.sh` (run by `next.sh`), `finalise.sh` | PR ready for review |
-| 10 | Review, merge (the branch is usually up to date with `main` already, see 6 and 9); the release follows | Developer | Change on `main`, released |
+| 10 | Review, merge (the branch is usually up to date with `main` already, see 6 and 9); the release follows and is deployed | Developer | Change on `main`, released |
 
 Agents never merge and never push to `main`: the scripts push only to the plan branch, the agents
 cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's approval and
@@ -541,7 +541,9 @@ the branch it stacks on has merged: `gh pr edit <pr> --base main`, then step 8.
 ### 10. After the merge
 
 - CI runs on `main`; after **CI passed**, [`release.yml`](../.github/workflows/release.yml) tags
-  the commit `vX.Y.Z` and publishes the GitHub Release with the jar.
+  the commit `vX.Y.Z` and publishes the GitHub Release with the jar. A new latest release is then
+  deployed to analystock.app by [`deploy.yml`](../.github/workflows/deploy.yml), once you approve it
+  on the run's page ([automatic deploys](../deploy/server/README.md#automatic-deploys-on-release)).
 - `Closes #<issue>` in the pull request closes the issue. A split issue stays open until the
   pull request of its last plan has merged: the scripts write `Closes #<issue>` only when every
   other `plan/<issue>-*` branch has a merged pull request, and `Part of #<issue>` otherwise. They

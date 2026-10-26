@@ -232,6 +232,96 @@ mise run server:deploy -- -e app_ref=v4.4.0
 
 Read the upgrade notes in [Docker Compose](../../docs/docker-compose.md) for the versions in between first.
 
+A new release is deployed without a laptop: [Automatic deploys on
+release](#automatic-deploys-on-release).
+
+## Automatic deploys on release
+
+When the `Release` workflow publishes a new latest release `vX.Y.Z`, it starts the `Deploy`
+workflow ([`deploy.yml`](../../.github/workflows/deploy.yml)) for that tag. It runs the same
+playbook as `mise run server:deploy -- -e public_domain=… -e acme_email=…` from a GitHub runner, in
+the `production` environment, and ends by checking that the platform answers over HTTPS and
+reports the released version (`/actuator/info`, checked on the server by the playbook).
+
+`Deploy` has one trigger, `workflow_dispatch`: events caused by the workflow token do not start
+other workflows, so `on: release` would never fire. A release run that created no release, or an
+older one than the latest, starts nothing.
+
+- **Approval.** The `production` environment requires a reviewer. Each deploy waits as *Waiting*
+  until you open the run (Actions → *Deploy vX.Y.Z*) and click *Approve and deploy*; no secret is
+  handed out before. A rejected deploy changes nothing on the server. An unapproved one fails after
+  30 days.
+- **One at a time.** Deploys never run in parallel and a running one is never cancelled. Of several
+  waiting, only the newest is kept: a deploy still waiting when a newer release is dispatched is
+  replaced by it, so you approve the newest only.
+- **Safe host key.** The runner pins the server's key (`DEPLOY_KNOWN_HOSTS`); an unknown or
+  changed key stops the deploy.
+
+### One-time setup
+
+1. **A key for GitHub only, without a passphrase** (the runner cannot type one):
+
+   ```sh
+   DEPLOY_KEY=~/.ssh/platform-deploy-github deploy/server/setup-key.sh --no-passphrase
+   ```
+2. **Add it to the deploy user** next to the existing key (`setup-server.sh` appends, it does not
+   replace), or on the console:
+
+   ```sh
+   DEPLOY_KEY=~/.ssh/platform-deploy-github deploy/server/setup-remote.sh <you>@<server>
+   ```
+
+   `DEPLOY_KEY` picks the public key that is installed; you log in as before (add `-i …` only to
+   choose the login key). To revoke it, delete its line from `/home/deploy/.ssh/authorized_keys`.
+3. **The host key to pin**, from your own `known_hosts`, which your deploys already verified:
+   `ssh-keygen -F <server>` (with a port: `ssh-keygen -F '[<server>]:<port>'`). Compare its
+   fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server.
+4. **The environment and its values**, with `gh` or under Settings → Environments: create
+   `production`, add yourself under *Required reviewers* (leave *Prevent self-review* off, since you
+   start the releases yourself), restrict its deployment branches to `main`, then:
+
+   ```sh
+   gh secret set DEPLOY_SSH_KEY --env production < ~/.ssh/platform-deploy-github
+   gh secret set DEPLOY_HOST --env production
+   gh secret set DEPLOY_KNOWN_HOSTS --env production
+   gh secret set ACME_EMAIL --env production
+   gh variable set PUBLIC_DOMAIN --env production --body analystock.app
+   ```
+5. **SSH must reach the server from GitHub's runners.** They have no fixed addresses, so the
+   provider's firewall must allow TCP 22 from anywhere (on Oracle Cloud, the subnet's security
+   list: `0.0.0.0/0`). With key-only SSH on (`setup-remote.sh … --key-only-ssh`) that is the usual
+   setup.
+
+| Name | Kind | Value |
+|---|---|---|
+| `DEPLOY_SSH_KEY` | secret | The private key of step 1 |
+| `DEPLOY_HOST` | secret | The server's IP address or DNS name |
+| `DEPLOY_KNOWN_HOSTS` | secret | The server's host key line(s) of step 3 |
+| `ACME_EMAIL` | secret | The Let's Encrypt contact address |
+| `PUBLIC_DOMAIN` | variable | `analystock.app` |
+| `DEPLOY_USER`, `DEPLOY_PORT` | variables, optional | `deploy` and 22 when unset |
+
+The environment's secrets go only to jobs that name `environment: production` and run from
+`main`, so a pull request's workflow cannot read them. If a value is missing, the run fails at
+*Check the tag* and names it.
+
+### Re-run and rollback
+
+Start `Deploy` for any released tag from the Actions tab (*Deploy* → *Run workflow*, branch `main`,
+the tag), or with `gh`:
+
+```sh
+gh workflow run deploy.yml --ref main -f tag=vX.Y.Z
+```
+
+That is how a failed deploy is run again (rerunning `Release` does nothing, the release exists)
+and how a release is rolled back: deploy the older tag, and approve it. Rolling back to a tag from
+before the version check runs that tag's playbook, which does not check the version; the HTTPS
+check still runs.
+
+Migrations only go forward. An older release on a database that a newer one migrated may refuse to
+start. Then restore the dump taken before the upgrade ([Backups](#backups)).
+
 ## Backups
 
 The `backup` role installs `/usr/local/bin/trading-analysis-platform-backup` and a daily cron entry
@@ -297,6 +387,7 @@ multipass delete --purge platform-test
 |---|---|
 | `inventory.ini` | On your machine, gitignored ([`.gitignore`](.gitignore)); [`inventory.ini.example`](inventory.ini.example) shows the shape |
 | The SSH key | On your machine, outside the repository (`~/.ssh/`) |
+| The GitHub deploy key, host, host key and e-mail | Secrets of the `production` environment on GitHub; the workflow writes the key and an inventory under the runner's temporary folder and removes them ([Automatic deploys](#automatic-deploys-on-release)) |
 | The database password | Generated on the server in `/etc/trading-analysis-platform/postgres-password` (owner-only), written to `deploy/.env` there; never leaves the server |
 | API keys of the platform, the admin password | On the server, under `platform_data` (see [Configuration](../../docs/configuration.md)) |
 
@@ -334,3 +425,8 @@ multipass delete --purge platform-test
   deploy again.
 - **SSH asks about a host key.** The server was recreated on the same address: remove the old line
   from `~/.ssh/known_hosts`.
+- **`Host key verification failed` in the Deploy workflow.** The server's key differs from the
+  pinned one, usually because the server was recreated. Check that it is your server, then update
+  `DEPLOY_KNOWN_HOSTS` (setup step 3) and start the deploy again.
+- **The Deploy workflow's SSH times out.** GitHub's runners cannot reach TCP 22: allow it from
+  anywhere in the provider's firewall (on Oracle Cloud, the subnet's security list).
