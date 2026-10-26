@@ -168,6 +168,7 @@ Packages without a dependency between them can be implemented in parallel.
 ### WP2: The switch, the prompt rule and the check
 
 - **Depends on**: WP1
+- **Status**: done
 - **Files**:
   - `scripts/agent/lib.sh`
   - `scripts/agent/prompts/tools-lsp.md` (new)
@@ -176,12 +177,12 @@ Packages without a dependency between them can be implemented in parallel.
   - `scripts/agent/test_agent_json.py`
   - `mise.toml`
 - **Steps**:
-  - [ ] `lib.sh`: `AGENT_LSP`, `AGENT_LSP_TOOL`, `lsp_enabled`, the additions to `run_agent` and
+  - [x] `lib.sh`: `AGENT_LSP`, `AGENT_LSP_TOOL`, `lsp_enabled`, the additions to `run_agent` and
         `prompt` as in the design; header comment lists `AGENT_LSP`.
-  - [ ] `prompts/tools-lsp.md` as in the design.
-  - [ ] `agent_json.py`: `tools <stream.jsonl>` prints the tool names of the stream's `init`
+  - [x] `prompts/tools-lsp.md` as in the design.
+  - [x] `agent_json.py`: `tools <stream.jsonl>` prints the tool names of the stream's `init`
         message, one per line.
-  - [ ] `lsp-check.sh` and the `agent:lsp-check` task in `mise.toml` (its description names
+  - [x] `lsp-check.sh` and the `agent:lsp-check` task in `mise.toml` (its description names
         `--twice`).
   - [ ] Run `mise run agent:lsp-check` once if the machine has the servers and the login, and put
         its output (tool name, times) into the pull request's final comment; if the tool name is not

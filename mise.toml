@@ -226,6 +226,10 @@ run = "scripts/agent/progress.sh show"
 description = "Turns, tokens, tool calls and tool output of an issue's agent transcripts, as Markdown: mise run agent:stats <issue> [--transcript FILE --since EPOCH --until EPOCH] [--json]"
 run = "uv run --no-project python scripts/agent/transcript_stats.py"
 
+[tasks."agent:lsp-check"]
+description = "Does a headless agent get the LSP tool from scripts/agent/lsp/, and how long does each language server take to its first answer; --twice repeats the Java check for the warm jdtls start: mise run agent:lsp-check [--twice]"
+run = "bash scripts/agent/lsp-check.sh"
+
 [tasks."agent:test"]
 description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser, the plan comments, the usage figures and the progress comment"
 run = "scripts/quiet.sh agent-test uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
