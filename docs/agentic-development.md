@@ -206,7 +206,7 @@ This is the first of the two decisions that are yours. Read the plan on the draf
   than `AGENT_MAX_WP_FILES` files (8, tests included; `plan-branch.sh` prints a warning for one
   that does, and the planning session shows it);
 - the version bump (`minor`, `major` for a breaking change);
-- "Docs to update" covers the README text for the feature and every screenshot: a new page gets
+- "Docs to update" covers the text of the feature's topic file in `docs/` and every screenshot: a new page gets
   one, a page whose look changes gets it retaken. "Later" is not an option: the review agent checks
   the docs and screenshots, and a missing one is a `MAJOR` finding;
 - the open questions: answer them in the plan.
@@ -456,7 +456,7 @@ summary" comment after it: what the session checked itself and what is worth che
   its thread. Decide each.
 - Read the diff as you would any pull request: against the plan, with the conventions in mind. The
   agents' review covered it twice, but it is not a substitute for yours.
-- The docs: the README describes the feature, and the screenshots in `docs/screenshots/` show it
+- The docs: the topic file of `docs/` describes the feature, and the screenshots in `docs/screenshots/` show it
   (the pull request's *Files changed* shows the PNGs side by side with the old ones).
 - Try it: `git switch plan/<issue>-<slug>` and `mise run dev` (or `mise run run`).
 
@@ -480,7 +480,7 @@ summary" comment after it: what the session checked itself and what is worth che
 ### 8. Bring it up to date with `main`
 
 The `main` ruleset merges only a pull request whose branch is up to date with `main`, whose
-**CI passed** is green, and that a code owner approved (see the root README). If `main` moved while
+**CI passed** is green, and that a code owner approved (see [CI and releases](ci-and-releases.md#continuous-integration)). If `main` moved while
 the agents worked, merge `main` into the branch. Unattended, `mise run agent:update-main <pr | plan
 branch>` (or `scripts/agent/detach.sh update-main.sh <pr>`) does it as a recorded step: up to date →
 nothing happens; a merge without conflicts is committed and checked (`mise run check`, an agent

@@ -124,14 +124,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Link check and the links from elsewhere
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/doc_links.py` (new), `scripts/agent/test_doc_links.py` (new),
   `deploy/server/README.md`, `docs/agentic-development.md`, and the other files the grep in "Links"
   finds outside `.plans/` and `.claude/`
 - **Steps**:
-  - [ ] `doc_links.py` as in the design
-  - [ ] every link into the old README sections rewritten; `doc_links.py` prints nothing
+  - [x] `doc_links.py` as in the design
+  - [x] every link into the old README sections rewritten; `doc_links.py` prints nothing
 - **Tests**: `test_doc_links.py`: fixtures in a temporary folder: a good relative link, a missing
   file, a good and a missing anchor, a heading with punctuation and backticks, a repeated heading
   (`-1`), a heading inside a code fence (not an anchor), an image, an external link (skipped); and
