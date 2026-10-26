@@ -23,6 +23,10 @@ source "$(dirname "$0")/lib.sh"
 
 name=$(basename "$file" .md)
 [[ $name =~ ^[0-9]+-[a-z0-9-]+$ ]] || die "plan file name must be <issue>-<slug>.md: $file"
+# A warning only: the planning session shows it in the review.
+py "$AGENT_DIR/plan.py" oversized "$file" "$AGENT_MAX_WP_FILES" | while IFS= read -r line; do
+  echo "agent: ${line#- }: consider splitting it" >&2
+done
 branch=plan/$name
 issue=$(issue_of_branch "$branch")
 
