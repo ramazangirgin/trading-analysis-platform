@@ -184,9 +184,10 @@ Packages without a dependency between them can be implemented in parallel.
         message, one per line.
   - [x] `lsp-check.sh` and the `agent:lsp-check` task in `mise.toml` (its description names
         `--twice`).
-  - [ ] Run `mise run agent:lsp-check` once if the machine has the servers and the login, and put
+  - [x] Run `mise run agent:lsp-check` once if the machine has the servers and the login, and put
         its output (tool name, times) into the pull request's final comment; if the tool name is not
-        `LSP`, change `AGENT_LSP_TOOL` and the prompt accordingly.
+        `LSP`, change `AGENT_LSP_TOOL` and the prompt accordingly. (Skipped: jdtls is not installed
+        on the agent's machine; the developer runs it once, `AGENT_LSP_TOOL` stays `LSP` until then.)
 - **Tests**: `test_agent_json.py`: `tools` on a stream with an `init` message listing `LSP`, and on
   one without an `init` message (prints nothing). `bash -n` on `lib.sh` and `lsp-check.sh`.
   `mise run check` (includes `agent:test`). The off state: with `AGENT_LSP` unset, the prompt built
