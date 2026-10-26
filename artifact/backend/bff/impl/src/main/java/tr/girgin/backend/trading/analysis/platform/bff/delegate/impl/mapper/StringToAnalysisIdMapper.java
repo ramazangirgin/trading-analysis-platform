@@ -5,9 +5,10 @@ import org.mapstruct.Mapper;
 import org.springframework.http.HttpStatus;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 /** An id that cannot exist is reported like one that does not. */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface StringToAnalysisIdMapper {
 
     default AnalysisId map(String source) {

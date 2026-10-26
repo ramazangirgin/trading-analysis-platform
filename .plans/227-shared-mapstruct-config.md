@@ -183,10 +183,11 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP6: BFF mappers, part 4
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: in artifact/backend/bff/impl/src/main/java/tr/girgin/backend/trading/analysis/platform/bff/delegate/impl/mapper: `StringToAnalysisIdMapper.java`, `SystemHealthToSystemHealthDtoMapper.java`, `UserAccountToUserDtoMapper.java`, `VisibilityEnumDtoToVisibilityMapper.java`, `VisibilityToVisibilityEnumDtoMapper.java`
 - **Steps**:
-  - [ ] Put the shared config on each mapper.
+  - [x] Put the shared config on each mapper.
 - **Tests**: the existing `bff:impl` tests pass.
 
 ### WP7: Analysis adapter, event line mappers
