@@ -201,10 +201,11 @@ unless the step says so. Each runs `mise run gradle :backend:<module>:test` for 
 
 ### WP8: Analysis adapter, runner and run stats mappers
 
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: in artifact/backend/domain/analysis/adapter/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/analysis/adapter: `runner/mapper/AnalysisSpecToRunnerSpecMapper.java`, `runner/mapper/AnalystToStringMapper.java`, `runner/mapper/AssetTypeToStringMapper.java`, `persistence/mapper/RunStatsEmbeddableToRunStatsMapper.java`, `persistence/mapper/RunStatsToRunStatsEmbeddableMapper.java`
 - **Steps**:
-  - [ ] Put the shared config on each mapper.
+  - [x] Put the shared config on each mapper.
 - **Tests**: the runner adapter tests (spec written for the runner) and the persistence adapter tests pass.
 
 ### WP9: Analysis adapter, persistence mappers
