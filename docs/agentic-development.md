@@ -607,10 +607,10 @@ server for `.ts` and `.vue`, pyright for Python) with `--plugin-dir`, and append
 Prerequisites, once per machine:
 
 - `brew install jdtls`.
-- `mise run setup`, which downloads the Node.js and pnpm the wrappers use. The TypeScript server and
-  pyright is fetched by `pnpm dlx` at the version pinned in its wrapper on first use. The
-  TypeScript server, TypeScript and the Vue plugin are installed once into
-  `~/.cache/tap-agent-lsp/typescript`; delete that folder to reinstall them.
+- `mise run setup`, which downloads the Node.js and pnpm the wrappers use. pyright is fetched by
+  `pnpm dlx` at the version pinned in its wrapper on first use. The TypeScript server and the Vue
+  plugin are installed once into `~/.cache/tap-agent-lsp/typescript` (delete that folder to
+  reinstall them) and use the frontend's own TypeScript.
 
 `mise run agent:lsp-check` runs one short read-only agent per language (a `findReferences` in Java,
 TypeScript and Python, a `documentSymbol` of a `.vue` file) and prints one line each: whether the
