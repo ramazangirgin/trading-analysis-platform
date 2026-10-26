@@ -5,7 +5,6 @@
 set -eu
 
 SERVER_VERSION=5.1.3
-TYPESCRIPT_VERSION=5.9.3
 VUE_PLUGIN_VERSION=3.3.12
 
 root=$(git rev-parse --show-toplevel)
