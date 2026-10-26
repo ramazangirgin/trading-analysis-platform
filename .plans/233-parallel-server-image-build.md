@@ -158,7 +158,7 @@ written into the pull request description.
 
 ### WP2: Build the images side by side in the playbook, and document it
 
-- **Status**: done
+- **Status**: not done: the pull request description table needs the PR's CI run, and the agent cannot push or open the PR
 - **Depends on**: WP1
 - **Files**: `deploy/server/roles/app/tasks/main.yml`, `.github/workflows/ci.yml`,
   `deploy/server/test-deploy.sh`, `deploy/server/README.md`, `docs/ci-and-releases.md`
