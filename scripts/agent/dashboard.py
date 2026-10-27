@@ -255,21 +255,6 @@ def package_nodes(packages, implement, alive, now):
     return nodes
 
 
-# The steps every process goes through, as (prefix of a node's label, label of the node to add). The
-# graph ends in these so a process shows the whole way to the merge, not only the steps run so far.
-ROADMAP = (("CI", "CI"), ("review", "review R1"), ("finalise", "finalise"), ("ready for review", "ready for review"), ("developer review", "developer review"), ("merge", "merge"))
-
-
-def roadmap(nodes, ready):
-    """The steps still ahead after the nodes drawn so far, as todo nodes (the developer's review waits once ready)."""
-    reached = max((i for i, (prefix, _) in enumerate(ROADMAP) if any(n.label.startswith(prefix) for n in nodes)), default=-1)
-    ahead = []
-    for prefix, label in ROADMAP[reached + 1 :]:
-        state = "waiting" if ready and prefix == "developer review" else "todo"
-        ahead.append(Node(label, state, ("pr",) if prefix in ("ready for review", "developer review") else None))
-    return ahead
-
-
 def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
     """The process of a record: its stage, current step, who is waited for and its nodes."""
     now = now if now is not None else int(time.time())
@@ -330,9 +315,6 @@ def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
         if label:
             nodes.append(Node(label, "todo"))
 
-    ahead = roadmap(nodes, ready)
-    nodes += ahead
-
     if under_review:
         stage = "plan review"
     elif stopped:
@@ -364,7 +346,6 @@ def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
         "step": step_name,
         "waiting_for": waiting_for,
         "nodes": nodes,
-        "ahead": ahead,
         "alive": alive,
         "steps": steps,
         "events": events,
@@ -429,11 +410,33 @@ def node_label(node):
     return label
 
 
+def display_nodes(process):
+    """The nodes the graph draws: the plan, the work packages, then one AI review node for everything
+    the loop does after them (CI, CI fixes, updates with main, review and fix rounds, finalise), and
+    the developer's review. The loop node takes the state of the loop's latest step."""
+    shown = [n for n in process["nodes"] if n.key and n.key[0] in ("plan", "pr", "package") and n.label != "ready for review"]
+    loop = [n for n in process["nodes"] if n not in shown and n.state != "todo" and n.label not in ("checks", "ready for review")]
+    ready = process["stage"] == "ready for review"
+    last = loop[-1] if loop else None
+    if last is None:
+        state = "todo"
+    elif last.state in ("running", "waiting", "failed", "stopped"):
+        state = last.state
+    elif ready:
+        state = "done"
+    else:
+        state = "running" if process["alive"] else "waiting"
+    reviews = [n for n in loop if n.label.startswith("review R")]
+    key = next((n.key for n in reversed(reviews) if n.key), ("pr",))
+    review = Node("AI review", state, key, last.minutes if last and state == "running" else None, reviews[-1].label.removeprefix("review ") if reviews else "")
+    return shown + [review, Node("developer review", "waiting" if ready else "todo", ("pr",))]
+
+
 def graph(record, now=None, max_rounds=None, max_ci_fixes=None, process=None):
     """The Mermaid block of a record's flow."""
     process = process or analyse(record, now, max_rounds, max_ci_fixes)
     lines = ["```mermaid", "flowchart LR"]
-    nodes = process["nodes"]
+    nodes = display_nodes(process)
     for number, node in enumerate(nodes, 1):
         lines.append(f'  n{number}["{node_label(node)}"]:::{node.state}')
     for number in range(1, len(nodes)):
@@ -441,7 +444,7 @@ def graph(record, now=None, max_rounds=None, max_ci_fixes=None, process=None):
     for state in STATES:
         lines.append(f"  classDef {state} {CLASSES[state]}")
     for number, node in enumerate(nodes, 1):
-        url = url_of(node.key, record, process["markers"])
+        url = url_of(node.key, record, process["markers"]) or (url_of(("pr",), record, process["markers"]) if node.label == "AI review" else "")
         if url:
             lines.append(f'  click n{number} href "{url}" _blank')
     lines.append("```")
@@ -564,7 +567,7 @@ def issue_section(record, now=None):
     url = f"{repo}/issues/{record['issue']}" if repo else ""
     title = " ".join(record.get("issue_title", "").split())
     started = time.strftime("%H:%M", progress.LOCALTIME(record.get("started", now)))
-    nodes = [("plan", "running"), ("plan approved", "todo"), ("implement", "todo")] + [(label, "todo") for _, label in ROADMAP]
+    nodes = [("plan", "running"), ("plan approved", "todo"), ("work packages", "todo"), ("AI review", "todo"), ("developer review", "todo")]
     lines = ["```mermaid", "flowchart LR"]
     lines += [f'  n{n}["{escape(label)}"]:::{state}' for n, (label, state) in enumerate(nodes, 1)]
     lines += [f"  n{n} --> n{n + 1}" for n in range(1, len(nodes))]

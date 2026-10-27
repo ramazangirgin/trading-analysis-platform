@@ -49,11 +49,6 @@ def comment(step, round_=0, **extra):
     return {"url": f"{REPO}/pull/7#c-{step}-{round_}", "body": marker(step, round_, **extra) + "\nbody"}
 
 
-def drawn(process):
-    """The nodes of a process without the steps still ahead."""
-    return [n for n in process["nodes"] if n not in process["ahead"]]
-
-
 class GraphTest(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
@@ -81,18 +76,18 @@ class GraphTest(unittest.TestCase):
         return dashboard.analyse(record, T0 + at, **options)
 
     def states(self, process):
-        return [(n.label, n.state) for n in process["nodes"] if n not in process["ahead"]]
+        return [(n.label, n.state) for n in process["nodes"]]
 
-    def test_the_graph_ends_in_the_rest_of_the_pipeline(self):
-        process = self.analyse(self.record(labels=("plan",), alive=False))
-        self.assertEqual(
-            [(n.label, n.state) for n in process["ahead"]],
-            [("CI", "todo"), ("review R1", "todo"), ("finalise", "todo"), ("ready for review", "todo"), ("developer review", "todo"), ("merge", "todo")],
-        )
+    def test_the_ai_review_node_takes_the_state_of_the_loop(self):
+        def review(process):
+            return dashboard.display_nodes(process)[-2:]
 
-    def test_the_developers_review_waits_once_the_pull_request_is_ready(self):
-        process = self.analyse(self.record(self.FINISHED, labels=(), alive=False, draft=False))
-        self.assertEqual([(n.label, n.state) for n in process["ahead"]], [("developer review", "waiting"), ("merge", "todo")])
+        ci = self.analyse(self.record(tsv((0, "begin", "", "CI abc1234", ""))), at=60)
+        self.assertEqual([(n.label, n.state) for n in review(ci)], [("AI review", "waiting"), ("developer review", "todo")])
+        done = self.analyse(self.record(self.FINISHED, labels=(), draft=False), at=800)
+        self.assertEqual([(n.label, n.state) for n in review(done)], [("AI review", "done"), ("developer review", "waiting")])
+        planned = self.analyse(self.record(labels=("plan",), alive=False))
+        self.assertEqual([(n.label, n.state) for n in review(planned)], [("AI review", "todo"), ("developer review", "todo")])
 
     def test_plan_review_without_progress(self):
         process = self.analyse(self.record(labels=("plan",), alive=False))
@@ -189,14 +184,14 @@ class GraphTest(unittest.TestCase):
                 ("review R2", "running"),
             ],
         )
-        self.assertEqual(drawn(process)[-1].minutes, 5)
+        self.assertEqual(process["nodes"][-1].minutes, 5)
         self.assertEqual(process["step"], "review R2")
 
     def test_next_step_after_each_kind_of_step(self):
         def next_after(extra, **options):
             events = self.ROUND_TWO.rsplit(f"{T0 + 610}", 1)[0] + extra
             process = self.analyse(self.record(events), at=2000, **options)
-            return drawn(process)[-1]
+            return process["nodes"][-1]
 
         self.assertEqual(next_after("").label, "review R2")
         approved = next_after(
@@ -212,15 +207,15 @@ class GraphTest(unittest.TestCase):
 
     def test_green_ci_after_the_last_round_goes_to_finalise(self):
         events = self.ROUND_TWO.rsplit(f"{T0 + 610}", 1)[0]
-        last = drawn(self.analyse(self.record(events), at=2000, max_rounds=1))[-1]
+        last = self.analyse(self.record(events), at=2000, max_rounds=1)["nodes"][-1]
         self.assertEqual(last.label, "finalise")
 
     def test_next_step_after_fix_update_and_finalise(self):
         base = self.ROUND_TWO.rsplit(f"{T0 + 510}", 1)[0]
-        after_fix = drawn(self.analyse(self.record(base), at=2000))[-1]
+        after_fix = self.analyse(self.record(base), at=2000)["nodes"][-1]
         self.assertEqual(after_fix.label, "CI")
         updated = tsv((510, "begin", "", "update with main", ""), (520, "end", "", "update with main", ""))
-        self.assertEqual(drawn(self.analyse(self.record(base + updated), at=2000))[-1].label, "CI")
+        self.assertEqual(self.analyse(self.record(base + updated), at=2000)["nodes"][-1].label, "CI")
 
     def test_failed_ci_expects_a_ci_fix_until_the_limit(self):
         events = self.ROUND_TWO.split(f"{T0 + 270}")[0]
@@ -315,11 +310,12 @@ class GraphTest(unittest.TestCase):
         self.assertEqual(lines[:2], ["```mermaid", "flowchart LR"])
         self.assertEqual(lines[-1], "```")
         self.assertIn('  n1["plan"]:::done', lines)
-        self.assertIn('  n13["review R2<br/>2 min"]:::running', lines)
+        self.assertIn('  n6["AI review<br/>R2<br/>2 min"]:::running', lines)
+        self.assertIn('  n7["developer review"]:::todo', lines)
         self.assertIn("  n1 --> n2", lines)
         for state in dashboard.STATES:
             self.assertTrue(any(line.startswith(f"  classDef {state} ") for line in lines))
-        self.assertEqual(sum(1 for line in lines if re.fullmatch(r"  n\d+ --> n\d+", line)), 16)
+        self.assertEqual(sum(1 for line in lines if re.fullmatch(r"  n\d+ --> n\d+", line)), 6)
 
     def test_links(self):
         comments = [comment("ci-fix", 1), comment("review", 1), comment("fix", 1)]
@@ -330,11 +326,10 @@ class GraphTest(unittest.TestCase):
         self.assertIn(f'click n1 href "{plan_file}" _blank', text)
         self.assertIn(f'click n2 href "{PR}" _blank', text)
         self.assertIn(f'click n3 href "{plan_file}#wp1-first-part" _blank', text)
-        self.assertIn(f'click n6 href "{PR}/files" _blank', text)
-        self.assertIn(f'href "{REPO}/actions/runs/5" _blank', text)
-        self.assertIn(f'href "{REPO}/pull/7#c-ci-fix-1" _blank', text)
-        self.assertIn(f'href "{REPO}/pull/7#c-review-1" _blank', text)
-        self.assertNotIn("c-review-2", text)
+        self.assertIn(f'click n6 href "{PR}" _blank', text)
+        self.assertIn(f'click n7 href "{PR}" _blank', text)
+        done = dashboard.graph(self.record(self.ROUND_TWO, comments=[comment("review", 2)]), T0 + 800)
+        self.assertIn(f'click n6 href "{PR}#c-review-2" _blank', done)
 
     def test_slug_of_a_heading(self):
         self.assertEqual(dashboard.slug("WP2: Second, with `code`"), "wp2-second-with-code")
@@ -500,7 +495,7 @@ class IssueSectionTest(unittest.TestCase):
         text = dashboard.issue_section(self.RECORD, 0)
         self.assertIn("<!-- agent-process issue/258 -->", text)
         self.assertIn("## #258 Agent <Dashboard>", text)
-        self.assertIn('n9["merge"]:::todo', text)
+        self.assertIn('n5["developer review"]:::todo', text)
         self.assertIn("**Stage**: planning", text)
         self.assertIn('n1["plan"]:::running', text)
         self.assertIn("| Issue | [#258](https://github.com/o/r/issues/258) |", text)
