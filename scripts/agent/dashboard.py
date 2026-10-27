@@ -255,6 +255,21 @@ def package_nodes(packages, implement, alive, now):
     return nodes
 
 
+# The steps every process goes through, as (prefix of a node's label, label of the node to add). The
+# graph ends in these so a process shows the whole way to the merge, not only the steps run so far.
+ROADMAP = (("CI", "CI"), ("review", "review R1"), ("finalise", "finalise"), ("ready for review", "ready for review"), ("developer review", "developer review"), ("merge", "merge"))
+
+
+def roadmap(nodes, ready):
+    """The steps still ahead after the nodes drawn so far, as todo nodes (the developer's review waits once ready)."""
+    reached = max((i for i, (prefix, _) in enumerate(ROADMAP) if any(n.label.startswith(prefix) for n in nodes)), default=-1)
+    ahead = []
+    for prefix, label in ROADMAP[reached + 1 :]:
+        state = "waiting" if ready and prefix == "developer review" else "todo"
+        ahead.append(Node(label, state, ("pr",) if prefix in ("ready for review", "developer review") else None))
+    return ahead
+
+
 def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
     """The process of a record: its stage, current step, who is waited for and its nodes."""
     now = now if now is not None else int(time.time())
@@ -315,6 +330,9 @@ def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
         if label:
             nodes.append(Node(label, "todo"))
 
+    ahead = roadmap(nodes, ready)
+    nodes += ahead
+
     if under_review:
         stage = "plan review"
     elif stopped:
@@ -346,6 +364,7 @@ def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
         "step": step_name,
         "waiting_for": waiting_for,
         "nodes": nodes,
+        "ahead": ahead,
         "alive": alive,
         "steps": steps,
         "events": events,
@@ -521,11 +540,13 @@ def section(record, now=None, max_rounds=None, max_ci_fixes=None):
     process = analyse(record, now, max_rounds, max_ci_fixes)
     branch = record.get("branch", "")
     title = " ".join(record.get("issue_title", "").split())
-    heading = f"### #{issue_number(branch)} {title}: `{branch}`" if title else f"### #{issue_number(branch)}: `{branch}`"
+    heading = f"## #{issue_number(branch)} {title}" if title else f"## #{issue_number(branch)}"
     return "\n".join(
         [
             f"{SECTION_START} {branch} -->",
             heading,
+            f"Branch `{branch}`",
+            "",
             facts(record, process, now, max_rounds),
             graph(record, process=process),
             link_table(record, process),
@@ -543,10 +564,10 @@ def issue_section(record, now=None):
     url = f"{repo}/issues/{record['issue']}" if repo else ""
     title = " ".join(record.get("issue_title", "").split())
     started = time.strftime("%H:%M", progress.LOCALTIME(record.get("started", now)))
-    nodes = [("plan", "running"), ("plan approved", "todo")]
+    nodes = [("plan", "running"), ("plan approved", "todo"), ("implement", "todo")] + [(label, "todo") for _, label in ROADMAP]
     lines = ["```mermaid", "flowchart LR"]
     lines += [f'  n{n}["{escape(label)}"]:::{state}' for n, (label, state) in enumerate(nodes, 1)]
-    lines.append("  n1 --> n2")
+    lines += [f"  n{n} --> n{n + 1}" for n in range(1, len(nodes))]
     lines += [f"  classDef {state} {CLASSES[state]}" for state in STATES]
     if url:
         lines.append(f'  click n1 href "{url}" _blank')
@@ -554,7 +575,9 @@ def issue_section(record, now=None):
     return "\n".join(
         [
             f"{SECTION_START} {key} -->",
-            f"### #{record['issue']} {title}" if title else f"### #{record['issue']}",
+            f"## #{record['issue']} {title}" if title else f"## #{record['issue']}",
+            "Plan being written, no branch yet",
+            "",
             f"**Stage**: planning · **Step**: plan · **Started**: {started} · **Waiting for**: nobody",
             "\n".join(lines),
             *([f"| Link | |\n|---|---|\n| Issue | [#{record['issue']}]({url}) |"] if url else []),
@@ -583,7 +606,7 @@ def merge(old_body, new_sections, active, now=None):
 
     def build():
         body = [section for _, section in kept] or ["No active agent processes"]
-        return "\n".join(header + ["\n\n".join(body)] + notes) + "\n"
+        return "\n".join(header + ["\n\n---\n\n".join(body)] + notes) + "\n"
 
     text = build()
     if len(text) > BODY_LIMIT:

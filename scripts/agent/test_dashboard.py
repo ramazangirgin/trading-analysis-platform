@@ -49,6 +49,11 @@ def comment(step, round_=0, **extra):
     return {"url": f"{REPO}/pull/7#c-{step}-{round_}", "body": marker(step, round_, **extra) + "\nbody"}
 
 
+def drawn(process):
+    """The nodes of a process without the steps still ahead."""
+    return [n for n in process["nodes"] if n not in process["ahead"]]
+
+
 class GraphTest(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
@@ -76,7 +81,18 @@ class GraphTest(unittest.TestCase):
         return dashboard.analyse(record, T0 + at, **options)
 
     def states(self, process):
-        return [(n.label, n.state) for n in process["nodes"]]
+        return [(n.label, n.state) for n in process["nodes"] if n not in process["ahead"]]
+
+    def test_the_graph_ends_in_the_rest_of_the_pipeline(self):
+        process = self.analyse(self.record(labels=("plan",), alive=False))
+        self.assertEqual(
+            [(n.label, n.state) for n in process["ahead"]],
+            [("CI", "todo"), ("review R1", "todo"), ("finalise", "todo"), ("ready for review", "todo"), ("developer review", "todo"), ("merge", "todo")],
+        )
+
+    def test_the_developers_review_waits_once_the_pull_request_is_ready(self):
+        process = self.analyse(self.record(self.FINISHED, labels=(), alive=False, draft=False))
+        self.assertEqual([(n.label, n.state) for n in process["ahead"]], [("developer review", "waiting"), ("merge", "todo")])
 
     def test_plan_review_without_progress(self):
         process = self.analyse(self.record(labels=("plan",), alive=False))
@@ -173,14 +189,14 @@ class GraphTest(unittest.TestCase):
                 ("review R2", "running"),
             ],
         )
-        self.assertEqual(process["nodes"][-1].minutes, 5)
+        self.assertEqual(drawn(process)[-1].minutes, 5)
         self.assertEqual(process["step"], "review R2")
 
     def test_next_step_after_each_kind_of_step(self):
         def next_after(extra, **options):
             events = self.ROUND_TWO.rsplit(f"{T0 + 610}", 1)[0] + extra
             process = self.analyse(self.record(events), at=2000, **options)
-            return process["nodes"][-1]
+            return drawn(process)[-1]
 
         self.assertEqual(next_after("").label, "review R2")
         approved = next_after(
@@ -196,15 +212,15 @@ class GraphTest(unittest.TestCase):
 
     def test_green_ci_after_the_last_round_goes_to_finalise(self):
         events = self.ROUND_TWO.rsplit(f"{T0 + 610}", 1)[0]
-        last = self.analyse(self.record(events), at=2000, max_rounds=1)["nodes"][-1]
+        last = drawn(self.analyse(self.record(events), at=2000, max_rounds=1))[-1]
         self.assertEqual(last.label, "finalise")
 
     def test_next_step_after_fix_update_and_finalise(self):
         base = self.ROUND_TWO.rsplit(f"{T0 + 510}", 1)[0]
-        after_fix = self.analyse(self.record(base), at=2000)["nodes"][-1]
+        after_fix = drawn(self.analyse(self.record(base), at=2000))[-1]
         self.assertEqual(after_fix.label, "CI")
         updated = tsv((510, "begin", "", "update with main", ""), (520, "end", "", "update with main", ""))
-        self.assertEqual(self.analyse(self.record(base + updated), at=2000)["nodes"][-1].label, "CI")
+        self.assertEqual(drawn(self.analyse(self.record(base + updated), at=2000))[-1].label, "CI")
 
     def test_failed_ci_expects_a_ci_fix_until_the_limit(self):
         events = self.ROUND_TWO.split(f"{T0 + 270}")[0]
@@ -303,7 +319,7 @@ class GraphTest(unittest.TestCase):
         self.assertIn("  n1 --> n2", lines)
         for state in dashboard.STATES:
             self.assertTrue(any(line.startswith(f"  classDef {state} ") for line in lines))
-        self.assertEqual(sum(1 for line in lines if re.fullmatch(r"  n\d+ --> n\d+", line)), 12)
+        self.assertEqual(sum(1 for line in lines if re.fullmatch(r"  n\d+ --> n\d+", line)), 16)
 
     def test_links(self):
         comments = [comment("ci-fix", 1), comment("review", 1), comment("fix", 1)]
@@ -358,16 +374,17 @@ class SectionTest(unittest.TestCase):
         text = dashboard.section(self.record(events), T0 + 730, max_rounds=2, max_ci_fixes=3)
         lines = text.splitlines()
         self.assertEqual(lines[0], f"<!-- agent-process {BRANCH} -->")
-        self.assertEqual(lines[1], f"### #61 Agent \"Dashboard\" issue: `{BRANCH}`")
+        self.assertEqual(lines[1], '## #61 Agent "Dashboard" issue')
+        self.assertEqual(lines[2], f"Branch `{BRANCH}`")
         self.assertEqual(lines[-1], "<!-- /agent-process -->")
         self.assertIn("```mermaid", text)
-        facts = lines[2]
+        facts = lines[4]
         for part in ("**Stage**: agent loop", "**Step**: review R2", "**Work package**: 1 of 3", "**Round**: 2 of 2", "**Waiting for**: nobody", "**Elapsed**: 12m 10s"):
             self.assertIn(part, facts)
 
     def test_facts_per_stage(self):
         review = dashboard.section(self.record(labels=("plan",), alive=False), T0)
-        facts = review.splitlines()[2]
+        facts = review.splitlines()[4]
         self.assertEqual(facts, "**Stage**: plan review · **Step**: plan · **Work package**: 1 of 3 · **Waiting for**: developer")
         stopped = dashboard.section(self.record(labels=(), alive=False, comments=[comment("stop")]), T0)
         self.assertIn("**Stage**: stopped", stopped)
@@ -482,7 +499,8 @@ class IssueSectionTest(unittest.TestCase):
     def test_the_section_of_an_issue_without_a_branch(self):
         text = dashboard.issue_section(self.RECORD, 0)
         self.assertIn("<!-- agent-process issue/258 -->", text)
-        self.assertIn("### #258 Agent <Dashboard>", text)
+        self.assertIn("## #258 Agent <Dashboard>", text)
+        self.assertIn('n9["merge"]:::todo', text)
         self.assertIn("**Stage**: planning", text)
         self.assertIn('n1["plan"]:::running', text)
         self.assertIn("| Issue | [#258](https://github.com/o/r/issues/258) |", text)
