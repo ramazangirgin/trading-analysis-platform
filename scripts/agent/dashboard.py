@@ -442,7 +442,8 @@ def graph(record, now=None, max_rounds=None, max_ci_fixes=None, process=None):
     for number in range(1, len(nodes)):
         lines.append(f"  n{number} --> n{number + 1}")
     for state in STATES:
-        lines.append(f"  classDef {state} {CLASSES[state]}")
+        if any(node.state == state for node in nodes):
+            lines.append(f"  classDef {state} {CLASSES[state]}")
     for number, node in enumerate(nodes, 1):
         url = url_of(node.key, record, process["markers"]) or (url_of(("pr",), record, process["markers"]) if node.label == "AI review" else "")
         if url:
@@ -551,8 +552,10 @@ def section(record, now=None, max_rounds=None, max_ci_fixes=None):
             f"Branch `{branch}`",
             "",
             facts(record, process, now, max_rounds),
-            graph(record, process=process),
+            "",
             link_table(record, process),
+            "",
+            graph(record, process=process),
             SECTION_END,
         ]
     )
@@ -571,7 +574,7 @@ def issue_section(record, now=None):
     lines = ["```mermaid", "flowchart LR"]
     lines += [f'  n{n}["{escape(label)}"]:::{state}' for n, (label, state) in enumerate(nodes, 1)]
     lines += [f"  n{n} --> n{n + 1}" for n in range(1, len(nodes))]
-    lines += [f"  classDef {state} {CLASSES[state]}" for state in STATES]
+    lines += [f"  classDef {state} {CLASSES[state]}" for state in STATES if any(s == state for _, s in nodes)]
     if url:
         lines.append(f'  click n1 href "{url}" _blank')
     lines.append("```")
@@ -582,8 +585,8 @@ def issue_section(record, now=None):
             "Plan being written, no branch yet",
             "",
             f"**Stage**: planning · **Step**: plan · **Started**: {started} · **Waiting for**: nobody",
+            *([f"| Link | |\n|---|---|\n| Issue | [#{record['issue']}]({url}) |", ""] if url else []),
             "\n".join(lines),
-            *([f"| Link | |\n|---|---|\n| Issue | [#{record['issue']}]({url}) |"] if url else []),
             SECTION_END,
         ]
     )

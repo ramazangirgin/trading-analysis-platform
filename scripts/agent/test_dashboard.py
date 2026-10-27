@@ -313,8 +313,9 @@ class GraphTest(unittest.TestCase):
         self.assertIn('  n6["AI review<br/>R2<br/>2 min"]:::running', lines)
         self.assertIn('  n7["developer review"]:::todo', lines)
         self.assertIn("  n1 --> n2", lines)
-        for state in dashboard.STATES:
+        for state in ("done", "running", "todo"):
             self.assertTrue(any(line.startswith(f"  classDef {state} ") for line in lines))
+        self.assertFalse(any(line.startswith("  classDef failed ") for line in lines))
         self.assertEqual(sum(1 for line in lines if re.fullmatch(r"  n\d+ --> n\d+", line)), 6)
 
     def test_links(self):
