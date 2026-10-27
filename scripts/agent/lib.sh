@@ -150,7 +150,8 @@ milestone() {
 # are left out.
 notify_milestone() {
   case $1 in *": next step:"* | *": waiting for "*) return 0 ;; esac
-  local name=${AGENT_BRANCH#plan/} title="Agent"
+  local name=${AGENT_BRANCH:-} title="Agent"
+  name=${name#plan/}
   [ -z "${AGENT_BRANCH:-}" ] || title="Agent #${name%%-*}"
   if [ -n "${AGENT_NTFY_TOPIC:-}" ]; then
     curl -fsS --max-time 10 -H "Title: $title" -d "$1" "$AGENT_NTFY_SERVER/$AGENT_NTFY_TOPIC" >/dev/null 2>&1 &
