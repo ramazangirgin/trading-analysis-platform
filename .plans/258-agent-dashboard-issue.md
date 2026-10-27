@@ -217,12 +217,12 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Documentation
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: `docs/agentic-development.md`, `docs/development.md`
 - **Steps**:
-  - [ ] `docs/agentic-development.md`: a "Dashboard" section after "Progress on the issue" (what it lists, the graph and its colours, the facts and links, when it is updated, several runs and machines, `mise run agent:dashboard [--post]`, how it differs from the progress comment); the `AGENT_DASHBOARD` row in "Settings"; the state directory bullet in "Decision" names `dashboard.issue` and `dashboard.lock` under `.git/agent/`; "Progress while it runs" points to the dashboard
-  - [ ] `docs/development.md`: `mise run agent:dashboard` in the task list
+  - [x] `docs/agentic-development.md`: a "Dashboard" section after "Progress on the issue" (what it lists, the graph and its colours, the facts and links, when it is updated, several runs and machines, `mise run agent:dashboard [--post]`, how it differs from the progress comment); the `AGENT_DASHBOARD` row in "Settings"; the state directory bullet in "Decision" names `dashboard.issue` and `dashboard.lock` under `.git/agent/`; "Progress while it runs" points to the dashboard
+  - [x] `docs/development.md`: `mise run agent:dashboard` in the task list
 - **Tests**: `mise run agent:test` (the link check `doc_links.py` resolves every new link and anchor)
 
 ## Tests
