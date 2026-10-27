@@ -179,15 +179,15 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: The step graph of a process
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/agent/dashboard.py`, `scripts/agent/test_dashboard.py`, `scripts/agent/progress.py`, `scripts/agent/test_progress.py`
 - **Steps**:
-  - [ ] Move the totals of `progress.render` (elapsed, agent runs and time, tokens, cost text) into `progress.totals(steps, events, now)` and use it in `render`; the comment's text stays the same
-  - [ ] `dashboard.py`: the node model (name, state, minutes when running, link key) built from a record (`progress.tsv` events, run alive, plan packages, markers, CI runs, pull request labels) as described in "The graph", with the next expected step
-  - [ ] The states `done`, `running`, `waiting`, `failed`, `stopped`, `todo`, and the stage and "waiting for" of the process
-  - [ ] The fallback from the plan and the markers when there is no `progress.tsv`
-  - [ ] `dashboard.py graph <record.json> [--now <epoch>] [--max-rounds <n>] [--max-ci-fixes <n>]`: the Mermaid `flowchart LR` block with escaped labels, the `classDef`s and `click` lines
+  - [x] Move the totals of `progress.render` (elapsed, agent runs and time, tokens, cost text) into `progress.totals(steps, events, now)` and use it in `render`; the comment's text stays the same
+  - [x] `dashboard.py`: the node model (name, state, minutes when running, link key) built from a record (`progress.tsv` events, run alive, plan packages, markers, CI runs, pull request labels) as described in "The graph", with the next expected step
+  - [x] The states `done`, `running`, `waiting`, `failed`, `stopped`, `todo`, and the stage and "waiting for" of the process
+  - [x] The fallback from the plan and the markers when there is no `progress.tsv`
+  - [x] `dashboard.py graph <record.json> [--now <epoch>] [--max-rounds <n>] [--max-ci-fixes <n>]`: the Mermaid `flowchart LR` block with escaped labels, the `classDef`s and `click` lines
 - **Tests**: `test_dashboard.py` with records for each stage: plan review (no `progress.tsv`, label `plan`: `plan` waiting, every WP todo), mid-implementation (WP1 done, WP2 running with minutes, WP3 todo), review round 2 (two CI nodes, a CI fix after a red CI, R1 and fix R1 done, R2 running), ready for review, stopped (an open step without a live run; a `stop` marker), a failed CI (red node, next `CI fix`), the markers-only fallback, label escaping, the next expected step after each kind of step; `test_progress.py` still passes unchanged plus one test of `totals`
 
 ### WP2: The section, the link table and the merge of the body
