@@ -50,7 +50,7 @@ BODY_LIMIT = 60_000
 STATES = ("done", "running", "waiting", "failed", "stopped", "todo")
 
 CLASSES = {
-    "done": "fill:#d1fae5,stroke:#10b981,color:#064e3b",
+    "done": "fill:#4ade80,stroke:#16a34a,color:#052e16",
     "running": "fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a",
     "waiting": "fill:#fef9c3,stroke:#eab308,color:#713f12",
     "failed": "fill:#fee2e2,stroke:#ef4444,color:#7f1d1d",
