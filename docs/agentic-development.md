@@ -211,7 +211,8 @@ This is the first of the two decisions that are yours. Read the plan on the draf
   `open` and the `Depends on` lines are right (they decide the order the agent works in, and each
   package is pushed on its own, so it should leave the repository green); no package names more
   than `AGENT_MAX_WP_FILES` files (8, tests included; `plan-branch.sh` prints a warning for one
-  that does, and the planning session shows it);
+  that does, and the planning session shows it); `plan-branch.sh` refuses a plan whose work
+  packages it cannot read (a `Depends on` line that is not `none`, `WP1, WP2` or `WP2-WP4`);
 - the version bump (`minor`, `major` for a breaking change);
 - "Docs to update" covers the text of the feature's topic file in `docs/` and every screenshot: a
   new page gets one, a page whose look changes gets it retaken. "Later" is not an option: the
@@ -502,6 +503,18 @@ reads where the issue stands from its plan branches and pull requests and contin
   `main` and merges cleanly locally, nothing is merged locally: GitHub's view of the merge state
   differs from the local merge. Check the merge box of the pull request on GitHub, then add the
   `agent` label again and run `agent:next`.
+- **A network error** on a `git fetch`, `git push` or `gh` call is retried up to `AGENT_RETRIES`
+  times with a growing delay; each retry is a line `>> retrying <call> (<k> of <n>): <error>` in
+  `run.log`. A rejected push, an authentication error or a missing ref is not retried.
+- **A step over its limit** (`stopping: <step> ran longer than <n> min`): an agent run took longer
+  than `AGENT_STEP_TIMEOUT`. It is a stop like the others above: the comment "Agent loop stopped",
+  the `agent` label removed. The work done so far stays (uncommitted changes and the plan for the
+  implementation, the step comments for the rest). Add the `agent` label again and run
+  `mise run agent:run <branch>`, or `/develop-issue <n>`.
+- **Any other error** ends the run with `>> failed: <step>: <reason>` (the command's own error is
+  the line above it), a comment "Agent loop failed" on the pull request and a notification. The
+  `agent` label stays: a transient cause needs only a rerun with `mise run agent:run <branch>` or
+  `/develop-issue <n>`.
 - **To stop it yourself**: Ctrl+C, or remove the `agent` label (the loop does nothing on the pull
   request any more).
 
@@ -710,6 +723,10 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_MAX_TOKENS` | 50 000 000 | Tokens per pull request, cached input included |
 | `AGENT_MAX_BUDGET_USD` | none | Per agent call (`claude --max-budget-usd`) |
 | `AGENT_CI_TIMEOUT` | 60 | Minutes to wait for CI after a push |
+| `AGENT_STEP_TIMEOUT` | 60 | Minutes one agent run (a work package, a finding, a review) may take; over it the run stops |
+| `AGENT_RETRIES` | 3 | Retries of a `git` or `gh` call that failed on a network error, after the first attempt |
+| `AGENT_RETRY_DELAY` | 10 | Seconds before the first retry, doubled for each next one |
+| `AGENT_CALL_TIMEOUT` | 120 | Seconds one attempt of a `git` or `gh` call may take; over it the attempt counts as a network error |
 | `AGENT_BASE_BRANCH` | `main` | Where plan branches start and pull requests go |
 | `AGENT_ISSUE_PROGRESS` | 1 | 1: keep the [progress comment](#progress-on-the-issue) on the issue up to date; 0: `progress.tsv` only |
 | `AGENT_DASHBOARD` | 1 | 1: keep the [Agent Dashboard issue](#dashboard) up to date at every milestone; 0: no dashboard (`mise run agent:dashboard` still prints it) |

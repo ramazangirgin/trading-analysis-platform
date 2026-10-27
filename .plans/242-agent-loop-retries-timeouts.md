@@ -142,12 +142,12 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Stops in next.sh and the resumed fix round
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `scripts/agent/next.sh`, `scripts/agent/fix.sh`
 - **Steps**:
-  - [ ] `next.sh`'s `stop` on `stop_run`, the CI timeout message
-  - [ ] `fix.sh`'s lookup of an existing `Address <id>:` commit, the round's commit count and push
+  - [x] `next.sh`'s `stop` on `stop_run`, the CI timeout message
+  - [x] `fix.sh`'s lookup of an existing `Address <id>:` commit, the round's commit count and push
 - **Tests**: none new: `stop_run` and the exit codes are tested in WP2; the resumed fix round, see
   "Tests".
 
