@@ -18,6 +18,14 @@ in the order they ran, then the next expected step) as a Mermaid `flowchart LR`,
 of each step. Without a progress.tsv (a run of another machine) the steps come from the plan and from
 the agent-step markers of the comments.
 
+    dashboard.py section <record.json> [same options]     the section of the process
+    dashboard.py active <record.json>                     exit 0 when the process is listed, else 1
+    dashboard.py merge <old body file> [--section <file>]... --active <branch>... [--now <epoch>]
+
+A record has two more fields for the section: issue_title and progress_comment_url (or absent).
+merge prints the new body: the given sections replace or add, sections of branches not in --active
+are dropped, the others stay.
+
 Standard library only: run with `uv run --no-project python`.
 """
 
@@ -32,6 +40,12 @@ import types
 import agent_json
 import plan
 import progress
+
+SECTION_START = "<!-- agent-process"
+SECTION_END = "<!-- /agent-process -->"
+SECTION = re.compile(r"<!-- agent-process (\S+) -->.*?<!-- /agent-process -->", re.DOTALL)
+BODY_MARKER = "<!-- agent-dashboard -->"
+BODY_LIMIT = 60_000
 
 STATES = ("done", "running", "waiting", "failed", "stopped", "todo")
 
@@ -413,19 +427,179 @@ def graph(record, now=None, max_rounds=None, max_ci_fixes=None, process=None):
     return "\n".join(lines)
 
 
+def is_active(record):
+    """Whether the process is listed: a live run, an open pull request labelled plan or agent, or an
+    open draft whose loop gave up (the newest marker is stop) and waits for the developer."""
+    if record.get("run_alive"):
+        return True
+    pr = pull_request(record)
+    if pr.get("state") != "OPEN":
+        return False
+    if labels_of(record) & {"plan", "agent"}:
+        return True
+    markers = markers_of(record)
+    return bool(pr.get("isDraft")) and bool(markers) and markers[-1][1].get("step") == "stop"
+
+
+def issue_number(branch):
+    match = re.match(r"plan/(\d+)-", branch)
+    return int(match.group(1)) if match else 0
+
+
+def work_package(nodes):
+    """'k of n' for the last work package begun, or ""."""
+    packages = [n for n in nodes if n.key and n.key[0] == "package"]
+    busy = [i for i, n in enumerate(packages, 1) if n.state not in ("done", "todo")]
+    finished = [i for i, n in enumerate(packages, 1) if n.state == "done" and not n.note]
+    current = busy[0] if busy else (finished[-1] if finished else 0)
+    return f"{current} of {len(packages)}" if len(packages) > 1 and current else ""
+
+
+def facts(record, process, now, max_rounds):
+    stage = f"**Stage**: {process['stage']}"
+    parts = [stage, f"**Step**: {process['step'] or '–'}"]
+    package = work_package(process["nodes"])
+    if package:
+        parts.append(f"**Work package**: {package}")
+    reviews = [t.round for t in process["tops"] if t.kind == "review"]
+    if reviews:
+        parts.append(f"**Round**: {reviews[-1]}" + (f" of {max_rounds}" if max_rounds else ""))
+    if process["events"]:
+        total = progress.totals(process["steps"], process["events"], now)
+        day = time.strftime("%Y-%m-%d", progress.LOCALTIME(total["first"]))
+        parts += [
+            f"**Started**: {time.strftime('%Y-%m-%d %H:%M %Z', progress.LOCALTIME(total['first']))}",
+            f"**Last update**: {progress.clock(total['last'], day)}",
+            f"**Elapsed**: {progress.duration(total['elapsed'])}",
+            f"**Tokens**: {progress.tokens(total['tokens'])}",
+            f"**Cost**: {total['cost_text']}",
+        ]
+    parts.append(f"**Waiting for**: {process['waiting_for']}")
+    return " · ".join(parts)
+
+
+def links(record, process):
+    """The (label, text, url) rows of the link table; a row without a URL is left out."""
+    repo = record.get("repo_url", "")
+    branch = record.get("branch", "")
+    pr = pull_request(record)
+    number = issue_number(branch)
+    rows = [
+        ("Issue", f"#{number}", f"{repo}/issues/{number}" if repo and number else ""),
+        ("Plan", "plan file", plan_url(record) if repo else ""),
+        ("Pull request", f"#{pr['number']}" if pr.get("number") else "", pr.get("url", "")),
+        ("Files", "changed files", pr["url"] + "/files" if pr.get("url") else ""),
+        ("Progress comment", "comment", record.get("progress_comment_url", "")),
+    ]
+    reviews = {}
+    final = ""
+    for url, marker in process["markers"]:
+        if marker.get("step") == "review":
+            reviews[int(marker.get("round", 0) or 0)] = url
+        elif marker.get("step") == "finalise":
+            final = url
+    rows += [(f"Review R{n}", "comment", url) for n, url in sorted(reviews.items())]
+    rows.append(("Final comment", "comment", final))
+    head = pr.get("headRefOid", "")
+    run = next((r for r in record.get("ci_runs", []) if head and r.get("headSha") == head), None)
+    rows.append(("CI (head)", head[:7], run.get("url", "") if run else ""))
+    rows.append(("Branch", f"`{branch}`", f"{repo}/tree/{branch}" if repo and branch else ""))
+    return [(label, text, url) for label, text, url in rows if url]
+
+
+def link_table(record, process):
+    lines = ["| Link | |", "|---|---|"]
+    lines += [f"| {label} | [{text}]({url}) |" for label, text, url in links(record, process)]
+    return "\n".join(lines)
+
+
+def section(record, now=None, max_rounds=None, max_ci_fixes=None):
+    """The dashboard section of one process."""
+    now = now if now is not None else int(time.time())
+    process = analyse(record, now, max_rounds, max_ci_fixes)
+    branch = record.get("branch", "")
+    title = " ".join(record.get("issue_title", "").split())
+    heading = f"### #{issue_number(branch)} {title}: `{branch}`" if title else f"### #{issue_number(branch)}: `{branch}`"
+    return "\n".join(
+        [
+            f"{SECTION_START} {branch} -->",
+            heading,
+            facts(record, process, now, max_rounds),
+            graph(record, process=process),
+            link_table(record, process),
+            SECTION_END,
+        ]
+    )
+
+
+def sections_of(body):
+    """The sections of a body by branch, in body order."""
+    return {m.group(1): m.group(0) for m in SECTION.finditer(body)}
+
+
+def without_links(text):
+    return re.sub(r"\n\| Link \| \|\n(?:\|.*\n)*", "\n", text)
+
+
+def merge(old_body, new_sections, active, now=None):
+    """The new body: own sections replace or add, sections of branches not in active go, others stay."""
+    now = now if now is not None else int(time.time())
+    found = sections_of(old_body) if BODY_MARKER in old_body else {}
+    found.update(new_sections)
+    kept = sorted(((b, s) for b, s in found.items() if b in active), key=lambda item: (issue_number(item[0]), item[0]))
+    header = [BODY_MARKER, "# Agent Dashboard", "", f"Updated {time.strftime('%Y-%m-%d %H:%M %Z', progress.LOCALTIME(now))}", ""]
+    notes = []
+
+    def build():
+        body = [section for _, section in kept] or ["No active agent processes"]
+        return "\n".join(header + ["\n\n".join(body)] + notes) + "\n"
+
+    text = build()
+    if len(text) > BODY_LIMIT:
+        kept = [(b, without_links(s)) for b, s in kept]
+        notes[:] = ["", "The link tables are left out: the body would exceed GitHub's size limit."]
+        text = build()
+    omitted = 0
+    while len(text) > BODY_LIMIT and len(kept) > 1:
+        kept.pop()
+        omitted += 1
+        notes[:] = ["", f"The link tables and {omitted} process(es) are left out: the body would exceed GitHub's size limit."]
+        text = build()
+    return text
+
+
 def main(argv):
     parser = argparse.ArgumentParser(prog="dashboard.py")
     sub = parser.add_subparsers(dest="command", required=True)
-    one = sub.add_parser("graph")
-    one.add_argument("record")
-    one.add_argument("--now", type=int)
-    one.add_argument("--max-rounds", type=int)
-    one.add_argument("--max-ci-fixes", type=int)
+    for name in ("graph", "section", "active"):
+        one = sub.add_parser(name)
+        one.add_argument("record")
+        one.add_argument("--now", type=int)
+        one.add_argument("--max-rounds", type=int)
+        one.add_argument("--max-ci-fixes", type=int)
+    joined = sub.add_parser("merge")
+    joined.add_argument("old_body")
+    joined.add_argument("--section", action="append", default=[])
+    joined.add_argument("--active", nargs="*", default=[])
+    joined.add_argument("--now", type=int)
     args = parser.parse_args(argv[1:])
+    if args.command == "merge":
+        with open(args.old_body, encoding="utf-8") as f:
+            old = f.read()
+        new = {}
+        for path in args.section:
+            with open(path, encoding="utf-8") as f:
+                new.update(sections_of(f.read()))
+        sys.stdout.write(merge(old, new, set(args.active), args.now))
+        return 0
     with open(args.record, encoding="utf-8") as f:
         record = json.load(f)
-    print(graph(record, args.now, args.max_rounds, args.max_ci_fixes))
+    if args.command == "active":
+        return 0 if is_active(record) else 1
+    render = graph if args.command == "graph" else section
+    print(render(record, args.now, args.max_rounds, args.max_ci_fixes))
+    return 0
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    sys.exit(main(sys.argv))

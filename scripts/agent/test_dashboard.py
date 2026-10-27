@@ -318,5 +318,157 @@ class GraphTest(unittest.TestCase):
         self.assertEqual(dashboard.slug("WP2: Second, with `code`"), "wp2-second-with-code")
 
 
+class SectionTest(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.helper = GraphTest()
+        self.helper.directory = directory.name
+
+    def record(self, *args, **kwargs):
+        record = self.helper.record(*args, **kwargs)
+        record["issue_title"] = 'Agent "Dashboard"\nissue'
+        return record
+
+    def test_active_rule(self):
+        active = dashboard.is_active
+        self.assertTrue(active(self.record(labels=("plan",), alive=False)))
+        self.assertTrue(active(self.record(labels=("agent",), alive=False)))
+        self.assertTrue(active(self.record(labels=(), alive=True, state="MERGED")))
+        self.assertFalse(active(self.record(labels=(), alive=False, draft=False)))
+        self.assertFalse(active(self.record(labels=("agent",), alive=False, state="MERGED")))
+        self.assertFalse(active(self.record(labels=("agent",), alive=False, state="CLOSED")))
+
+    def test_a_stopped_draft_stays_active_until_a_newer_marker(self):
+        stopped = self.record(labels=(), alive=False, comments=[comment("review", 1), comment("stop")])
+        self.assertTrue(dashboard.is_active(stopped))
+        stopped["comments"].append(comment("finalise"))
+        self.assertFalse(dashboard.is_active(stopped))
+        ready = self.record(labels=(), alive=False, draft=False, comments=[comment("stop")])
+        self.assertFalse(dashboard.is_active(ready))
+
+    def test_the_section_has_markers_heading_facts_graph_and_links(self):
+        events = GraphTest.ROUND_TWO
+        text = dashboard.section(self.record(events), T0 + 730, max_rounds=2, max_ci_fixes=3)
+        lines = text.splitlines()
+        self.assertEqual(lines[0], f"<!-- agent-process {BRANCH} -->")
+        self.assertEqual(lines[1], f"### #61 Agent \"Dashboard\" issue: `{BRANCH}`")
+        self.assertEqual(lines[-1], "<!-- /agent-process -->")
+        self.assertIn("```mermaid", text)
+        facts = lines[2]
+        for part in ("**Stage**: agent loop", "**Step**: review R2", "**Work package**: 1 of 3", "**Round**: 2 of 2", "**Waiting for**: nobody", "**Elapsed**: 12m 10s"):
+            self.assertIn(part, facts)
+
+    def test_facts_per_stage(self):
+        review = dashboard.section(self.record(labels=("plan",), alive=False), T0)
+        facts = review.splitlines()[2]
+        self.assertEqual(facts, "**Stage**: plan review · **Step**: plan · **Work package**: 1 of 3 · **Waiting for**: developer")
+        stopped = dashboard.section(self.record(labels=(), alive=False, comments=[comment("stop")]), T0)
+        self.assertIn("**Stage**: stopped", stopped)
+        self.assertIn("**Waiting for**: developer", stopped)
+
+    def test_waiting_for_ci(self):
+        events = tsv((0, "begin", "", "CI abc1234", ""))
+        text = dashboard.section(self.record(events), T0 + 60, max_rounds=2)
+        self.assertIn("**Waiting for**: CI", text)
+
+    def test_link_table_has_every_link_with_its_url(self):
+        comments = [comment("review", 1), comment("review", 2), comment("finalise")]
+        record = self.record(GraphTest.ROUND_TWO, comments=comments, headRefOid="def5678aaaa")
+        record["progress_comment_url"] = f"{REPO}/issues/61#issuecomment-1"
+        record["ci_runs"] = [{"headSha": "def5678aaaa", "url": f"{REPO}/actions/runs/9", "status": "completed", "conclusion": "success"}]
+        table = dashboard.link_table(record, dashboard.analyse(record, T0 + 800))
+        rows = table.splitlines()
+        self.assertEqual(rows[:2], ["| Link | |", "|---|---|"])
+        self.assertEqual(
+            rows[2:],
+            [
+                f"| Issue | [#61]({REPO}/issues/61) |",
+                f"| Plan | [plan file]({REPO}/blob/{BRANCH}/.plans/61-x.md) |",
+                f"| Pull request | [#7]({PR}) |",
+                f"| Files | [changed files]({PR}/files) |",
+                f"| Progress comment | [comment]({REPO}/issues/61#issuecomment-1) |",
+                f"| Review R1 | [comment]({REPO}/pull/7#c-review-1) |",
+                f"| Review R2 | [comment]({REPO}/pull/7#c-review-2) |",
+                f"| Final comment | [comment]({REPO}/pull/7#c-finalise-0) |",
+                f"| CI (head) | [def5678]({REPO}/actions/runs/9) |",
+                f"| Branch | [`{BRANCH}`]({REPO}/tree/{BRANCH}) |",
+            ],
+        )
+
+    def test_rows_without_a_url_are_left_out(self):
+        record = self.record(labels=("plan",), alive=False)
+        record["pr"] = None
+        table = dashboard.link_table(record, dashboard.analyse(record, T0))
+        labels = [row.split(" | ")[0][2:] for row in table.splitlines()[2:]]
+        self.assertEqual(labels, ["Issue", "Plan", "Branch"])
+
+    def test_the_work_package_anchor(self):
+        record = self.record(GraphTest.ROUND_TWO)
+        table = dashboard.section(record, T0 + 800)
+        self.assertIn(f"{REPO}/blob/{BRANCH}/.plans/61-x.md#wp1-first-part", table)
+
+
+class MergeTest(unittest.TestCase):
+    def sec(self, branch, text="x"):
+        return f"<!-- agent-process {branch} -->\n{text}\n<!-- /agent-process -->"
+
+    def body(self, *sections):
+        return dashboard.merge("", {b: s for b, s in sections}, {b for b, _ in sections}, T0)
+
+    def test_empty_state(self):
+        text = dashboard.merge("", {}, set(), T0)
+        self.assertTrue(text.startswith("<!-- agent-dashboard -->\n# Agent Dashboard\n\nUpdated "))
+        self.assertIn("No active agent processes", text)
+
+    def test_replaces_own_and_keeps_another_machines_section(self):
+        old = self.body(("plan/1-a", self.sec("plan/1-a", "old a")), ("plan/2-b", self.sec("plan/2-b", "other")))
+        text = dashboard.merge(old, {"plan/1-a": self.sec("plan/1-a", "new a")}, {"plan/1-a", "plan/2-b"}, T0)
+        self.assertIn("new a", text)
+        self.assertNotIn("old a", text)
+        self.assertIn("other", text)
+        self.assertNotIn("No active", text)
+
+    def test_adds_a_new_section_ordered_by_issue_number(self):
+        old = self.body(("plan/10-a", self.sec("plan/10-a")), ("plan/3-b", self.sec("plan/3-b")))
+        text = dashboard.merge(old, {"plan/2-c": self.sec("plan/2-c")}, {"plan/10-a", "plan/3-b", "plan/2-c"}, T0)
+        self.assertEqual(re.findall(r"agent-process (plan/\S+) -->", text), ["plan/2-c", "plan/3-b", "plan/10-a"])
+
+    def test_removes_a_section_that_is_not_active(self):
+        old = self.body(("plan/1-a", self.sec("plan/1-a")), ("plan/2-b", self.sec("plan/2-b")))
+        text = dashboard.merge(old, {}, {"plan/2-b"}, T0)
+        self.assertNotIn("plan/1-a", text)
+        self.assertIn("plan/2-b", text)
+        text = dashboard.merge(old, {}, set(), T0)
+        self.assertIn("No active agent processes", text)
+
+    def test_a_rendered_section_of_an_inactive_branch_is_not_added(self):
+        text = dashboard.merge("", {"plan/1-a": self.sec("plan/1-a")}, set(), T0)
+        self.assertNotIn("plan/1-a", text)
+
+    def test_a_body_without_the_marker_becomes_a_dashboard(self):
+        text = dashboard.merge("Some text a person wrote", {"plan/1-a": self.sec("plan/1-a")}, {"plan/1-a"}, T0)
+        self.assertTrue(text.startswith("<!-- agent-dashboard -->"))
+        self.assertNotIn("Some text", text)
+        self.assertIn("plan/1-a", text)
+
+    def test_the_size_limit_drops_the_link_tables_first(self):
+        table = "| Link | |\n|---|---|\n" + "| Issue | [#1](u) |\n" * 10
+        big = lambda b: self.sec(b, "graph\n" + table + "z" * 20_000)
+        branches = ["plan/1-a", "plan/2-b", "plan/3-c"]
+        text = dashboard.merge("", {b: big(b) for b in branches}, set(branches), T0)
+        self.assertLessEqual(len(text), dashboard.BODY_LIMIT)
+        self.assertNotIn("| Link |", text)
+        self.assertIn("1 process(es) are left out", text)
+        self.assertEqual(len(re.findall("<!-- agent-process", text)), 2)
+        self.assertTrue(text.rstrip().endswith("limit."))
+
+    def test_small_bodies_keep_their_link_tables(self):
+        section = self.sec("plan/1-a", "| Link | |\n|---|---|\n| Issue | [#1](u) |")
+        text = dashboard.merge("", {"plan/1-a": section}, {"plan/1-a"}, T0)
+        self.assertIn("| Link |", text)
+        self.assertNotIn("left out", text)
+
+
 if __name__ == "__main__":
     unittest.main()

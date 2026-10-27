@@ -192,14 +192,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: The section, the link table and the merge of the body
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/dashboard.py`, `scripts/agent/test_dashboard.py`
 - **Steps**:
-  - [ ] The active-process rule (open and labelled `plan`/`agent`, a live run, or an open draft whose newest marker is `stop`) as `dashboard.py active <record.json>` (exit 0 / 1) and a function the merge uses
-  - [ ] The section: marker, heading, facts line, graph, link table (issue, plan file, pull request, files tab, progress comment, review comments, final comment, CI run of the head, branch), end marker; `dashboard.py section <record.json> …`
-  - [ ] The body: `<!-- agent-dashboard -->` header, "Updated …", sections by issue number, "No active agent processes" when empty
-  - [ ] `dashboard.py merge <old body> --section <file>... --active <branch>...`: replace or add own sections, remove inactive ones, keep the others, turn a non-dashboard body into one, the size limit
+  - [x] The active-process rule (open and labelled `plan`/`agent`, a live run, or an open draft whose newest marker is `stop`) as `dashboard.py active <record.json>` (exit 0 / 1) and a function the merge uses
+  - [x] The section: marker, heading, facts line, graph, link table (issue, plan file, pull request, files tab, progress comment, review comments, final comment, CI run of the head, branch), end marker; `dashboard.py section <record.json> …`
+  - [x] The body: `<!-- agent-dashboard -->` header, "Updated …", sections by issue number, "No active agent processes" when empty
+  - [x] `dashboard.py merge <old body> --section <file>... --active <branch>...`: replace or add own sections, remove inactive ones, keep the others, turn a non-dashboard body into one, the size limit
 - **Tests**: the link table (every link with its URL, rows without a URL left out, the WP heading anchors), the facts line per stage, the merge (replace own section and keep another machine's, add a new one, remove a merged / closed / ready one, empty-state text, a body without the marker, two processes ordered by issue), the size limit
 
 ### WP3: Posting it from the scripts
