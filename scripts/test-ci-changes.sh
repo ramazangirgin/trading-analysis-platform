@@ -45,12 +45,15 @@ check "false true false false" CLAUDE.md
 check "false true false false" scripts/agent/x.sh
 check "false true false false" .claude/skills/x/SKILL.md
 check "false false false false" .claude/settings.json
-check "true true false false" artifact/backend/src/Main.java
+check "true true true true" artifact/backend/src/Main.java
+check "true true true true" artifact/frontend/src/main.ts
+check "true true true true" artifact/ta-runner/Dockerfile
+check "true true false false" build-logic/src/main/kotlin/x.gradle.kts
 check "true true true false" mise.toml
 check "true true true true" deploy/Dockerfile
 check "true true true true" .github/workflows/ci.yml
 check "true true false false" new-top-level-file.txt
-check "true true false false" docs/x.md artifact/backend/src/Main.java
+check "true true true true" docs/x.md artifact/backend/src/Main.java
 
 n=$((n + 1))
 git reset -q --hard "$base"
@@ -63,7 +66,7 @@ mkdir -p docs
 git mv artifact/backend/src/Foo.java docs/Foo.java
 git commit -q -m "move Foo"
 actual=$(bash "$script" "$moved_base" 2>/dev/null | cut -d= -f2 | paste -sd' ' -)
-if [ "$actual" = "true true false false" ]; then
+if [ "$actual" = "true true true true" ]; then
   echo "ok   file moved out of artifact/ into docs/"
 else
   echo "FAIL file moved out of artifact/ into docs/: got '$actual'" >&2

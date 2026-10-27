@@ -11,8 +11,9 @@
 #               images and the end-to-end tests
 #   runner      app, or the agent scripts, skills and Markdown documents (their tests and the link
 #               check run in the runner job)
-#   deploy      deploy/, mise.toml, .github/
-#   server_e2e  deploy/, the ta-runner Dockerfile, the CI workflow, this script
+#   deploy      deploy/, artifact/, mise.toml, .github/
+#   server_e2e  deploy/, artifact/, the CI workflow, this script (the deploy builds and starts the
+#               application, so an application change can break it)
 #
 # The non-application set is an allow-list: a file nobody listed is an application change.
 set -euo pipefail
@@ -43,10 +44,10 @@ else
       scripts/agent/* | .claude/skills/* | docs/* | README.md | CLAUDE.md) runner=true ;;
     esac
     case $file in
-      deploy/* | mise.toml | .github/*) deploy=true ;;
+      deploy/* | artifact/* | mise.toml | .github/*) deploy=true ;;
     esac
     case $file in
-      deploy/* | artifact/ta-runner/Dockerfile | .github/workflows/ci.yml | scripts/ci-changes.sh) server_e2e=true ;;
+      deploy/* | artifact/* | .github/workflows/ci.yml | scripts/ci-changes.sh) server_e2e=true ;;
     esac
   done <<<"$files"
   [ "$app" = true ] && runner=true
