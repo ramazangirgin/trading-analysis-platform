@@ -248,6 +248,12 @@ class GraphTest(unittest.TestCase):
         self.assertEqual(self.states(process)[-1], ("CI 0123456", "stopped"))
         self.assertEqual(process["stage"], "stopped")
 
+    def test_a_live_run_with_an_open_step_ignores_an_old_stop_marker(self):
+        record = self.record(self.ROUND_TWO, comments=[comment("stop")], alive=True)
+        process = self.analyse(record, at=900)
+        self.assertEqual(self.states(process)[-1], ("review R2", "running"))
+        self.assertEqual(process["stage"], "agent loop")
+
     def test_markers_without_progress(self):
         record = self.record(
             comments=[

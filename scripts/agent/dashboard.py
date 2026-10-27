@@ -280,8 +280,10 @@ def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
         implemented = any(m.get("step") == "implement" for _, m in markers) or bool(tops)
 
     last_marker = markers[-1][1].get("step") if markers else ""
-    stop_flag = last_marker == "stop" or bool(timeline and timeline[-1][2].startswith("stopping:"))
     open_step = any(s.open for s in steps if s.name != "orchestration")
+    stop_flag = not (alive and open_step) and (
+        last_marker == "stop" or bool(timeline and timeline[-1][2].startswith("stopping:"))
+    )
 
     nodes = []
     if under_review:
