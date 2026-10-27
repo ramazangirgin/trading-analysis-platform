@@ -3,9 +3,10 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.pers
 import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.entity.PresetIdEmbeddable;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetId;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 /** The entity key of a preset ID, mapped by its {@code value}. */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface PresetIdToPresetIdEmbeddableMapper {
 
     PresetIdEmbeddable map(PresetId source);

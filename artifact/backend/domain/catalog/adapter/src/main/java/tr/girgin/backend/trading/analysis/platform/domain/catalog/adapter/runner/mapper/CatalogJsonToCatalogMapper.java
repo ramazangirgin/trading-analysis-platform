@@ -6,8 +6,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.adapter.runner
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface CatalogJsonToCatalogMapper {
 
     @Mapping(target = "providers", defaultExpression = "java(java.util.List.of())")

@@ -6,6 +6,7 @@ description = "Settings domain: outbound adapters"
 
 dependencies {
     implementation(project(":backend:domain:settings:core"))
+    implementation(project(":backend:library:mapper"))
     implementation(libs.spring.beans)
     implementation(libs.spring.context)
     implementation(libs.spring.tx)

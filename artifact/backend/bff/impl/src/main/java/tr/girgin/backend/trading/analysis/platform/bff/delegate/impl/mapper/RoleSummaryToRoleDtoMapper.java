@@ -9,8 +9,9 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Perm
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RoleDto;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper(uses = PermissionToPermissionEnumDtoMapper.class)
+@Mapper(config = SharedMapperConfig.class, uses = PermissionToPermissionEnumDtoMapper.class)
 public interface RoleSummaryToRoleDtoMapper {
 
     @Mapping(target = "id", source = "role.id.value")

@@ -6,6 +6,7 @@ description = "Catalog domain: outbound adapters"
 
 dependencies {
     implementation(project(":backend:domain:catalog:core"))
+    implementation(project(":backend:library:mapper"))
     implementation(libs.spring.beans)
     implementation(libs.spring.context)
     implementation(libs.spring.core)
