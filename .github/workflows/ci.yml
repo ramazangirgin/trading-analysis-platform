@@ -8,9 +8,8 @@
 #                            runner-image, runner-image-arm64
 #                runner      app, or scripts/agent, .claude/skills and the Markdown documents
 #                            (README.md, CLAUDE.md, docs/): runner
-#                deploy      deploy/, artifact/, mise.toml, .github/: server
-#                server_e2e  deploy/, artifact/, this workflow, scripts/ci-changes.sh: server-e2e
-#                            (the deploy builds and starts the application)
+#                deploy      app: server
+#                server_e2e  app: server-e2e (the deploy builds and starts the application)
 #              On demand, on main and when no base is found, everything runs: release.yml releases
 #              the jar of a run on main.
 #   build      backend + frontend: formatting first (Spotless, Prettier), in the same Gradle run as

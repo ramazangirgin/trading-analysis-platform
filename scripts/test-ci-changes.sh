@@ -48,11 +48,13 @@ check "false false false false" .claude/settings.json
 check "true true true true" artifact/backend/src/Main.java
 check "true true true true" artifact/frontend/src/main.ts
 check "true true true true" artifact/ta-runner/Dockerfile
-check "true true false false" build-logic/src/main/kotlin/x.gradle.kts
-check "true true true false" mise.toml
+check "true true true true" build-logic/src/main/kotlin/x.gradle.kts
+check "true true true true" config/checkstyle/checkstyle.xml
+check "true true true true" gradle.properties
+check "true true true true" mise.toml
 check "true true true true" deploy/Dockerfile
 check "true true true true" .github/workflows/ci.yml
-check "true true false false" new-top-level-file.txt
+check "true true true true" new-top-level-file.txt
 check "true true true true" docs/x.md artifact/backend/src/Main.java
 
 n=$((n + 1))
