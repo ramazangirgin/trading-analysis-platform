@@ -91,9 +91,10 @@ do not read other plans in `.plans/` as models.
   most 8 files, tests included (`AGENT_MAX_WP_FILES`), and stays in one module or layer: split a
   larger one. One agent implements a package in one run, and a large package makes that run's
   context, and its tokens, grow with every turn.
-- **Conventions**: for each affected part, name the conventions that apply and where the new code
-  goes according to them (package, folder, layer). Do not propose a new layer, tool or pattern
-  without saying so explicitly in "Open questions".
+- **Conventions**: for each affected part, link the convention documents that apply and say where
+  the new code goes (package, folder, layer). Never restate what they say: the developer agent
+  reads them. Do not propose a new layer, tool or pattern without saying so explicitly in "Open
+  questions".
 - **Version bump**: always one (`minor` unless the change is breaking, `major`, or a hotfix,
   `patch`).
 - **Docs to update**: every document and screenshot the change makes wrong or incomplete; the change
@@ -111,6 +112,23 @@ do not read other plans in `.plans/` as models.
     developer agent takes them with `mise run screenshots` (a `e2e/screenshots/<name>.shot.ts` per
     screenshot, against the built jar with a replayed run, 1440×900, dark theme).
 - Write in English, in the plain style of the existing documents.
+
+### Keep it short: one home for every fact
+
+The developer agent reads the same documents and the code you read, so the plan carries only what
+they do not show. Before step 4, go through the plan and delete:
+
+- a rule, a convention or a command that a document under `docs/` or the code already states (link
+  it instead);
+- a fact that is in two places: the decision in "Design", the file list in the work package, the doc
+  change in "Docs to update", the proof in the package's "Tests". A package repeats none of them;
+- a step that restates its package's name, and detail the implementer finds in the code: fixture
+  lists, snippets, message texts, a table of per-class changes already named by the decision;
+- a list of files for a mechanical change in many classes: describe the change once and name the
+  module (such a package still names at most 8 files, so split it by module or directory).
+
+A plan of more than about 150 lines needs a reason: usually it holds one of the above, or is two
+plans.
 
 Show the plan(s) to the user. Adjust them while the user asks for changes here, then push them for
 review (step 4): the review itself happens on the pull request and in this session (step 5).

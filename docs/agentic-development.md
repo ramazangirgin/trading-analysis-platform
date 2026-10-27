@@ -184,7 +184,9 @@ always plans on Opus, whatever model the session uses and however it is started 
 by `develop-issue`): the session hands the work to an Opus subagent. It
 reads the issue, the issues it links to and the documents of every part it touches, and writes
 `.plans/<issue>-<slug>.md` from [`plan-template.md`](../.claude/skills/plan-from-issue/plan-template.md),
-or several plans when the issue does not fit one pull request. Discuss it with Claude in the same
+or several plans when the issue does not fit one pull request. The plan
+states each fact once and links the conventions instead of restating them (about 150 lines; more
+needs a reason). Discuss it with Claude in the same
 session; when it is ready for review, the skill pushes one branch per plan
 (`mise run agent:plan-branch .plans/<issue>-<slug>.md`), opens a draft pull request labelled `plan`
 for it and links that on the issue. The local plan file is removed once its branch is pushed, so
