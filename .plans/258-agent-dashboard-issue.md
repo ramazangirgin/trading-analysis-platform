@@ -260,17 +260,9 @@ Packages without a dependency between them can be implemented in parallel.
 
 ## Open questions
 
-- **A loop that gave up** (`stopping: …`, the `agent` label removed, the pull request still a
-  draft) is not "labelled `plan` or `agent`", so the issue's rule would drop it, while its "done
-  when" wants a stopped run to be visible. The plan keeps such a pull request listed as `stopped`
-  while its newest marker is `stop` (it leaves when the label is added again and the loop runs, or
-  the pull request is closed). Keep that, or drop it from the dashboard as the issue's rule says?
-- **Links on the graph's nodes**: the plan emits Mermaid `click … href` lines; GitHub renders
-  Mermaid with a strict security level and may ignore them. The table under the graph holds the same
-  links either way. Keep the `click` lines, or leave them out if they do not work on GitHub?
-- **Screenshot**: the developer takes `docs/screenshots/agent-dashboard.png` by hand (see "Docs to
-  update"). Is that fine, or should the docs show a Mermaid example of a section instead of a
-  screenshot (the developer agent can write that, and GitHub renders it in the doc)?
-- **Pinning**: `gh issue pin` needs the repository's pin slots (at most 3 pinned issues). The plan
-  pins it once at creation and logs a failure; the label `agent-dashboard` finds it in any case. Is
-  pinning wanted, given the Renovate Dependency Dashboard (#96) may already use a slot?
+None. Decided with the approval:
+
+- A loop that gave up stays listed as `stopped` while its open draft pull request's newest marker is `stop`.
+- The Mermaid `click … href` lines stay; the table under the graph carries the same links anyway.
+- The developer takes `docs/screenshots/agent-dashboard.png` by hand, as "Docs to update" says.
+- The dashboard issue is pinned once at creation; a failed pin is logged.
