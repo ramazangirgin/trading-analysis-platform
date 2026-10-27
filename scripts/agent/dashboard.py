@@ -123,7 +123,7 @@ def packages_of(record):
 
 def number_of(name):
     match = re.search(r"(\d+)$", name)
-    return int(match.group(1)) if match else 0
+    return int(match.group(1) or match.group(2)) if match else 0
 
 
 def state_of(step, alive, waits=False):
@@ -444,8 +444,8 @@ def is_active(record):
 
 
 def issue_number(branch):
-    match = re.match(r"plan/(\d+)-", branch)
-    return int(match.group(1)) if match else 0
+    match = re.match(r"(?:plan/(\d+)-|issue/(\d+)$)", branch)
+    return int(match.group(1) or match.group(2)) if match else 0
 
 
 def work_package(nodes):
@@ -534,6 +534,35 @@ def section(record, now=None, max_rounds=None, max_ci_fixes=None):
     )
 
 
+def issue_section(record, now=None):
+    """The section of an issue whose plan is still being written: it has no branch yet, so the key
+    is issue/<n>, and the section goes when a plan branch of the issue is listed."""
+    now = now if now is not None else int(time.time())
+    key = f"issue/{record['issue']}"
+    repo = record.get("repo_url", "")
+    url = f"{repo}/issues/{record['issue']}" if repo else ""
+    title = " ".join(record.get("issue_title", "").split())
+    started = time.strftime("%H:%M", progress.LOCALTIME(record.get("started", now)))
+    nodes = [("plan", "running"), ("plan approved", "todo")]
+    lines = ["```mermaid", "flowchart LR"]
+    lines += [f'  n{n}["{escape(label)}"]:::{state}' for n, (label, state) in enumerate(nodes, 1)]
+    lines.append("  n1 --> n2")
+    lines += [f"  classDef {state} {CLASSES[state]}" for state in STATES]
+    if url:
+        lines.append(f'  click n1 href "{url}" _blank')
+    lines.append("```")
+    return "\n".join(
+        [
+            f"{SECTION_START} {key} -->",
+            f"### #{record['issue']} {title}" if title else f"### #{record['issue']}",
+            f"**Stage**: planning · **Step**: plan · **Started**: {started} · **Waiting for**: nobody",
+            "\n".join(lines),
+            *([f"| Link | |\n|---|---|\n| Issue | [#{record['issue']}]({url}) |"] if url else []),
+            SECTION_END,
+        ]
+    )
+
+
 def sections_of(body):
     """The sections of a body by branch, in body order."""
     return {m.group(1): m.group(0) for m in SECTION.finditer(body)}
@@ -573,7 +602,7 @@ def merge(old_body, new_sections, active, now=None):
 def main(argv):
     parser = argparse.ArgumentParser(prog="dashboard.py")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("graph", "section", "active"):
+    for name in ("graph", "section", "active", "issue"):
         one = sub.add_parser(name)
         one.add_argument("record")
         one.add_argument("--now", type=int)
@@ -598,6 +627,9 @@ def main(argv):
         record = json.load(f)
     if args.command == "active":
         return 0 if is_active(record) else 1
+    if args.command == "issue":
+        print(issue_section(record, args.now))
+        return 0
     render = graph if args.command == "graph" else section
     print(render(record, args.now, args.max_rounds, args.max_ci_fixes))
     return 0

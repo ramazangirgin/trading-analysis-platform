@@ -7,6 +7,9 @@
 #   scripts/agent/dashboard.sh update [--async | --wait] <branch>   the hook of progress.sh and agent_exit:
 #                                                      this branch's section, and the sections of the
 #                                                      pull requests that are no longer active dropped
+#   scripts/agent/dashboard.sh start <issue>           the issue's section while its plan is written, before
+#                                                      any branch exists (develop-issue, step 0); plan-branch.sh
+#                                                      then updates the dashboard, which drops it for the branch
 #
 # A rebuild covers every open pull request of a plan/* branch and every state directory under
 # .git/agent/ with a live run. The graph, the section and the merge of the body are dashboard.py's;
@@ -42,13 +45,17 @@ case ${1:-} in
     esac
     update_branch=${1:?usage: $0 update [--async | --wait] <branch>}
     ;;
-  *) die "usage: $0 [--post | update [--async | --wait] <branch>]" ;;
+  start)
+    mode=update
+    update_branch=issue/${2:?usage: $0 start <issue>}
+    ;;
+  *) die "usage: $0 [--post | start <issue> | update [--async | --wait] <branch>]" ;;
 esac
 if [ "$mode" != print ] && [ "$AGENT_DASHBOARD" != 1 ]; then exit 0; fi
 # update is a hook: it goes on and logs when a step fails, so the functions below return their
 # status explicitly instead of relying on set -e.
 if [ "$mode" = update ]; then
-  [[ $update_branch == plan/* ]] || exit 0
+  [[ $update_branch == plan/* || $update_branch == issue/* ]] || exit 0
   set +e
 fi
 
@@ -189,9 +196,38 @@ sections=()
 rendered=()
 active=()
 expected=()
+
+# issue_planning <issue>: whether the issue is open and has no plan branch yet, so its plan is still
+# being written.
+issue_planning() {
+  [ "$(gh api "repos/{owner}/{repo}/issues/$1" --jq .state 2>/dev/null || true)" = open ] || return 1
+  [ -z "$(git ls-remote --heads origin "plan/$1-*" 2>/dev/null)" ]
+}
+
+render_issue() {
+  local branch=$1 number=${1#issue/} record section
+  record=$work/record-issue-$number.json
+  section=$work/section-issue-$number.md
+  rendered+=("$branch")
+  issue_planning "$number" || return 0
+  [ -n "$repo_url" ] || repo_url=https://github.com/$(repo_slug) || return 1
+  py -c 'import json, sys
+print(json.dumps({"issue": int(sys.argv[1]), "issue_title": sys.argv[2], "repo_url": sys.argv[3], "started": int(sys.argv[4])}))' \
+    "$number" "$(gh issue view "$number" --json title --jq .title 2>/dev/null || true)" "$repo_url" "$(date +%s)" >"$record"
+  dashboard_py issue "$record" >"$section" || return 1
+  sections+=(--section "$section")
+  active+=("$branch")
+  expected+=("$section")
+}
+
 render() {
   local branch record section
   for branch in "$@"; do
+    case $branch in issue/*)
+      render_issue "$branch" || log "dashboard: the section of $branch was not rendered"
+      continue
+      ;;
+    esac
     record=$work/record-${branch//\//-}.json
     section=$work/section-${branch//\//-}.md
     if ! gather "$branch" "$record"; then
@@ -218,6 +254,11 @@ merge_body() {
   local branch keep=("${active[@]+"${active[@]}"}") record
   for branch in $(sed -n 's/^<!-- agent-process \([^ ]*\) -->$/\1/p' "$1"); do
     case " ${rendered[*]-} " in *" $branch "*) continue ;; esac
+    case $branch in issue/*)
+      if issue_planning "${branch#issue/}"; then keep+=("$branch"); fi
+      continue
+      ;;
+    esac
     record=$work/old-${branch//\//-}.json
     if ! gather --light "$branch" "$record" || dashboard_py active "$record"; then keep+=("$branch"); fi
   done

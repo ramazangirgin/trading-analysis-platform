@@ -71,4 +71,5 @@ git branch --quiet -D "$branch"
 if ! git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
   rm "$file"
 fi
+"$AGENT_DIR/dashboard.sh" update --wait "$branch" >/dev/null || true
 echo "$url"

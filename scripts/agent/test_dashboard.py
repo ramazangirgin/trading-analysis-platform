@@ -476,5 +476,26 @@ class MergeTest(unittest.TestCase):
         self.assertNotIn("left out", text)
 
 
+class IssueSectionTest(unittest.TestCase):
+    RECORD = {"issue": 258, "issue_title": "Agent <Dashboard>", "repo_url": "https://github.com/o/r", "started": 0}
+
+    def test_the_section_of_an_issue_without_a_branch(self):
+        text = dashboard.issue_section(self.RECORD, 0)
+        self.assertIn("<!-- agent-process issue/258 -->", text)
+        self.assertIn("### #258 Agent <Dashboard>", text)
+        self.assertIn("**Stage**: planning", text)
+        self.assertIn('n1["plan"]:::running', text)
+        self.assertIn("| Issue | [#258](https://github.com/o/r/issues/258) |", text)
+
+    def test_the_issue_is_listed_in_issue_order_and_dropped_when_not_active(self):
+        issue = dashboard.issue_section(self.RECORD, 0)
+        body = dashboard.merge("", {"issue/258": issue}, {"issue/258"}, 0)
+        self.assertIn("<!-- agent-process issue/258 -->", body)
+        self.assertEqual(258, dashboard.issue_number("issue/258"))
+        dropped = dashboard.merge(body, {}, set(), 0)
+        self.assertIn("No active agent processes", dropped)
+        self.assertNotIn("issue/258", dropped)
+
+
 if __name__ == "__main__":
     unittest.main()
