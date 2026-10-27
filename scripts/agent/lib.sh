@@ -22,6 +22,8 @@
 #                        Steps on an existing pull request use its base instead.
 #   AGENT_ISSUE_PROGRESS 1 (default): keep the progress comment on the issue up to date
 #                        (progress.sh); 0: record the progress in progress.tsv only
+#   AGENT_DASHBOARD      1 (default): keep the Agent Dashboard issue (the step graph of every active
+#                        process, dashboard.sh) up to date at the same milestones; 0: leave it alone
 #   AGENT_LSP            1: the agents get Claude Code's LSP tool (the plugin scripts/agent/lsp/) and
 #                        the "find symbols first" rule (prompts/tools-lsp.md); default 0 (issue #251)
 #
@@ -99,6 +101,7 @@ AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
 AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 AGENT_ISSUE_PROGRESS=${AGENT_ISSUE_PROGRESS:-1}
+AGENT_DASHBOARD=${AGENT_DASHBOARD:-1}
 AGENT_LSP=${AGENT_LSP:-0}
 # The name of the tool in Claude Code's tool list and allow-list; agent:lsp-check confirms it.
 AGENT_LSP_TOOL=LSP
@@ -232,10 +235,11 @@ progress_event() {
   printf '%s\t%s\t%s\t%s\t%s\n' "$(date +%s)" "${fields[0]}" "${fields[1]}" "${fields[2]}" "${fields[3]:-}" >>"$AGENT_PROGRESS"
 }
 
-# progress_publish [--wait]: brings the issue comment up to date, in the background (a milestone
-# never waits for GitHub), or with --wait before going on (the end of a step). Never fails a step.
+# progress_publish [--wait]: brings the issue comment and the dashboard up to date (progress.sh post),
+# in the background (a milestone never waits for GitHub), or with --wait before going on (the end of
+# a step). Never fails a step.
 progress_publish() {
-  [ -n "${AGENT_PROGRESS:-}" ] && [ "$AGENT_ISSUE_PROGRESS" = 1 ] || return 0
+  [ -n "${AGENT_PROGRESS:-}" ] && { [ "$AGENT_ISSUE_PROGRESS" = 1 ] || [ "$AGENT_DASHBOARD" = 1 ]; } || return 0
   if [ "${1:-}" = --wait ]; then
     "$AGENT_DIR/progress.sh" post "$AGENT_BRANCH" >/dev/null || log "the progress comment on the issue was not updated"
   else
@@ -278,6 +282,10 @@ agent_exit() {
   case $status in 0) ;; 130 | 143) result=interrupted ;; *) result=failed ;; esac
   step_end "$result"
   if [ -n "${AGENT_LOCK_HELD:-}" ]; then rm -f "$AGENT_STATE/run.pid"; fi
+  # After the lock: a run that ended, failed or was interrupted must not stay "running" on it.
+  if [ -n "${AGENT_BRANCH:-}" ] && [ -n "${AGENT_PROGRESS:-}" ] && [ "$AGENT_DASHBOARD" = 1 ]; then
+    "$AGENT_DIR/dashboard.sh" update --wait "$AGENT_BRANCH" >/dev/null 2>&1 || true
+  fi
 }
 trap agent_exit EXIT
 trap 'exit 130' INT

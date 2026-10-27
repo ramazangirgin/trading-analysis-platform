@@ -204,15 +204,15 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Posting it from the scripts
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `scripts/agent/dashboard.sh`, `scripts/agent/progress.sh`, `scripts/agent/lib.sh`, `mise.toml`, `scripts/github-setup.sh`
 - **Steps**:
-  - [ ] `dashboard.sh` with the commands, the gathering of a record, finding or creating (and pinning) the issue, the machine-wide lock with the pending flag, the read-back retry, `AGENT_DASHBOARD=0`, failures logged and ignored in `update`
-  - [ ] `lib.sh`: `AGENT_DASHBOARD` default and header line, `progress_publish`'s guard, the final `dashboard.sh update --wait` in `agent_exit` after the lock is released
-  - [ ] `progress.sh post`: the progress comment only with `AGENT_ISSUE_PROGRESS=1`, then the dashboard update with `AGENT_DASHBOARD=1`; its header comment names it
-  - [ ] `mise.toml`: task `agent:dashboard` (`scripts/agent/dashboard.sh`, description with `[--post]`); the `agent:test` description mentions the dashboard
-  - [ ] `scripts/github-setup.sh`: label `agent-dashboard` ("The issue that shows the active agent processes")
+  - [x] `dashboard.sh` with the commands, the gathering of a record, finding or creating (and pinning) the issue, the machine-wide lock with the pending flag, the read-back retry, `AGENT_DASHBOARD=0`, failures logged and ignored in `update`
+  - [x] `lib.sh`: `AGENT_DASHBOARD` default and header line, `progress_publish`'s guard, the final `dashboard.sh update --wait` in `agent_exit` after the lock is released
+  - [x] `progress.sh post`: the progress comment only with `AGENT_ISSUE_PROGRESS=1`, then the dashboard update with `AGENT_DASHBOARD=1`; its header comment names it
+  - [x] `mise.toml`: task `agent:dashboard` (`scripts/agent/dashboard.sh`, description with `[--post]`); the `agent:test` description mentions the dashboard
+  - [x] `scripts/github-setup.sh`: label `agent-dashboard` ("The issue that shows the active agent processes")
 - **Tests**: the logic is covered by `test_dashboard.py` (WP1, WP2); here `mise run agent:test` and `mise run check` pass, `bash -n` on the changed scripts, and `AGENT_DASHBOARD=0 scripts/agent/dashboard.sh update plan/258-x` exits 0 without a GitHub call. A run against GitHub is the developer's (see Tests)
 
 ### WP4: Documentation

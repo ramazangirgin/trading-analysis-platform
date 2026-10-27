@@ -20,6 +20,8 @@
 # plan branch, found by its marker and edited in place, so the issue does not fill up with them.
 # post --async (the step scripts' milestones) skips the post while another one is running and lets
 # that one post again when it is done; post waits for it.
+# Every post is also the hook of the Agent Dashboard (dashboard.sh update, docs/agentic-development.md,
+# "Dashboard"): after the comment, and with AGENT_ISSUE_PROGRESS=0 without it, unless AGENT_DASHBOARD=0.
 # shellcheck source=scripts/agent/lib.sh
 source "$(dirname "$0")/lib.sh"
 
@@ -106,9 +108,7 @@ release_lock() {
 }
 
 # One post at a time (progress.lock holds the poster's pid); a post asked for meanwhile is pending.
-# Nothing is posted with AGENT_ISSUE_PROGRESS=0.
-post() {
-  [ "$AGENT_ISSUE_PROGRESS" = 1 ] || return 0
+post_progress() {
   local pending=$AGENT_STATE/progress.pending tries=0 holder
   lock=$AGENT_STATE/progress.lock
   while ! (
@@ -122,7 +122,8 @@ post() {
     fi
     if $async; then
       touch "$pending"
-      exit 0
+      lock=""
+      return 0
     fi
     tries=$((tries + 1))
     [ "$tries" -lt 60 ] || die "another post holds $lock"
@@ -135,6 +136,19 @@ post() {
     rm -f "$pending"
     post_once >/dev/null
   done
+  rm -f "$lock"
+  lock=""
+}
+
+# The progress comment (not with AGENT_ISSUE_PROGRESS=0), then the dashboard (not with
+# AGENT_DASHBOARD=0), which has its own lock. The dashboard is left out of post_progress's lock so
+# that a slow update does not hold up the next progress post.
+post() {
+  if [ "$AGENT_ISSUE_PROGRESS" = 1 ]; then post_progress; fi
+  [ "$AGENT_DASHBOARD" = 1 ] || return 0
+  local mode=--wait
+  if $async; then mode=--async; fi
+  "$AGENT_DIR/dashboard.sh" update "$mode" "$branch" >/dev/null || log "the dashboard was not updated"
 }
 
 limit_value() { printf '%s\n' "$2" | tr ' ' '\n' | sed -n "s/^$1=//p"; }
