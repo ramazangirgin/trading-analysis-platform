@@ -233,6 +233,10 @@ run = "scripts/agent/status.sh"
 description = "Print the progress comment of an agent run (steps, durations, iterations, tokens), as it is on the issue: mise run agent:progress plan/<issue>-<slug> (or a PR number)"
 run = "scripts/agent/progress.sh show"
 
+[tasks."agent:dashboard"]
+description = "Print the body of the Agent Dashboard issue (a step graph per active agent process), or rebuild it on GitHub: mise run agent:dashboard [--post]"
+run = "scripts/agent/dashboard.sh"
+
 [tasks."agent:stats"]
 description = "Turns, tokens, tool calls and tool output of an issue's agent transcripts, as Markdown: mise run agent:stats <issue> [--transcript FILE --since EPOCH --until EPOCH] [--json]"
 run = "uv run --no-project python scripts/agent/transcript_stats.py"
@@ -242,7 +246,7 @@ description = "Does a headless agent get the LSP tool from scripts/agent/lsp/, a
 run = "bash scripts/agent/lsp-check.sh"
 
 [tasks."agent:test"]
-description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser, the plan comments, the usage figures and the progress comment"
+description = "Python tests of the agent scripts (scripts/agent/test_*.py): the plan parser, the plan comments, the usage figures, the progress comment and the dashboard"
 run = "scripts/quiet.sh agent-test uv run --no-project python -m unittest discover -s scripts/agent -p 'test_*.py'"
 
 [tasks."skill:test"]

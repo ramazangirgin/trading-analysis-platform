@@ -78,6 +78,7 @@ step "Labels"
 label() { gh label create "$1" --repo "$REPO" --color "$2" --description "$3" --force >/dev/null; }
 label agent         5319E7 "Driven by the agent loop; remove to stop it"
 label plan          FBCA04 "A plan under review"
+label agent-dashboard 1D76DB "The issue that shows the active agent processes"
 label enhancement   a2eeef "New feature or request"
 label bug           d73a4a "Something isn't working"
 label security      B60205 "Vulnerabilities, supply chain, secrets"

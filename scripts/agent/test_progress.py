@@ -216,5 +216,21 @@ class RenderTest(unittest.TestCase):
         self.assertIn("No step has run yet.", self.render([]))
 
 
+class TotalsTest(unittest.TestCase):
+    def test_totals_of_a_finished_run(self):
+        events = progress.parse(A_RUN)
+        steps, _ = progress.build(events)
+        total = progress.totals(steps, events, T0 + 99_999)
+        self.assertEqual(total["elapsed"], 3900)
+        self.assertEqual((total["first"], total["last"]), (T0, T0 + 3900))
+        self.assertEqual((total["agent_runs"], total["agent_seconds"]), (4, 680))
+        self.assertEqual((total["tokens"], total["cost"], total["cost_text"]), (4_300_000, 7.5, "$7.50"))
+
+    def test_an_open_step_counts_up_to_now(self):
+        events = progress.parse(tsv((0, "begin", "", "plan", "")))
+        steps, _ = progress.build(events)
+        self.assertEqual(progress.totals(steps, events, T0 + 120)["elapsed"], 120)
+
+
 if __name__ == "__main__":
     unittest.main()
