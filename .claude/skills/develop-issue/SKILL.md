@@ -131,6 +131,9 @@ gh pr list --state all --limit 200 --json number,headRefName,state,isDraft,label
 
 Stop if the issue is closed, or if `gh` is not logged in.
 
+Then show the issue on the Agent Dashboard before any plan or branch exists (a failure only logs):
+`scripts/agent/dashboard.sh start <n>`.
+
 Print one line per plan branch: the branch, its pull request, and where it stands (no pull request
 yet; draft labelled `plan`: the plan is under review; draft labelled `agent`; ready for review;
 merged). Then pick where to start after step 1: step 2 when there is no plan branch; step 2 with
