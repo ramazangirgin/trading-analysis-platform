@@ -283,8 +283,8 @@ agent_exit() {
   step_end "$result"
   if [ -n "${AGENT_LOCK_HELD:-}" ]; then rm -f "$AGENT_STATE/run.pid"; fi
   # After the lock: a run that ended, failed or was interrupted must not stay "running" on it.
-  if [ -n "${AGENT_BRANCH:-}" ] && [ -n "${AGENT_PROGRESS:-}" ] && [ "$AGENT_DASHBOARD" = 1 ]; then
-    "$AGENT_DIR/dashboard.sh" update --wait "$AGENT_BRANCH" >/dev/null 2>&1 || true
+  if [ -n "${AGENT_LOCK_HELD:-}" ] && [ -n "${AGENT_BRANCH:-}" ] && [ -n "${AGENT_PROGRESS:-}" ] && [ "$AGENT_DASHBOARD" = 1 ]; then
+    "$AGENT_DIR/dashboard.sh" update --wait "$AGENT_BRANCH" >/dev/null || true
   fi
 }
 trap agent_exit EXIT
