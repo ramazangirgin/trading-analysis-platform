@@ -78,13 +78,24 @@ class GraphTest(unittest.TestCase):
     def states(self, process):
         return [(n.label, n.state) for n in process["nodes"]]
 
+    def test_the_ai_review_node_takes_the_state_of_the_loop(self):
+        def review(process):
+            return dashboard.display_nodes(process)[-2:]
+
+        ci = self.analyse(self.record(tsv((0, "begin", "", "CI abc1234", ""))), at=60)
+        self.assertEqual([(n.label, n.state) for n in review(ci)], [("AI review", "waiting"), ("developer review", "todo")])
+        done = self.analyse(self.record(self.FINISHED, labels=(), draft=False), at=800)
+        self.assertEqual([(n.label, n.state) for n in review(done)], [("AI review", "done"), ("developer review", "waiting")])
+        planned = self.analyse(self.record(labels=("plan",), alive=False))
+        self.assertEqual([(n.label, n.state) for n in review(planned)], [("AI review", "todo"), ("developer review", "todo")])
+
     def test_plan_review_without_progress(self):
         process = self.analyse(self.record(labels=("plan",), alive=False))
         self.assertEqual(
             self.states(process),
             [
-                ("plan", "waiting"),
-                ("plan approved", "todo"),
+                ("plan", "done"),
+                ("plan approved", "waiting"),
                 ("WP1", "done"),
                 ("WP2", "todo"),
                 ("WP3", "done"),
@@ -299,11 +310,13 @@ class GraphTest(unittest.TestCase):
         self.assertEqual(lines[:2], ["```mermaid", "flowchart LR"])
         self.assertEqual(lines[-1], "```")
         self.assertIn('  n1["plan"]:::done', lines)
-        self.assertIn('  n13["review R2<br/>2 min"]:::running', lines)
+        self.assertIn('  n6["AI review<br/>R2<br/>2 min"]:::running', lines)
+        self.assertIn('  n7["developer review"]:::todo', lines)
         self.assertIn("  n1 --> n2", lines)
-        for state in dashboard.STATES:
+        for state in ("done", "running", "todo"):
             self.assertTrue(any(line.startswith(f"  classDef {state} ") for line in lines))
-        self.assertEqual(sum(1 for line in lines if re.fullmatch(r"  n\d+ --> n\d+", line)), 12)
+        self.assertFalse(any(line.startswith("  classDef failed ") for line in lines))
+        self.assertEqual(sum(1 for line in lines if re.fullmatch(r"  n\d+ --> n\d+", line)), 6)
 
     def test_links(self):
         comments = [comment("ci-fix", 1), comment("review", 1), comment("fix", 1)]
@@ -314,11 +327,10 @@ class GraphTest(unittest.TestCase):
         self.assertIn(f'click n1 href "{plan_file}" _blank', text)
         self.assertIn(f'click n2 href "{PR}" _blank', text)
         self.assertIn(f'click n3 href "{plan_file}#wp1-first-part" _blank', text)
-        self.assertIn(f'click n6 href "{PR}/files" _blank', text)
-        self.assertIn(f'href "{REPO}/actions/runs/5" _blank', text)
-        self.assertIn(f'href "{REPO}/pull/7#c-ci-fix-1" _blank', text)
-        self.assertIn(f'href "{REPO}/pull/7#c-review-1" _blank', text)
-        self.assertNotIn("c-review-2", text)
+        self.assertIn(f'click n6 href "{PR}" _blank', text)
+        self.assertIn(f'click n7 href "{PR}" _blank', text)
+        done = dashboard.graph(self.record(self.ROUND_TWO, comments=[comment("review", 2)]), T0 + 800)
+        self.assertIn(f'click n6 href "{PR}#c-review-2" _blank', done)
 
     def test_slug_of_a_heading(self):
         self.assertEqual(dashboard.slug("WP2: Second, with `code`"), "wp2-second-with-code")
@@ -358,16 +370,17 @@ class SectionTest(unittest.TestCase):
         text = dashboard.section(self.record(events), T0 + 730, max_rounds=2, max_ci_fixes=3)
         lines = text.splitlines()
         self.assertEqual(lines[0], f"<!-- agent-process {BRANCH} -->")
-        self.assertEqual(lines[1], f"### #61 Agent \"Dashboard\" issue: `{BRANCH}`")
+        self.assertEqual(lines[1], '## #61 Agent "Dashboard" issue')
+        self.assertEqual(lines[2], f"Branch `{BRANCH}`")
         self.assertEqual(lines[-1], "<!-- /agent-process -->")
         self.assertIn("```mermaid", text)
-        facts = lines[2]
+        facts = lines[4]
         for part in ("**Stage**: agent loop", "**Step**: review R2", "**Work package**: 1 of 3", "**Round**: 2 of 2", "**Waiting for**: nobody", "**Elapsed**: 12m 10s"):
             self.assertIn(part, facts)
 
     def test_facts_per_stage(self):
         review = dashboard.section(self.record(labels=("plan",), alive=False), T0)
-        facts = review.splitlines()[2]
+        facts = review.splitlines()[4]
         self.assertEqual(facts, "**Stage**: plan review · **Step**: plan · **Work package**: 1 of 3 · **Waiting for**: developer")
         stopped = dashboard.section(self.record(labels=(), alive=False, comments=[comment("stop")]), T0)
         self.assertIn("**Stage**: stopped", stopped)
@@ -474,6 +487,28 @@ class MergeTest(unittest.TestCase):
         text = dashboard.merge("", {"plan/1-a": section}, {"plan/1-a"}, T0)
         self.assertIn("| Link |", text)
         self.assertNotIn("left out", text)
+
+
+class IssueSectionTest(unittest.TestCase):
+    RECORD = {"issue": 258, "issue_title": "Agent <Dashboard>", "repo_url": "https://github.com/o/r", "started": 0}
+
+    def test_the_section_of_an_issue_without_a_branch(self):
+        text = dashboard.issue_section(self.RECORD, 0)
+        self.assertIn("<!-- agent-process issue/258 -->", text)
+        self.assertIn("## #258 Agent <Dashboard>", text)
+        self.assertIn('n5["developer review"]:::todo', text)
+        self.assertIn("**Stage**: planning", text)
+        self.assertIn('n1["plan"]:::running', text)
+        self.assertIn("| Issue | [#258](https://github.com/o/r/issues/258) |", text)
+
+    def test_the_issue_is_listed_in_issue_order_and_dropped_when_not_active(self):
+        issue = dashboard.issue_section(self.RECORD, 0)
+        body = dashboard.merge("", {"issue/258": issue}, {"issue/258"}, 0)
+        self.assertIn("<!-- agent-process issue/258 -->", body)
+        self.assertEqual(258, dashboard.issue_number("issue/258"))
+        dropped = dashboard.merge(body, {}, set(), 0)
+        self.assertIn("No active agent processes", dropped)
+        self.assertNotIn("issue/258", dropped)
 
 
 if __name__ == "__main__":

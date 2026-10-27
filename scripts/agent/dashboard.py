@@ -50,7 +50,7 @@ BODY_LIMIT = 60_000
 STATES = ("done", "running", "waiting", "failed", "stopped", "todo")
 
 CLASSES = {
-    "done": "fill:#d1fae5,stroke:#10b981,color:#064e3b",
+    "done": "fill:#4ade80,stroke:#16a34a,color:#052e16",
     "running": "fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a",
     "waiting": "fill:#fef9c3,stroke:#eab308,color:#713f12",
     "failed": "fill:#fee2e2,stroke:#ef4444,color:#7f1d1d",
@@ -123,7 +123,7 @@ def packages_of(record):
 
 def number_of(name):
     match = re.search(r"(\d+)$", name)
-    return int(match.group(1)) if match else 0
+    return int(match.group(1) or match.group(2)) if match else 0
 
 
 def state_of(step, alive, waits=False):
@@ -287,13 +287,13 @@ def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
 
     nodes = []
     if under_review:
-        pstate = "failed" if plan_step and plan_step.outcome == "failed" else "waiting"
+        pstate = "failed" if plan_step and plan_step.outcome == "failed" else "done"
     elif plan_step:
         pstate = state_of(plan_step, alive)
     else:
         pstate = "done"
     nodes.append(Node("plan", pstate, ("plan",)))
-    nodes.append(Node("plan approved", "todo" if under_review else "done", ("pr",)))
+    nodes.append(Node("plan approved", "waiting" if under_review else "done", ("pr",)))
     wp_nodes = package_nodes(packages, implement, alive, now)
     if not steps and implemented:
         wp_nodes[-1].state = "done"
@@ -410,19 +410,42 @@ def node_label(node):
     return label
 
 
+def display_nodes(process):
+    """The nodes the graph draws: the plan, the work packages, then one AI review node for everything
+    the loop does after them (CI, CI fixes, updates with main, review and fix rounds, finalise), and
+    the developer's review. The loop node takes the state of the loop's latest step."""
+    shown = [n for n in process["nodes"] if n.key and n.key[0] in ("plan", "pr", "package") and n.label != "ready for review"]
+    loop = [n for n in process["nodes"] if n not in shown and n.state != "todo" and n.label not in ("checks", "ready for review")]
+    ready = process["stage"] == "ready for review"
+    last = loop[-1] if loop else None
+    if last is None:
+        state = "todo"
+    elif last.state in ("running", "waiting", "failed", "stopped"):
+        state = last.state
+    elif ready:
+        state = "done"
+    else:
+        state = "running" if process["alive"] else "waiting"
+    reviews = [n for n in loop if n.label.startswith("review R")]
+    key = next((n.key for n in reversed(reviews) if n.key), ("pr",))
+    review = Node("AI review", state, key, last.minutes if last and state == "running" else None, reviews[-1].label.removeprefix("review ") if reviews else "")
+    return shown + [review, Node("developer review", "waiting" if ready else "todo", ("pr",))]
+
+
 def graph(record, now=None, max_rounds=None, max_ci_fixes=None, process=None):
     """The Mermaid block of a record's flow."""
     process = process or analyse(record, now, max_rounds, max_ci_fixes)
     lines = ["```mermaid", "flowchart LR"]
-    nodes = process["nodes"]
+    nodes = display_nodes(process)
     for number, node in enumerate(nodes, 1):
         lines.append(f'  n{number}["{node_label(node)}"]:::{node.state}')
     for number in range(1, len(nodes)):
         lines.append(f"  n{number} --> n{number + 1}")
     for state in STATES:
-        lines.append(f"  classDef {state} {CLASSES[state]}")
+        if any(node.state == state for node in nodes):
+            lines.append(f"  classDef {state} {CLASSES[state]}")
     for number, node in enumerate(nodes, 1):
-        url = url_of(node.key, record, process["markers"])
+        url = url_of(node.key, record, process["markers"]) or (url_of(("pr",), record, process["markers"]) if node.label == "AI review" else "")
         if url:
             lines.append(f'  click n{number} href "{url}" _blank')
     lines.append("```")
@@ -444,8 +467,8 @@ def is_active(record):
 
 
 def issue_number(branch):
-    match = re.match(r"plan/(\d+)-", branch)
-    return int(match.group(1)) if match else 0
+    match = re.match(r"(?:plan/(\d+)-|issue/(\d+)$)", branch)
+    return int(match.group(1) or match.group(2)) if match else 0
 
 
 def work_package(nodes):
@@ -521,14 +544,49 @@ def section(record, now=None, max_rounds=None, max_ci_fixes=None):
     process = analyse(record, now, max_rounds, max_ci_fixes)
     branch = record.get("branch", "")
     title = " ".join(record.get("issue_title", "").split())
-    heading = f"### #{issue_number(branch)} {title}: `{branch}`" if title else f"### #{issue_number(branch)}: `{branch}`"
+    heading = f"## #{issue_number(branch)} {title}" if title else f"## #{issue_number(branch)}"
     return "\n".join(
         [
             f"{SECTION_START} {branch} -->",
             heading,
+            f"Branch `{branch}`",
+            "",
             facts(record, process, now, max_rounds),
-            graph(record, process=process),
+            "",
             link_table(record, process),
+            "",
+            graph(record, process=process),
+            SECTION_END,
+        ]
+    )
+
+
+def issue_section(record, now=None):
+    """The section of an issue whose plan is still being written: it has no branch yet, so the key
+    is issue/<n>, and the section goes when a plan branch of the issue is listed."""
+    now = now if now is not None else int(time.time())
+    key = f"issue/{record['issue']}"
+    repo = record.get("repo_url", "")
+    url = f"{repo}/issues/{record['issue']}" if repo else ""
+    title = " ".join(record.get("issue_title", "").split())
+    started = time.strftime("%H:%M", progress.LOCALTIME(record.get("started", now)))
+    nodes = [("plan", "running"), ("plan approved", "todo"), ("work packages", "todo"), ("AI review", "todo"), ("developer review", "todo")]
+    lines = ["```mermaid", "flowchart LR"]
+    lines += [f'  n{n}["{escape(label)}"]:::{state}' for n, (label, state) in enumerate(nodes, 1)]
+    lines += [f"  n{n} --> n{n + 1}" for n in range(1, len(nodes))]
+    lines += [f"  classDef {state} {CLASSES[state]}" for state in STATES if any(s == state for _, s in nodes)]
+    if url:
+        lines.append(f'  click n1 href "{url}" _blank')
+    lines.append("```")
+    return "\n".join(
+        [
+            f"{SECTION_START} {key} -->",
+            f"## #{record['issue']} {title}" if title else f"## #{record['issue']}",
+            "Plan being written, no branch yet",
+            "",
+            f"**Stage**: planning · **Step**: plan · **Started**: {started} · **Waiting for**: nobody",
+            *([f"| Link | |\n|---|---|\n| Issue | [#{record['issue']}]({url}) |", ""] if url else []),
+            "\n".join(lines),
             SECTION_END,
         ]
     )
@@ -554,7 +612,7 @@ def merge(old_body, new_sections, active, now=None):
 
     def build():
         body = [section for _, section in kept] or ["No active agent processes"]
-        return "\n".join(header + ["\n\n".join(body)] + notes) + "\n"
+        return "\n".join(header + ["\n\n---\n\n".join(body)] + notes) + "\n"
 
     text = build()
     if len(text) > BODY_LIMIT:
@@ -573,7 +631,7 @@ def merge(old_body, new_sections, active, now=None):
 def main(argv):
     parser = argparse.ArgumentParser(prog="dashboard.py")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("graph", "section", "active"):
+    for name in ("graph", "section", "active", "issue"):
         one = sub.add_parser(name)
         one.add_argument("record")
         one.add_argument("--now", type=int)
@@ -598,6 +656,9 @@ def main(argv):
         record = json.load(f)
     if args.command == "active":
         return 0 if is_active(record) else 1
+    if args.command == "issue":
+        print(issue_section(record, args.now))
+        return 0
     render = graph if args.command == "graph" else section
     print(render(record, args.now, args.max_rounds, args.max_ci_fixes))
     return 0
