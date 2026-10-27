@@ -94,8 +94,8 @@ class GraphTest(unittest.TestCase):
         self.assertEqual(
             self.states(process),
             [
-                ("plan", "waiting"),
-                ("plan approved", "todo"),
+                ("plan", "done"),
+                ("plan approved", "waiting"),
                 ("WP1", "done"),
                 ("WP2", "todo"),
                 ("WP3", "done"),

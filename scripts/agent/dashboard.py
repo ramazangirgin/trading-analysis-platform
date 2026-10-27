@@ -287,13 +287,13 @@ def analyse(record, now=None, max_rounds=None, max_ci_fixes=None):
 
     nodes = []
     if under_review:
-        pstate = "failed" if plan_step and plan_step.outcome == "failed" else "waiting"
+        pstate = "failed" if plan_step and plan_step.outcome == "failed" else "done"
     elif plan_step:
         pstate = state_of(plan_step, alive)
     else:
         pstate = "done"
     nodes.append(Node("plan", pstate, ("plan",)))
-    nodes.append(Node("plan approved", "todo" if under_review else "done", ("pr",)))
+    nodes.append(Node("plan approved", "waiting" if under_review else "done", ("pr",)))
     wp_nodes = package_nodes(packages, implement, alive, now)
     if not steps and implemented:
         wp_nodes[-1].state = "done"
