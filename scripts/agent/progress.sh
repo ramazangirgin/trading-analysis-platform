@@ -79,17 +79,17 @@ render() {
 # The issue comment with the marker, created or edited; its ID is kept in progress.comment.
 post_once() {
   local body=$AGENT_STATE/progress.md id
-  render >"$body"
+  render >"$body" || return 1
   id=$(cat "$AGENT_STATE/progress.comment" 2>/dev/null || true)
   if [ -n "$id" ] && gh api -X PATCH "repos/{owner}/{repo}/issues/comments/$id" -F "body=@$body" >/dev/null 2>&1; then
     return 0
   fi
   id=$(gh api --paginate "repos/{owner}/{repo}/issues/$issue/comments" \
-    --jq ".[] | select(.user.login == \"$(agent_login)\" and (.body | startswith(\"$marker\"))) | .id" | tail -n 1)
+    --jq ".[] | select(.user.login == \"$(agent_login)\" and (.body | startswith(\"$marker\"))) | .id" | tail -n 1) || return 1
   if [ -n "$id" ]; then
-    gh api -X PATCH "repos/{owner}/{repo}/issues/comments/$id" -F "body=@$body" >/dev/null
+    gh api -X PATCH "repos/{owner}/{repo}/issues/comments/$id" -F "body=@$body" >/dev/null || return 1
   else
-    id=$(gh api "repos/{owner}/{repo}/issues/$issue/comments" -F "body=@$body" --jq .id)
+    id=$(gh api "repos/{owner}/{repo}/issues/$issue/comments" -F "body=@$body" --jq .id) || return 1
   fi
   echo "$id" >"$AGENT_STATE/progress.comment"
   echo "https://github.com/$(repo_slug)/issues/$issue#issuecomment-$id"
@@ -131,20 +131,22 @@ post_progress() {
   done
   trap 'release_lock; agent_exit' EXIT
   rm -f "$pending"
-  post_once
-  while [ -e "$pending" ]; do
+  local status=0
+  post_once || status=$?
+  while [ "$status" = 0 ] && [ -e "$pending" ]; do
     rm -f "$pending"
-    post_once >/dev/null
+    post_once >/dev/null || status=$?
   done
   rm -f "$lock"
   lock=""
+  return "$status"
 }
 
 # The progress comment (not with AGENT_ISSUE_PROGRESS=0), then the dashboard (not with
 # AGENT_DASHBOARD=0), which has its own lock. The dashboard is left out of post_progress's lock so
-# that a slow update does not hold up the next progress post.
+# that a slow update does not hold up the next progress post, and a failed comment does not skip it.
 post() {
-  if [ "$AGENT_ISSUE_PROGRESS" = 1 ]; then post_progress; fi
+  if [ "$AGENT_ISSUE_PROGRESS" = 1 ]; then post_progress || log "the progress comment was not updated"; fi
   [ "$AGENT_DASHBOARD" = 1 ] || return 0
   local mode=--wait
   if $async; then mode=--async; fi
