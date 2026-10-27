@@ -126,7 +126,11 @@ post_progress() {
       return 0
     fi
     tries=$((tries + 1))
-    [ "$tries" -lt 60 ] || die "another post holds $lock"
+    if [ "$tries" -ge 60 ]; then
+      log "another post holds $lock"
+      lock=""
+      return 1
+    fi
     sleep 1
   done
   trap 'release_lock; agent_exit' EXIT
