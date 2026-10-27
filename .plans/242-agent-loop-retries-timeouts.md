@@ -40,8 +40,8 @@ and the `update-main-conflict` step of `next.sh`.)
   TLS handshake). Anything else (a rejected push, auth, a missing ref, `ls-remote --exit-code` not
   finding a branch, `gh label create` on an existing label) returns at once with its status.
   Settings: `AGENT_RETRIES` (retries after the first attempt, default 3), `AGENT_RETRY_DELAY`
-  (seconds before the first retry, default 10, doubled for each next one), `AGENT_CALL_TIMEOUT`
-  (seconds per attempt, default 120). Each retry writes `agent: >> retrying <what> (<k> of <n>): <first
+  (seconds before the first retry, default 10, doubled for each next one: 10, 20, 40 s),
+  `AGENT_CALL_TIMEOUT` (seconds per attempt, default 120). These defaults are decided. Each retry writes `agent: >> retrying <what> (<k> of <n>): <first
   error line>` into the log, but not through `milestone`: a retry line is not published or sent to
   ntfy, otherwise an outage would fan out into more `gh` calls from `progress_publish`.
 - **Timeouts: `scripts/agent/timeout.py <seconds> <command…>`** (new, standard library): runs the
@@ -52,14 +52,16 @@ and the `update-main-conflict` step of `next.sh`.)
   `git-remote-https` and the agent's own subprocesses.
 - **Agent step timeout**: `run_agent` runs `claude` under `timeout.py` with `AGENT_STEP_TIMEOUT`
   minutes (default 60) and reads the pipeline's statuses itself instead of `|| true`. The limit is
-  per agent run (one work package run, one finding, one review), not per script: an `implement` of
-  several packages legitimately runs for hours. On 124 it calls `stop_run "<AGENT_STEP_LABEL or
+  per agent run (one work package run, one finding, one review), not per script, as decided: an
+  `implement` of several packages legitimately runs for hours and has no overall limit. On 124 it calls `stop_run "<AGENT_STEP_LABEL or
   AGENT_STEP> ran longer than <n> min"` and exits with `AGENT_EXIT_STOPPED`. The state needed to
   resume is already where it is today (uncommitted work and the plan for `implement`, the step
   comments for the others) and the partial stream counts as an interrupted run's usage.
 - **`stop_run <reason>`** moves into `lib.sh` from `next.sh`'s `stop`: the `stopping:` milestone,
   the "Agent loop stopped" step comment on the branch's open pull request, and the `agent` label
-  removed when the pull request is in the agent stage. `next.sh`'s `stop` calls it and exits 0 as
+  removed when the pull request is in the agent stage. A step timeout is such a stop, as decided:
+  it removes the label like the CI timeout, and the developer adds it again to resume (a `failed:`
+  exit keeps it). `next.sh`'s `stop` calls it and exits 0 as
   today. The CI timeout of `next.sh` keeps `AGENT_CI_TIMEOUT` and says `CI <sha> ran longer than
   <n> min`.
 - **Every exit is announced.** `lib.sh` sets `set -E` and an `ERR` trap that records, once per
@@ -174,10 +176,4 @@ No screenshot: nothing in the web UI changes.
 
 ## Open questions
 
-- The step timeout is per agent run (60 minutes), not per script; a whole `implement` of several
-  packages has no overall limit. Is that what the issue meant by "an agent step 60 minutes"?
-- A step timeout is a stop, so the `agent` label is removed, as for the CI timeout today, and the
-  developer adds it again to resume; a `failed:` exit keeps the label. Should a timeout keep the
-  label too, so a plain rerun resumes it?
-- Defaults of the retry: 3 retries after the first attempt, 10 s doubled (10, 20, 40). The issue
-  names no delay.
+None.
