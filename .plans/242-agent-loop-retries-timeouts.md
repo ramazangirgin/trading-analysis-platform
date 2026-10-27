@@ -100,11 +100,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Process-group timeout
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/agent/timeout.py`, `scripts/agent/test_timeout.py`
 - **Steps**:
-  - [ ] `timeout.py` as in Design
+  - [x] `timeout.py` as in Design
 - **Tests**: `test_timeout.py`: the command's exit status is passed through; a command over the
   limit ends with 124 and a child it started (a `sleep` in the background) is gone too; `TERM` sent
   to `timeout.py` ends the command and exits 143.
