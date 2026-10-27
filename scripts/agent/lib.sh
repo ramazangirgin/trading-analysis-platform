@@ -310,6 +310,7 @@ use_state() {
     log_header
     exec 2> >(tee -a "$AGENT_STATE/run.log" >&2)
   fi
+  export -n AGENT_OUTERMOST # detach.sh passes it in the environment; the scripts below must not inherit it
   log "log: $AGENT_STATE/run.log   (follow it: tail -f $AGENT_STATE/run.log)"
   log "streams: $AGENT_STATE/*.jsonl"
   log "state: $AGENT_STATE"
