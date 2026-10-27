@@ -18,6 +18,13 @@
 #   AGENT_GITHUB_LOGIN   the account the agents comment as; default the gh login
 #   AGENT_CI_CHECK       the required check; default "CI passed"
 #   AGENT_CI_TIMEOUT     minutes to wait for CI on a push; default 60
+#   AGENT_STEP_TIMEOUT   minutes of one agent run (a work package run, a finding, a review) before the
+#                        run stops with "stopping: … ran longer than …"; default 60
+#   AGENT_RETRIES        retries of a gh call or a git call to the remote after a transient error
+#                        (a dropped connection, a 5xx, a rate limit); default 3
+#   AGENT_RETRY_DELAY    seconds before the first retry, doubled for each next one; default 10
+#   AGENT_CALL_TIMEOUT   seconds of one attempt of such a call before it is stopped and retried;
+#                        default 120
 #   AGENT_BASE_BRANCH    the branch plans start from and pull requests go into; default main.
 #                        Steps on an existing pull request use its base instead.
 #   AGENT_ISSUE_PROGRESS 1 (default): keep the progress comment on the issue up to date
@@ -40,7 +47,7 @@
 # run.pid, the package the implementation is on) goes to .git/agent/<issue>-<slug>/ of the plan branch
 # (use_state), where a later run finds it.
 
-set -euo pipefail
+set -Eeuo pipefail
 
 # Bash 3.2 (macOS) compatible: no negative array indices, guarded empty-array expansions.
 
@@ -99,6 +106,16 @@ AGENT_WP_MAX_CONTINUATIONS=${AGENT_WP_MAX_CONTINUATIONS:-3}
 AGENT_MAX_WP_FILES=${AGENT_MAX_WP_FILES:-8}
 AGENT_CI_CHECK=${AGENT_CI_CHECK:-CI passed}
 AGENT_CI_TIMEOUT=${AGENT_CI_TIMEOUT:-60}
+AGENT_STEP_TIMEOUT=${AGENT_STEP_TIMEOUT:-60}
+AGENT_RETRIES=${AGENT_RETRIES:-3}
+AGENT_RETRY_DELAY=${AGENT_RETRY_DELAY:-10}
+AGENT_CALL_TIMEOUT=${AGENT_CALL_TIMEOUT:-120}
+# A process that wrote its failed: line exits with 86, one that stopped the run (stop_run) with 87:
+# the script that started it fails on that status and writes no second line.
+AGENT_EXIT_FAILED=86
+AGENT_EXIT_STOPPED=87
+# What a failed gh or git call prints when trying again can help.
+AGENT_TRANSIENT_ERRORS='connection reset|connection refused|timed out|could not resolve host|temporary failure in name resolution|network is unreachable|RPC failed|early EOF|remote end hung up|unexpected disconnect|HTTP 5[0-9][0-9]|(^|[^0-9])50[234]([^0-9]|$)|rate limit|TLS handshake'
 AGENT_BASE_BRANCH=${AGENT_BASE_BRANCH:-main}
 AGENT_ISSUE_PROGRESS=${AGENT_ISSUE_PROGRESS:-1}
 AGENT_DASHBOARD=${AGENT_DASHBOARD:-1}
@@ -141,16 +158,123 @@ notify_milestone() {
   return 0
 }
 
+# announce_failure <text>: the milestone "failed: <step>: <text>", also kept in failed.txt for the
+# outermost script's comment on the pull request. Helpers (AGENT_NO_ANNOUNCE) only log: their
+# failure is not the end of the run.
+announce_failure() {
+  if [ -n "${AGENT_NO_ANNOUNCE:-}" ]; then
+    log "$1"
+    return 0
+  fi
+  local line="failed: ${AGENT_STEP:-$(basename "$0")}: $1"
+  if [ -n "${AGENT_STATE:-}" ]; then printf '%s\n' "$line" >"$AGENT_STATE/failed.txt"; fi
+  milestone "$line"
+}
+
 # The first line of the message is a milestone (failed: …), the rest plain lines.
 die() {
   local message=$* first rest
   first=${message%%$'\n'*}
   rest=${message#"$first"}
-  milestone "failed: $first"
+  announce_failure "$first"
   if [ -n "$rest" ]; then
     printf '%s\n' "${rest#$'\n'}" | sed 's/^/agent: /' >&2
   fi
-  exit 1
+  if [ -n "${AGENT_NO_ANNOUNCE:-}" ]; then exit 1; fi
+  exit "$AGENT_EXIT_FAILED"
+}
+
+# What agent_exit says about an exit nobody announced: the command that failed first (the ERR trap).
+AGENT_ERR=""
+agent_err() { [ -n "$AGENT_ERR" ] || AGENT_ERR="$2 exited $1 ($3:$4)"; }
+trap 'agent_err $? "$BASH_COMMAND" "$(basename "${BASH_SOURCE[0]}")" $LINENO' ERR
+
+# --- Network calls ---------------------------------------------------------------------------------
+
+# retry <what> <command…>: runs the command under AGENT_CALL_TIMEOUT and again, after a delay that
+# doubles, when it failed for a transient reason (it timed out, or AGENT_TRANSIENT_ERRORS matches its
+# stderr); any other failure returns at once with its status. A retry is a log line, not a
+# milestone: it must not publish anything while GitHub is out. The command's stdin is not replayed.
+retry() {
+  local what=$1 attempt=0 delay=$AGENT_RETRY_DELAY status err first
+  shift
+  err=$(mktemp "$AGENT_TMP/retry.XXXXXX")
+  while :; do
+    status=0
+    py "$AGENT_DIR/timeout.py" "$AGENT_CALL_TIMEOUT" "$@" 2>"$err" || status=$?
+    cat "$err" >&2
+    if [ "$status" = 0 ]; then break; fi
+    if [ "$status" = 124 ]; then
+      first="timed out after ${AGENT_CALL_TIMEOUT}s"
+    elif grep -Eiq "$AGENT_TRANSIENT_ERRORS" "$err"; then
+      first=$(grep -Eim1 "$AGENT_TRANSIENT_ERRORS" "$err")
+    else
+      break
+    fi
+    [ "$attempt" -lt "$AGENT_RETRIES" ] || break
+    attempt=$((attempt + 1))
+    echo "agent: >> retrying $what ($attempt of $AGENT_RETRIES): $first" >&2
+    sleep "$delay"
+    delay=$((delay * 2))
+  done
+  rm -f "$err"
+  return "$status"
+}
+
+gh() { retry "gh ${1:-}" "$(type -P gh)" "$@"; }
+
+# Only the subcommands that reach the remote are retried; the options before the subcommand
+# (-C <dir>, -c <k=v>) are skipped to find it.
+git() {
+  local sub="" arg skip=false
+  for arg in "$@"; do
+    if $skip; then
+      skip=false
+      continue
+    fi
+    case $arg in
+      -C | -c) skip=true ;;
+      -*) ;;
+      *)
+        sub=$arg
+        break
+        ;;
+    esac
+  done
+  case $sub in
+    fetch | push | ls-remote | pull) retry "git $sub" "$(type -P git)" "$@" ;;
+    *) command git "$@" ;;
+  esac
+}
+
+# stop_run <reason>: hands the pull request back to the developer: the stopping: milestone, a comment
+# on the branch's open pull request and, in the agent stage, the label removed (add it again to
+# resume). The caller ends the process.
+stop_run() {
+  milestone "stopping: $1"
+  [ -z "${AGENT_NO_PROGRESS:-}" ] && [ -n "${AGENT_BRANCH:-}" ] || return 0
+  local pr
+  pr=$(pr_of_branch "$AGENT_BRANCH") || pr=""
+  [ -n "$pr" ] || return 0
+  local agent_stage=false
+  if [ "$(pr_stage "$pr" || true)" = agent ]; then agent_stage=true; fi
+  printf '### Agent loop stopped\n\n%s\n\nThe pull request stays a draft. Continue by hand, or add the `%s` label and run the agent loop again.\n' \
+    "$1" "$AGENT_LABEL" >"$AGENT_TMP/stop.md"
+  post_step "$pr" stop 0 "$AGENT_TMP/stop.md" || log "the stop was not commented on the pull request"
+  if $agent_stage; then
+    gh pr edit "$pr" --remove-label "$AGENT_LABEL" >/dev/null || log "the $AGENT_LABEL label was not removed"
+  fi
+}
+
+# post_failure: the failed: line of failed.txt as a comment on the branch's open pull request; the
+# label stays, a transient cause needs only a rerun.
+post_failure() {
+  local pr
+  pr=$(pr_of_branch "$AGENT_BRANCH")
+  [ -n "$pr" ] || return 0
+  printf '### Agent loop failed\n\n%s\n\nThe `%s` label stays: run `mise run agent:run %s` again to resume.\n' \
+    "$(cat "$AGENT_STATE/failed.txt")" "$AGENT_LABEL" "$AGENT_BRANCH" >"$AGENT_TMP/failed.md"
+  post_step "$pr" stop 0 "$AGENT_TMP/failed.md"
 }
 
 # --- State per plan branch -----------------------------------------------------------------------
@@ -180,6 +304,8 @@ use_state() {
   [ -n "${AGENT_NO_PROGRESS:-}" ] || AGENT_PROGRESS=$AGENT_STATE/progress.tsv
   if [ -z "${AGENT_LOGGING:-}" ]; then
     export AGENT_LOGGING=1
+    AGENT_OUTERMOST=1
+    rm -f "$AGENT_STATE/failed.txt"
     log_header
     exec 2> >(tee -a "$AGENT_STATE/run.log" >&2)
   fi
@@ -241,9 +367,9 @@ progress_event() {
 progress_publish() {
   [ -n "${AGENT_PROGRESS:-}" ] && { [ "$AGENT_ISSUE_PROGRESS" = 1 ] || [ "$AGENT_DASHBOARD" = 1 ]; } || return 0
   if [ "${1:-}" = --wait ]; then
-    "$AGENT_DIR/progress.sh" post "$AGENT_BRANCH" >/dev/null || log "the progress comment on the issue was not updated"
+    AGENT_NO_ANNOUNCE=1 "$AGENT_DIR/progress.sh" post "$AGENT_BRANCH" >/dev/null || log "the progress comment on the issue was not updated"
   else
-    ("$AGENT_DIR/progress.sh" post --async "$AGENT_BRANCH" >/dev/null 2>&1 || true) &
+    (AGENT_NO_ANNOUNCE=1 "$AGENT_DIR/progress.sh" post --async "$AGENT_BRANCH" >/dev/null 2>&1 || true) &
   fi
 }
 
@@ -276,16 +402,35 @@ substep_end() {
   progress_publish
 }
 
-# On every exit: the open step ends (well, failed or interrupted) and the lock is released.
+# On every exit: an exit nobody announced (a command failed under set -e) is announced as a failed:
+# line, the open step ends (well, failed, stopped or interrupted), the lock is released and the
+# outermost script comments a failure on the pull request.
 agent_exit() {
   local status=$? result=""
-  case $status in 0) ;; 130 | 143) result=interrupted ;; *) result=failed ;; esac
+  trap - ERR
+  set +e
+  case $status in
+    0) ;;
+    130 | 143) result=interrupted ;;
+    "$AGENT_EXIT_STOPPED") result=stopped ;;
+    "$AGENT_EXIT_FAILED") result=failed ;;
+    *)
+      result=failed
+      announce_failure "${AGENT_ERR:-exited $status}"
+      if [ -z "${AGENT_NO_ANNOUNCE:-}" ]; then status=$AGENT_EXIT_FAILED; fi
+      ;;
+  esac
   step_end "$result"
   if [ -n "${AGENT_LOCK_HELD:-}" ]; then rm -f "$AGENT_STATE/run.pid"; fi
+  if [ "$status" = "$AGENT_EXIT_FAILED" ] && [ -n "${AGENT_OUTERMOST:-}" ] && [ -n "${AGENT_BRANCH:-}" ] &&
+    [ -z "${AGENT_NO_PROGRESS:-}" ] && [ -s "$AGENT_STATE/failed.txt" ]; then
+    post_failure || log "the failure was not commented on the pull request"
+  fi
   # After the lock: a run that ended, failed or was interrupted must not stay "running" on it.
   if [ -n "${AGENT_LOCK_HELD:-}" ] && [ -n "${AGENT_BRANCH:-}" ] && [ -n "${AGENT_PROGRESS:-}" ] && [ "$AGENT_DASHBOARD" = 1 ]; then
-    "$AGENT_DIR/dashboard.sh" update --wait "$AGENT_BRANCH" >/dev/null || true
+    AGENT_NO_ANNOUNCE=1 "$AGENT_DIR/dashboard.sh" update --wait "$AGENT_BRANCH" >/dev/null || true
   fi
+  exit "$status"
 }
 trap agent_exit EXIT
 trap 'exit 130' INT
@@ -460,9 +605,17 @@ run_agent() {
   fi
   # dontAsk: a tool outside the allowed list is refused instead of waiting for an answer.
   # The agent gets no GitHub token: it talks to GitHub only through the scripts.
-  env -u GH_TOKEN -u GITHUB_TOKEN AGENT_QUIET=1 ${lsp_env[@]+"${lsp_env[@]}"} claude -p --output-format stream-json --verbose --permission-mode dontAsk \
+  local claude_status=0
+  if ! py "$AGENT_DIR/timeout.py" $((AGENT_STEP_TIMEOUT * 60)) \
+    env -u GH_TOKEN -u GITHUB_TOKEN AGENT_QUIET=1 ${lsp_env[@]+"${lsp_env[@]}"} claude -p --output-format stream-json --verbose --permission-mode dontAsk \
     --allowedTools "${tools[@]}" --disallowedTools "${AGENT_DENIED_TOOLS[@]}" \
-    ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}" || true
+    ${extra[@]+"${extra[@]}"} <"$prompt" | py "$AGENT_DIR/agent_json.py" stream "$out" "${out}l" "${AGENT_STEP_LABEL:-}"; then
+    claude_status=${PIPESTATUS[0]}
+  fi
+  if [ "$claude_status" = 124 ]; then
+    stop_run "${AGENT_STEP_LABEL:-${AGENT_STEP:-the agent}} ran longer than $AGENT_STEP_TIMEOUT min"
+    exit "$AGENT_EXIT_STOPPED"
+  fi
   [ -s "$out" ] || die "the agent wrote no result ($out)"
   progress_event usage "${AGENT_STEP:-}" "${AGENT_SUBSTEP:-}" "$(py "$AGENT_DIR/agent_json.py" progress-usage "$out")"
   if [ "${AGENT_ALLOW_MAX_TURNS:-}" = 1 ] && [ "$(py "$AGENT_DIR/agent_json.py" get "$out" subtype)" = error_max_turns ]; then

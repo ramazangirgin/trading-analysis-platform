@@ -111,14 +111,14 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Retries, call timeout, announced exits and stops in lib.sh
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `scripts/agent/lib.sh`, `scripts/agent/test_lib.py`
 - **Steps**:
-  - [ ] `retry`, the `gh` and `git` functions, the transient pattern list and the new settings
+  - [x] `retry`, the `gh` and `git` functions, the transient pattern list and the new settings
         (with the header comment of `lib.sh`)
-  - [ ] `AGENT_STEP_TIMEOUT` in `run_agent`, `stop_run`, the exit codes
-  - [ ] `set -E`, the `ERR` trap, `die`'s new form, `agent_exit` announcing and the outermost
+  - [x] `AGENT_STEP_TIMEOUT` in `run_agent`, `stop_run`, the exit codes
+  - [x] `set -E`, the `ERR` trap, `die`'s new form, `agent_exit` announcing and the outermost
         script's failure comment, `AGENT_NO_ANNOUNCE` for `progress_publish` and the dashboard update
 - **Tests**: `test_lib.py` runs Bash snippets that source `lib.sh` with `AGENT_SCRIPTS` and
   `AGENT_REPO_ROOT` set (no re-exec), `AGENT_RETRY_DELAY=0` and a fake `gh` / `git` on `PATH` that
