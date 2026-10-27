@@ -132,11 +132,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Plan check in plan-branch.sh
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `scripts/agent/plan-branch.sh`, `scripts/agent/plan.py`, `scripts/agent/test_plan.py`
 - **Steps**:
-  - [ ] The check and the `EXIT` trap that calls `agent_exit`
+  - [x] The check and the `EXIT` trap that calls `agent_exit`
 - **Tests**: `test_plan.py`: `test_unreadable_depends_names_the_line` also asserts the accepted
   forms in the message.
 
