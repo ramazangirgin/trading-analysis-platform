@@ -184,10 +184,11 @@ create_issue() {
 read_body() { gh api "repos/{owner}/{repo}/issues/$1" --jq '.body // ""' >"$2"; }
 
 # render <branch>...: the section of each branch into $work, in the arrays sections (--section
-# arguments), rendered and active.
+# arguments), rendered, active and expected (the section files of the active branches).
 sections=()
 rendered=()
 active=()
+expected=()
 render() {
   local branch record section
   for branch in "$@"; do
@@ -203,7 +204,10 @@ render() {
     fi
     sections+=(--section "$section")
     rendered+=("$branch")
-    if dashboard_py active "$record"; then active+=("$branch"); fi
+    if dashboard_py active "$record"; then
+      active+=("$branch")
+      expected+=("$section")
+    fi
   done
 }
 
@@ -220,12 +224,10 @@ merge_body() {
   dashboard_py merge "$1" "${sections[@]+"${sections[@]}"}" --active "${keep[@]+"${keep[@]}"}" >"$2"
 }
 
-# present <body file>: whether the body holds every rendered section as written.
+# present <body file>: whether the body holds every active rendered section as written. The merge
+# drops the sections of branches that are not active, so those are not expected.
 present() {
-  local files=() arg
-  for arg in "${sections[@]+"${sections[@]}"}"; do
-    [ "$arg" = --section ] || files+=("$arg")
-  done
+  local files=("${expected[@]+"${expected[@]}"}")
   [ "${#files[@]}" -gt 0 ] || return 0
   py -c 'import sys
 body = open(sys.argv[1], encoding="utf-8").read()
