@@ -195,14 +195,17 @@ trap 'agent_err $? "$BASH_COMMAND" "$(basename "${BASH_SOURCE[0]}")" $LINENO' ER
 # retry <what> <command…>: runs the command under AGENT_CALL_TIMEOUT and again, after a delay that
 # doubles, when it failed for a transient reason (it timed out, or AGENT_TRANSIENT_ERRORS matches its
 # stderr); any other failure returns at once with its status. A retry is a log line, not a
-# milestone: it must not publish anything while GitHub is out. The command's stdin is not replayed.
+# milestone: it must not publish anything while GitHub is out. The command's stdin is not replayed;
+# its stdout is held back and printed once, for the attempt that is kept, so a retry after a
+# partial `gh api --paginate` does not repeat the pages already written.
 retry() {
-  local what=$1 attempt=0 delay=$AGENT_RETRY_DELAY status err first
+  local what=$1 attempt=0 delay=$AGENT_RETRY_DELAY status err out first
   shift
   err=$(mktemp "$AGENT_TMP/retry.XXXXXX")
+  out=$(mktemp "$AGENT_TMP/retry.XXXXXX")
   while :; do
     status=0
-    py "$AGENT_DIR/timeout.py" "$AGENT_CALL_TIMEOUT" "$@" 2>"$err" || status=$?
+    py "$AGENT_DIR/timeout.py" "$AGENT_CALL_TIMEOUT" "$@" >"$out" 2>"$err" || status=$?
     cat "$err" >&2
     if [ "$status" = 0 ]; then break; fi
     if [ "$status" = 124 ]; then
@@ -218,7 +221,8 @@ retry() {
     sleep "$delay"
     delay=$((delay * 2))
   done
-  rm -f "$err"
+  cat "$out"
+  rm -f "$err" "$out"
   return "$status"
 }
 
