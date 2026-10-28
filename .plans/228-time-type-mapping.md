@@ -355,7 +355,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Documentation and version
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3
 - **Files**:
   - `docs/coding-convention/backend-java-persistence.md`
@@ -363,8 +363,8 @@ Packages without a dependency between them can be implemented in parallel.
   - `docs/coding-convention/README.md`
   - `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py` (through `mise run version:bump minor`)
 - **Steps**:
-  - [ ] The changes listed in "Docs to update".
-  - [ ] `mise run version:bump minor`.
+  - [x] The changes listed in "Docs to update".
+  - [x] `mise run version:bump minor`.
 - **Tests**: `mise run check` (formatting, structure, version sync).
 
 ## Tests
