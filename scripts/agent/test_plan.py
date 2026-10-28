@@ -84,7 +84,7 @@ class OrderTest(unittest.TestCase):
 
     def test_unreadable_depends_names_the_line(self):
         text = document(package("WP1", depends="the first one"))
-        with self.assertRaisesRegex(plan.PlanError, r"line \d+: cannot read"):
+        with self.assertRaisesRegex(plan.PlanError, r"line \d+: cannot read.*use none, WP1, WP2, or WP2-WP4"):
             plan.parse(text)
 
     def test_cycle_names_the_lines(self):

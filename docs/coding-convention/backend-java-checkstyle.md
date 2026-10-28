@@ -130,8 +130,8 @@ built-in check such as `IllegalImport`, `TodoComment` or `RegexpSingleline`, lin
 `TreeWalker` in `checkstyle.xml`. A finding starts with the rule's id and ends with its advice:
 `TAP-L1: Field 'System#out' is not allowed. Use an SLF4J logger: log.info(...).`
 
-**Ids** are `TAP-<group><n>`, with a group per topic (`L`, `D`, `T`, `C`, `J`, `S`, `X`, `A`; `L` is
-logging, `D` Spring, `A` access control). Ids are not reused.
+**Ids** are `TAP-<group><n>`, with a group per topic (`L`, `D`, `T`, `C`, `J`, `S`, `X`, `A`, `M`; `L` is
+logging, `D` Spring, `A` access control, `M` MapStruct and mapping). Ids are not reused.
 
 **Suppressing** one is as for any check, with the id: `@SuppressWarnings("checkstyle:TAP-L1")` and a
 reason on the same line or the line above (see [Suppressing a finding](#suppressing-a-finding)).
@@ -151,6 +151,7 @@ the repository.
 | `TAP-D6` | No `ResponseEntity.ok(...)` or `ResponseEntity::ok`: an endpoint that only answers `200` returns its body type | main and test | [`RegexpSinglelineJava`](https://checkstyle.org/checks/regexp/regexpsinglelinejava.html) | `format` matches `ResponseEntity.ok(` and `ResponseEntity::ok`; comments are ignored | Errors are exceptions ([REST endpoints](backend-java-rest-api.md#errors)), so a `ResponseEntity` around a `200` sets nothing Spring would not; it is kept for `201`, `204` and statuses or headers that vary | `public ResponseEntity<UserDto> getUser(...) { return ResponseEntity.ok(dto); }` / `public UserDto getUser(...) { return dto; }` |
 | `TAP-D7` | No `static` method in a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`; static fields and nested types stay allowed | main | [`StaticMethodInAnnotatedClassCheck`](../../build-logic/checkstyle-rules/docs/StaticMethodInAnnotatedClassCheck.md) | `annotations = ...stereotype.Service, ...stereotype.Component, ...stereotype.Repository, ...stereotype.Controller, ...annotation.RestController, ...annotation.RestControllerAdvice, ...annotation.Configuration` | A Spring bean is a singleton already, so its methods are instance methods; a static method hides a dependency from the bean and from its tests (it cannot be injected or replaced). The one known exception is a `static @Bean` method that Spring needs before it creates the configuration, such as a method interceptor or a bean post-processor: suppress it with `@SuppressWarnings("checkstyle:TAP-D7")` and that reason | `@Service class PriceService { static BigDecimal round(BigDecimal v) {...} }` / `@Service class PriceService { BigDecimal round(BigDecimal v) {...} }` |
 | `TAP-D8` | A web DTO enum (an `enum` in `bff/api` main sources) is named `...EnumDto` | `bff/api` main | [`TypeName`](https://checkstyle.org/checks/naming/typename.html) | `tokens = ENUM_DEF`, `format = ^[A-Z][A-Za-z0-9]*EnumDto$` | The suffix tells an enum DTO from a record DTO where it is used, and a MapStruct enum mapper (`VisibilityToVisibilityEnumDtoMapper`) reads the same way | `enum VisibilityDto {...}` / `enum VisibilityEnumDto {...}` |
+| `TAP-M1` | Every `@Mapper` sets `config`, the shared `SharedMapperConfig` | main and test | [`RequiredAnnotationAttributeCheck`](../../build-logic/checkstyle-rules/docs/RequiredAnnotationAttributeCheck.md) | `annotations = org.mapstruct.Mapper`, `attributes = config` | One place sets deep copying and the unmapped source and target policies; a mapper without it silently shares state with its source and drops fields | `@Mapper(uses = X.class)` / `@Mapper(config = SharedMapperConfig.class, uses = X.class)` |
 
 ## Suppressing a finding
 

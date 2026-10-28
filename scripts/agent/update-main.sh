@@ -10,7 +10,7 @@
 # fresh context. The version is raised again when the base caught up (--bump, default the plan's
 # "Version bump", else minor). The merge, the resolution and the bump go out in one push, then the
 # step's comment (marker update-main, with from=<head before> head=<head after>) on the pull request.
-# An unresolved conflict stops the script with the merge left local: finish it by hand
+# An unresolved conflict stops the run (stop_run, exit 87) with the merge left local: finish it by hand
 # (/merge-main-into-branch) or drop it with `git reset --keep @{u}`. Milestone lines (agent: >> …,
 # see lib.sh): up to date, or the number of conflicts resolved and the version. Its files are in
 # .git/agent/<issue>-<slug>/ (update-main-<n>.json is the agent's result).
@@ -52,8 +52,8 @@ plan=$(plan_file_of_branch "$branch")
 
 checkout_branch "$branch"
 if [ -n "$(git rev-list --merges "origin/$branch..HEAD")" ]; then
-  die "update with main: $branch has a merge that was never pushed (an earlier unresolved run)
-agent: finish it by hand (/merge-main-into-branch) or drop it with: git reset --keep @{u}"
+  stop_run "$branch conflicts with $base: it has a merge that was never pushed (an earlier unresolved run); finish it by hand (/merge-main-into-branch) or drop it with: git reset --keep @{u}"
+  exit "$AGENT_EXIT_STOPPED"
 fi
 if git merge-base --is-ancestor "origin/$base" HEAD; then
   milestone "$branch: up to date with $base"
@@ -191,8 +191,8 @@ if [ -n "$run_agent_task" ]; then
   fi
   if [ -n "$unresolved" ]; then
     files=${agent_files[*]-the check}
-    die "update with main: unresolved conflict in ${files// /, }: ${agent_reason:-$unresolved}
-agent: the merge stays local ($unresolved); finish it by hand (/merge-main-into-branch) or drop it with: git reset --keep @{u}"
+    stop_run "$branch conflicts with $base: unresolved conflict in ${files// /, }: ${agent_reason:-$unresolved}. The merge stays local; finish it by hand (/merge-main-into-branch) or drop it with: git reset --keep @{u}"
+    exit "$AGENT_EXIT_STOPPED"
   fi
   while IFS= read -r line; do
     [ -z "$line" ] || resolution_lines+=("$line")

@@ -2,9 +2,10 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.even
 
 import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 /** Unknown statuses count as failures. */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface StringToRunOutcomeMapper {
 
     default RunOutcome map(String source) {

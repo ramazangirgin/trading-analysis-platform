@@ -7,10 +7,11 @@ import java.util.TreeMap;
 import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisPreviewDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RatingEnumDto;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.AnalysisPreview;
 
 /** Section keys become the report's lowercase names, in the order of the report. */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface AnalysisPreviewToAnalysisPreviewDtoMapper {
 
     default AnalysisPreviewDto map(AnalysisPreview source) {

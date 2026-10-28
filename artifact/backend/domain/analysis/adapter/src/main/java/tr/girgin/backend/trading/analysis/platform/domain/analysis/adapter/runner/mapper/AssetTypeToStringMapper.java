@@ -3,8 +3,9 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.runn
 import java.util.Locale;
 import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface AssetTypeToStringMapper {
 
     default String map(AssetType source) {

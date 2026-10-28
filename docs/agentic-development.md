@@ -115,7 +115,9 @@ cannot run `git push` or `gh`, and `main`'s ruleset requires a code owner's appr
   lines, with the milestone lines `agent: >> …` next to the tool lines), `progress.tsv` (the steps,
   milestones and agent usage behind the [progress comment on the issue](#progress-on-the-issue)),
   every prompt, agent result (`*.json`) and stream (`*.jsonl`), `current` (the package the
-  implementation is on) and `run.pid` (the lock). Inside `.git` it is never committed, survives
+  implementation is on) and `run.pid` (the lock). Next to these directories, `.git/agent/` holds
+  `dashboard.issue` (the number of the [dashboard](#dashboard) issue) and `dashboard.lock`. Inside
+  `.git` it is never committed, survives
   `git clean`, and is shared by the worktrees of the repository. A later run, even of another
   script, finds it. It is not deleted by the scripts; delete it after the merge.
 - **The plan file is merged with the code.** It stays in `.plans/` as the record of why the change
@@ -184,7 +186,9 @@ always plans on Opus, whatever model the session uses and however it is started 
 by `develop-issue`): the session hands the work to an Opus subagent. It
 reads the issue, the issues it links to and the documents of every part it touches, and writes
 `.plans/<issue>-<slug>.md` from [`plan-template.md`](../.claude/skills/plan-from-issue/plan-template.md),
-or several plans when the issue does not fit one pull request. Discuss it with Claude in the same
+or several plans when the issue does not fit one pull request. The plan
+states each fact once and links the conventions instead of restating them (about 150 lines; more
+needs a reason). Discuss it with Claude in the same
 session; when it is ready for review, the skill pushes one branch per plan
 (`mise run agent:plan-branch .plans/<issue>-<slug>.md`), opens a draft pull request labelled `plan`
 for it and links that on the issue. The local plan file is removed once its branch is pushed, so
@@ -207,7 +211,8 @@ This is the first of the two decisions that are yours. Read the plan on the draf
   `open` and the `Depends on` lines are right (they decide the order the agent works in, and each
   package is pushed on its own, so it should leave the repository green); no package names more
   than `AGENT_MAX_WP_FILES` files (8, tests included; `plan-branch.sh` prints a warning for one
-  that does, and the planning session shows it);
+  that does, and the planning session shows it); `plan-branch.sh` refuses a plan whose work
+  packages it cannot read (a `Depends on` line that is not `none`, `WP1, WP2` or `WP2-WP4`);
 - the version bump (`minor`, `major` for a breaking change);
 - "Docs to update" covers the text of the feature's topic file in `docs/` and every screenshot: a
   new page gets one, a page whose look changes gets it retaken. "Later" is not an option: the
@@ -283,6 +288,7 @@ The milestones reach the developer without a model turn:
   no progress (the run itself is unaffected). Without mise, use
   `claude --plugin-dir .claude/mods/agent-progress`.
   Turn it off by leaving it out.
+- **The [Agent Dashboard](#dashboard) issue** shows all active processes as step graphs, on GitHub.
 - **A push to the phone** through [ntfy](https://ntfy.sh): `export AGENT_NTFY_TOPIC=<a topic nobody
   guesses>` (`AGENT_NTFY_SERVER` for a server of your own). This sends the milestone lines, which
   name the issue and the pull request, to an external service: it is off unless the topic is set.
@@ -349,6 +355,46 @@ on its own (the plan and its approval, the update with `main`) are recorded with
 `progress.sh usage <branch | pr>` prints the Usage section alone. `mise run agent:progress <branch | pr>` prints the comment without posting
 it, `scripts/agent/progress.sh post <branch | pr>` posts it again. With `AGENT_ISSUE_PROGRESS=0` the
 progress stays in `progress.tsv` and nothing is posted.
+
+##### Dashboard
+
+The progress comment belongs to one plan branch. The **Agent Dashboard** is one open issue, labelled
+`agent-dashboard` and pinned, that shows every active agent process of the repository at a glance,
+so several runs side by side (`/develop-issue`, worktrees) share one place to look. The progress
+comment answers "what did this run cost and where did it spend its time"; the dashboard answers
+"what is running now, where is it, and who is it waiting for".
+
+It lists a plan branch while its pull request is open and labelled `plan` or `agent`, or while a
+run is alive. A loop that gave up (open draft pull request, newest `agent-step` marker `stop`) stays
+listed as `stopped` until the developer acts. A merged or closed pull request, or one that is ready
+for review with no run, is removed on the next update. With nothing active the body says "No active
+agent processes". Each process has a section with:
+
+- a **step graph** (Mermaid): plan → plan approved → one node per work package → checks → CI, CI
+  fix, review and fix rounds, update with `main`, finalise → ready for review, with the next
+  expected step after the last one. A retried step is a node of its own, so a loop shows as
+  repeated nodes. The colour is the state: green done, blue running (with the minutes), yellow
+  waiting (for CI, or the plan under review), red failed, orange dashed stopped or interrupted,
+  grey not yet;
+- a **facts line**: stage (`plan review`, `agent loop`, `stopped`, `ready for review`), the current
+  step, work package, round, start, last update, elapsed time, tokens, cost, and who is waited for
+  (`nobody` while an agent runs, `CI`, or the `developer`);
+- a **table of links**: issue, plan, pull request, files, progress comment, review comments, final
+  comment, CI run of the head and branch. The graph's nodes link to the same places.
+
+The dashboard only reads what the scripts record anyway (`progress.tsv`, `run.pid`, the plan, the
+pull request, the `agent-step` markers and CI's runs); it changes nothing in the flow.
+
+`progress.sh post` updates it at every milestone, right after the progress comment, and `agent_exit`
+once more when a run ends, so an ended, failed or interrupted run does not stay "running". A run
+killed with `kill -9` shows as stopped on the next update by any script. Each machine updates only
+the sections of the runs it owns and keeps the others as they are, so the sections of runs on
+several machines live side by side; one writer per machine at a time (`.git/agent/dashboard.lock`),
+and a write that loses a race with another machine is redone from the new body.
+
+`mise run agent:dashboard` prints the body without posting it, `mise run agent:dashboard --post`
+rebuilds it from the open `plan/*` pull requests and the live local runs and posts it. With
+`AGENT_DASHBOARD=0` nothing is posted.
 
 The scripts run from a copy of `scripts/agent/` taken at start, so switching branches does not
 change the running scripts or prompts. Each step can also be run on its own:
@@ -457,6 +503,18 @@ reads where the issue stands from its plan branches and pull requests and contin
   `main` and merges cleanly locally, nothing is merged locally: GitHub's view of the merge state
   differs from the local merge. Check the merge box of the pull request on GitHub, then add the
   `agent` label again and run `agent:next`.
+- **A network error** on a `git fetch`, `git push` or `gh` call is retried up to `AGENT_RETRIES`
+  times with a growing delay; each retry is a line `>> retrying <call> (<k> of <n>): <error>` in
+  `run.log`. A rejected push, an authentication error or a missing ref is not retried.
+- **A step over its limit** (`stopping: <step> ran longer than <n> min`): an agent run took longer
+  than `AGENT_STEP_TIMEOUT`. It is a stop like the others above: the comment "Agent loop stopped",
+  the `agent` label removed. The work done so far stays (uncommitted changes and the plan for the
+  implementation, the step comments for the rest). Add the `agent` label again and run
+  `mise run agent:run <branch>`, or `/develop-issue <n>`.
+- **Any other error** ends the run with `>> failed: <step>: <reason>` (the command's own error is
+  the line above it), a comment "Agent loop failed" on the pull request and a notification. The
+  `agent` label stays: a transient cause needs only a rerun with `mise run agent:run <branch>` or
+  `/develop-issue <n>`.
 - **To stop it yourself**: Ctrl+C, or remove the `agent` label (the loop does nothing on the pull
   request any more).
 
@@ -665,8 +723,13 @@ Environment variables of the scripts ([`lib.sh`](../scripts/agent/lib.sh)):
 | `AGENT_MAX_TOKENS` | 50 000 000 | Tokens per pull request, cached input included |
 | `AGENT_MAX_BUDGET_USD` | none | Per agent call (`claude --max-budget-usd`) |
 | `AGENT_CI_TIMEOUT` | 60 | Minutes to wait for CI after a push |
+| `AGENT_STEP_TIMEOUT` | 60 | Minutes one agent run (a work package, a finding, a review) may take; over it the run stops |
+| `AGENT_RETRIES` | 3 | Retries of a `git` or `gh` call that failed on a network error, after the first attempt |
+| `AGENT_RETRY_DELAY` | 10 | Seconds before the first retry, doubled for each next one |
+| `AGENT_CALL_TIMEOUT` | 120 | Seconds one attempt of a `git` or `gh` call may take; over it the attempt counts as a network error |
 | `AGENT_BASE_BRANCH` | `main` | Where plan branches start and pull requests go |
 | `AGENT_ISSUE_PROGRESS` | 1 | 1: keep the [progress comment](#progress-on-the-issue) on the issue up to date; 0: `progress.tsv` only |
+| `AGENT_DASHBOARD` | 1 | 1: keep the [Agent Dashboard issue](#dashboard) up to date at every milestone; 0: no dashboard (`mise run agent:dashboard` still prints it) |
 | `AGENT_LSP` | 0 | 1: the agents get the LSP tool (`scripts/agent/lsp/`: jdtls, TypeScript with Vue, pyright) and the "find symbols first" rule; under evaluation in #251 |
 | `AGENT_NTFY_TOPIC` | none | An ntfy topic that also receives each milestone; sends progress lines to an external service (`AGENT_NTFY_SERVER`, default `https://ntfy.sh`) |
 

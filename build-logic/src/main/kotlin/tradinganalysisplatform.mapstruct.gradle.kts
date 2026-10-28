@@ -10,12 +10,5 @@ dependencies {
 }
 
 tasks.named<JavaCompile>("compileJava") {
-    options.compilerArgs.addAll(
-        listOf(
-            "-Amapstruct.defaultComponentModel=spring",
-            "-Amapstruct.defaultInjectionStrategy=constructor",
-            "-Amapstruct.unmappedTargetPolicy=ERROR",
-            "-Amapstruct.suppressGeneratorTimestamp=true",
-        )
-    )
+    options.compilerArgs.add("-Amapstruct.suppressGeneratorTimestamp=true")
 }

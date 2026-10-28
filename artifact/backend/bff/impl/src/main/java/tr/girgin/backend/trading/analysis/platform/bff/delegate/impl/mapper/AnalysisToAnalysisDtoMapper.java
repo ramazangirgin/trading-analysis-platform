@@ -13,8 +13,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 @Mapper(
+        config = SharedMapperConfig.class,
         uses = {
             AnalysisIdToStringMapper.class,
             RunStatsToRunStatsDtoMapper.class,

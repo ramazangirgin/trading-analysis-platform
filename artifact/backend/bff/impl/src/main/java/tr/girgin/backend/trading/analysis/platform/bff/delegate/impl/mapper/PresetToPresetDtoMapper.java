@@ -11,9 +11,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 /** The payload is stored as JSON text; the API hands it back as {@link PresetValuesDto}. */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public abstract class PresetToPresetDtoMapper {
 
     @Autowired

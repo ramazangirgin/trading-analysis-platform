@@ -60,7 +60,10 @@ case ${1:-} in
     pr=$(pr_number "${2:?usage: $0 --approved <pr | branch>}")
     head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
     gh pr view "$pr" --json comments >"$AGENT_TMP/pr.json"
-    py "$AGENT_DIR/plan_comments.py" approved "$AGENT_TMP/pr.json" "$(agent_login)" "$head"
+    if ! py "$AGENT_DIR/plan_comments.py" approved "$AGENT_TMP/pr.json" "$(agent_login)" "$head"; then
+      AGENT_ANSWER=1
+      exit 1
+    fi
     ;;
   --reply)
     id=${2:?usage: $0 --reply <comment id> <file>}

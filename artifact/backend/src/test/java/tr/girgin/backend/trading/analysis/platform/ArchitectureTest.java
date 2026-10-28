@@ -25,6 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.mapstruct.Mapper;
+import org.mapstruct.MapperConfig;
+import org.mapstruct.control.MappingControl;
+import org.mapstruct.control.MappingControls;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
@@ -78,6 +81,15 @@ class ArchitectureTest {
 
     private static final DescribedPredicate<JavaClass> MAPSTRUCT_MAPPER =
             annotatedWith(Mapper.class).forSubtype();
+
+    private static final DescribedPredicate<JavaClass> MAPPER_CONFIG =
+            annotatedWith(MapperConfig.class).forSubtype();
+
+    private static final DescribedPredicate<JavaClass> MAPPING_CONTROL = annotatedWith(MappingControl.class)
+            .or(annotatedWith(MappingControls.class))
+            .forSubtype();
+
+    private static final DescribedPredicate<JavaClass> MAPSTRUCT_CONFIG = MAPPER_CONFIG.or(MAPPING_CONTROL);
 
     /** A domain's schema and Flyway bean: only a {@code @Configuration} in {@code adapter.persistence} qualifies. */
     private static final DescribedPredicate<JavaClass> PERSISTENCE_CONFIGURATION =
@@ -252,8 +264,11 @@ class ArchitectureTest {
             .because("a module's root package only groups its sub-packages (package-info aside)");
 
     @ArchTest
-    static final ArchRule mapper_packages_hold_only_mappers =
-            topLevelClasses().and().resideInAPackage("..mapper..").should().beAssignableTo(MAPSTRUCT_MAPPER);
+    static final ArchRule mapper_packages_hold_only_mappers = topLevelClasses()
+            .and()
+            .resideInAPackage("..mapper..")
+            .should()
+            .beAssignableTo(MAPSTRUCT_MAPPER.or(MAPSTRUCT_CONFIG));
 
     @ArchTest
     static final ArchRule exception_mappers_live_in_mapper_error = classes()
@@ -441,6 +456,13 @@ class ArchitectureTest {
             .resideInAnyPackage(DOMAIN_ADAPTER_MAPPER, BFF_IMPL_MAPPER, LIBRARY_MAPPER)
             .because("mapping happens where data crosses a boundary, in that boundary's mapper package;"
                     + " the generic converters two modules need are in the shared mapper library");
+
+    @ArchTest
+    static final ArchRule mapper_configs_live_in_the_mapper_library = classes()
+            .that(MAPSTRUCT_CONFIG)
+            .should()
+            .resideInAPackage(LIBRARY_MAPPER)
+            .because("the config a mapper names can only be the shared one");
 
     @ArchTest
     static final ArchRule mappers_are_named_after_their_mapping = classes()

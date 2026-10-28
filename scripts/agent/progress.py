@@ -336,29 +336,45 @@ def worth_a_look(steps, timeline, now, elapsed, day):
     return lines
 
 
+def totals(steps, events, now):
+    """The figures of the run as a whole: first and last event, elapsed seconds, agent runs and
+    seconds, tokens, cost and the cost as text."""
+    first = events[0][0] if events else now
+    last = events[-1][0] if events else now
+    running = any(s.open for s in steps)
+    every = [s for step in steps for s in [step] + step.children]
+    total_cost = sum(s.cost for s in every)
+    usage_rows = [row for row in map(usage_row, steps) if row]
+    inexact = any("cost_usd" not in row or row.get("partial") == "1" for row in usage_rows)
+    if inexact and not any("cost_usd" in row for row in usage_rows):
+        cost_text = "n/a"
+    elif inexact:
+        cost_text = f"at least {money(total_cost)}"
+    else:
+        cost_text = money(total_cost)
+    return {
+        "first": first,
+        "last": last,
+        "elapsed": (now if running else last) - first,
+        "agent_runs": sum(s.agent_runs for s in every),
+        "agent_seconds": sum(s.agent_ms for s in every) // 1000,
+        "tokens": sum(s.tokens for s in every),
+        "cost": total_cost,
+        "cost_text": cost_text,
+    }
+
+
 def render(events, marker, branch, pr=None, max_rounds=None, max_ci_fixes=None, now=None, only=None):
     steps, timeline = build(events)
     if only == "usage":
         return "\n".join(usage_section(steps)) + "\n"
     now = now if now is not None else int(time.time())
-    first = events[0][0] if events else now
-    last = events[-1][0] if events else now
-    running = any(s.open for s in steps)
-    elapsed = (now if running else last) - first
+    total = totals(steps, events, now)
+    first, last, elapsed = total["first"], total["last"], total["elapsed"]
     day = time.strftime("%Y-%m-%d", LOCALTIME(first))
     every = [s for step in steps for s in [step] + step.children]
-    total_tokens = sum(s.tokens for s in every)
-    total_cost = sum(s.cost for s in every)
-    usage_rows = [row for row in map(usage_row, steps) if row]
-    inexact = any("cost_usd" not in row or row.get("partial") == "1" for row in usage_rows)
-    if inexact and not any("cost_usd" in row for row in usage_rows):
-        total_cost_text = "n/a"
-    elif inexact:
-        total_cost_text = f"at least {money(total_cost)}"
-    else:
-        total_cost_text = money(total_cost)
-    agent_seconds = sum(s.agent_ms for s in every) // 1000
-    agent_runs = sum(s.agent_runs for s in every)
+    total_tokens, total_cost_text = total["tokens"], total["cost_text"]
+    agent_seconds, agent_runs = total["agent_seconds"], total["agent_runs"]
 
     out = [marker, f"### Agent progress: `{branch}`", ""]
     out.append(f"**Status**: {status(steps, timeline, now)}  ")

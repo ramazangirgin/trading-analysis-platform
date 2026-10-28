@@ -4,8 +4,9 @@ import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PriceHistoryDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PricePointDto;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.PriceHistory;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface PriceHistoryToPriceHistoryDtoMapper {
 
     default PriceHistoryDto map(PriceHistory source) {

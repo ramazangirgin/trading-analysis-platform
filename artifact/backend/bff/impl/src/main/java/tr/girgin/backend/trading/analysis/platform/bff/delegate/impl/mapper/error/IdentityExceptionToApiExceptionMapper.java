@@ -5,8 +5,9 @@ import org.mapstruct.Mapper;
 import org.springframework.http.HttpStatus;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.error.ApiException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface IdentityExceptionToApiExceptionMapper {
 
     default ApiException map(IdentityException source) {
