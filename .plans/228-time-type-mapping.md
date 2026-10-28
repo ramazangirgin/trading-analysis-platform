@@ -338,12 +338,12 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: ArchUnit rules for Java types
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1 (`RunStatsEmbeddable.costUsd` is a `Double` until then)
 - **Files**:
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PersistenceArchitectureTest.java`
 - **Steps**:
-  - [ ] Add `production_code_uses_only_the_time_types_of_the_convention`,
+  - [x] Add `production_code_uses_only_the_time_types_of_the_convention`,
         `entity_fields_use_the_types_of_the_convention` and `durations_map_to_interval` as described
         in "Check 2", each with a `because(...)` naming backend-java-persistence.md.
 - **Tests**: `PersistenceArchitectureTest` passes on the current code
