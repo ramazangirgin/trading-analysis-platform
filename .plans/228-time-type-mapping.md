@@ -299,7 +299,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Column type check in the persistence library
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1 (the analysis domain's conventions test fails on `float8` until then)
 - **Files**:
   - `artifact/backend/library/persistence/src/testFixtures/java/tr/girgin/backend/trading/analysis/platform/library/persistence/ColumnTypeCheck.java` (new)
@@ -309,10 +309,10 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/library/persistence/src/test/resources/tr/girgin/backend/trading/analysis/platform/library/persistence/fixture/sample/migration/V1__create_samples.sql`
   - `artifact/backend/library/persistence/src/test/java/tr/girgin/backend/trading/analysis/platform/library/persistence/fixture/sample/SamplePersistenceConventionsTest.java`
 - **Steps**:
-  - [ ] Add `ColumnTypeCheck` as described in "Check 1".
-  - [ ] Add `columnTypesFollowTheConvention` to `DomainPersistenceConventionsTest`; its class Javadoc
+  - [x] Add `ColumnTypeCheck` as described in "Check 1".
+  - [x] Add `columnTypesFollowTheConvention` to `DomainPersistenceConventionsTest`; its class Javadoc
         stays correct (it does not count the tests).
-  - [ ] Add the fixture migration in schema `"SAMPLE_TYPES"`, with names that follow the naming
+  - [x] Add the fixture migration in schema `"SAMPLE_TYPES"`, with names that follow the naming
         convention: an enum type `"SAMPLE_TYPES"."TYPES_MOOD"`; a table `"TYPES_WRONG"` with one
         column per ruled-out case (`TIMESTAMP`, `TIMETZ`, `VARCHAR(20)`, `CHAR(3)`, `REAL`,
         `DOUBLE PRECISION`, `MONEY`, `SMALLINT`, `JSON`, `OID`, `UUID`, `XML`, `TIMESTAMP[]`, a
@@ -320,11 +320,11 @@ Packages without a dependency between them can be implemented in parallel.
         `TEXT`, `BOOLEAN`, `INTEGER`, `BIGINT`, `NUMERIC`, `NUMERIC(12,4)`, `DATE`, `TIME`,
         `TIMESTAMPTZ`, `INTERVAL`, `JSONB`, `BYTEA`, the enum, an array of the enum, `TEXT[]` and
         `INTERVAL[]` columns, which yield nothing.
-  - [ ] Add `ColumnTypeCheckTest`, built like `DatabaseNamingCheckTest`: migrate the fixture with a
+  - [x] Add `ColumnTypeCheckTest`, built like `DatabaseNamingCheckTest`: migrate the fixture with a
         plain Flyway (`schemas("SAMPLE_TYPES")`, history table `FLYWAY_SCHEMA_HISTORY`), assert the
         exact sorted list, one line per `TYPES_WRONG` column, which also proves the history table's
         columns are not reported.
-  - [ ] Give the sample domain's `"SAMPLES"` table `"CREATED_AT" TIMESTAMPTZ`, `"DUE_DATE" DATE`,
+  - [x] Give the sample domain's `"SAMPLES"` table `"CREATED_AT" TIMESTAMPTZ`, `"DUE_DATE" DATE`,
         `"ELAPSED" INTERVAL`, `"AMOUNT" NUMERIC` and `"DETAILS" JSONB` columns (it is a test
         fixture, recreated on every run, so editing its `V1` is allowed), so
         `SamplePersistenceConventionsTest` proves a correct domain with these columns passes the new

@@ -5,7 +5,7 @@ import tr.girgin.backend.trading.analysis.platform.library.persistence.DomainPer
 
 /**
  * Proves {@link DomainPersistenceConventionsTest} works end to end: the correct made-up domain "sample"
- * passes all four tests. In another package than the abstract class, as a real domain's test is. The
+ * passes all five tests. In another package than the abstract class, as a real domain's test is. The
  * sample's classes are test classes, so this one counts them.
  */
 class SamplePersistenceConventionsTest extends DomainPersistenceConventionsTest {

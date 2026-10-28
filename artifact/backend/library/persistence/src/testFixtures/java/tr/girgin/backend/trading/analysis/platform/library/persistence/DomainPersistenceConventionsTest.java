@@ -92,6 +92,18 @@ public abstract class DomainPersistenceConventionsTest {
         assertEquals(List.of(), result.violations(), "database names that break backend-database-naming.md");
     }
 
+    @Test
+    void columnTypesFollowTheConvention() {
+        DataSource dataSource = PostgresTestContainer.newDataSource();
+
+        flywayBean.apply(dataSource).migrate();
+
+        assertEquals(
+                List.of(),
+                ColumnTypeCheck.violations(dataSource, schema),
+                "column types that break backend-java-persistence.md");
+    }
+
     private static List<String> tables(Connection connection, String schema) throws SQLException {
         return CatalogQueries.query(
                         connection,
