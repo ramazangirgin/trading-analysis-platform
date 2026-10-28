@@ -421,6 +421,13 @@ agent_exit() {
   set +e
   case $status in
     0) ;;
+    1) # a query command's "no" (AGENT_ANSWER=1 before exit 1) is an answer, not a failure
+      if [ -z "${AGENT_ANSWER:-}" ]; then
+        result=failed
+        announce_failure "${AGENT_ERR:-exited $status}"
+        if [ -z "${AGENT_NO_ANNOUNCE:-}" ]; then status=$AGENT_EXIT_FAILED; fi
+      fi
+      ;;
     130 | 143) result=interrupted ;;
     "$AGENT_EXIT_STOPPED") result=stopped ;;
     "$AGENT_EXIT_FAILED") result=failed ;;
