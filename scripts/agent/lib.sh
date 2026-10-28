@@ -306,7 +306,7 @@ use_state() {
   if [ -z "${AGENT_LOGGING:-}" ]; then
     export AGENT_LOGGING=1
     AGENT_OUTERMOST=1
-    rm -f "$AGENT_STATE/failed.txt"
+    [ -n "$(active_run)" ] || rm -f "$AGENT_STATE/failed.txt"
     log_header
     exec 2> >(tee -a "$AGENT_STATE/run.log" >&2)
   fi
@@ -326,6 +326,14 @@ active_run() {
   if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then echo "$pid"; fi
 }
 
+# A refused second run is not a failure of the active one: no failed: line, no milestone, no comment
+# on the pull request, and failed.txt of the active run stays.
+refuse_run() {
+  unset AGENT_OUTERMOST
+  echo "agent: a run is already active: $1" >&2
+  exit "$AGENT_EXIT_FAILED"
+}
+
 # Takes the lock (run.pid) of this state directory, unless an outer script holds it already
 # (AGENT_LOCKED). A run.pid naming a live process stops the script; a stale one is replaced. The
 # lock is released when the script ends, also on Ctrl+C or kill.
@@ -333,7 +341,7 @@ lock_run() {
   [ -z "${AGENT_LOCKED:-}" ] || return 0
   local pid
   pid=$(active_run)
-  [ -z "$pid" ] || die "a run is already active: pid $pid, log $AGENT_STATE/run.log"
+  [ -z "$pid" ] || refuse_run "pid $pid, log $AGENT_STATE/run.log"
   if [ -e "$AGENT_STATE/run.pid" ]; then
     log "replacing the stale lock of pid $(cat "$AGENT_STATE/run.pid")"
     rm -f "$AGENT_STATE/run.pid"
@@ -341,7 +349,7 @@ lock_run() {
   (
     set -o noclobber
     echo $$ >"$AGENT_STATE/run.pid"
-  ) 2>/dev/null || die "a run is already active (log $AGENT_STATE/run.log)"
+  ) 2>/dev/null || refuse_run "log $AGENT_STATE/run.log"
   export AGENT_LOCKED=1
   AGENT_LOCK_HELD=1 # released by agent_exit
 }

@@ -36,7 +36,7 @@ done
 
 use_state "$branch"
 pid=$(active_run)
-[ -z "$pid" ] || die "a run is already active: pid $pid, log $AGENT_STATE/run.log"
+[ -z "$pid" ] || refuse_run "pid $pid, log $AGENT_STATE/run.log"
 
 # A new session (setsid), stdin from /dev/null, stdout and stderr into run.log. The script copy is
 # the snapshot of scripts/agent/ this run started with, as for any script. The script inherits
