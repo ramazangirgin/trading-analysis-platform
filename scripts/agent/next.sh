@@ -202,11 +202,7 @@ while true; do
     none) exit 0 ;;
     stop*) stop "${step#stop }" ;;
     fix-ci) "$AGENT_DIR/fix-ci.sh" "$pr" ;;
-    update-main) "$AGENT_DIR/update-main.sh" "$pr" ;;
-    update-main-conflict)
-      "$AGENT_DIR/update-main.sh" "$pr" ||
-        stop "$branch conflicts with $AGENT_BASE_BRANCH and the update with $AGENT_BASE_BRANCH could not resolve it (see run.log). The merge stays local: finish it with /merge-main-into-branch or drop it with git reset --keep @{u}, then add the agent label and run the agent loop again."
-      ;;
+    update-main | update-main-conflict) "$AGENT_DIR/update-main.sh" "$pr" ;;
     review) "$AGENT_DIR/review.sh" "$pr" ;;
     fix) "$AGENT_DIR/fix.sh" "$pr" ;;
     finalise)
