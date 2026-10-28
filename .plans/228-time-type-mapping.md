@@ -155,7 +155,8 @@ to `NUMERIC` keeps 15 significant digits, more than any stored cost has. Impact:
 - `RunStatsEmbeddable`: `elapsedMs` (`long`, `ELAPSED_MS`) becomes `Duration elapsed` on `ELAPSED`
   with `@JdbcTypeCode(SqlTypes.INTERVAL_SECOND)`; `Double costUsd` becomes `BigDecimal costUsd`.
 - `RunStatsToRunStatsEmbeddableMapper` and `RunStatsEmbeddableToRunStatsMapper` map by name and drop
-  `DurationToMillisMapper` / `MillisToDurationMapper` and their `@Mapping`; `MillisToDurationMapper`
+  `DurationToMillisMapper` / `MillisToDurationMapper` and their `@Mapping` (they keep
+  `config = SharedMapperConfig.class`); `MillisToDurationMapper`
   (analysis adapter) is deleted, since nothing else uses it. `DurationToMillisMapper` in
   `library:mapper` stays (the BFF and `JsonlEventStoreAdapter` use the library), so the analysis
   adapter's dependency declarations do not change.
@@ -265,6 +266,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Move `ELAPSED_MS` to `INTERVAL` and `COST_USD` to `NUMERIC`
 
+- **Status**: open
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/analysis/adapter/src/main/resources/tr/girgin/backend/trading/analysis/platform/domain/analysis/adapter/persistence/migration/V6__store_elapsed_as_interval_and_cost_as_numeric.sql` (new)
@@ -279,7 +281,8 @@ Packages without a dependency between them can be implemented in parallel.
         of backend-java-persistence.md), as the other migrations do.
   - [ ] `RunStatsEmbeddable`: `Duration elapsed` on `ELAPSED` with
         `@JdbcTypeCode(SqlTypes.INTERVAL_SECOND)`, `BigDecimal costUsd`; accessors renamed.
-  - [ ] Both mappers map by name, without `uses` and `@Mapping`; delete `MillisToDurationMapper`.
+  - [ ] Both mappers map by name, without `uses` and `@Mapping`, keeping the shared config; delete
+        `MillisToDurationMapper`.
   - [ ] Add `V6AnalysisColumnTypesMigrationTest`, built like `V5AnalysisPartialVisibilityMigrationTest`:
         a Flyway stopped at V5 inserts a row with `ELAPSED_MS` 261500 and `COST_USD` 0.0277 and one
         with `COST_USD` NULL, then migrates to the latest version.
@@ -296,6 +299,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Column type check in the persistence library
 
+- **Status**: open
 - **Depends on**: WP1 (the analysis domain's conventions test fails on `float8` until then)
 - **Files**:
   - `artifact/backend/library/persistence/src/testFixtures/java/tr/girgin/backend/trading/analysis/platform/library/persistence/ColumnTypeCheck.java` (new)
@@ -334,6 +338,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: ArchUnit rules for Java types
 
+- **Status**: open
 - **Depends on**: WP1 (`RunStatsEmbeddable.costUsd` is a `Double` until then)
 - **Files**:
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PersistenceArchitectureTest.java`
@@ -350,6 +355,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: Documentation and version
 
+- **Status**: open
 - **Depends on**: WP1, WP2, WP3
 - **Files**:
   - `docs/coding-convention/backend-java-persistence.md`
@@ -357,24 +363,7 @@ Packages without a dependency between them can be implemented in parallel.
   - `docs/coding-convention/README.md`
   - `gradle.properties`, `artifact/frontend/package.json`, `artifact/ta-runner/ta_runner/__init__.py` (through `mise run version:bump minor`)
 - **Steps**:
-  - [ ] backend-java-persistence.md "Mapping domain types": the table of "The decision" replaces the
-        current one (keeping its existing rows' text and examples), "Why these choices" gets the
-        reasons for what is ruled out, and a sub-section "Time values" holds "Why not
-        `LocalDateTime`" with its exception criteria, the `INTERVAL` mapping (Hibernate's default
-        and the `@JdbcTypeCode`), and the time zone rules. "Timestamps: domain facts and audit
-        fields" stays as it is.
-  - [ ] backend-java-persistence.md "Shared persistence code" and "Tests": `ColumnTypeCheck` among
-        the checks `DomainPersistenceConventionsTest` delegates to and the catalog checks that read
-        the catalog with plain JDBC; "Its four tests" becomes five, with
-        `columnTypesFollowTheConvention` described.
-  - [ ] backend-java-persistence.md "Where it is checked": rows for the three ArchUnit rules and for
-        `columnTypesFollowTheConvention`; `ColumnTypeCheckTest` added to the row of the library's
-        proofs.
-  - [ ] backend-database-naming.md "Rules": the column name suffixes (see "Design"), marked as not
-        checked, with a link to the persistence document's "Mapping domain types" for the types.
-  - [ ] docs/coding-convention/README.md: the backend-java-persistence.md row of the documents table
-        mentions column and Java types; the "Database naming and schemas" enforcement row mentions
-        column types and lists `ColumnTypeCheckTest` among the library's proofs.
+  - [ ] The changes listed in "Docs to update".
   - [ ] `mise run version:bump minor`.
 - **Tests**: `mise run check` (formatting, structure, version sync).
 
@@ -396,9 +385,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 | What | Where | Change |
 |---|---|---|
-| Text | docs/coding-convention/backend-java-persistence.md "Mapping domain types" (table, "Why these choices", new "Time values"); "Shared persistence code"; "Tests"; "Where it is checked" | The complete type table, the ruled-out types and why, why not `LocalDateTime` and when an exception is justified, the `INTERVAL` mapping, the time zone rules; the new checks and where they run |
-| Text | docs/coding-convention/backend-database-naming.md "Rules" | Column name suffixes, not checked; durations carry no unit suffix |
-| Text | docs/coding-convention/README.md, documents table and enforcement table | Column and Java types in the persistence document's scope; column types and `ColumnTypeCheckTest` in the database row |
+| Text | docs/coding-convention/backend-java-persistence.md "Mapping domain types" | The table of "The decision" replaces the current one (its existing rows keep their text and examples); "Why these choices" gets the reasons for what is ruled out; a sub-section "Time values" holds "Why not `LocalDateTime`" with its exception criteria, the `INTERVAL` mapping (Hibernate's default and the `@JdbcTypeCode`) and the time zone rules. "Timestamps: domain facts and audit fields" stays |
+| Text | docs/coding-convention/backend-java-persistence.md "Shared persistence code", "Tests" | `ColumnTypeCheck` among the checks `DomainPersistenceConventionsTest` delegates to and the catalog checks that read the catalog with plain JDBC; "Its four tests" becomes five, with `columnTypesFollowTheConvention` described |
+| Text | docs/coding-convention/backend-java-persistence.md "Where it is checked" | Rows for the three ArchUnit rules and for `columnTypesFollowTheConvention`; `ColumnTypeCheckTest` in the row of the library's proofs |
+| Text | docs/coding-convention/backend-database-naming.md "Rules" | The column name suffixes (see "Design"), marked as not checked, linking to the persistence document's "Mapping domain types" for the types |
+| Text | docs/coding-convention/README.md, documents table and enforcement table | The persistence document's row mentions column and Java types; the "Database naming and schemas" row mentions column types and lists `ColumnTypeCheckTest` among the library's proofs |
 | OpenAPI | none | `RunStatsDto` does not change |
 | Screenshot | none | No page changes |
 
