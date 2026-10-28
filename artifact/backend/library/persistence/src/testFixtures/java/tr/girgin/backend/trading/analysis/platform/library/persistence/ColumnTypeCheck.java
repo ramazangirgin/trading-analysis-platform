@@ -51,7 +51,11 @@ final class ColumnTypeCheck {
 
     private ColumnTypeCheck() {}
 
-    /** One readable line per violation, sorted. */
+    /**
+     * One readable line per violation, sorted.
+     *
+     * @throws IllegalStateException when the catalog cannot be read
+     */
     static List<String> violations(DataSource dataSource, String schema) {
         try (Connection connection = dataSource.getConnection()) {
             Set<String> violations = new TreeSet<>();
@@ -72,12 +76,21 @@ final class ColumnTypeCheck {
     }
 
     private static String problem(String[] row) {
+        String idProblem = idProblem(row);
+        return idProblem != null ? idProblem : typeProblem(row);
+    }
+
+    private static String idProblem(String[] row) {
         if (!row[6].isEmpty()) {
             return "identity column, the core makes the ID";
         }
         if (row[7].contains("nextval(")) {
             return "sequence default, the core makes the ID";
         }
+        return null;
+    }
+
+    private static String typeProblem(String[] row) {
         boolean array = !row[4].isEmpty();
         String type = array ? row[4] : row[2];
         String typtype = array ? row[5] : row[3];
