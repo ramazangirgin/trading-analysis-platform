@@ -170,7 +170,7 @@ def resolve(packages):
                     raise PlanError(f"{where}: unknown package {part} in 'Depends on' of {package.id}")
                 package.depends.append(part)
             else:
-                raise PlanError(f"{where}: cannot read '{part}' in 'Depends on' of {package.id}")
+                raise PlanError(f"{where}: cannot read '{part}' in 'Depends on' of {package.id} (use none, WP1, WP2, or WP2-WP4)")
 
 
 def ordered(packages):

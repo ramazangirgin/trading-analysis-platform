@@ -23,6 +23,7 @@ source "$(dirname "$0")/lib.sh"
 
 name=$(basename "$file" .md)
 [[ $name =~ ^[0-9]+-[a-z0-9-]+$ ]] || die "plan file name must be <issue>-<slug>.md: $file"
+check=$(py "$AGENT_DIR/plan.py" packages "$file" 2>&1) || die "$check"
 # A warning only: the planning session shows it in the review.
 py "$AGENT_DIR/plan.py" oversized "$file" "$AGENT_MAX_WP_FILES" | while IFS= read -r line; do
   echo "agent: ${line#- }: consider splitting it" >&2
@@ -37,7 +38,8 @@ fi
 
 worktree=$AGENT_TMP/worktree
 git worktree add --quiet -b "$branch" "$worktree" "origin/$AGENT_BASE_BRANCH"
-trap 'git worktree remove --force "$worktree"' EXIT
+# agent_exit reads the exit status, so the removal must not change it.
+trap 'status=$?; trap - ERR; set +e; git worktree remove --force "$worktree"; (exit "$status"); agent_exit' EXIT
 mkdir -p "$worktree/.plans"
 cp "$file" "$worktree/.plans/$name.md"
 title=$(sed -n 's/^# Plan: //p' "$file" | head -n 1)

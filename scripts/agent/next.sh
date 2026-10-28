@@ -61,13 +61,7 @@ $dry_run || lock_run
 
 # stop <reason>: hand the pull request back to the developer.
 stop() {
-  milestone "stopping: $1"
-  if ! $dry_run; then
-    printf '### Agent loop stopped\n\n%s\n\nThe pull request stays a draft. Continue by hand, or add the `%s` label and run the agent loop again.\n' \
-      "$1" "$AGENT_LABEL" >"$AGENT_TMP/stop.md"
-    post_step "$pr" stop 0 "$AGENT_TMP/stop.md"
-    gh pr edit "$pr" --remove-label "$AGENT_LABEL" >/dev/null
-  fi
+  stop_run "$1"
   exit 0
 }
 
@@ -156,7 +150,7 @@ reported_head="" # the head CI's result was written for
 while true; do
   step=$(next_step)
   if [ "$step" = wait ]; then
-    [ "$waited" -lt $((AGENT_CI_TIMEOUT * 60)) ] || stop "CI did not finish within $AGENT_CI_TIMEOUT minutes."
+    [ "$waited" -lt $((AGENT_CI_TIMEOUT * 60)) ] || stop "CI ${waiting_head:0:7} ran longer than $AGENT_CI_TIMEOUT min"
     head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
     if [ "$head" != "$waiting_head" ]; then
       # Each head's CI wait is a step of its own; a newer head replaces the one waited for.
@@ -208,11 +202,7 @@ while true; do
     none) exit 0 ;;
     stop*) stop "${step#stop }" ;;
     fix-ci) "$AGENT_DIR/fix-ci.sh" "$pr" ;;
-    update-main) "$AGENT_DIR/update-main.sh" "$pr" ;;
-    update-main-conflict)
-      "$AGENT_DIR/update-main.sh" "$pr" ||
-        stop "$branch conflicts with $AGENT_BASE_BRANCH and the update with $AGENT_BASE_BRANCH could not resolve it (see run.log). The merge stays local: finish it with /merge-main-into-branch or drop it with git reset --keep @{u}, then add the agent label and run the agent loop again."
-      ;;
+    update-main | update-main-conflict) "$AGENT_DIR/update-main.sh" "$pr" ;;
     review) "$AGENT_DIR/review.sh" "$pr" ;;
     fix) "$AGENT_DIR/fix.sh" "$pr" ;;
     finalise)
