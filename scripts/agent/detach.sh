@@ -36,15 +36,22 @@ done
 
 use_state "$branch"
 pid=$(active_run)
-[ -z "$pid" ] || die "a run is already active: pid $pid, log $AGENT_STATE/run.log"
+[ -z "$pid" ] || refuse_run "pid $pid, log $AGENT_STATE/run.log"
 
 # A new session (setsid), stdin from /dev/null, stdout and stderr into run.log. The script copy is
-# the snapshot of scripts/agent/ this run started with, as for any script.
+# the snapshot of scripts/agent/ this run started with, as for any script. The script inherits
+# AGENT_LOGGING, so it does not copy stderr into run.log a second time, and is made the outermost
+# one: it is the script whose failure is commented on the pull request.
 pid=$(py -c '
-import subprocess, sys
+import os, subprocess, sys
 with open(sys.argv[1], "ab") as log:
     process = subprocess.Popen(
-        sys.argv[2:], stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True
+        sys.argv[2:],
+        stdin=subprocess.DEVNULL,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+        env={**os.environ, "AGENT_OUTERMOST": "1"},
     )
 print(process.pid)
 ' "$AGENT_STATE/run.log" bash "$AGENT_DIR/$script" "$@")

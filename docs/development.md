@@ -49,6 +49,7 @@ mise run server:test   # the whole server deployment with THIS machine as the se
 mise run ci:test-changes  # the tests of scripts/ci-changes.sh, which decides the CI jobs a change needs
 mise run gradle :backend:test   # Gradle with --console=plain; the arguments after the task name go to Gradle
 mise run agent:lsp-check        # does a headless agent get the LSP tool, and how fast is each language server (docs/agentic-development.md)
+mise run agent:dashboard [--post]  # the Agent Dashboard issue body: print it, or rebuild and post it (docs/agentic-development.md)
 mise run agent:stats 244       # token, tool and context statistics of an issue's agent transcripts (docs/agentic-development.md)
 mise run version       # the platform version
 mise run version:bump minor   # raise it (major, minor or patch) in every file; see Versioning and releases

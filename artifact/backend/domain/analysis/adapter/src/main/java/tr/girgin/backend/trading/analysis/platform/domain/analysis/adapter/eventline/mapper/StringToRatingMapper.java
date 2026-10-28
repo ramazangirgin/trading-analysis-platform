@@ -3,12 +3,13 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.even
 import java.util.Locale;
 import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 /**
  * Lenient: "Overweight", "BUY", "hold." and "**Sell**" all map; anything else is REVIEW, the
  * same fallback upstream uses for a decision without a parseable rating.
  */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface StringToRatingMapper {
 
     default Rating map(String source) {

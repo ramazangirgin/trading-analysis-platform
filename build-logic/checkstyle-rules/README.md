@@ -15,6 +15,7 @@ instance of a check: a few lines of XML, no Java. The rules, with their reasons 
 | Check | Reports | Project rules |
 |---|---|---|
 | [`ForbiddenMemberAccessCheck`](docs/ForbiddenMemberAccessCheck.md) | a reference to a forbidden field, a call of a forbidden method or constructor | `TAP-L1` |
+| [`RequiredAnnotationAttributeCheck`](docs/RequiredAnnotationAttributeCheck.md) | an annotation of a configured type that does not set every required attribute | `TAP-M1` |
 | [`RequiredMethodAnnotationCheck`](docs/RequiredMethodAnnotationCheck.md) | a public method of a selected class without one of the required annotations | `TAP-A1` |
 | [`StaticMethodInAnnotatedClassCheck`](docs/StaticMethodInAnnotatedClassCheck.md) | a static method in a class that carries one of the configured annotations | `TAP-D7` |
 

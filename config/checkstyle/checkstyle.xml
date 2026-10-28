@@ -351,5 +351,11 @@
             <property name="ignoreComments" value="true"/>
             <property name="message" value="TAP-D6: an endpoint that only answers 200 returns its body type, not ResponseEntity.ok(...); errors are exceptions."/>
         </module>
+        <module name="tr.girgin.checkstyle.RequiredAnnotationAttributeCheck">
+            <property name="id" value="TAP-M1"/>
+            <property name="annotations" value="org.mapstruct.Mapper"/>
+            <property name="attributes" value="config"/>
+            <property name="suggestion" value="Use the shared configuration: @Mapper(config = SharedMapperConfig.class)."/>
+        </module>
     </module>
 </module>

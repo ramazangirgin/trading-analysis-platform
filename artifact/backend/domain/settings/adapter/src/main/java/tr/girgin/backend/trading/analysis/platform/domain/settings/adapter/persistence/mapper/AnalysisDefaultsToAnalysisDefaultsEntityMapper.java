@@ -4,8 +4,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.adapter.persistence.entity.AnalysisDefaultsEntity;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface AnalysisDefaultsToAnalysisDefaultsEntityMapper {
 
     @Mapping(target = "id", constant = AnalysisDefaultsEntity.ROW_ID)

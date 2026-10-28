@@ -4,8 +4,9 @@ import org.mapstruct.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.json.JsonMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PresetValuesDto;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public abstract class PresetValuesDtoToJsonStringMapper {
 
     @Autowired

@@ -5,8 +5,11 @@ import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.runner.spec.RunnerSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
-@Mapper(uses = {AssetTypeToStringMapper.class, AnalystToStringMapper.class})
+@Mapper(
+        config = SharedMapperConfig.class,
+        uses = {AssetTypeToStringMapper.class, AnalystToStringMapper.class})
 public interface AnalysisSpecToRunnerSpecMapper {
 
     @Mapping(target = "runId", source = "id.value")

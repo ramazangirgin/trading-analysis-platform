@@ -4,8 +4,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.json.RunnerOutputLine;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 @Mapper(
+        config = SharedMapperConfig.class,
         uses = {
             StringToInstantMapper.class,
             StringToRunEventTypeMapper.class,

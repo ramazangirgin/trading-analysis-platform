@@ -104,7 +104,9 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Permission rule of an endpoint | `@RequiresPermission` on its delegate method in `bff.delegate.impl` (the annotation and its enforcement live in `bff.delegate.impl.config`), never an annotation on a controller nor a request matcher in `SecurityConfig`; a route that needs no permission carries `@NoPermissionRequired("reason")` (also in `bff.delegate.impl.config`); the Checkstyle rule `TAP-A1` fails the build when a delegate method has neither, and `EndpointPermissionsIntegrationTest` proves it at runtime | `bff_api_holds_no_security_code`, `TAP-A1` (Checkstyle) |
 | Delegate implementation `*ApiDelegateImpl` | `bff.delegate.impl` (root), nothing else there | `delegate_impls_live_at_the_delegate_root`, `delegate_root_holds_only_delegate_impls` |
 | MapStruct mapper | an adapter's `…mapper` package, `bff.delegate.impl.mapper` or `library.mapper` (the shared mapper library) | `mappers_live_at_layer_boundaries` |
-| Anything in a `mapper` package | is a MapStruct mapper (or its generated `*Impl`) | `mapper_packages_hold_only_mappers` |
+| Anything in a `mapper` package | is a MapStruct mapper (or its generated `*Impl`), or in `library.mapper` the shared `@MapperConfig` (`SharedMapperConfig`) and its `@MappingControl` annotation (`DeepCloneWithConversions`) | `mapper_packages_hold_only_mappers` |
+| `@MapperConfig`, a `@MappingControl` annotation | `library.mapper`, so the config a mapper names can only be the shared one | `mapper_configs_live_in_the_mapper_library` |
+| `@Mapper` | sets `config = SharedMapperConfig.class` (deep copy, unmapped source and target properties fail the compile) | `TAP-M1` (Checkstyle) |
 | `*ExceptionToApiExceptionMapper` | `bff.delegate.impl.mapper.error`, nothing else there; used only by the exception handler, never by a delegate ([REST endpoints](backend-java-rest-api.md#errors)) | `exception_mappers_live_in_mapper_error`, `mapper_error_holds_only_exception_mappers`, `exception_mappers_are_used_only_by_exception_handlers` |
 | `@RestControllerAdvice` for the domains' exceptions (`DomainExceptionHandler`) | `bff.delegate.impl.error`, nothing else there | `exception_handlers_live_in_error_packages`, `bff_impl_error_holds_only_exception_handlers` |
 | `@Entity` `*Entity`, `@Embeddable` `*Embeddable`, `*AttributeConverter` | `domain.<d>.adapter.<port>.entity`, nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities`, `persistence_classes_are_named_by_kind` |
@@ -182,7 +184,8 @@ Alternatives considered for sharing code across modules:
 - a `mapper.common` package per module only shares within that module;
 - the domain cores have no MapStruct;
 - adapters must not depend on the BFF;
-- a shared MapStruct `@MapperConfig(uses = …)` would hide which converters a mapper uses;
+- a shared MapStruct `@MapperConfig(uses = …)` would hide which converters a mapper uses; the
+  shared `SharedMapperConfig` therefore carries no `uses`, and each mapper names its own converters;
 - a JPA converter for `Duration` would not cover the other duplicates.
 
 ## Accepted duplicates

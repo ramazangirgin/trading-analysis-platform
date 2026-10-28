@@ -3,7 +3,7 @@ package tr.girgin.checkstyle.support;
 import java.util.regex.Pattern;
 
 /** Syntax of the names a check's parameters may contain. */
-final class Identifiers {
+public final class Identifiers {
 
     private static final String IDENTIFIER = "[\\p{L}_$][\\p{L}\\p{N}_$]*";
     private static final Pattern SINGLE_IDENTIFIER = Pattern.compile(IDENTIFIER);
@@ -13,7 +13,7 @@ final class Identifiers {
     private Identifiers() {}
 
     /** A single Java identifier. */
-    static boolean isIdentifier(String text) {
+    public static boolean isIdentifier(String text) {
         return SINGLE_IDENTIFIER.matcher(text).matches();
     }
 

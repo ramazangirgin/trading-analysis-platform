@@ -24,7 +24,6 @@ round=$(($(count_steps "$pr" fix) + 1))
 step_begin "fix R$round"
 
 checkout_branch "$branch"
-start=$(git rev-parse HEAD)
 review_py() { py "$AGENT_DIR/review.py" "$@"; }
 
 pr_step_comments "$pr" | review_py findings "$round" >"$AGENT_TMP/findings.json"
@@ -60,6 +59,9 @@ reply() {
   fi
 }
 
+# committed_fix <finding id>: the short SHA of its "Address <id>:" commit on the branch, if any.
+committed_fix() { git log -n 1 --format=%h --grep="^Address $1:" "origin/$AGENT_BASE_BRANCH..HEAD"; }
+
 count=$(py -c 'import json, sys; print(len(json.load(sys.stdin)))' <"$AGENT_TMP/findings.json")
 results=()
 milestone "fix round $round started ($count findings)"
@@ -70,6 +72,10 @@ for ((i = 0; i < count; i++)); do
   if [ -n "$comment" ] && review_py contains "$AGENT_TMP/resolved.json" "$comment"; then
     log "$id: thread resolved, skipped"
     outcome=skipped reason="The thread was resolved by a developer."
+  elif [ -n "$(committed_fix "$id")" ]; then
+    # A restart after the commit: the interrupted run replied right after committing.
+    outcome=fixed reason="Fixed in $(committed_fix "$id")."
+    log "$id: already committed, no agent run"
   else
     {
       prompt fix.md
@@ -113,15 +119,15 @@ for ((i = 0; i < count; i++)); do
   fi
   review_py record "$AGENT_TMP/outcomes.json" "$id" "$outcome" "$reason"
   case $outcome in
-    fixed) milestone "$id: fixed ($(git rev-parse --short HEAD))" ;;
+    fixed) milestone "$id: fixed ($(committed_fix "$id"))" ;;
     open) milestone "$id: open: $(head -n 1 <<<"$reason")" ;;
     skipped) milestone "$id: skipped (thread resolved)" ;;
     *) milestone "$id: $outcome" ;;
   esac
 done
 
-commits=$(git rev-list --count "$start..HEAD")
-[ "$commits" -eq 0 ] || push_branch
+commits=$(git rev-list --count --grep="^Address R$round-" "origin/$AGENT_BASE_BRANCH..HEAD")
+[ "$(git rev-list --count "origin/$branch..HEAD")" -eq 0 ] || push_branch
 {
   echo "### Fix round $round"
   echo

@@ -10,15 +10,13 @@
 
 ## Affected parts and their conventions
 
-| Part | Conventions that apply |
-|---|---|
-| <backend / frontend / ta-runner / e2e / deploy / CI / docs> | <the documents under docs/coding-convention/ and the rules from them this change must follow> |
+<One line per part: the convention documents to follow, as links. No rule is restated here.>
 
 ## Design
 
-<How it works: the classes, components, endpoints, events and data involved, and where each goes
-according to the conventions above. Name the existing code it builds on. Keep it high level: enough
-for a developer to implement it without guessing, not the code itself.>
+<Only what the documents and the code do not show: the decisions, each with the reason, the new
+types and where they go, and the existing code they build on. State a fact once: the work packages
+do not repeat it, and nothing here restates a convention. Not the code itself.>
 
 ## Work packages
 
@@ -26,37 +24,30 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: <name>
 
+- **Status**: open
 - **Depends on**: none
 - **Files**: <paths created or changed>
 - **Steps**:
-  - [ ] <step>
+  - [ ] <a step the name does not already say>
 - **Tests**: <tests added or changed, and what they prove>
-
-### WP2: <name>
-
-- **Depends on**: WP1
-- **Files**: ...
-- **Steps**:
-  - [ ] ...
-- **Tests**: ...
 
 ## Tests
 
-<The tests as a whole: unit, integration, frontend, e2e. Which check proves the issue's "done when".>
+<Only what no work package covers: how the issue's "done when" is proved. "Each work package's tests" when that is all.>
 
 ## Docs to update
 
-Every document and screenshot the change makes wrong or incomplete, so the change is documented in
-the same pull request. "None" only with the reason.
-
 | What | Where | Change |
 |---|---|---|
-| Text | <docs/<topic>.md section "…", docs/coding-convention/<doc>.md, docs/event-protocol.md, …> | <what to add or correct> |
-| Screenshot | <docs/screenshots/<name>.png, new or retaken> | <the page and state it shows, the data it needs, the docs section that shows it> |
+| Text | <docs/<topic>.md section "…", docs/coding-convention/<doc>.md, …> | <what to add or correct, in one phrase> |
+| Screenshot | <docs/screenshots/<name>.png, new or retaken> | <the page and state it shows, the data it needs> |
+
+"None" only with the reason. A doc change is listed here and nowhere else: no work package step
+repeats it.
 
 ## Out of scope
 
-- <What this plan deliberately leaves out, and where it goes instead (another plan, an issue).>
+- <What this plan deliberately leaves out, and where it goes instead.>
 
 ## Open questions
 

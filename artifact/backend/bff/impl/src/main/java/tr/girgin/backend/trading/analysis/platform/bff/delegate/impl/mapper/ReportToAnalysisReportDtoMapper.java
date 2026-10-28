@@ -7,9 +7,10 @@ import org.mapstruct.Mapper;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisReportDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RatingEnumDto;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 /** Keys become the protocol's lowercase names, the ones report_section events use. */
-@Mapper
+@Mapper(config = SharedMapperConfig.class)
 public interface ReportToAnalysisReportDtoMapper {
 
     default AnalysisReportDto map(Report source) {
