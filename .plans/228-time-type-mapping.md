@@ -266,7 +266,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Move `ELAPSED_MS` to `INTERVAL` and `COST_USD` to `NUMERIC`
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/domain/analysis/adapter/src/main/resources/tr/girgin/backend/trading/analysis/platform/domain/analysis/adapter/persistence/migration/V6__store_elapsed_as_interval_and_cost_as_numeric.sql` (new)
@@ -277,16 +277,16 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/domain/analysis/adapter/src/test/java/tr/girgin/backend/trading/analysis/platform/domain/analysis/adapter/persistence/V6AnalysisColumnTypesMigrationTest.java` (new)
   - `artifact/backend/domain/analysis/adapter/src/test/java/tr/girgin/backend/trading/analysis/platform/domain/analysis/adapter/persistence/JpaAnalysisRepositoryAdapterTest.java`
 - **Steps**:
-  - [ ] Add V6 as in "`ELAPSED_MS` and `COST_USD`", with a header comment saying why (the convention
+  - [x] Add V6 as in "`ELAPSED_MS` and `COST_USD`", with a header comment saying why (the convention
         of backend-java-persistence.md), as the other migrations do.
-  - [ ] `RunStatsEmbeddable`: `Duration elapsed` on `ELAPSED` with
+  - [x] `RunStatsEmbeddable`: `Duration elapsed` on `ELAPSED` with
         `@JdbcTypeCode(SqlTypes.INTERVAL_SECOND)`, `BigDecimal costUsd`; accessors renamed.
-  - [ ] Both mappers map by name, without `uses` and `@Mapping`, keeping the shared config; delete
+  - [x] Both mappers map by name, without `uses` and `@Mapping`, keeping the shared config; delete
         `MillisToDurationMapper`.
-  - [ ] Add `V6AnalysisColumnTypesMigrationTest`, built like `V5AnalysisPartialVisibilityMigrationTest`:
+  - [x] Add `V6AnalysisColumnTypesMigrationTest`, built like `V5AnalysisPartialVisibilityMigrationTest`:
         a Flyway stopped at V5 inserts a row with `ELAPSED_MS` 261500 and `COST_USD` 0.0277 and one
         with `COST_USD` NULL, then migrates to the latest version.
-  - [ ] `JpaAnalysisRepositoryAdapterTest`: a run with elapsed `PT4M21.5S` and cost `0.000123`
+  - [x] `JpaAnalysisRepositoryAdapterTest`: a run with elapsed `PT4M21.5S` and cost `0.000123`
         saved and read back equal (cost by `compareTo`).
 - **Tests**: `V6AnalysisColumnTypesMigrationTest` (rows written at V5 read back with
   `Duration.ofMillis(261500)`, cost equal to `0.0277`, a null cost stays null);

@@ -59,6 +59,19 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
     }
 
     @Test
+    void roundTripsAnElapsedDurationAndAFractionOfACentCostExactly() {
+        Instant created = Instant.parse("2026-09-29T10:00:00Z");
+        Analysis queued = inserted(Analysis.queued(AnalysisId.newId(), spec("ZZSTATS"), OWNER, created));
+        RunStats stats = new RunStats(1, 1, 1, 1, new BigDecimal("0.000123"), Duration.parse("PT4M21.5S"));
+
+        repository.update(queued.withStats(stats));
+
+        RunStats found = repository.findById(queued.id()).orElseThrow().stats();
+        assertThat(found.elapsed()).isEqualTo(Duration.parse("PT4M21.5S"));
+        assertThat(found.costUsd()).isEqualByComparingTo("0.000123");
+    }
+
+    @Test
     void aNewRecordStartsAtVersionZeroAndEveryWriteAddsOne() {
         Analysis queued = Analysis.queued(AnalysisId.newId(), spec("ZZVER"), OWNER, Instant.now());
         assertThat(queued.version()).isNull();
