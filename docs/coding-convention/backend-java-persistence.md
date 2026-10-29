@@ -408,8 +408,8 @@ Like every shared library, it holds no domain type and no business rule
     developer's choice in review over one container with a database created per context. The cost is
     a container start per context (a few seconds each). The reuse flag is not used.
   - **`PostgresTestContainer`** stays for the catalog checks that run outside Spring
-    (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`):
-    they need many empty databases, so it is one container per JVM and a fresh database per check.
+    (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`,
+    `ColumnTypeCheckTest`): they need many empty databases, so it is one container per JVM and a fresh database per check.
     It also holds the image tag that `TestDatabaseConfiguration` uses.
   - **The migrations** come from the domain's own `<Domain>PersistenceConfiguration`, which the
     component scan picks up: its Flyway bean migrates before Hibernate validates, as in the
