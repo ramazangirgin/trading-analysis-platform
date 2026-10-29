@@ -50,10 +50,10 @@ class ColumnTypeCheckTest {
                                 + " use NUMERIC (BigDecimal)",
                         "column \"RATIO\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\": real,"
                                 + " use NUMERIC (BigDecimal)",
-                        "column \"REF\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\": uuid," + " use TEXT (an ID wrapper)",
+                        "column \"REF\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\": uuid, use TEXT (an ID wrapper)",
                         "column \"SEQ\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\":"
                                 + " identity column, the core makes the ID",
-                        "column \"SMALL\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\": smallint," + " use INTEGER (int)",
+                        "column \"SMALL\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\": smallint, use INTEGER (int)",
                         "column \"STAMP\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\": timestamp without time zone,"
                                 + " use TIMESTAMPTZ (Instant)",
                         "column \"STAMPS\" of table \"SAMPLE_TYPES\".\"TYPES_WRONG\": timestamp without time zone[],"
