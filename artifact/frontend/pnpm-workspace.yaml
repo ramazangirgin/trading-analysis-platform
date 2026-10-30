@@ -18,6 +18,8 @@ minimumReleaseAgeExclude:
   - markdown-it@15.0.3
   # markdown-it 15.0.3 requires argparse ^3.0.3
   - argparse@3.0.3
+  # Renovate security update: vue-i18n@11.4.14
+  - vue-i18n@11.4.14
 
 # pnpm runs no dependency build scripts unless listed here.
 allowBuilds:
