@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -42,7 +43,10 @@ class UserManagementServiceTest {
             new FakeHasher(),
             new PasswordPolicyService(12, "password1234567\n"),
             generator,
-            Clock.fixed(NOW, ZoneOffset.UTC));
+            Clock.fixed(NOW, ZoneOffset.UTC),
+            new UserChangeService(),
+            new UsernameService(),
+            new LoginLockoutService(5, Duration.ofMinutes(15)));
 
     private final Role admin = role(RoleId.ADMIN, "ADMIN", Permission.USER_MANAGE);
     private final Role analyst = role(RoleId.ANALYST, "ANALYST", Permission.ANALYSIS_READ);
@@ -96,7 +100,10 @@ class UserManagementServiceTest {
                 new FakeHasher(),
                 new PasswordPolicyService(40, "password1234567\n"),
                 generator,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                new UserChangeService(),
+                new UsernameService(),
+                new LoginLockoutService(5, Duration.ofMinutes(15)));
 
         strict.create("alice", Set.of(), Optional.empty());
 

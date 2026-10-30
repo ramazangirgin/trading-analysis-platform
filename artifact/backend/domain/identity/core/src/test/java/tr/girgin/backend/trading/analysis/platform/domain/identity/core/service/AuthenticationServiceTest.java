@@ -42,7 +42,9 @@ class AuthenticationServiceTest {
             new AuthenticatedUserService(roles),
             hasher,
             clock,
-            new LoginLockoutService(5, Duration.ofMinutes(15)));
+            new LoginLockoutService(5, Duration.ofMinutes(15)),
+            new UserChangeService(),
+            new UsernameService());
 
     @Test
     void validLoginReturnsTheUserWithRoleNamesAndTheUnionOfPermissions() {

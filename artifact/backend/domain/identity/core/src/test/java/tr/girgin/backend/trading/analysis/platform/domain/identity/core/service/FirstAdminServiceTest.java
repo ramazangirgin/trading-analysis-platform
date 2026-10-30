@@ -41,6 +41,8 @@ class FirstAdminServiceTest {
                 hasher,
                 generator,
                 new PasswordPolicyService(minLength, "password1234567\n"),
+                new UserChangeService(),
+                new UsernameService(),
                 username,
                 password);
     }

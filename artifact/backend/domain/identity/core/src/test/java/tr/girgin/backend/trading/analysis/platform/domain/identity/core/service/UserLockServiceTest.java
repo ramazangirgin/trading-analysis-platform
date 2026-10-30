@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 class UserLockServiceTest {
 
     private final FakeUserRepository users = new FakeUserRepository();
-    private final UserLockService service = new UserLockService(users);
+    private final UserLockService service =
+            new UserLockService(users, new LoginLockoutService(5, Duration.ofMinutes(15)));
 
     @Test
     void unlockClearsTheLockAndTheCount() {

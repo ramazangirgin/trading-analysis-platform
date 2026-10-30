@@ -20,8 +20,11 @@ class UserLockService implements UnlockUserUseCase {
 
     private final UserRepositoryPort users;
 
-    UserLockService(UserRepositoryPort users) {
+    private final LoginLockoutService lockout;
+
+    UserLockService(UserRepositoryPort users, LoginLockoutService lockout) {
         this.users = users;
+        this.lockout = lockout;
     }
 
     @Override
@@ -36,7 +39,7 @@ class UserLockService implements UnlockUserUseCase {
                 return;
             }
             try {
-                users.save(user.withLoginSucceeded());
+                users.save(lockout.unlocked(user));
                 log.info("User {} unlocked", id.value());
                 return;
             } catch (OptimisticLockingFailureException e) {

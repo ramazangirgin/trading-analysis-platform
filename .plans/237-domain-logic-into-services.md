@@ -146,7 +146,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP4: Identity services use them
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: identity core, main: `service/AuthenticationService.java`, `service/UserManagementService.java`,
   `service/UserLockService.java`, `service/PasswordChangeService.java`, `service/FirstAdminService.java`,
