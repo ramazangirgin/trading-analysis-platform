@@ -11,6 +11,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.domain.JavaParameterizedType;
 import com.tngtech.archunit.core.domain.JavaType;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -23,16 +24,33 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.elements.GivenClassesConjunction;
 import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Converter;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.Lob;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import java.lang.annotation.Annotation;
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import javax.sql.DataSource;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -88,6 +106,35 @@ class PersistenceArchitectureTest {
     /** The Spring Data auditing annotations, which only work with the auditing entity listener. */
     private static final Set<Class<? extends Annotation>> AUDITING_ANNOTATIONS =
             Set.of(CreatedDate.class, LastModifiedDate.class, CreatedBy.class, LastModifiedBy.class);
+
+    private static final Set<Class<?>> RULED_OUT_TIME_TYPES = Set.of(
+            LocalDateTime.class,
+            OffsetDateTime.class,
+            ZonedDateTime.class,
+            OffsetTime.class,
+            Date.class,
+            Calendar.class);
+
+    private static final Set<Class<?>> PLAIN_FIELD_TYPES = Set.of(
+            String.class,
+            boolean.class,
+            Boolean.class,
+            int.class,
+            Integer.class,
+            long.class,
+            Long.class,
+            BigDecimal.class,
+            byte[].class,
+            Instant.class,
+            LocalDate.class,
+            LocalTime.class,
+            Duration.class);
+
+    private static final DescribedPredicate<JavaClass> JPA_FIELD_HOLDERS = DescribedPredicate.describe(
+            "entities, embeddables and mapped superclasses",
+            javaClass -> javaClass.isAnnotatedWith(Entity.class)
+                    || javaClass.isAnnotatedWith(Embeddable.class)
+                    || javaClass.isAnnotatedWith(MappedSuperclass.class));
 
     // --- Persistence -----------------------------------------------------------------------
 
@@ -216,6 +263,34 @@ class PersistenceArchitectureTest {
             .because("a write from a stale copy must fail instead of overwriting a newer row: every table that"
                     + " is updated in place has a VERSION column");
 
+    // --- Types -----------------------------------------------------------------------------
+
+    @ArchTest
+    static final ArchRule production_code_uses_only_the_time_types_of_the_convention = noClasses()
+            .that()
+            .resideInAPackage(ROOT)
+            .should()
+            .dependOnClassesThat(DescribedPredicate.describe(
+                    "a time type the convention rules out",
+                    javaClass -> RULED_OUT_TIME_TYPES.stream().anyMatch(javaClass::isAssignableTo)
+                            || javaClass.isEquivalentTo(TimeZone.class)))
+            .because("a moment is an Instant, a date a LocalDate, a time of day a LocalTime and a duration a"
+                    + " Duration (docs/coding-convention/backend-java-persistence.md \"Time values\")");
+
+    @ArchTest
+    static final ArchRule entity_fields_use_the_types_of_the_convention = classes()
+            .that(JPA_FIELD_HOLDERS)
+            .should(useOnlyTheTypesOfTheConvention())
+            .because("a field has the Java type that the table \"Mapping domain types\" of"
+                    + " docs/coding-convention/backend-java-persistence.md gives for its kind of value");
+
+    @ArchTest
+    static final ArchRule durations_map_to_interval = classes()
+            .that(JPA_FIELD_HOLDERS)
+            .should(mapDurationsToInterval())
+            .because("without @JdbcTypeCode(INTERVAL_SECOND) Hibernate maps a Duration to NUMERIC nanoseconds"
+                    + " (docs/coding-convention/backend-java-persistence.md \"Time values\")");
+
     // --- Shared libraries --------------------------------------------------------------------
 
     @ArchTest
@@ -279,6 +354,62 @@ class PersistenceArchitectureTest {
                                 field,
                                 field.getFullName() + " is an enum array without a @ColumnTransformer(write ="
                                         + " \"cast(? as ...[])\"): Hibernate binds varchar[]"));
+                    }
+                }
+            }
+        };
+    }
+
+    private static boolean isPersistent(JavaField field) {
+        return !field.getModifiers().contains(JavaModifier.STATIC) && !field.isAnnotatedWith(Transient.class);
+    }
+
+    private static ArchCondition<JavaClass> useOnlyTheTypesOfTheConvention() {
+        return new ArchCondition<>("use only the field types of the persistence convention") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (JavaField field : javaClass.getFields()) {
+                    if (!isPersistent(field)) {
+                        continue;
+                    }
+                    JavaClass type = field.getRawType();
+                    if (field.isAnnotatedWith(Lob.class)) {
+                        events.add(SimpleConditionEvent.violated(
+                                field, field.getFullName() + " is a @Lob: use byte[] on a BYTEA column"));
+                    } else if (!allowedFieldType(field, type)) {
+                        events.add(SimpleConditionEvent.violated(
+                                field, field.getFullName() + " has the type " + type.getName()));
+                    }
+                }
+            }
+        };
+    }
+
+    private static boolean allowedFieldType(JavaField field, JavaClass type) {
+        if (PLAIN_FIELD_TYPES.stream().anyMatch(type::isEquivalentTo)
+                || type.isEnum()
+                || type.isAnnotatedWith(Embeddable.class)
+                || field.isAnnotatedWith(Convert.class)) {
+            return true;
+        }
+        return (type.isEquivalentTo(List.class) || type.isEquivalentTo(Set.class))
+                && (field.isAnnotatedWith(JdbcTypeCode.class) || field.isAnnotatedWith(ElementCollection.class));
+    }
+
+    private static ArchCondition<JavaClass> mapDurationsToInterval() {
+        return new ArchCondition<>("map every Duration field with @JdbcTypeCode(INTERVAL_SECOND)") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (JavaField field : javaClass.getFields()) {
+                    if (!isPersistent(field) || !field.getRawType().isEquivalentTo(Duration.class)) {
+                        continue;
+                    }
+                    boolean interval = field.tryGetAnnotationOfType(JdbcTypeCode.class)
+                            .map(code -> code.value() == SqlTypes.INTERVAL_SECOND)
+                            .orElse(false);
+                    if (!interval) {
+                        events.add(SimpleConditionEvent.violated(
+                                field, field.getFullName() + " is a Duration without @JdbcTypeCode(INTERVAL_SECOND)"));
                     }
                 }
             }

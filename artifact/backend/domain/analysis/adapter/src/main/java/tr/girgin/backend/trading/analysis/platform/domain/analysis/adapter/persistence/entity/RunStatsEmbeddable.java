@@ -2,6 +2,10 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.pers
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import java.math.BigDecimal;
+import java.time.Duration;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** The columns of {@link AnalysisEntity} that hold the run's LLM usage and wall time. */
 @Embeddable
@@ -20,10 +24,11 @@ public class RunStatsEmbeddable {
     private long tokensOut;
 
     @Column(name = "COST_USD")
-    private Double costUsd;
+    private BigDecimal costUsd;
 
-    @Column(name = "ELAPSED_MS", nullable = false)
-    private long elapsedMs;
+    @Column(name = "ELAPSED", nullable = false)
+    @JdbcTypeCode(SqlTypes.INTERVAL_SECOND)
+    private Duration elapsed;
 
     public RunStatsEmbeddable() {}
 
@@ -59,19 +64,19 @@ public class RunStatsEmbeddable {
         this.tokensOut = tokensOut;
     }
 
-    public Double getCostUsd() {
+    public BigDecimal getCostUsd() {
         return costUsd;
     }
 
-    public void setCostUsd(Double costUsd) {
+    public void setCostUsd(BigDecimal costUsd) {
         this.costUsd = costUsd;
     }
 
-    public long getElapsedMs() {
-        return elapsedMs;
+    public Duration getElapsed() {
+        return elapsed;
     }
 
-    public void setElapsedMs(long elapsedMs) {
-        this.elapsedMs = elapsedMs;
+    public void setElapsed(Duration elapsed) {
+        this.elapsed = elapsed;
     }
 }

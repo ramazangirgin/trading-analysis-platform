@@ -102,18 +102,60 @@ and JPQL uses the class name
 
 ## Mapping domain types
 
-| Domain type | Mapping | Example |
-|---|---|---|
-| An ID wrapper (`PresetId`, `AnalysisId`, `UserId`, `RoleId`) | `@EmbeddedId` with an adapter-side `@Embeddable` holding one `value` on column `ID` | `@EmbeddedId PresetIdEmbeddable id` |
-| Any other single-value wrapper (`Username`, `PasswordHash`, a `RoleId` in a collection) | The core type on the entity, with an `AttributeConverter` applied by `@Convert` (never `autoApply`) | `@Convert(converter = UsernameAttributeConverter.class) Username username` |
-| A group of columns that is one domain value | `@Embeddable` | `AnalysisSpecEmbeddable`, `RunStatsEmbeddable` |
-| An enum | A PostgreSQL enum type whose labels are the Java constant names: `@Enumerated(EnumType.STRING)`, `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS\".\"ANALYSIS_STATUS\""` | `AnalysisStatus status` |
-| A set of values that needs no foreign key | A PostgreSQL array on the owning row: `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYSIS\".\"ANALYST\"[]"`. An enum array also needs `@ColumnTransformer(write = "cast(? as \"ANALYSIS\".\"ANALYST\"[])")` (see below) | `List<Analyst> analysts`, `Set<Permission> permissions` |
-| References to another aggregate | An `@ElementCollection` on a join table, so the foreign key stays; never a `@ManyToMany` between aggregates | `Set<RoleId> roleIds` on `USER_ROLES` |
-| A timestamp | `Instant` on a `TIMESTAMPTZ` column; a domain fact or an audit field ([Timestamps](#timestamps-domain-facts-and-audit-fields)) | `Instant createdAt` |
-| The row version | `@Version @Column(name = "VERSION", nullable = false) Long version` on a `BIGINT` column; `Long version` on the domain record, mapped by name in both directions ([Optimistic locking](#optimistic-locking)) | `Long version` |
+Every value the code stores has one Java type in the domain core, one on the entity and one column
+type. A column type or an entity field type outside this table fails the build
+([Where it is checked](#where-it-is-checked)).
+
+| Kind of value | Domain core | Entity field (Hibernate mapping) | Column | Ruled out | In the code today |
+|---|---|---|---|---|---|
+| Text | `String` (or a single-value wrapper) | `String`, default mapping; a wrapper through `@Convert` | `TEXT` | `VARCHAR(n)`, `CHAR(n)` | every text column |
+| An ID (`PresetId`, `AnalysisId`, `UserId`, `RoleId`) | an ID wrapper of a `String` | `@EmbeddedId` with an adapter-side `@Embeddable` holding one `String value` on column `ID` | `TEXT` | `UUID` column or `java.util.UUID` field; `SERIAL` / identity columns | every `ID` (`@EmbeddedId PresetIdEmbeddable id`) |
+| Any other single-value wrapper (`Username`, `PasswordHash`, a `RoleId` in a collection) | the wrapper | The core type on the entity, with an `AttributeConverter` applied by `@Convert` (never `autoApply`) | the wrapped type's column | | `@Convert(converter = UsernameAttributeConverter.class) Username username` |
+| A group of columns that is one domain value | a record | `@Embeddable` | its fields' columns | | `AnalysisSpecEmbeddable`, `RunStatsEmbeddable` |
+| A flag | `boolean` | `boolean` (`Boolean` on a nullable column) | `BOOLEAN` | `CHAR(1)` / integer flags | `ENABLED`, `BUILT_IN`, `CHECKPOINT_ENABLED`, ... |
+| A whole number | `int` / `long` | `int` / `long` (`Integer` / `Long` on a nullable column) | `INTEGER` / `BIGINT` | `short` / `SMALLINT` | `MAX_DEBATE_ROUNDS`, `FAILED_LOGIN_COUNT` (`INTEGER`); `TOKENS_IN`, `VERSION` (`BIGINT`) |
+| A decimal amount (money, a price, a ratio stored for later) | `BigDecimal` | `BigDecimal`, default mapping | `NUMERIC` (no precision unless the domain fixes a scale: then `NUMERIC(p,s)` and the core rounds to that scale) | `float` / `double` fields, `REAL`, `DOUBLE PRECISION`, `MONEY` | `COST_USD` |
+| An enum | the enum | The enum, `@Enumerated(EnumType.STRING)`, `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`, `columnDefinition = "\"ANALYSIS\".\"ANALYSIS_STATUS\""` | a PostgreSQL enum type of the domain's schema whose labels are the Java constant names | text or integer columns for an enum | `STATUS`, `RATING`, `VISIBILITY`, ... (`AnalysisStatus status`) |
+| A set of values that needs no foreign key | `List` / `Set` of an allowed type | The same, `@JdbcTypeCode(SqlTypes.ARRAY)`, `columnDefinition = "\"ANALYSIS\".\"ANALYST\"[]"`. An enum array also needs `@ColumnTransformer(write = "cast(? as \"ANALYSIS\".\"ANALYST\"[])")` (see below) | a one-dimensional array of an allowed column type | arrays of a ruled-out type | `List<Analyst> analysts`, `Set<Permission> permissions` |
+| References to another aggregate | `Set` of the ID wrapper | An `@ElementCollection` on a join table, so the foreign key stays | a join table of `TEXT` columns | `@ManyToMany` between aggregates | `Set<RoleId> roleIds` on `USER_ROLES` |
+| JSON the backend reads into or queries | a record (or `String`) | `@JdbcTypeCode(SqlTypes.JSON)` | `JSONB` | `JSON` | not used |
+| A document the backend stores and returns unread | `String` | `String` | `TEXT` | | `PRESETS.PAYLOAD` (the frontend's JSON "stored as is"): `JSONB` would reorder keys and drop whitespace |
+| Bytes | `byte[]` | `byte[]`, default mapping | `BYTEA` | `@Lob`, `OID`, `Byte[]` | not used |
+| A moment: something happened or ends at a point on the time line | `Instant` | `Instant`, default mapping | `TIMESTAMPTZ` | `LocalDateTime` / `TIMESTAMP`, `OffsetDateTime`, `ZonedDateTime`, `java.util.Date`, `Calendar`, `java.sql.*` | `CREATED_AT`, `STARTED_AT`, `ENDED_AT`, `VISIBILITY_CHANGED_AT`, `UPDATED_AT`, `LAST_LOGIN_AT`, `LOCKED_UNTIL` ([Timestamps](#timestamps-domain-facts-and-audit-fields)) |
+| A calendar date (a market's trading day) | `LocalDate` | `LocalDate`, default mapping | `DATE` | | `ANALYSES.TRADE_DATE` |
+| A time of day | `LocalTime` | `LocalTime`, default mapping | `TIME` (without time zone); a zone it belongs to is a separate `TEXT` column holding a zone ID | `OffsetTime` / `TIMETZ` | not used |
+| A duration | `Duration` | `Duration` with `@JdbcTypeCode(SqlTypes.INTERVAL_SECOND)` | `INTERVAL` | a number with the unit in the name (`BIGINT` `_MS`); `Duration` without the annotation (it becomes `NUMERIC` nanoseconds) | `ANALYSES.ELAPSED` |
+| The row version | `Long version` on the domain record, mapped by name in both directions ([Optimistic locking](#optimistic-locking)) | `@Version @Column(name = "VERSION", nullable = false) Long version` | `BIGINT` | | `Long version` |
+
+Nullability, as guidance (not checked): a primitive field maps a `NOT NULL` column, a wrapper
+(`Integer`, `Long`, `Boolean`) a nullable one, since Hibernate cannot put a `NULL` into a primitive.
 
 Why these choices:
+
+- **No `VARCHAR(n)` or `CHAR(n)`.** PostgreSQL stores `TEXT` and `VARCHAR` the same way, so the
+  length only adds a limit, and a limit is a domain rule: the core checks it and answers with a
+  domain error (`PresetService` `MAX_PAYLOAD`) instead of a database error on insert. `CHAR(n)` pads
+  with spaces.
+- **No `UUID` column.** IDs are not all UUIDs (`AnalysisId` is `r_` plus hex or an imported run's
+  name, built-in role IDs are `ADMIN`, `ANALYST`, ...), and one ID column type keeps every ID wrapper
+  and every join the same. **No identity or `SERIAL` column**: the core makes the ID (`newId()`)
+  before the row exists.
+- **No `SMALLINT`.** It saves two bytes and adds a third integer type whose Java arithmetic widens
+  anyway.
+- **No `float`, `double`, `REAL`, `DOUBLE PRECISION` for an amount.** They are binary fractions, so
+  `0.1` is not stored as `0.1`, sums drift and an amount read back is not equal to the amount
+  written. `NUMERIC` keeps the decimal exactly; unconstrained `NUMERIC` keeps whatever scale the
+  value has, which LLM costs of fractions of a cent need. (In-memory calculations that are not
+  stored, such as the price chart's `double` closes, are not covered.)
+- **No `MONEY`.** Its scale and its text form follow the database's `lc_monetary`, and the currency
+  is not stored; the currency goes into the column name (`COST_USD`).
+- **`JSONB`, not `JSON`.** `JSON` stores the text and only validates it; `JSONB` can be indexed and
+  queried. Opaque documents stay `TEXT` (above).
+- **No `@Lob` or `OID`.** On PostgreSQL Hibernate maps a `@Lob` to a large object, stored outside the
+  row, not deleted with it and readable only inside a transaction. `BYTEA` is stored in the row.
+- **A duration is not a number.** With the unit only in the column name, every mapper converts it;
+  `INTERVAL` says what the value is in `psql`, in a migration and in the entity, and Hibernate maps
+  it to `Duration` directly ([Time values](#time-values)).
 
 - **IDs are embeddables, not converted.** JPA does not apply an `AttributeConverter` to an `@Id`
   (Jakarta Persistence 3.2, §3.9). The core records cannot be the embeddables themselves, since the
@@ -138,6 +180,62 @@ Entities are classes, as JPA needs: a public no-arg constructor, accessors for M
 business logic beyond copying state between two entities of the same table. Entities do not
 override `equals` / `hashCode`; adapters compare domain records, never entities. The ID embeddables
 do, by `value`, and are `Serializable`, as JPA requires of an `@EmbeddedId`.
+
+### Time values
+
+**Why not `LocalDateTime` / `TIMESTAMP`.** A `LocalDateTime` is a wall-clock reading without a zone:
+`2026-10-28T09:30` is a different moment in Istanbul, New York and UTC. A `TIMESTAMP` column stores
+the same reading, and PostgreSQL converts it with the session's `TimeZone` whenever it is compared
+with a `TIMESTAMPTZ` or `now()`. So the moment a row stands for depends on the zone of whoever wrote
+it and of whoever reads it: the JVM's default zone, the container's zone, the database's setting.
+Nothing in this codebase has the meaning "a wall-clock time in a zone known from context": every
+timestamp is a moment (an event happened, a lock ends), and the trading day is a date with no time.
+A value that needs a wall-clock reading stores what it means instead:
+
+- a moment and the zone it was seen in: `Instant` on `TIMESTAMPTZ` plus a `TEXT` column with the
+  zone ID (`Europe/Istanbul`);
+- a recurring local time ("the market opens at 09:30 exchange time"): `LocalTime` on `TIME` plus the
+  zone ID, or `LocalDate` + `LocalTime` when it is on one date.
+
+An exception for one column is justified when (a) the value comes from a source that gives a local
+date-time and its zone cannot be known, so converting it to an `Instant` would invent a zone; or
+(b) it is a future wall-clock event years ahead in a zone whose daylight saving rules may change,
+and its moment must follow those rule changes (then `LocalDateTime` on `TIMESTAMP` plus a zone ID
+column). An exception is never silent: this document lists the column and its reason, and
+`ColumnTypeCheck` and the ArchUnit entity rule get an explicit exemption naming that table, column
+and field. There is none today.
+
+**Durations on `INTERVAL`.** Checked against Hibernate ORM 7.4 and this repository's settings, which
+set no `hibernate.type.*` property:
+
+- `DurationJavaType` asks for the JDBC type in `hibernate.type.preferred_duration_jdbc_type`, whose
+  default is `SqlTypes.DURATION`, with the DDL type `NUMERIC`: a plain `Duration` field is stored as
+  nanoseconds in a `numeric(21)`, and `ddl-auto=validate` rejects it on an `INTERVAL` column.
+- `@JdbcTypeCode(SqlTypes.INTERVAL_SECOND)` on the field selects the PostgreSQL dialect's interval
+  JDBC type, which binds and reads a `PGInterval`. The column in the migration is a plain
+  `INTERVAL`.
+- It is set per field and not by the global property, like `@JdbcTypeCode(SqlTypes.NAMED_ENUM)`: it
+  is visible where the field is, it needs no second copy in `jpa-test.properties`, and ArchUnit
+  checks it (`durations_map_to_interval`).
+- `INTERVAL` keeps microseconds, like `TIMESTAMPTZ`; finer `Duration` values are rounded. A duration
+  column holds seconds only: never write a month or year interval (`'1 month'`) into it, since a
+  month has no fixed length and the value would not convert to a `Duration`.
+
+**Time zone rules.**
+
+- Every stored moment is UTC. `TIMESTAMPTZ` stores UTC whatever the session's zone, and Hibernate
+  binds an `Instant` as a UTC timestamp, so neither the JVM's default zone nor the database's
+  `TimeZone` setting changes a stored value. No `hibernate.jdbc.time_zone` is set, and none is
+  needed.
+- A date has no zone. A date derived from "now" takes the zone of the one `Clock` bean
+  (`Clock.systemUTC()`): `LocalDate.now(clock)`, so "today" changes at midnight UTC
+  (`AnalysisService` validates the trade date that way).
+- In the REST API an `Instant` is ISO-8601 in UTC with `Z` (OpenAPI `format: date-time`) and a
+  `LocalDate` is `YYYY-MM-DD` (`format: date`); the UI shows a moment in the viewer's zone and a date
+  as it is (`useLabels`, `PriceChart`).
+- `TIMESTAMPTZ` and `INTERVAL` keep microseconds and round finer values, so a value that is compared
+  after it was read back is cut to microseconds before it is saved (`ClockDateTimeProvider`), or to
+  the precision of its source (`Analysis#millis` for imported runs).
 
 ## Repositories and adapters
 
@@ -310,8 +408,8 @@ Like every shared library, it holds no domain type and no business rule
     developer's choice in review over one container with a database created per context. The cost is
     a container start per context (a few seconds each). The reuse flag is not used.
   - **`PostgresTestContainer`** stays for the catalog checks that run outside Spring
-    (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`):
-    they need many empty databases, so it is one container per JVM and a fresh database per check.
+    (`DomainPersistenceConventionsTest`, `DomainMigrationIsolationCheck`, `DatabaseNamingCheckTest`,
+    `ColumnTypeCheckTest`): they need many empty databases, so it is one container per JVM and a fresh database per check.
     It also holds the image tag that `TestDatabaseConfiguration` uses.
   - **The migrations** come from the domain's own `<Domain>PersistenceConfiguration`, which the
     component scan picks up: its Flyway bean migrates before Hibernate validates, as in the
@@ -333,10 +431,12 @@ Like every shared library, it holds no domain type and no business rule
   username fails" could pass without the database ever seeing the statement.
 - **No `JdbcClient` in tests either.**
   - Checks go through the ports and the package-private repositories. The exception is the catalog
-    checks of the conventions test (`DatabaseNamingCheck`, `DomainMigrationIsolationCheck`; see
-    [database naming](backend-database-naming.md)): the catalog has no entities, so they read it
-    with plain JDBC (`java.sql`). `org.springframework.jdbc` stays banned.
-  - Column types are covered by `ddl-auto=validate`.
+    checks of the conventions test (`DatabaseNamingCheck`, `DomainMigrationIsolationCheck`,
+    `ColumnTypeCheck`; see [database naming](backend-database-naming.md)): the catalog has no
+    entities, so they read it with plain JDBC (`java.sql`) through `CatalogQueries`.
+    `org.springframework.jdbc` stays banned.
+  - That a column type fits its entity field is covered by `ddl-auto=validate`; that the column type
+    is one of [Mapping domain types](#mapping-domain-types) is covered by `ColumnTypeCheck`.
   - A migration test seeds old-form rows with a test-only Flyway migration in an extra location of
     its own (under `src/test/resources`), between the real versions. Its own `Flyway` bean lists both locations, and
     the scan leaves out the domain's `*PersistenceConfiguration` (`V2SettingsVersionMigrationTest`).
@@ -346,7 +446,7 @@ Like every shared library, it holds no domain type and no business rule
   record starts at version 0, and saving a `null`-version record with an existing ID fails.
 - **`DomainPersistenceConventionsTest`** (abstract, test fixtures): each domain with persistence
   extends it once, naming its configuration class, its schema and its Flyway bean method, so it
-  checks the domain's real configuration. Its four tests:
+  checks the domain's real configuration. Its five tests:
   - `entitiesAreMappedToTheDomainSchema` (ArchUnit, `EntitySchemaRule`): every `@Entity` has
     `@Table(schema = …)` of the domain, every `@CollectionTable` / `@JoinTable` too, and every
     quoted name in a `columnDefinition` or `@ColumnTransformer` is qualified with the domain's
@@ -357,7 +457,14 @@ Like every shared library, it holds no domain type and no business rule
     catalog must then hold every object in the domain's schema and no other schema;
   - `theDomainFlywayCreatesTheSchemaWithItsHistory`: the domain's Flyway bean creates the schema
     with its `FLYWAY_SCHEMA_HISTORY` and at least one table, and `public` holds no history table;
-  - `namesFollowTheConvention` (`DatabaseNamingCheck`): the naming rules, on the domain's schema.
+  - `namesFollowTheConvention` (`DatabaseNamingCheck`): the naming rules, on the domain's schema;
+  - `columnTypesFollowTheConvention` (`ColumnTypeCheck`): an allowlist on the migrated schema's base
+    tables. A column passes when its type is `text`, `bool`, `int4`, `int8`, `numeric`, `date`,
+    `time`, `timestamptz`, `interval`, `jsonb`, `bytea` or an enum type, or a one-dimensional array
+    of one of these. Any other type, an identity column and a default that calls `nextval(` are
+    reported, one line each, with the replacement for the known ruled-out types (`column "DUE" of
+    table "X"."Y": timestamp without time zone, use TIMESTAMPTZ (Instant)`). Flyway's history table
+    is exempt: Flyway creates it with `varchar` and `timestamp` columns.
 - On a Podman machine (macOS, Windows), the build points Testcontainers' Ryuk at the socket inside
   the machine's VM (`build-logic`, `tradinganalysisplatform.java-library`), so the tests run on
   Docker and Podman alike without local settings.
@@ -381,11 +488,15 @@ except `domain_core_does_not_depend_on_infrastructure`, which is in `Architectur
 | Enums as PostgreSQL enum types or arrays, never text; an enum array carries its `@ColumnTransformer` cast | `enums_are_not_stored_as_text` |
 | An entity with an auditing field has `@EntityListeners(AuditingEntityListener.class)` | `audited_entities_have_the_auditing_listener` |
 | Every entity has a `@Version` field | `entities_have_a_version` |
+| Production code uses no `LocalDateTime`, `OffsetDateTime`, `ZonedDateTime`, `OffsetTime`, `java.util.Date`, `Calendar` or `TimeZone` | `production_code_uses_only_the_time_types_of_the_convention` |
+| Persistent fields of entities and embeddables use only the Java types of [Mapping domain types](#mapping-domain-types); no `@Lob` | `entity_fields_use_the_types_of_the_convention` |
+| A `Duration` field carries `@JdbcTypeCode(SqlTypes.INTERVAL_SECOND)` | `durations_map_to_interval` |
 | The core has no persistence dependency | `domain_core_does_not_depend_on_infrastructure` |
 | Entities match their migrations | `ddl-auto=validate` in the adapter tests and the Spring Boot tests |
 | Entities mapped to the domain's schema, types qualified | `entitiesAreMappedToTheDomainSchema` of the domain's `<D>PersistenceConventionsTest` |
 | Migrations create everything in the domain's schema, qualify every name, reference no other domain | `migrationsStayInTheDomainSchema`, `theDomainFlywayCreatesTheSchemaWithItsHistory` |
 | Names follow [database naming](backend-database-naming.md), the schema name included | `namesFollowTheConvention` |
-| Each of those checks fails on a violation | The library's `EntitySchemaRuleTest`, `DomainMigrationIsolationCheckTest`, `DatabaseNamingCheckTest` and `SamplePersistenceConventionsTest`, against fixtures of a made-up domain |
+| Every column has one of the column types of [Mapping domain types](#mapping-domain-types); no identity or `SERIAL` column | `columnTypesFollowTheConvention` |
+| Each of those checks fails on a violation | The library's `EntitySchemaRuleTest`, `DomainMigrationIsolationCheckTest`, `DatabaseNamingCheckTest`, `ColumnTypeCheckTest` and `SamplePersistenceConventionsTest`, against fixtures of a made-up domain |
 | A domain with persistence (an `@Entity` or a migration) has a conventions test | `:backend:domainPersistenceTestsCheck` (part of `:backend:check`, `mise run build` and `mise run check`) |
 | Only `<Domain>PersistenceConfiguration` is a `@Configuration` in a domain adapter, in `adapter.persistence` | `ArchitectureTest.domain_adapter_configurations_are_persistence_configurations` (`adapter_components_implement_an_outbound_port` and `port_package_roots_hold_only_adapters` only exempt it) |

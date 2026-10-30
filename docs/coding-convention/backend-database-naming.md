@@ -48,6 +48,11 @@ SQL of its own ([persistence](backend-java-persistence.md)).
   An enum column also names its type, schema included,
   `columnDefinition = "\"ANALYSIS\".\"ANALYSIS_STATUS\""`, quoted by hand: Hibernate does not quote
   a column definition.
+- **Column name suffixes** (guidance, not checked; the types are in
+  [Mapping domain types](backend-java-persistence.md#mapping-domain-types)): a moment ends in `_AT`,
+  or `_UNTIL` for the end of a period (`LOCKED_UNTIL`); a date in `_DATE`; a duration says what was
+  measured (`ELAPSED`) and carries no unit, since `INTERVAL` has one; an amount of one currency ends
+  in the currency (`COST_USD`).
 - **Flyway's history table** is `FLYWAY_SCHEMA_HISTORY`, one per schema
   (`"ANALYSIS"."FLYWAY_SCHEMA_HISTORY"`), set by the domain's own Flyway bean.
 - **Not renamed**: the database and the user (`platform`, `platform`), which the Compose file, the

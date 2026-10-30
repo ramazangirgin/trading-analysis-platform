@@ -4,8 +4,13 @@
 CREATE TYPE "SAMPLE"."SAMPLE_MOOD" AS ENUM ('HAPPY', 'SAD');
 
 CREATE TABLE "SAMPLE"."SAMPLES" (
-    "ID"    TEXT                     NOT NULL,
-    "MOOD"  "SAMPLE"."SAMPLE_MOOD"[] NOT NULL DEFAULT '{}',
+    "ID"          TEXT                     NOT NULL,
+    "MOOD"        "SAMPLE"."SAMPLE_MOOD"[] NOT NULL DEFAULT '{}',
+    "CREATED_AT"  TIMESTAMPTZ              NOT NULL,
+    "DUE_DATE"    DATE                     NOT NULL,
+    "ELAPSED"     INTERVAL                 NOT NULL,
+    "AMOUNT"      NUMERIC                  NOT NULL,
+    "DETAILS"     JSONB                    NOT NULL,
     CONSTRAINT "SAMPLES_PK" PRIMARY KEY ("ID")
 );
 
