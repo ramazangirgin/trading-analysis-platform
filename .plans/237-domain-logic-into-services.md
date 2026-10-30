@@ -136,7 +136,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP3: New identity services
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: identity core: `main/…/service/UserChangeService.java`, `main/…/service/UsernameService.java`,
   `main/…/service/LoginLockoutService.java`, `test/…/service/UserChangeServiceTest.java`,

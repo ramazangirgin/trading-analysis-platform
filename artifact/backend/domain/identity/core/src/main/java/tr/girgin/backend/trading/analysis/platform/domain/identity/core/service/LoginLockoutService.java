@@ -1,8 +1,11 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 
 /**
  * When an account is locked: after a number of wrong passwords in a row (5 by default, 1 to 100), for a
@@ -34,6 +37,28 @@ class LoginLockoutService {
         }
         this.maxFailedAttempts = maxFailedAttempts;
         this.lockoutDuration = lockoutDuration;
+    }
+
+    /** Whether the account is locked at the given time: a lock is in force until its instant is reached. */
+    boolean isLocked(User user, Instant now) {
+        return user.lockedUntil().filter(now::isBefore).isPresent();
+    }
+
+    /** The same user with no failed logins and no lock. */
+    User unlocked(User user) {
+        return new User(
+                user.id(),
+                user.username(),
+                user.passwordHash(),
+                user.enabled(),
+                user.mustChangePassword(),
+                0,
+                Optional.empty(),
+                user.lastLoginAt(),
+                user.createdAt(),
+                user.updatedAt(),
+                user.roleIds(),
+                user.version());
     }
 
     int maxFailedAttempts() {
