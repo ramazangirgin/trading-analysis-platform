@@ -39,10 +39,10 @@ class AuthenticationServiceTest {
     private final MutableClock clock = new MutableClock(Instant.parse("2026-10-01T10:00:00Z"));
     private final AuthenticationService service = new AuthenticationService(
             users,
-            new AuthenticatedUserFactory(roles),
+            new AuthenticatedUserService(roles),
             hasher,
             clock,
-            new LoginLockoutPolicy(5, Duration.ofMinutes(15)));
+            new LoginLockoutService(5, Duration.ofMinutes(15)));
 
     @Test
     void validLoginReturnsTheUserWithRoleNamesAndTheUnionOfPermissions() {

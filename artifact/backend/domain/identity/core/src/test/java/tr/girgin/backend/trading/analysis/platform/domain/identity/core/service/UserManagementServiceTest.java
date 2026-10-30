@@ -40,7 +40,7 @@ class UserManagementServiceTest {
             users,
             roles,
             new FakeHasher(),
-            new PasswordPolicy(12, "password1234567\n"),
+            new PasswordPolicyService(12, "password1234567\n"),
             generator,
             Clock.fixed(NOW, ZoneOffset.UTC));
 
@@ -94,7 +94,7 @@ class UserManagementServiceTest {
                 users,
                 roles,
                 new FakeHasher(),
-                new PasswordPolicy(40, "password1234567\n"),
+                new PasswordPolicyService(40, "password1234567\n"),
                 generator,
                 Clock.fixed(NOW, ZoneOffset.UTC));
 
@@ -467,7 +467,7 @@ class UserManagementServiceTest {
                 1L);
     }
 
-    private static final class FixedGenerator extends OneTimePasswordGenerator {
+    private static final class FixedGenerator extends OneTimePasswordService {
 
         private int lastLength;
 

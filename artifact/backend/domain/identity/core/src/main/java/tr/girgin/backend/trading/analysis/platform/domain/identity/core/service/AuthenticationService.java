@@ -29,20 +29,20 @@ class AuthenticationService implements AuthenticateUseCase {
     private static final int MAX_ATTEMPTS = 3;
 
     private final UserRepositoryPort users;
-    private final AuthenticatedUserFactory authenticatedUsers;
+    private final AuthenticatedUserService authenticatedUsers;
     private final PasswordHasherPort hasher;
     /** Checked when the user is unknown, so that case takes as long as a wrong password. */
     private final PasswordHash decoyHash;
 
     private final Clock clock;
-    private final LoginLockoutPolicy lockoutPolicy;
+    private final LoginLockoutService lockoutPolicy;
 
     AuthenticationService(
             UserRepositoryPort users,
-            AuthenticatedUserFactory authenticatedUsers,
+            AuthenticatedUserService authenticatedUsers,
             PasswordHasherPort hasher,
             Clock clock,
-            LoginLockoutPolicy lockoutPolicy) {
+            LoginLockoutService lockoutPolicy) {
         this.users = users;
         this.authenticatedUsers = authenticatedUsers;
         this.hasher = hasher;

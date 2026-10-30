@@ -48,8 +48,8 @@ class UserManagementService implements ManageUsersUseCase {
     private final UserRepositoryPort users;
     private final RoleRepositoryPort roles;
     private final PasswordHasherPort hasher;
-    private final PasswordPolicy policy;
-    private final OneTimePasswordGenerator generator;
+    private final PasswordPolicyService policy;
+    private final OneTimePasswordService generator;
     private final Clock clock;
     private final ReentrantLock adminGuard = new ReentrantLock();
 
@@ -58,17 +58,17 @@ class UserManagementService implements ManageUsersUseCase {
             UserRepositoryPort users,
             RoleRepositoryPort roles,
             PasswordHasherPort hasher,
-            PasswordPolicy policy,
+            PasswordPolicyService policy,
             Clock clock) {
-        this(users, roles, hasher, policy, new OneTimePasswordGenerator(), clock);
+        this(users, roles, hasher, policy, new OneTimePasswordService(), clock);
     }
 
     UserManagementService(
             UserRepositoryPort users,
             RoleRepositoryPort roles,
             PasswordHasherPort hasher,
-            PasswordPolicy policy,
-            OneTimePasswordGenerator generator,
+            PasswordPolicyService policy,
+            OneTimePasswordService generator,
             Clock clock) {
         this.users = users;
         this.roles = roles;
@@ -214,7 +214,7 @@ class UserManagementService implements ManageUsersUseCase {
     }
 
     private String generate() {
-        return generator.generate(Math.max(OneTimePasswordGenerator.DEFAULT_LENGTH, policy.minLength()));
+        return generator.generate(Math.max(OneTimePasswordService.DEFAULT_LENGTH, policy.minLength()));
     }
 
     private User find(UserId id) {

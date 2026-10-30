@@ -20,14 +20,14 @@ class PasswordChangeService implements ChangePasswordUseCase {
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
-    private final AuthenticatedUserFactory authenticatedUsers;
-    private final PasswordPolicy policy;
+    private final AuthenticatedUserService authenticatedUsers;
+    private final PasswordPolicyService policy;
 
     PasswordChangeService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            AuthenticatedUserFactory authenticatedUsers,
-            PasswordPolicy policy) {
+            AuthenticatedUserService authenticatedUsers,
+            PasswordPolicyService policy) {
         this.users = users;
         this.hasher = hasher;
         this.authenticatedUsers = authenticatedUsers;

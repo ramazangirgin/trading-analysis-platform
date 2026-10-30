@@ -126,7 +126,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP2: Identity services renamed
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: identity core, main: `service/LoginLockoutPolicy.java` (renamed), `service/AuthenticatedUserFactory.java` (renamed),
   `service/OneTimePasswordGenerator.java` (renamed), `service/PasswordPolicy.java` (renamed, gains `code`),

@@ -30,8 +30,8 @@ class FirstAdminService implements CreateFirstAdminUseCase {
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
-    private final OneTimePasswordGenerator generator;
-    private final PasswordPolicy policy;
+    private final OneTimePasswordService generator;
+    private final PasswordPolicyService policy;
     private final String username;
     private final String password;
 
@@ -39,17 +39,17 @@ class FirstAdminService implements CreateFirstAdminUseCase {
     FirstAdminService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            PasswordPolicy policy,
+            PasswordPolicyService policy,
             @Value("${platform.admin.username:admin}") String username,
             @Value("${platform.admin.password:}") String password) {
-        this(users, hasher, new OneTimePasswordGenerator(), policy, username, password);
+        this(users, hasher, new OneTimePasswordService(), policy, username, password);
     }
 
     FirstAdminService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            OneTimePasswordGenerator generator,
-            PasswordPolicy policy,
+            OneTimePasswordService generator,
+            PasswordPolicyService policy,
             String username,
             String password) {
         this.users = users;
@@ -80,7 +80,7 @@ class FirstAdminService implements CreateFirstAdminUseCase {
         }
         String plain = configured
                 ? password
-                : generator.generate(Math.max(OneTimePasswordGenerator.DEFAULT_LENGTH, policy.minLength()));
+                : generator.generate(Math.max(OneTimePasswordService.DEFAULT_LENGTH, policy.minLength()));
         User admin = new User(
                 UserId.newId(),
                 name,

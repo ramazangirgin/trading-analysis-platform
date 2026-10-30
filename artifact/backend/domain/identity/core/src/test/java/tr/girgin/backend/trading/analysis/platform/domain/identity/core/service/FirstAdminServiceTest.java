@@ -37,7 +37,12 @@ class FirstAdminServiceTest {
 
     private FirstAdminService service(int minLength, String username, String password) {
         return new FirstAdminService(
-                users, hasher, generator, new PasswordPolicy(minLength, "password1234567\n"), username, password);
+                users,
+                hasher,
+                generator,
+                new PasswordPolicyService(minLength, "password1234567\n"),
+                username,
+                password);
     }
 
     @Test
@@ -213,7 +218,7 @@ class FirstAdminServiceTest {
                 0L);
     }
 
-    private static final class CountingGenerator extends OneTimePasswordGenerator {
+    private static final class CountingGenerator extends OneTimePasswordService {
 
         private int calls;
         private String last;

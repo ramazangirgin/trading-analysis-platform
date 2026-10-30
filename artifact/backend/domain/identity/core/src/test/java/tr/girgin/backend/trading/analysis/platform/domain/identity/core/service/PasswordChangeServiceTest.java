@@ -36,7 +36,7 @@ class PasswordChangeServiceTest {
     private final FakeUserRepository users = new FakeUserRepository();
     private final FakeRoleRepository roles = new FakeRoleRepository();
     private final PasswordChangeService service = new PasswordChangeService(
-            users, new FakeHasher(), new AuthenticatedUserFactory(roles), new PasswordPolicy(8, "password\n"));
+            users, new FakeHasher(), new AuthenticatedUserService(roles), new PasswordPolicyService(8, "password\n"));
 
     @Test
     void aCorrectChangeStoresTheNewHashClearsTheFlagAndKeepsTheRest() {

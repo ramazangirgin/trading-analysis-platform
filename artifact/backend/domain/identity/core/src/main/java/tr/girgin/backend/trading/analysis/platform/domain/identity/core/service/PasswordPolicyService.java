@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordPolicyViolation;
@@ -24,8 +24,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
  * fixed maximum of 128 characters, a bundled list of the 10,000 most common passwords, and not the
  * username. There are no composition rules. Lengths count Unicode code points; spaces count.
  */
-@Component
-class PasswordPolicy {
+@Service
+class PasswordPolicyService {
 
     static final int MAX_LENGTH = 128;
     static final int LOWEST_MIN_LENGTH = 8;
@@ -37,12 +37,12 @@ class PasswordPolicy {
     private final Set<String> commonPasswords;
 
     @Autowired
-    PasswordPolicy(@Value("${platform.password.min-length:12}") int minLength) {
+    PasswordPolicyService(@Value("${platform.password.min-length:12}") int minLength) {
         this.minLength = validMinLength(minLength);
         this.commonPasswords = parse(readBundledList());
     }
 
-    PasswordPolicy(int minLength, String commonPasswordList) {
+    PasswordPolicyService(int minLength, String commonPasswordList) {
         this.minLength = validMinLength(minLength);
         this.commonPasswords = parse(commonPasswordList);
     }
@@ -75,12 +75,16 @@ class PasswordPolicy {
         if (broken.isEmpty()) {
             return;
         }
-        List<String> reasons =
-                broken.stream().map(PasswordPolicyViolation::code).toList();
+        List<String> reasons = broken.stream().map(this::code).toList();
         throw new IdentityException(
                 IdentityError.WEAK_PASSWORD,
                 "The password breaks the password policy: " + String.join(", ", reasons),
                 Map.of("reasons", reasons, "minLength", minLength, "maxLength", MAX_LENGTH));
+    }
+
+    /** The reason code that goes into the error's params, e.g. {@code too_short}. */
+    String code(PasswordPolicyViolation violation) {
+        return violation.name().toLowerCase(Locale.ROOT);
     }
 
     private int validMinLength(int configured) {
@@ -103,7 +107,7 @@ class PasswordPolicy {
     }
 
     private String readBundledList() {
-        try (InputStream in = PasswordPolicy.class.getResourceAsStream(COMMON_PASSWORDS)) {
+        try (InputStream in = PasswordPolicyService.class.getResourceAsStream(COMMON_PASSWORDS)) {
             if (in == null) {
                 throw new IllegalStateException("The common password list " + COMMON_PASSWORDS + " is missing");
             }

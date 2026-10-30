@@ -2,14 +2,14 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service
 
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 /**
  * When an account is locked: after a number of wrong passwords in a row (5 by default, 1 to 100), for a
  * duration (15 minutes by default, 1 minute to 24 hours).
  */
-@Component
-class LoginLockoutPolicy {
+@Service
+class LoginLockoutService {
 
     static final int LOWEST_MAX_FAILED_ATTEMPTS = 1;
     static final int HIGHEST_MAX_FAILED_ATTEMPTS = 100;
@@ -19,7 +19,7 @@ class LoginLockoutPolicy {
     private final int maxFailedAttempts;
     private final Duration lockoutDuration;
 
-    LoginLockoutPolicy(
+    LoginLockoutService(
             @Value("${platform.login.max-failed-attempts:5}") int maxFailedAttempts,
             @Value("${platform.login.lockout-duration:15m}") Duration lockoutDuration) {
         if (maxFailedAttempts < LOWEST_MAX_FAILED_ATTEMPTS || maxFailedAttempts > HIGHEST_MAX_FAILED_ATTEMPTS) {
