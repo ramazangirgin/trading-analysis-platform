@@ -5,11 +5,14 @@
 
 import os
 import re
+import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 import dashboard
 
+AGENT_DIR = Path(__file__).resolve().parent
 T0 = 1_760_000_000
 REPO = "https://github.com/o/r"
 PR = "https://github.com/o/r/pull/7"
@@ -509,6 +512,51 @@ class IssueSectionTest(unittest.TestCase):
         dropped = dashboard.merge(body, {}, set(), 0)
         self.assertIn("No active agent processes", dropped)
         self.assertNotIn("issue/258", dropped)
+
+
+FAKE_GH = """#!/bin/sh
+case "$*" in
+  "api user"*) echo agent ;;
+  "issue list"*) echo 99 ;;
+  "repo view"*) echo o/r ;;
+  "issue view"*) echo "Some issue" ;;
+  *"--jq .state") echo open ;;
+  *"-X PATCH"*)
+    for arg in "$@"; do case "$arg" in body=@*) cp "${arg#body=@}" "$FAKE_DIR/body.md" ;; esac; done
+    ;;
+  *"--jq .body"*) cat "$FAKE_DIR/body.md" 2>/dev/null || true ;;
+esac
+"""
+
+
+class StartScriptTest(unittest.TestCase):
+    def test_start_writes_the_section_with_the_scratch_directory_in_place(self):
+        directory = Path(tempfile.mkdtemp(prefix="test-dashboard-"))
+        self.addCleanup(subprocess.run, ["rm", "-rf", str(directory)])
+        bin_dir = directory / "bin"
+        bin_dir.mkdir()
+        (bin_dir / "gh").write_text(FAKE_GH)
+        (bin_dir / "gh").chmod(0o755)
+        repo = directory / "repo"
+        repo.mkdir()
+        subprocess.run(["git", "init", "--quiet", str(repo)], check=True)
+        environment = {
+            **os.environ,
+            "PATH": f"{bin_dir}:{os.environ['PATH']}",
+            "AGENT_SCRIPTS": str(AGENT_DIR),
+            "AGENT_REPO_ROOT": str(repo),
+            "AGENT_DASHBOARD": "1",
+            "AGENT_RETRY_DELAY": "0",
+            "TMPDIR": str(directory),
+            "FAKE_DIR": str(directory),
+        }
+        run = subprocess.run(
+            ["bash", str(AGENT_DIR / "dashboard.sh"), "start", "5"],
+            cwd=repo, env=environment, capture_output=True, text=True, timeout=120,
+        )
+        self.assertNotIn("mkstemp", run.stderr)
+        self.assertNotIn("not updated", run.stderr)
+        self.assertIn("<!-- agent-process issue/5 -->", (directory / "body.md").read_text())
 
 
 if __name__ == "__main__":

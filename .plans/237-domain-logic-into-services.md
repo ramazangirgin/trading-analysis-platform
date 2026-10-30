@@ -114,11 +114,11 @@ File paths below are relative to the package root of the named module and source
 
 ### WP1: Dashboard keeps a scratch directory
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `scripts/agent/dashboard.sh`, `scripts/agent/test_dashboard.py`
 - **Steps**:
-  - [ ] Commit this package on its own, apart from the backend changes.
+  - [x] Commit this package on its own, apart from the backend changes.
 - **Tests**: a new test in `test_dashboard.py` runs `dashboard.sh start <n>` with `AGENT_DASHBOARD=1`
   in a throwaway git repository, with a fake `gh` on `PATH` (as `test_lib.py` does) that answers the
   calls of `start`. It asserts the run logs neither `mkstemp` nor "not updated", and it fails without

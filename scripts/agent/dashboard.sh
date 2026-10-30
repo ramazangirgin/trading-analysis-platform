@@ -63,6 +63,7 @@ agent_home=$(cd "$(git rev-parse --git-common-dir)" && pwd)/agent
 mkdir -p "$agent_home"
 rmdir "$AGENT_TMP" 2>/dev/null || true # the scratch directory lib.sh made, if still empty
 work=$(mktemp -d "${TMPDIR:-/tmp}/agent-dashboard.XXXXXX")
+AGENT_TMP=$work # lib.sh's retry makes its files here
 lock=""
 login=""
 repo_url=""
