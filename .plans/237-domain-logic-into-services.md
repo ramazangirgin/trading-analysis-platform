@@ -28,14 +28,16 @@ no longer fails with "dashboard: not updated".
 **A model holds its components only.** That rules out null checks, defensive copies, validation or
 normalization in constructors, secondary constructors, factories, `with*` or other copies,
 `newId()`, overridden `toString`, derived methods and static helpers. Only what the language
-generates remains: accessors, `equals`, `hashCode`, `toString`, `values`/`valueOf`. Services make
-copies with the canonical constructor. Whoever builds a record passes the collections it should
-hold. Three exceptions stay, because the values must be known outside the core and are fields,
-not behaviour:
+generates remains: accessors, `equals`, `hashCode`, `toString`, `values`/`valueOf`. Copies are
+made by mappers where a mapper already builds the record (DTO and entity mapping), by services
+otherwise, with the canonical constructor; never by the models. Whoever builds a record passes the
+collections it should hold. Four exceptions stay:
 - the four `RoleId` constants, which name rows seeded by migrations and are used by four services
   and 18 integration tests;
 - the `key` field and accessor of `Permission`, which the BFF (authorities) and the database share;
-- the same on the BFF's `PermissionEnumDto`, its JSON value.
+- the same on the BFF's `PermissionEnumDto`, its JSON value;
+- the masking `toString` of `PasswordHash`: the generated one would print the hash, in a log of the
+  hash or of a `User`.
 
 Logs and messages that print an `AnalysisId` or `OwnerId` use `value()`, since the generated
 `toString` differs.
@@ -63,7 +65,6 @@ added.
 | identity | `Username` format | new `UsernameService`. `AuthenticationService`, `FirstAdminService` and `UserManagementService` take the name as a `String` through it, with the same `INVALID_USERNAME` error |
 | identity | `PasswordPolicyViolation.code` | `PasswordPolicyService` |
 | identity | `Permission.fromKey` (unused) | deleted |
-| identity | `PasswordHash` masking `toString` | dropped (see Open questions) |
 | settings | `PresetAccess.canSee`, `PresetId.newId` | private methods of `PresetService` |
 | settings | `OwnerId` blank check | dropped: the ID is the authenticated user's |
 | report | `ReportKey` ticker format | new `ReportKeyService`. `ReportService` and `PriceHistoryService` answer empty for an invalid ticker; `ReportService` and `RunHistoryService` drop scanned entries with one. The datadir and history adapters and orchestration (`PreviewCutter`, `GetAnalysisReportUseCase`, `GetAnalysisPricesUseCase`) stop calling `isValidTicker`. No path is built from an unchecked ticker, since adapters read by key only for a key the service has checked |
@@ -95,6 +96,8 @@ services.
   `bff.controller.api.model`. They may declare no method other than record accessors, `equals`,
   `hashCode`, `toString`, `values`, `valueOf` and an enum's zero-argument field accessor. Their
   constructors may call nothing but the super constructor, which catches compact-constructor code.
+  `toString` counts only where the compiler generates it (its body is one `invokedynamic` to
+  `ObjectMethods`), except on `PasswordHash`, the one class the rule names by its name.
 - `service_packages_hold_only_services` requires every top-level class in `domain.*.core.service` to
   be annotated `@Service` and named `*Service`.
 
@@ -166,9 +169,9 @@ File paths below are relative to the package root of the named module and source
 - **Status**: open
 - **Depends on**: WP4
 - **Files**: identity core, test: `service/RoleManagementServiceTest.java`, `model/UserTest.java` (deleted),
-  `model/RoleTest.java` (deleted), `model/UsernameTest.java` (deleted), `model/PasswordHashTest.java` (deleted),
-  `model/PermissionTest.java`
-- **Tests**: `RoleManagementServiceTest` covers the role copies; `PermissionTest` keeps "keys are unique".
+  `model/RoleTest.java` (deleted), `model/UsernameTest.java` (deleted), `model/PermissionTest.java`
+- **Tests**: `RoleManagementServiceTest` covers the role copies; `PermissionTest` keeps "keys are unique";
+  `PasswordHashTest` stays as it is.
 
 ### WP7: Identity models, users and roles
 
@@ -404,8 +407,8 @@ Each work package's tests; `mise run build` and `mise run agent:test`.
 
 | What | Where | Change |
 |---|---|---|
-| Text | `docs/coding-convention/backend-java-package-structure.md`, "Package layout" (`model/` of domains and orchestration, `service/`) | Models hold their components only, with the three exceptions of "Design". `service/` holds `@Service` beans named `*Service` |
-| Text | same document, "Where each class kind goes" | Rows for `models_are_data` and `service_packages_hold_only_services` |
+| Text | `docs/coding-convention/backend-java-package-structure.md`, "Package layout" (`model/` of domains and orchestration, `service/`) | Models hold their components only, with the four exceptions of "Design" and why each stays; copies by mappers or services. `service/` holds `@Service` beans named `*Service` |
+| Text | same document, "Where each class kind goes" | Rows for `models_are_data` (naming its `PasswordHash` exception) and `service_packages_hold_only_services` |
 | Text | same document, "Shared libraries" | Name the analysis core's test fixture (`TestAnalyses`) beside the persistence library's |
 
 The dashboard fix needs no doc change: it restores what "Dashboard" in `docs/agentic-development.md`
@@ -418,8 +421,4 @@ already describes.
 
 ## Open questions
 
-- `with*` copies are made by services, not by the models (earlier instruction; the answer "no" to
-  "Should they move too?" was read that way). Confirm?
-- Without the masking `toString`, the generated `toString` of `PasswordHash`, and so of `User`,
-  prints the hash. No code logs either today. Is that accepted, or should the identity persistence
-  adapter keep the hash in a type of its own?
+None.
