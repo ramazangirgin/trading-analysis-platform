@@ -312,7 +312,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP22: Analysis adapter
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP20
 - **Files**: analysis adapter: `main/…/eventline/mapper/RunnerOutputLineToRunEventMapper.java`,
   `main/…/persistence/mapper/AnalysisEntityToAnalysisMapper.java`, `test/…/persistence/JpaAnalysisRepositoryAdapterTest.java`,

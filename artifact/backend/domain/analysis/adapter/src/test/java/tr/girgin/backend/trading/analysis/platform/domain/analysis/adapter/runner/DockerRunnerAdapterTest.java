@@ -33,6 +33,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.runne
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunEventSink;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 
@@ -116,7 +117,7 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
 
     @Test
     void runsTheAnalysisInALockedDownContainerAndRemovesIt() throws Exception {
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         RecordingSink sink = new RecordingSink();
 
         RunHandle handle = adapter(home).start(id, spec("NVDA"), Map.of("DEEPSEEK_API_KEY", "sk-docker"), sink);
@@ -137,7 +138,7 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
     void stopEndsTheRunCleanly() throws Exception {
         RecordingSink sink = new RecordingSink();
         DockerRunnerAdapter adapter = adapter(home);
-        RunHandle handle = adapter.start(AnalysisId.newId(), spec("SLOW"), Map.of(), sink);
+        RunHandle handle = adapter.start(TestAnalyses.newId(), spec("SLOW"), Map.of(), sink);
         sink.awaitEvents(2);
 
         adapter.stop(handle);
@@ -148,7 +149,7 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
 
     @Test
     void aRestartedPlatformFollowsARunningContainerAgain(@TempDir Path restartedHome) throws Exception {
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         RecordingSink before = new RecordingSink();
         RunHandle handle = adapter(home).start(id, spec("SLOW"), Map.of(), before);
         before.awaitEvents(2);
@@ -168,7 +169,7 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
 
     @Test
     void aRunThatEndedWhileThePlatformWasDownKeepsItsOutcome() throws Exception {
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         // Started by "the old platform", which never read its end.
         String containerId = docker.createContainerCmd(IMAGE)
                 .withCmd("run", "--spec-env", DockerRunnerAdapter.SPEC_ENV, "--out", "/tmp/run")
@@ -197,7 +198,7 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
     void doesNotFollowContainersThatAreGoneOrBelongToAnotherRun() {
         DockerRunnerAdapter adapter = adapter(home);
 
-        assertThat(adapter.reattach(AnalysisId.newId(), new RunHandle("0123456789ab"), 0, new RecordingSink()))
+        assertThat(adapter.reattach(TestAnalyses.newId(), new RunHandle("0123456789ab"), 0, new RecordingSink()))
                 .isFalse();
     }
 

@@ -13,6 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 
 class JsonlEventStoreAdapterTest extends AdapterTestSupport {
 
@@ -21,7 +22,7 @@ class JsonlEventStoreAdapterTest extends AdapterTestSupport {
 
     @Test
     void readsTheRunnersEventsAfterACursor() throws Exception {
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         Path file = HOME.resolve("runs").resolve(id.value()).resolve("events.jsonl");
         Files.createDirectories(file.getParent());
         Files.writeString(file, """
@@ -36,12 +37,12 @@ class JsonlEventStoreAdapterTest extends AdapterTestSupport {
 
     @Test
     void aRunWithoutEventsHasNone() {
-        assertThat(store.read(AnalysisId.newId(), 0)).isEmpty();
+        assertThat(store.read(TestAnalyses.newId(), 0)).isEmpty();
     }
 
     @Test
     void appendedEventsReadBackTheSame() {
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         RunEvent died = new RunEvent(
                 1,
                 Instant.parse("2026-09-29T10:00:00Z"),

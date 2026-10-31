@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.DurationToMillisMapper;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
@@ -50,7 +51,8 @@ class V5AnalysisPartialVisibilityMigrationTest {
         Analysis privateRun =
                 repository.findById(new AnalysisId("r_v4_private")).orElseThrow();
 
-        Analysis partial = repository.update(privateRun.withVisibility(Visibility.PARTIAL, Instant.EPOCH));
+        Analysis partial =
+                repository.update(TestAnalyses.withVisibility(privateRun, Visibility.PARTIAL, Instant.EPOCH));
 
         assertThat(repository.findById(partial.id()).orElseThrow().visibility()).isEqualTo(Visibility.PARTIAL);
     }

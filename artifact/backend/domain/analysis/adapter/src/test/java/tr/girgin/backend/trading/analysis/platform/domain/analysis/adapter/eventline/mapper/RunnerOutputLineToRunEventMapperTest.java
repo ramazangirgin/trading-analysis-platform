@@ -45,6 +45,14 @@ class RunnerOutputLineToRunEventMapperTest extends AdapterTestSupport {
     }
 
     @Test
+    void keepsPayloadValuesThatAreNull() {
+        RunEvent event = map("""
+                {"v":1,"ts":"2026-09-28T10:00:01Z","run_id":"r_1","seq":2,"type":"log","message":null}""");
+
+        assertThat(event.payload()).containsEntry("message", null);
+    }
+
+    @Test
     void mapsStats() {
         RunEvent event = map("""
                 {"v":1,"ts":"2026-09-28T10:00:01Z","run_id":"r_1","seq":5,"type":"stats","llm_calls":12,\

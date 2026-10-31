@@ -25,6 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.DurationToMillisMapper;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
@@ -83,7 +84,7 @@ class V2AnalysisVersionMigrationTest {
     void aMigratedImportCanBeReplacedAtItsVersion() {
         Analysis seeded = repository.findByExternalRef("report:AAPL/2026-09-27").orElseThrow();
 
-        Analysis replaced = repository.replaceImported(seeded.withDecision(Rating.HOLD, "Rating: Hold"));
+        Analysis replaced = repository.replaceImported(TestAnalyses.withDecision(seeded, Rating.HOLD, "Rating: Hold"));
 
         assertThat(seeded.version()).isZero();
         assertThat(replaced.version()).isEqualTo(1);
