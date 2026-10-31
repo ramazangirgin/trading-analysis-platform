@@ -198,7 +198,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP10: Settings
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: settings core, main: `service/PresetService.java`, `model/PresetAccess.java`, `model/Preset.java`,
   `model/PresetId.java`, `model/OwnerId.java`, `model/AnalysisDefaults.java`, `model/SecretStatus.java`
