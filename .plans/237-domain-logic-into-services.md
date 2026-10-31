@@ -302,7 +302,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP21: BFF
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP15
 - **Files**: bff impl, main: `AnalysesApiDelegateImpl.java`, `mapper/AnalysisToAnalysisDtoMapper.java`,
   `mapper/StringToAnalysisIdMapper.java`
