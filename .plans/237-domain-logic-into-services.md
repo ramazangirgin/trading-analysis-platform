@@ -234,7 +234,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP14: Report adapters
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP12
 - **Files**: report adapter: `main/…/datadir/FileSystemDataDirAdapter.java`, `main/…/history/JsonRunHistoryAdapter.java`,
   `test/…/datadir/FileSystemDataDirAdapterTest.java`, `test/…/history/JsonRunHistoryAdapterTest.java`

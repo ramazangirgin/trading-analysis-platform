@@ -87,7 +87,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         List<ReportContent> contents = new ArrayList<>();
         for (Path tickerDir : list(resultsDir)) {
             String ticker = tickerDir.getFileName().toString();
-            if (!Files.isDirectory(tickerDir) || !ReportKey.isValidTicker(ticker)) {
+            if (!Files.isDirectory(tickerDir)) {
                 continue;
             }
             for (Path child : list(tickerDir)) {
@@ -108,7 +108,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         }
         for (Path deepFile : list(deepReportsDir)) {
             Matcher matcher = DEEP_REPORT_FILE.matcher(deepFile.getFileName().toString());
-            if (matcher.matches() && ReportKey.isValidTicker(matcher.group(1))) {
+            if (matcher.matches()) {
                 parseDate(matcher.group(2))
                         .flatMap(date -> readDeepReport(new ReportKey(matcher.group(1), date)))
                         .ifPresent(contents::add);

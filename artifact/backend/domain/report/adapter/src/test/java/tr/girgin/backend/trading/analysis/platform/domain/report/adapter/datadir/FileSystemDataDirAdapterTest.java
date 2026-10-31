@@ -46,10 +46,8 @@ class FileSystemDataDirAdapterTest {
                  "investment_plan":"plan","final_trade_decision":"**Rating**: Buy","future_key":1}""");
         write("MU/TradingAgentsStrategy_logs/full_states_log_2026-09-27.json", "{ truncated");
         write("MU/2026-09-27/reports/1_analysts/market.md", "# MU market");
-        write("not a ticker/2026-09-27/reports/1_analysts/market.md", "ignored");
         write("NVDA/notes.txt", "ignored");
         write("../reports/MU_deep_2026-09-27.md", "# MU Derin Analiz");
-        write("../reports/notes_deep_2026-09-27.md", "ignored: not a ticker");
         write("../reports/DELL_deep_latest.md", "ignored: no date");
         adapter = new FileSystemDataDirAdapter(logs, dataDir.resolve("reports"));
     }

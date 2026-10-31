@@ -73,9 +73,6 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
             return Optional.empty();
         }
         ticker = ticker.strip().toUpperCase(Locale.ROOT);
-        if (!ReportKey.isValidTicker(ticker)) {
-            return Optional.empty();
-        }
         String id = Optional.ofNullable(text(run, "id")).orElse(fallbackId);
         JsonNode params = run.path("params");
         JsonNode stats = run.path("stats");
