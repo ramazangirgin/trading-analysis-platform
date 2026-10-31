@@ -77,7 +77,7 @@ final class TestSession {
             RoleId... roles) {
         String username = "user-" + UUID.randomUUID();
         users.save(new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username(username),
                 hasher.hash(PASSWORD),
                 enabled,

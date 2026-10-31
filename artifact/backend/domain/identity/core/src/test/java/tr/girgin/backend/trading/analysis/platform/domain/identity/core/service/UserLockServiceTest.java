@@ -3,12 +3,14 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
@@ -23,7 +25,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 class UserLockServiceTest {
 
     private final FakeUserRepository users = new FakeUserRepository();
-    private final UserLockService service = new UserLockService(users);
+    private final UserLockService service =
+            new UserLockService(users, new LoginLockoutService(5, Duration.ofMinutes(15)));
 
     @Test
     void unlockClearsTheLockAndTheCount() {
@@ -49,7 +52,7 @@ class UserLockServiceTest {
 
     @Test
     void anUnknownIdIsUserNotFound() {
-        UserId id = UserId.newId();
+        UserId id = new UserId(UUID.randomUUID().toString());
 
         assertThatThrownBy(() -> service.unlock(id)).isInstanceOfSatisfying(IdentityException.class, e -> {
             assertThat(e.error()).isEqualTo(IdentityError.USER_NOT_FOUND);
@@ -79,7 +82,7 @@ class UserLockServiceTest {
 
     private static User user(int failedLoginCount, Optional<Instant> lockedUntil) {
         return new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username("alice"),
                 new PasswordHash("{noop}x"),
                 true,

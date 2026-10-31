@@ -31,18 +31,23 @@ class AnalysisVisibilityServiceTest {
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
-        service = new AnalysisVisibilityService(repository, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new AnalysisVisibilityService(
+                repository,
+                new AnalysisAccessService(),
+                new AnalysisTransitionService(new AnalysisSpecService()),
+                new AnalysisIdService(),
+                Clock.fixed(NOW, ZoneOffset.UTC));
         id = store(AnalysisStatus.COMPLETED, Visibility.PRIVATE);
     }
 
     private AnalysisId store(AnalysisStatus status, Visibility visibility) {
-        Analysis queued = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Fakes.OWNER, Instant.EPOCH);
+        Analysis queued = Fakes.queued(Fakes.spec("NVDA"), Fakes.OWNER, Instant.EPOCH);
         Analysis stored = switch (status) {
             case QUEUED -> queued;
-            case RUNNING -> queued.running(Instant.EPOCH, "4242");
-            default -> queued.finished(status, Instant.EPOCH, null, null);
+            case RUNNING -> Fakes.running(queued, Instant.EPOCH, "4242");
+            default -> Fakes.ended(queued, status, Instant.EPOCH);
         };
-        repository.insert(stored.withVisibility(visibility, Instant.EPOCH));
+        repository.insert(Fakes.withVisibility(stored, visibility, Instant.EPOCH));
         return stored.id();
     }
 

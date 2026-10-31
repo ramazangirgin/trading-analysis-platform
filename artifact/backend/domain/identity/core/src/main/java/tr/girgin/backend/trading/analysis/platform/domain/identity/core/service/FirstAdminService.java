@@ -14,7 +14,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreateFirstAdminUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
@@ -30,8 +29,10 @@ class FirstAdminService implements CreateFirstAdminUseCase {
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
-    private final OneTimePasswordGenerator generator;
-    private final PasswordPolicy policy;
+    private final OneTimePasswordService generator;
+    private final PasswordPolicyService policy;
+    private final UserChangeService userChanges;
+    private final UsernameService usernames;
     private final String username;
     private final String password;
 
@@ -39,23 +40,30 @@ class FirstAdminService implements CreateFirstAdminUseCase {
     FirstAdminService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            PasswordPolicy policy,
+            PasswordPolicyService policy,
+            UserChangeService userChanges,
+            UsernameService usernames,
             @Value("${platform.admin.username:admin}") String username,
             @Value("${platform.admin.password:}") String password) {
-        this(users, hasher, new OneTimePasswordGenerator(), policy, username, password);
+        this(users, hasher, new OneTimePasswordService(), policy, userChanges, usernames, username, password);
     }
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     FirstAdminService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            OneTimePasswordGenerator generator,
-            PasswordPolicy policy,
+            OneTimePasswordService generator,
+            PasswordPolicyService policy,
+            UserChangeService userChanges,
+            UsernameService usernames,
             String username,
             String password) {
         this.users = users;
         this.hasher = hasher;
         this.generator = generator;
         this.policy = policy;
+        this.userChanges = userChanges;
+        this.usernames = usernames;
         this.username = username;
         this.password = password;
     }
@@ -74,15 +82,15 @@ class FirstAdminService implements CreateFirstAdminUseCase {
             }
             return;
         }
-        Username name = new Username(username);
+        Username name = usernames.username(username);
         if (configured) {
             checkConfiguredPassword(name);
         }
         String plain = configured
                 ? password
-                : generator.generate(Math.max(OneTimePasswordGenerator.DEFAULT_LENGTH, policy.minLength()));
+                : generator.generate(Math.max(OneTimePasswordService.DEFAULT_LENGTH, policy.minLength()));
         User admin = new User(
-                UserId.newId(),
+                userChanges.newId(),
                 name,
                 hasher.hash(plain),
                 true,

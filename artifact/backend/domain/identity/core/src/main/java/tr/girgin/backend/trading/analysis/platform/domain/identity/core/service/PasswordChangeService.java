@@ -20,18 +20,21 @@ class PasswordChangeService implements ChangePasswordUseCase {
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
-    private final AuthenticatedUserFactory authenticatedUsers;
-    private final PasswordPolicy policy;
+    private final AuthenticatedUserService authenticatedUsers;
+    private final PasswordPolicyService policy;
+    private final UserChangeService userChanges;
 
     PasswordChangeService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            AuthenticatedUserFactory authenticatedUsers,
-            PasswordPolicy policy) {
+            AuthenticatedUserService authenticatedUsers,
+            PasswordPolicyService policy,
+            UserChangeService userChanges) {
         this.users = users;
         this.hasher = hasher;
         this.authenticatedUsers = authenticatedUsers;
         this.policy = policy;
+        this.userChanges = userChanges;
     }
 
     @Override
@@ -48,7 +51,7 @@ class PasswordChangeService implements ChangePasswordUseCase {
             throw new IdentityException(
                     IdentityError.PASSWORD_UNCHANGED, "The new password is the same as the current one", Map.of());
         }
-        User saved = users.save(user.withPassword(hasher.hash(newPassword), false));
+        User saved = users.save(userChanges.withPassword(user, hasher.hash(newPassword), false));
         log.info("Password changed for user {}", saved.id().value());
         return authenticatedUsers.create(saved);
     }

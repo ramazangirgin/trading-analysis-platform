@@ -29,25 +29,31 @@ class AuthenticationService implements AuthenticateUseCase {
     private static final int MAX_ATTEMPTS = 3;
 
     private final UserRepositoryPort users;
-    private final AuthenticatedUserFactory authenticatedUsers;
+    private final AuthenticatedUserService authenticatedUsers;
     private final PasswordHasherPort hasher;
     /** Checked when the user is unknown, so that case takes as long as a wrong password. */
     private final PasswordHash decoyHash;
 
     private final Clock clock;
-    private final LoginLockoutPolicy lockoutPolicy;
+    private final LoginLockoutService lockoutPolicy;
+    private final UserChangeService userChanges;
+    private final UsernameService usernames;
 
     AuthenticationService(
             UserRepositoryPort users,
-            AuthenticatedUserFactory authenticatedUsers,
+            AuthenticatedUserService authenticatedUsers,
             PasswordHasherPort hasher,
             Clock clock,
-            LoginLockoutPolicy lockoutPolicy) {
+            LoginLockoutService lockoutPolicy,
+            UserChangeService userChanges,
+            UsernameService usernames) {
         this.users = users;
         this.authenticatedUsers = authenticatedUsers;
         this.hasher = hasher;
         this.clock = clock;
         this.lockoutPolicy = lockoutPolicy;
+        this.userChanges = userChanges;
+        this.usernames = usernames;
         this.decoyHash = hasher.hash(UUID.randomUUID().toString());
     }
 
@@ -60,7 +66,7 @@ class AuthenticationService implements AuthenticateUseCase {
         }
         User user = found.get();
         boolean matches = hasher.matches(password, user.passwordHash());
-        if (user.isLockedAt(clock.instant())) {
+        if (lockoutPolicy.isLocked(user, clock.instant())) {
             throw badCredentials();
         }
         if (!matches) {
@@ -81,7 +87,7 @@ class AuthenticationService implements AuthenticateUseCase {
     private Optional<User> findByUsername(String username) {
         Username name;
         try {
-            name = new Username(username);
+            name = usernames.username(username);
         } catch (IdentityException _) {
             return Optional.empty();
         }
@@ -112,16 +118,16 @@ class AuthenticationService implements AuthenticateUseCase {
     private User withFailure(User user, AtomicReference<Instant> lockSet) {
         lockSet.set(null);
         Instant now = clock.instant();
-        if (user.isLockedAt(now)) {
+        if (lockoutPolicy.isLocked(user, now)) {
             return user;
         }
         int count = user.failedLoginCount() + 1;
         if (count >= lockoutPolicy.maxFailedAttempts()) {
             Instant until = now.plus(lockoutPolicy.lockoutDuration());
             lockSet.set(until);
-            return user.withFailedLogin(0, Optional.of(until));
+            return userChanges.withFailedLogin(user, 0, Optional.of(until));
         }
-        return user.withFailedLogin(count, Optional.empty());
+        return userChanges.withFailedLogin(user, count, Optional.empty());
     }
 
     /**
@@ -133,12 +139,13 @@ class AuthenticationService implements AuthenticateUseCase {
         PasswordHash checked = user.passwordHash();
         return saveWithRetry(user, current -> {
                     requireStillValid(current, checked, password);
-                    User updated = current.withLastLogin(clock.instant());
+                    User updated = userChanges.withLastLogin(current, clock.instant());
                     if (current.failedLoginCount() > 0 || current.lockedUntil().isPresent()) {
-                        updated = updated.withLoginSucceeded();
+                        updated = lockoutPolicy.unlocked(updated);
                     }
                     if (hasher.needsRehash(current.passwordHash())) {
-                        updated = updated.withPassword(hasher.hash(password), current.mustChangePassword());
+                        updated =
+                                userChanges.withPassword(updated, hasher.hash(password), current.mustChangePassword());
                     }
                     return updated;
                 })

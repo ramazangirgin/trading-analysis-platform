@@ -1,6 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.model;
 
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -11,12 +10,4 @@ import java.util.Set;
  * @param mustChangePassword whether the user has to set a new password before anything else
  */
 public record AuthenticatedUser(
-        UserId id, Username username, Set<String> roleNames, Set<Permission> permissions, boolean mustChangePassword) {
-
-    public AuthenticatedUser {
-        Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(username, "username");
-        roleNames = Set.copyOf(roleNames);
-        permissions = Set.copyOf(permissions);
-    }
-}
+        UserId id, Username username, Set<String> roleNames, Set<Permission> permissions, boolean mustChangePassword) {}

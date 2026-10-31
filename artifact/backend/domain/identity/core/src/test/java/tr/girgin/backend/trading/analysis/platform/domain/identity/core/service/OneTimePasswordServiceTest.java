@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-class OneTimePasswordGeneratorTest {
+class OneTimePasswordServiceTest {
 
-    private final OneTimePasswordGenerator generator = new OneTimePasswordGenerator();
+    private final OneTimePasswordService generator = new OneTimePasswordService();
 
     @Test
     void generatesTheGivenLengthOfLettersAndDigits() {

@@ -130,7 +130,7 @@ class UserLifecycleIntegrationTest extends UsersApiTestBase {
             if (user.enabled()
                     && user.roleIds().contains(RoleId.ADMIN)
                     && !user.id().value().equals(keep.id())) {
-                users().save(user.withEnabled(false));
+                users().save(TestUsers.withEnabled(user, false));
             }
         }
     }

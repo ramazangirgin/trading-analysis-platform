@@ -27,26 +27,38 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
  * {@code seq}, so nothing is lost or repeated across a reconnect.
  */
 @Service
-class AnalysisEventHub implements SubscribeAnalysisEventsUseCase {
+class AnalysisEventService implements SubscribeAnalysisEventsUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(AnalysisEventHub.class);
+    private static final Logger log = LoggerFactory.getLogger(AnalysisEventService.class);
 
     private final AnalysisRepositoryPort repository;
     private final EventStorePort eventStore;
+    private final AnalysisAccessService accessRules;
+    private final AnalysisIdService ids;
+    private final AnalysisTransitionService transitions;
     private final Map<AnalysisId, List<Subscriber>> subscribers = new ConcurrentHashMap<>();
 
-    AnalysisEventHub(AnalysisRepositoryPort repository, EventStorePort eventStore) {
+    AnalysisEventService(
+            AnalysisRepositoryPort repository,
+            EventStorePort eventStore,
+            AnalysisAccessService accessRules,
+            AnalysisIdService ids,
+            AnalysisTransitionService transitions) {
         this.repository = repository;
         this.eventStore = eventStore;
+        this.accessRules = accessRules;
+        this.ids = ids;
+        this.transitions = transitions;
     }
 
     @Override
     public EventSubscription subscribe(AnalysisId id, long afterSeq, AnalysisAccess access, RunEventListener listener) {
+        ids.requireValid(id);
         repository
                 .findById(id)
-                .filter(access::canSee)
+                .filter(analysis -> accessRules.canSee(analysis, access))
                 .orElseThrow(() -> new AnalysisException(
-                        AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value())));
+                        AnalysisError.NOT_FOUND, "Analysis not found: " + id.value(), Map.of("id", id.value())));
         Subscriber subscriber = new Subscriber(listener, afterSeq);
         subscribers.computeIfAbsent(id, _ -> new CopyOnWriteArrayList<>()).add(subscriber);
         subscriber.replay(eventStore.read(id, afterSeq));
@@ -54,7 +66,7 @@ class AnalysisEventHub implements SubscribeAnalysisEventsUseCase {
         if (repository
                 .findById(id)
                 .map(Analysis::status)
-                .map(s -> s.isTerminal())
+                .map(transitions::isTerminal)
                 .orElse(true)) {
             subscriber.complete();
             remove(id, subscriber);

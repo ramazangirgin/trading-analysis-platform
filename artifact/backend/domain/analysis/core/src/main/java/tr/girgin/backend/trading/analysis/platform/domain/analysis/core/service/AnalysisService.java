@@ -44,6 +44,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
  * per ticker and trade date (they would write the same report and cache files), and the status
  * transitions driven by runner events.
  */
+// ClassFanOutComplexity: the lifecycle's collaborators are the services that hold the rules and the ports.
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 @Service
 class AnalysisService
         implements StartAnalysisUseCase,
@@ -65,7 +67,11 @@ class AnalysisService
     private final RunnerPort runner;
     private final CredentialsPort credentials;
     private final EventStorePort eventStore;
-    private final AnalysisEventHub hub;
+    private final AnalysisEventService events;
+    private final AnalysisSpecService specs;
+    private final AnalysisTransitionService transitions;
+    private final AnalysisIdService ids;
+    private final AnalysisAccessService accessRules;
     private final Clock clock;
     private final int maxConcurrentRuns;
 
@@ -75,12 +81,17 @@ class AnalysisService
     private final Map<AnalysisId, RunHandle> running = new HashMap<>();
     private final Map<AnalysisId, AnalysisSpec> active = new LinkedHashMap<>();
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysisService(
             AnalysisRepositoryPort repository,
             RunnerPort runner,
             CredentialsPort credentials,
             EventStorePort eventStore,
-            AnalysisEventHub hub,
+            AnalysisEventService events,
+            AnalysisSpecService specs,
+            AnalysisTransitionService transitions,
+            AnalysisIdService ids,
+            AnalysisAccessService accessRules,
             Clock clock,
             @Value("${platform.analysis.max-concurrent-runs:2}") int maxConcurrentRuns) {
         if (maxConcurrentRuns < 1) {
@@ -90,7 +101,11 @@ class AnalysisService
         this.runner = runner;
         this.credentials = credentials;
         this.eventStore = eventStore;
-        this.hub = hub;
+        this.events = events;
+        this.specs = specs;
+        this.transitions = transitions;
+        this.ids = ids;
+        this.accessRules = accessRules;
         this.clock = clock;
         this.maxConcurrentRuns = maxConcurrentRuns;
     }
@@ -109,7 +124,9 @@ class AnalysisService
         synchronized (lock) {
             orphans.stream().filter(a -> a.status() == AnalysisStatus.RUNNING).forEach(this::reconcile);
             orphans.stream().filter(a -> a.status() == AnalysisStatus.QUEUED).forEach(queued -> {
-                log.info("Queueing {} again after a platform restart", queued.id());
+                log.info(
+                        "Queueing {} again after a platform restart",
+                        queued.id().value());
                 queue.addLast(queued.id());
                 active.put(queued.id(), queued.spec());
             });
@@ -125,7 +142,7 @@ class AnalysisService
         List<RunEvent> missed = eventStore.read(id, 0);
         missed.forEach(sink::onEvent);
         if (sink.finishedReported) {
-            log.info("{} ended while the platform was down: {}", id, get(id).status());
+            log.info("{} ended while the platform was down: {}", id.value(), get(id).status());
             return;
         }
         long lastSeq = missed.stream().mapToLong(RunEvent::seq).max().orElse(0);
@@ -133,10 +150,10 @@ class AnalysisService
         if (handle != null && runner.reattach(id, handle, lastSeq, sink)) {
             running.put(id, handle);
             active.put(id, orphan.spec());
-            log.info("Following {} again ({}) after a platform restart", id, handle.ref());
+            log.info("Following {} again ({}) after a platform restart", id.value(), handle.ref());
             return;
         }
-        log.warn("Marking {} as failed: its runner is gone after a platform restart", id);
+        log.warn("Marking {} as failed: its runner is gone after a platform restart", id.value());
         end(
                 get(id),
                 RunOutcome.FAILED,
@@ -145,15 +162,16 @@ class AnalysisService
     }
 
     @Override
-    public Analysis start(AnalysisSpec spec, OwnerId owner) {
-        AnalysisSpecValidator.validate(spec, LocalDate.now(clock));
-        Analysis analysis = Analysis.queued(AnalysisId.newId(), spec, owner, clock.instant());
+    public Analysis start(AnalysisSpec requested, OwnerId owner) {
+        AnalysisSpec spec = specs.normalized(requested);
+        specs.validate(spec, LocalDate.now(clock));
+        Analysis analysis = transitions.queued(ids.newId(), spec, owner, clock.instant());
         synchronized (lock) {
             ensureNotActive(spec);
             repository.insert(analysis);
             queue.addLast(analysis.id());
             active.put(analysis.id(), spec);
-            log.info("Queued {} for {} on {}", analysis.id(), spec.ticker(), spec.tradeDate());
+            log.info("Queued {} for {} on {}", analysis.id().value(), spec.ticker(), spec.tradeDate());
             dispatch();
         }
         return get(analysis.id());
@@ -179,18 +197,19 @@ class AnalysisService
         if (handle == null) {
             throw new AnalysisException(
                     AnalysisError.NOT_RUNNING,
-                    "Analysis is not running: " + id,
+                    "Analysis is not running: " + id.value(),
                     Map.of("id", id.value(), "status", analysis.status().name()));
         }
-        log.info("Stopping {}", id);
+        log.info("Stopping {}", id.value());
         runner.stop(handle);
         return get(id);
     }
 
     @Override
     public Analysis get(AnalysisId id, AnalysisAccess access) {
+        ids.requireValid(id);
         Analysis analysis = get(id);
-        if (!access.canSee(analysis)) {
+        if (!accessRules.canSee(analysis, access)) {
             throw notFound(id);
         }
         return analysis;
@@ -201,8 +220,9 @@ class AnalysisService
     }
 
     private Analysis getManaged(AnalysisId id, AnalysisAccess access) {
+        ids.requireValid(id);
         Analysis analysis = get(id);
-        if (!access.canManage(analysis)) {
+        if (!accessRules.canManage(analysis, access)) {
             throw notFound(id);
         }
         return analysis;
@@ -214,7 +234,8 @@ class AnalysisService
     }
 
     private AnalysisException notFound(AnalysisId id) {
-        return new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value()));
+        return new AnalysisException(
+                AnalysisError.NOT_FOUND, "Analysis not found: " + id.value(), Map.of("id", id.value()));
     }
 
     private void ensureNotActive(AnalysisSpec spec) {
@@ -247,7 +268,7 @@ class AnalysisService
         } catch (OptimisticLockingFailureException _) {
             throw new AnalysisException(
                     AnalysisError.CONCURRENT_UPDATE,
-                    "Analysis was changed concurrently: " + analysis.id(),
+                    "Analysis was changed concurrently: " + analysis.id().value(),
                     Map.of("id", analysis.id().value()));
         }
     }
@@ -261,10 +282,10 @@ class AnalysisService
             try {
                 RunHandle handle = runner.start(id, analysis.spec(), credentials.environment(), new Sink(id));
                 running.put(id, handle);
-                update(analysis.running(clock.instant(), handle.ref()));
-                log.info("Started {} ({})", id, handle.ref());
+                update(transitions.running(analysis, clock.instant(), handle.ref()));
+                log.info("Started {} ({})", id.value(), handle.ref());
             } catch (RuntimeException e) {
-                log.error("Could not start {}", id, e);
+                log.error("Could not start {}", id.value(), e);
                 active.remove(id);
                 end(analysis, RunOutcome.FAILED, RUNNER_START_FAILED, e.getMessage());
             }
@@ -276,7 +297,7 @@ class AnalysisService
      * end is recorded and a RUN_FINISHED event appended, so replaying clients see it too.
      */
     private void end(Analysis analysis, RunOutcome outcome, String errorCode, String message) {
-        update(analysis.finished(outcome.toStatus(), clock.instant(), errorCode, message));
+        update(transitions.finished(analysis, transitions.toStatus(outcome), clock.instant(), errorCode, message));
         long seq = eventStore.read(analysis.id(), 0).stream()
                         .mapToLong(RunEvent::seq)
                         .max()
@@ -297,7 +318,7 @@ class AnalysisService
         RunEvent event =
                 new RunEvent(seq, clock.instant(), RunEventType.RUN_FINISHED, null, outcome, null, message, payload);
         eventStore.append(analysis.id(), event);
-        hub.publish(analysis.id(), event);
+        events.publish(analysis.id(), event);
     }
 
     /** Applies one run's events to its record, then fans them out. Called from the runner's thread. */
@@ -315,19 +336,21 @@ class AnalysisService
             synchronized (lock) {
                 Analysis analysis = get(id);
                 Analysis updated = switch (event.type()) {
-                    case STATS -> event.stats() == null ? analysis : analysis.withStats(event.stats());
+                    case STATS -> event.stats() == null ? analysis : transitions.withStats(analysis, event.stats());
                     case DECISION ->
-                        analysis.withDecision(
-                                event.rating(), (String) event.payload().get("raw"));
+                        transitions.withDecision(analysis, event.rating(), (String)
+                                event.payload().get("raw"));
                     case RUN_FINISHED -> {
                         finishedReported = true;
                         RunOutcome outcome = event.outcome() == null ? RunOutcome.FAILED : event.outcome();
                         if (outcome != RunOutcome.FAILED) {
-                            yield analysis.finished(outcome.toStatus(), event.timestamp(), null, null);
+                            yield transitions.finished(
+                                    analysis, transitions.toStatus(outcome), event.timestamp(), null, null);
                         }
                         Object type = event.payload().get("error_type");
                         String message = type == null ? event.error() : type + ": " + event.error();
-                        yield analysis.finished(AnalysisStatus.FAILED, event.timestamp(), RUNNER_ERROR, message);
+                        yield transitions.finished(
+                                analysis, AnalysisStatus.FAILED, event.timestamp(), RUNNER_ERROR, message);
                     }
                     default -> analysis;
                 };
@@ -335,7 +358,7 @@ class AnalysisService
                     update(updated);
                 }
             }
-            hub.publish(id, event);
+            events.publish(id, event);
         }
 
         @Override
@@ -344,10 +367,10 @@ class AnalysisService
                 running.remove(id);
                 active.remove(id);
                 if (!finishedReported) {
-                    log.warn("{} exited with code {} without reporting an end", id, exitCode);
+                    log.warn("{} exited with code {} without reporting an end", id.value(), exitCode);
                     end(get(id), RunOutcome.FAILED, RUNNER_DIED, "Runner exited with code " + exitCode);
                 } else {
-                    log.info("{} exited with code {}", id, exitCode);
+                    log.info("{} exited with code {}", id.value(), exitCode);
                 }
                 dispatch();
             }

@@ -1,9 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.model;
 
-import java.util.Map;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
-
 /** What a role may do. The key is what the database stores. */
 public enum Permission {
     ANALYSIS_RUN("analysis:run"),
@@ -31,17 +27,5 @@ public enum Permission {
 
     public String key() {
         return key;
-    }
-
-    public static Permission fromKey(String key) {
-        for (Permission permission : values()) {
-            if (permission.key.equals(key)) {
-                return permission;
-            }
-        }
-        throw new IdentityException(
-                IdentityError.UNKNOWN_PERMISSION,
-                "Unknown permission: " + key,
-                Map.of("permission", String.valueOf(key)));
     }
 }

@@ -49,17 +49,21 @@ class ReportServiceTest {
                     Map.of(),
                     Instant.parse("2026-09-27T09:00:00Z")));
 
-    private final ReportService service = new ReportService(new DataDirPort() {
-        @Override
-        public List<ReportContent> readAll() {
-            return files;
-        }
+    private final DecisionRatingService ratings = new DecisionRatingService();
+    private final ReportService service = new ReportService(
+            new DataDirPort() {
+                @Override
+                public List<ReportContent> readAll() {
+                    return files;
+                }
 
-        @Override
-        public List<ReportContent> read(ReportKey key) {
-            return files.stream().filter(f -> f.key().equals(key)).toList();
-        }
-    });
+                @Override
+                public List<ReportContent> read(ReportKey key) {
+                    return files.stream().filter(f -> f.key().equals(key)).toList();
+                }
+            },
+            new ReportKeyService(),
+            ratings);
 
     @Test
     void mergesSourcesPreferringTheFullStateButNotItsBlanks() {
@@ -78,8 +82,13 @@ class ReportServiceTest {
     void aReportWithoutDecisionHasNoRating() {
         Report mu = service.get(MU).orElseThrow();
 
-        assertThat(mu.hasDecision()).isFalse();
+        assertThat(service.hasDecision(mu)).isFalse();
         assertThat(mu.rating()).isNull();
+    }
+
+    @Test
+    void aReportWithTheFinalTradeDecisionHasADecision() {
+        assertThat(service.hasDecision(service.get(GOOG).orElseThrow())).isTrue();
     }
 
     @Test
@@ -103,6 +112,6 @@ class ReportServiceTest {
                 "We like it a lot|REVIEW"
             })
     void parsesRatingsLikeUpstream(String decision, Rating expected) {
-        assertThat(DecisionRatingParser.parse(decision.replace("<NL>", "\n"))).isEqualTo(expected);
+        assertThat(ratings.parse(decision.replace("<NL>", "\n"))).isEqualTo(expected);
     }
 }

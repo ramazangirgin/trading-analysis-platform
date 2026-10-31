@@ -19,33 +19,48 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
 
     private final AnalysisRepositoryPort repository;
+    private final AnalysisAccessService accessRules;
+    private final AnalysisTransitionService transitions;
+    private final AnalysisIdService ids;
     private final Clock clock;
 
-    AnalysisVisibilityService(AnalysisRepositoryPort repository, Clock clock) {
+    AnalysisVisibilityService(
+            AnalysisRepositoryPort repository,
+            AnalysisAccessService accessRules,
+            AnalysisTransitionService transitions,
+            AnalysisIdService ids,
+            Clock clock) {
         this.repository = repository;
+        this.accessRules = accessRules;
+        this.transitions = transitions;
+        this.ids = ids;
         this.clock = clock;
     }
 
     @Override
     public Analysis change(AnalysisId id, Visibility visibility, AnalysisAccess access, Long version) {
-        Analysis analysis = repository.findById(id).filter(access::canSee).orElseThrow(() -> notFound(id));
+        ids.requireValid(id);
+        Analysis analysis = repository
+                .findById(id)
+                .filter(found -> accessRules.canSee(found, access))
+                .orElseThrow(() -> notFound(id));
         if (!Objects.equals(version, analysis.version())) {
             throw concurrentUpdate(id);
         }
         if (analysis.visibility() == visibility) {
             return analysis;
         }
-        if (!access.canChangeTo(analysis, visibility)) {
+        if (!accessRules.canChangeTo(analysis, access, visibility)) {
             throw refusal(analysis, visibility, access);
         }
         if (visibility != Visibility.PRIVATE && analysis.status() != AnalysisStatus.COMPLETED) {
             throw new AnalysisException(
                     AnalysisError.NOT_SHAREABLE,
-                    "Only a completed analysis can be shared: " + id,
+                    "Only a completed analysis can be shared: " + id.value(),
                     Map.of("id", id.value(), "status", analysis.status().name()));
         }
         try {
-            return repository.update(analysis.withVisibility(visibility, clock.instant()));
+            return repository.update(transitions.withVisibility(analysis, visibility, clock.instant()));
         } catch (OptimisticLockingFailureException _) {
             throw concurrentUpdate(id);
         }
@@ -53,7 +68,7 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
 
     // Only the owner who lacks the permission learns why; anyone else must not learn the analysis can be shared.
     private AnalysisException refusal(Analysis analysis, Visibility target, AnalysisAccess access) {
-        if (target != Visibility.PRIVATE && access.isOwner(analysis) && !access.share()) {
+        if (target != Visibility.PRIVATE && accessRules.isOwner(analysis, access) && !access.share()) {
             return new AnalysisException(
                     AnalysisError.SHARE_FORBIDDEN,
                     "Missing the permission to share analyses",
@@ -63,11 +78,14 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
     }
 
     private AnalysisException notFound(AnalysisId id) {
-        return new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of("id", id.value()));
+        return new AnalysisException(
+                AnalysisError.NOT_FOUND, "Analysis not found: " + id.value(), Map.of("id", id.value()));
     }
 
     private AnalysisException concurrentUpdate(AnalysisId id) {
         return new AnalysisException(
-                AnalysisError.CONCURRENT_UPDATE, "Analysis was changed concurrently: " + id, Map.of("id", id.value()));
+                AnalysisError.CONCURRENT_UPDATE,
+                "Analysis was changed concurrently: " + id.value(),
+                Map.of("id", id.value()));
     }
 }

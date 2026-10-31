@@ -1,7 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.domain.settings.core.model;
 
-import java.util.Objects;
-
 /**
  * The platform's LLM provider, models and debate round counts for an analysis.
  *
@@ -14,11 +12,4 @@ public record AnalysisDefaults(
         String quickThinkLlm,
         int maxDebateRounds,
         int maxRiskDiscussRounds,
-        Long version) {
-
-    public AnalysisDefaults {
-        Objects.requireNonNull(llmProvider, "llmProvider");
-        Objects.requireNonNull(deepThinkLlm, "deepThinkLlm");
-        Objects.requireNonNull(quickThinkLlm, "quickThinkLlm");
-    }
-}
+        Long version) {}

@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsError;
@@ -81,7 +82,8 @@ class PresetServiceTest {
 
     @Test
     void updateOfAnUnknownPresetIsNotFound() {
-        assertThatThrownBy(() -> service.updatePreset(PresetId.newId(), "Renamed", "{}", 0L, ALICE_ACCESS))
+        assertThatThrownBy(() -> service.updatePreset(
+                        new PresetId(UUID.randomUUID().toString()), "Renamed", "{}", 0L, ALICE_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.PRESET_NOT_FOUND));
     }
@@ -174,7 +176,8 @@ class PresetServiceTest {
 
     @Test
     void deleteOfAnUnknownPresetIsNotFound() {
-        assertThatThrownBy(() -> service.deletePreset(PresetId.newId(), ADMIN_ACCESS))
+        assertThatThrownBy(() ->
+                        service.deletePreset(new PresetId(UUID.randomUUID().toString()), ADMIN_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.PRESET_NOT_FOUND));
     }
@@ -198,7 +201,8 @@ class PresetServiceTest {
         private final List<Preset> stored = new ArrayList<>();
 
         Preset seed(OwnerId owner) {
-            Preset preset = new Preset(PresetId.newId(), "Seeded", "{}", owner, STORED_AT, 0L);
+            Preset preset =
+                    new Preset(new PresetId(UUID.randomUUID().toString()), "Seeded", "{}", owner, STORED_AT, 0L);
             stored.add(preset);
             return preset;
         }

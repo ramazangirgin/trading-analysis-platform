@@ -29,22 +29,22 @@ class AnalysisLogServiceTest {
                 "nothing secret here, sk- alone|nothing secret here, sk- alone"
             })
     void masksApiKeys(String line, String expected) {
-        assertThat(new AnalysisLogService(null, null).mask(line)).isEqualTo(expected);
+        assertThat(new AnalysisLogService(null, null, null).mask(line)).isEqualTo(expected);
     }
 
     @Test
     void anotherUsersLogIsNotFoundUnlessTheCallerSeesAllUsers() {
         Fakes.Repository repository = new Fakes.Repository();
         Fakes.EventStore eventStore = new Fakes.EventStore();
-        AnalysisService analyses = new AnalysisService(
+        AnalysisService analyses = Fakes.analysisService(
                 repository,
                 new Fakes.Runner(),
-                new Fakes.Credentials(),
                 eventStore,
-                new AnalysisEventHub(repository, eventStore),
+                Fakes.events(repository, eventStore),
                 Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
                 2);
-        AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("key=sk-1234567890abcdef"));
+        AnalysisLogService service = new AnalysisLogService(
+                analyses, (_, _) -> List.of("key=sk-1234567890abcdef"), new AnalysisAccessService());
         Analysis analysis = analyses.start(Fakes.spec("NVDA"), Fakes.OWNER);
         AnalysisId id = analysis.id();
 
@@ -62,17 +62,17 @@ class AnalysisLogServiceTest {
     void anotherUsersSharedAnalysisHasNoLogForTheCaller(Visibility visibility) {
         Fakes.Repository repository = new Fakes.Repository();
         Fakes.EventStore eventStore = new Fakes.EventStore();
-        AnalysisService analyses = new AnalysisService(
+        AnalysisService analyses = Fakes.analysisService(
                 repository,
                 new Fakes.Runner(),
-                new Fakes.Credentials(),
                 eventStore,
-                new AnalysisEventHub(repository, eventStore),
+                Fakes.events(repository, eventStore),
                 Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
                 2);
-        AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("line"));
+        AnalysisLogService service =
+                new AnalysisLogService(analyses, (_, _) -> List.of("line"), new AnalysisAccessService());
         AnalysisId id = analyses.start(Fakes.spec("NVDA"), Fakes.OWNER).id();
-        repository.rows.put(id, repository.rows.get(id).withVisibility(visibility, Instant.now()));
+        repository.rows.put(id, Fakes.withVisibility(repository.rows.get(id), visibility, Instant.now()));
 
         assertThatThrownBy(() -> service.tailLogs(id, Fakes.OTHERS, 10))
                 .isInstanceOfSatisfying(

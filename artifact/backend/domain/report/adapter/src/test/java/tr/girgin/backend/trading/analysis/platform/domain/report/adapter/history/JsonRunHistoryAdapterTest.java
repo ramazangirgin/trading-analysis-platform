@@ -71,7 +71,6 @@ class JsonRunHistoryAdapterTest {
         write("""
                 {"runs": {
                   "a": {"ticker": "MU", "date": "2026-09-27", "status": "running", "started_at": 1790545213.5},
-                  "b": {"ticker": "not a ticker", "date": "2026-09-27", "status": "error", "ended_at": 1790545213.5},
                   "c": {"ticker": "MU", "date": "yesterday", "status": "error", "ended_at": 1790545213.5},
                   "d": {"ticker": "MU", "date": "2026-09-27", "status": "cancelled", "ended_at": 1790545213.5}}}""");
 

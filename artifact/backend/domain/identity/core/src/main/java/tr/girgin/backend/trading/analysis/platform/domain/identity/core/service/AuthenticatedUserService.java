@@ -2,7 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service
 
 import java.util.HashSet;
 import java.util.Set;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.AuthenticatedUser;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
@@ -10,12 +10,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 
 /** Builds the {@link AuthenticatedUser} of a stored user: the role names and the union of the permissions. */
-@Component
-class AuthenticatedUserFactory {
+@Service
+class AuthenticatedUserService {
 
     private final RoleRepositoryPort roles;
 
-    AuthenticatedUserFactory(RoleRepositoryPort roles) {
+    AuthenticatedUserService(RoleRepositoryPort roles) {
         this.roles = roles;
     }
 
@@ -24,7 +24,8 @@ class AuthenticatedUserFactory {
         Set<Permission> permissions = new HashSet<>();
         user.roleIds()
                 .forEach(roleId -> roles.findById(roleId).ifPresent(role -> addRole(role, roleNames, permissions)));
-        return new AuthenticatedUser(user.id(), user.username(), roleNames, permissions, user.mustChangePassword());
+        return new AuthenticatedUser(
+                user.id(), user.username(), Set.copyOf(roleNames), Set.copyOf(permissions), user.mustChangePassword());
     }
 
     private void addRole(Role role, Set<String> roleNames, Set<Permission> permissions) {

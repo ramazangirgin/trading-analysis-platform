@@ -42,6 +42,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Stri
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.VisibilityEnumDtoToVisibilityMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
@@ -80,6 +81,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final GetAnalysisReportUseCase getReport;
     private final GetAnalysisPricesUseCase getPrices;
     private final ReadAnalysisLogsUseCase readLogs;
+    private final GetAnalysisRightsUseCase getRights;
     private final StartAnalysisRequestToRequestedAnalysisMapper requestMapper;
     private final AnalysisToAnalysisDtoMapper analysisMapper;
     private final RunEventToRunEventDtoMapper eventMapper;
@@ -105,6 +107,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             GetAnalysisReportUseCase getReport,
             GetAnalysisPricesUseCase getPrices,
             ReadAnalysisLogsUseCase readLogs,
+            GetAnalysisRightsUseCase getRights,
             StartAnalysisRequestToRequestedAnalysisMapper requestMapper,
             AnalysisToAnalysisDtoMapper analysisMapper,
             RunEventToRunEventDtoMapper eventMapper,
@@ -127,6 +130,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.getReport = getReport;
         this.getPrices = getPrices;
         this.readLogs = readLogs;
+        this.getRights = getRights;
         this.requestMapper = requestMapper;
         this.analysisMapper = analysisMapper;
         this.eventMapper = eventMapper;
@@ -159,7 +163,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                 listAnalyses.list(filter, scopeMapper.map(scope == null ? AnalysisScopeEnumDto.MINE : scope), access);
         Map<UserId, Username> usernames = usernames(analyses);
         return analyses.stream()
-                .map(a -> analysisMapper.map(a, usernames, access))
+                .map(a -> analysisMapper.map(a, usernames, getRights.rights(a, access)))
                 .toList();
     }
 
@@ -289,7 +293,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     private AnalysisDto dto(Analysis analysis) {
-        return analysisMapper.map(analysis, usernames(List.of(analysis)), access());
+        return analysisMapper.map(analysis, usernames(List.of(analysis)), getRights.rights(analysis, access()));
     }
 
     private Map<UserId, Username> usernames(List<Analysis> analyses) {

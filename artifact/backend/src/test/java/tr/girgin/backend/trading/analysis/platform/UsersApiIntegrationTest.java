@@ -7,11 +7,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
 /**
  * The user management API through HTTP: the permissions of every endpoint, creating users, reading them and
@@ -23,7 +23,7 @@ class UsersApiIntegrationTest extends UsersApiTestBase {
     private static final String NEW_PASSWORD = "a brand new password";
 
     private static List<String[]> endpoints() {
-        String id = UserId.newId().value();
+        String id = UUID.randomUUID().toString();
         return List.of(
                 new String[] {"GET", "/api/users"},
                 new String[] {"GET", "/api/users/" + id},
@@ -251,7 +251,7 @@ class UsersApiIntegrationTest extends UsersApiTestBase {
     @Test
     void anUnknownUserIs404() throws Exception {
         TestSession admin = admin();
-        String id = UserId.newId().value();
+        String id = UUID.randomUUID().toString();
 
         for (String[] endpoint : new String[][] {
             {"GET", "/api/users/" + id},

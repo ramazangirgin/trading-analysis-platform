@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -41,7 +43,13 @@ class RoleManagementServiceTest {
         analyst = roles.add(
                 new Role(RoleId.ANALYST, "ANALYST", true, "Runs analyses", Set.of(Permission.ANALYSIS_RUN), 0L));
         viewer = roles.add(new Role(RoleId.VIEWER, "VIEWER", true, "Reads", Set.of(Permission.ANALYSIS_READ), 0L));
-        custom = roles.add(new Role(RoleId.newId(), "Auditor", false, "Audits", Set.of(Permission.AUDIT_READ), 3L));
+        custom = roles.add(new Role(
+                new RoleId(UUID.randomUUID().toString()),
+                "Auditor",
+                false,
+                "Audits",
+                Set.of(Permission.AUDIT_READ),
+                3L));
     }
 
     @Test
@@ -66,7 +74,7 @@ class RoleManagementServiceTest {
 
     @Test
     void getFailsForAnUnknownRole() {
-        assertThatThrownBy(() -> service.get(RoleId.newId()))
+        assertThatThrownBy(() -> service.get(new RoleId(UUID.randomUUID().toString())))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 
@@ -81,6 +89,46 @@ class RoleManagementServiceTest {
         assertThat(role.permissions()).containsExactly(Permission.ANALYSIS_READ);
         assertThat(created.userCount()).isZero();
         assertThat(roles.findById(role.id())).contains(role);
+    }
+
+    @Test
+    void copiesThePermissionSetOfACreatedRoleAndKeepsItImmutable() {
+        Set<Permission> permissions = new HashSet<>(Set.of(Permission.ANALYSIS_RUN));
+
+        Role role = service.create("Runner", "", permissions).role();
+        permissions.add(Permission.USER_MANAGE);
+
+        assertThat(role.permissions()).containsExactly(Permission.ANALYSIS_RUN);
+        assertThatThrownBy(() -> role.permissions().add(Permission.USER_MANAGE))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void anUpdateReplacesOnlyTheNameKeepingTheOtherParts() {
+        Role updated = service.update(custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), 3L)
+                .role();
+
+        assertThat(updated)
+                .isEqualTo(new Role(custom.id(), "Other", false, "Audits", Set.of(Permission.AUDIT_READ), 4L));
+    }
+
+    @Test
+    void anUpdateReplacesOnlyTheDescriptionKeepingTheOtherParts() {
+        Role updated = service.update(custom.id(), Optional.empty(), Optional.of("Other"), Optional.empty(), 3L)
+                .role();
+
+        assertThat(updated)
+                .isEqualTo(new Role(custom.id(), "Auditor", false, "Other", Set.of(Permission.AUDIT_READ), 4L));
+    }
+
+    @Test
+    void anUpdateReplacesOnlyThePermissionsKeepingTheOtherParts() {
+        Role updated = service.update(
+                        custom.id(), Optional.empty(), Optional.empty(), Optional.of(Set.of(Permission.USER_READ)), 3L)
+                .role();
+
+        assertThat(updated)
+                .isEqualTo(new Role(custom.id(), "Auditor", false, "Audits", Set.of(Permission.USER_READ), 4L));
     }
 
     @Test
@@ -238,8 +286,12 @@ class RoleManagementServiceTest {
 
     @Test
     void updateFailsForAnUnknownRole() {
-        assertThatThrownBy(() ->
-                        service.update(RoleId.newId(), Optional.of("Other"), Optional.empty(), Optional.empty(), null))
+        assertThatThrownBy(() -> service.update(
+                        new RoleId(UUID.randomUUID().toString()),
+                        Optional.of("Other"),
+                        Optional.empty(),
+                        Optional.empty(),
+                        null))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 
@@ -330,7 +382,7 @@ class RoleManagementServiceTest {
 
     @Test
     void deleteFailsForAnUnknownRole() {
-        assertThatThrownBy(() -> service.delete(RoleId.newId()))
+        assertThatThrownBy(() -> service.delete(new RoleId(UUID.randomUUID().toString())))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 
