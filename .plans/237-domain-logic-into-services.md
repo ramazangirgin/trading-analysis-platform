@@ -265,7 +265,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP17: External analysis validation
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: analysis core: `main/…/inbound/ValidateExternalAnalysesUseCase.java`,
   `main/…/service/ExternalAnalysisValidationService.java`, `test/…/service/ExternalAnalysisValidationServiceTest.java`
