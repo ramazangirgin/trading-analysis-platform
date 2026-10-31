@@ -357,7 +357,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP27: Identity and settings integration tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `:backend`, test: `UsersApiTestBase.java`, `UserLifecycleIntegrationTest.java`,
   `LoginLockoutIntegrationTest.java`, `TestSession.java`, `UsersApiIntegrationTest.java`,
