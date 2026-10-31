@@ -207,7 +207,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP11: Catalog models
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: catalog core, main: `model/AnalystOption.java`, `model/Catalog.java`, `model/ModelOption.java`,
   `model/Provider.java`
