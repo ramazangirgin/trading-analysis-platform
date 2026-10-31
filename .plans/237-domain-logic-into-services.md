@@ -215,7 +215,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP12: Report services
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: report core, main: `inbound/CheckReportDecisionUseCase.java`, `service/ReportKeyService.java`,
   `service/DecisionRatingParser.java` (renamed), `service/ReportService.java`, `service/RunHistoryService.java`,

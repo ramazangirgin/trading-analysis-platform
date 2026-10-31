@@ -23,7 +23,7 @@ class PriceHistoryServiceTest {
     @Test
     void emaMatchesPandasAdjustedEwm() {
         // pandas: Series([10, 11, 12, 11, 13, 14]).ewm(span=3, adjust=True, min_periods=1).mean()
-        assertThat(new PriceHistoryService(null).ema(new double[] {10, 11, 12, 11, 13, 14}, 3))
+        assertThat(new PriceHistoryService(null, new ReportKeyService()).ema(new double[] {10, 11, 12, 11, 13, 14}, 3))
                 .containsExactly(
                         new double[] {10.0, 10.6666666667, 11.4285714286, 11.2, 12.1290322581, 13.0793650794},
                         within(1e-9));
@@ -32,7 +32,7 @@ class PriceHistoryServiceTest {
     @Test
     void smaMatchesPandasRollingMeanWithPartialWindows() {
         // pandas: Series([10, 11, 12, 11, 13, 14]).rolling(2, min_periods=1).mean()
-        assertThat(new PriceHistoryService(null).sma(new double[] {10, 11, 12, 11, 13, 14}, 2))
+        assertThat(new PriceHistoryService(null, new ReportKeyService()).sma(new double[] {10, 11, 12, 11, 13, 14}, 2))
                 .containsExactly(new double[] {10.0, 10.5, 11.5, 11.5, 12.0, 13.5}, within(1e-12));
     }
 
@@ -41,7 +41,7 @@ class PriceHistoryServiceTest {
         List<PriceBar> bars =
                 IntStream.range(0, 400).mapToObj(day -> bar(day, day)).toList();
         LocalDate tradeDate = START.plusDays(299);
-        PriceHistoryService service = new PriceHistoryService((_, _) -> bars);
+        PriceHistoryService service = new PriceHistoryService((_, _) -> bars, new ReportKeyService());
 
         PriceHistory history = service.get(new ReportKey("MU", tradeDate)).orElseThrow();
 
@@ -59,7 +59,7 @@ class PriceHistoryServiceTest {
 
     @Test
     void isEmptyWithoutCachedPrices() {
-        PriceHistoryService service = new PriceHistoryService((_, _) -> List.of());
+        PriceHistoryService service = new PriceHistoryService((_, _) -> List.of(), new ReportKeyService());
         assertThat(service.get(new ReportKey("MU", START))).isEmpty();
     }
 }
