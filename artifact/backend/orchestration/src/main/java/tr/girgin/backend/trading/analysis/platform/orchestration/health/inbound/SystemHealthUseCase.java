@@ -1,5 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.orchestration.health.inbound;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,7 +53,12 @@ public class SystemHealthUseCase {
     }
 
     public SystemHealth checkHealth() {
-        return new SystemHealth(List.of(runner(), keys(), dataDir(), queue()));
+        List<HealthCheck> checks = List.of(runner(), keys(), dataDir(), queue());
+        HealthStatus overall = checks.stream()
+                .map(HealthCheck::status)
+                .max(Comparator.naturalOrder())
+                .orElse(HealthStatus.UP);
+        return new SystemHealth(checks, overall);
     }
 
     private HealthCheck runner() {

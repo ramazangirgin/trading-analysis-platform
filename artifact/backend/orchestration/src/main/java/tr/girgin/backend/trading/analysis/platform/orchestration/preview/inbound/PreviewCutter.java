@@ -48,8 +48,8 @@ class PreviewCutter {
                 analysis.spec().ticker(),
                 analysis.spec().tradeDate(),
                 analysis.rating(),
-                allowed,
-                locked);
+                Map.copyOf(allowed),
+                List.copyOf(locked));
     }
 
     AnalysisPreviewSummary summary(Analysis analysis) {

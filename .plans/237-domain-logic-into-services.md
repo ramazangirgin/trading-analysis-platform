@@ -329,7 +329,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP24: Orchestration models
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: orchestration: `main/…/health/inbound/SystemHealthUseCase.java`, `main/…/health/model/SystemHealth.java`,
   `main/…/health/model/HealthCheck.java`, `main/…/preview/model/AnalysisPreview.java`,
