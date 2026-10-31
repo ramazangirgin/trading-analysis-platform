@@ -15,7 +15,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
@@ -384,9 +383,9 @@ class AnalysisServiceTest {
     @Test
     void queuesRunsLeftQueuedAgainInTheirOrder() {
         Instant now = Instant.now();
-        Analysis first = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Fakes.OWNER, now.minusSeconds(3));
-        Analysis second = Analysis.queued(AnalysisId.newId(), Fakes.spec("MU"), Fakes.OWNER, now.minusSeconds(2));
-        Analysis third = Analysis.queued(AnalysisId.newId(), Fakes.spec("GOOG"), Fakes.OWNER, now.minusSeconds(1));
+        Analysis first = Fakes.queued(Fakes.spec("NVDA"), Fakes.OWNER, now.minusSeconds(3));
+        Analysis second = Fakes.queued(Fakes.spec("MU"), Fakes.OWNER, now.minusSeconds(2));
+        Analysis third = Fakes.queued(Fakes.spec("GOOG"), Fakes.OWNER, now.minusSeconds(1));
         repository.insert(third);
         repository.insert(first);
         repository.insert(second);
@@ -398,8 +397,8 @@ class AnalysisServiceTest {
     }
 
     private Analysis orphan(String ticker, String runnerRef) {
-        Analysis orphan = Analysis.queued(AnalysisId.newId(), Fakes.spec(ticker), Fakes.OWNER, Instant.now())
-                .running(Instant.now(), runnerRef);
+        Analysis orphan =
+                Fakes.running(Fakes.queued(Fakes.spec(ticker), Fakes.OWNER, Instant.now()), Instant.now(), runnerRef);
         repository.insert(orphan);
         return orphan;
     }
@@ -409,9 +408,8 @@ class AnalysisServiceTest {
         start(Fakes.spec("NVDA"));
         start(Fakes.spec("MU"));
 
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.MINE, Fakes.OWN))
-                .hasSize(2);
-        assertThat(lists.list(new AnalysisFilter(null, "MU", null), AnalysisScope.MINE, Fakes.OWN))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.MINE, Fakes.OWN)).hasSize(2);
+        assertThat(lists.list(Fakes.filter(null, "MU", null), AnalysisScope.MINE, Fakes.OWN))
                 .singleElement()
                 .satisfies(a -> assertThat(a.spec().ticker()).isEqualTo("MU"));
     }
@@ -421,13 +419,13 @@ class AnalysisServiceTest {
         Analysis mine = start(Fakes.spec("NVDA"));
         service.start(Fakes.spec("MU"), Fakes.OTHER);
 
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.MINE, Fakes.OWN))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.MINE, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
-        assertThat(lists.list(new AnalysisFilter(null, null, Fakes.OTHER), AnalysisScope.MINE, Fakes.OWN))
+        assertThat(lists.list(Fakes.filter(null, null, Fakes.OTHER), AnalysisScope.MINE, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.MINE, Fakes.EVERYONE))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.MINE, Fakes.EVERYONE))
                 .extracting(Analysis::owner)
                 .containsExactly(Fakes.OTHER);
     }
@@ -438,9 +436,8 @@ class AnalysisServiceTest {
         service.start(Fakes.spec("MU"), Fakes.OTHER);
         service.start(Fakes.spec("GOOG"), Fakes.OTHER);
 
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.ALL, Fakes.EVERYONE))
-                .hasSize(3);
-        assertThat(lists.list(new AnalysisFilter(null, null, Fakes.OWNER), AnalysisScope.ALL, Fakes.EVERYONE))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.ALL, Fakes.EVERYONE)).hasSize(3);
+        assertThat(lists.list(Fakes.filter(null, null, Fakes.OWNER), AnalysisScope.ALL, Fakes.EVERYONE))
                 .singleElement()
                 .satisfies(a -> assertThat(a.owner()).isEqualTo(Fakes.OWNER));
     }
@@ -450,7 +447,7 @@ class AnalysisServiceTest {
         Analysis mine = start(Fakes.spec("NVDA"));
         service.start(Fakes.spec("MU"), Fakes.OTHER);
 
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.ALL, Fakes.OWN))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.ALL, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
     }
@@ -462,14 +459,14 @@ class AnalysisServiceTest {
         Analysis othersPartial = sharedRun("AMD", Fakes.OTHER, Visibility.PARTIAL);
         Analysis othersPrivate = service.start(Fakes.spec("GOOG"), Fakes.OTHER);
 
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.OWN))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactlyInAnyOrder(othersPublic.id(), othersPartial.id());
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.OTHERS))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.OTHERS))
                 .extracting(Analysis::id)
                 .containsExactly(ownPublic.id())
                 .doesNotContain(othersPrivate.id());
-        assertThat(lists.list(AnalysisFilter.ALL, AnalysisScope.SHARED, Fakes.EVERYONE))
+        assertThat(lists.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.EVERYONE))
                 .extracting(Analysis::id)
                 .containsExactly(ownPublic.id());
     }
@@ -481,12 +478,12 @@ class AnalysisServiceTest {
 
         for (AnalysisScope scope : AnalysisScope.values()) {
             AnalysisAccess access = scope == AnalysisScope.SHARED ? Fakes.OTHERS : Fakes.OWN;
-            assertThat(lists.list(new AnalysisFilter(null, "MU", null), scope, access))
+            assertThat(lists.list(Fakes.filter(null, "MU", null), scope, access))
                     .singleElement()
                     .satisfies(a -> assertThat(a.spec().ticker()).isEqualTo("MU"));
-            assertThat(lists.list(new AnalysisFilter(AnalysisStatus.COMPLETED, null, null), scope, access))
+            assertThat(lists.list(Fakes.filter(AnalysisStatus.COMPLETED, null, null), scope, access))
                     .hasSize(2);
-            assertThat(lists.list(new AnalysisFilter(AnalysisStatus.RUNNING, null, null), scope, access))
+            assertThat(lists.list(Fakes.filter(AnalysisStatus.RUNNING, null, null), scope, access))
                     .isEmpty();
         }
     }
@@ -522,7 +519,7 @@ class AnalysisServiceTest {
         Analysis run = service.start(Fakes.spec(ticker), owner);
         runner.sink(run.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(run.id()).onExit(0);
-        Analysis shared = repository.rows.get(run.id()).withVisibility(visibility, NOW);
+        Analysis shared = Fakes.withVisibility(repository.rows.get(run.id()), visibility, NOW);
         repository.rows.put(shared.id(), shared);
         return shared;
     }
@@ -540,7 +537,7 @@ class AnalysisServiceTest {
 
     @Test
     void aRunWithoutAnOwnerIsNotFoundForUsersWithoutAllUsers() {
-        Analysis unowned = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), null, NOW);
+        Analysis unowned = Fakes.queued(Fakes.spec("NVDA"), null, NOW);
         repository.insert(unowned);
 
         assertNotFound(() -> service.get(unowned.id(), Fakes.OWN), unowned.id());
@@ -562,8 +559,8 @@ class AnalysisServiceTest {
     @Test
     void assignUnownedTouchesOnlyAnalysesWithoutAnOwner() {
         Analysis owned = start(Fakes.spec("NVDA"));
-        Analysis first = Analysis.queued(AnalysisId.newId(), Fakes.spec("MU"), null, NOW);
-        Analysis second = Analysis.queued(AnalysisId.newId(), Fakes.spec("GOOG"), null, NOW);
+        Analysis first = Fakes.queued(Fakes.spec("MU"), null, NOW);
+        Analysis second = Fakes.queued(Fakes.spec("GOOG"), null, NOW);
         repository.insert(first);
         repository.insert(second);
         OwnerId admin = new OwnerId("admin");
@@ -586,7 +583,7 @@ class AnalysisServiceTest {
     private void assertNotFound(Runnable call, AnalysisId id) {
         assertThatThrownBy(call::run).isInstanceOfSatisfying(AnalysisException.class, e -> {
             assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND);
-            assertThat(e.getMessage()).isEqualTo("Analysis not found: " + id);
+            assertThat(e.getMessage()).isEqualTo("Analysis not found: " + id.value());
         });
     }
 

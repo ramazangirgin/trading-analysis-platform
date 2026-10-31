@@ -283,7 +283,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP19: Analysis service tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP18
 - **Files**: analysis core, test: `service/Fakes.java`, `service/AnalysisServiceTest.java`,
   `service/AnalysisVisibilityServiceTest.java`, `service/AnalysisEventHubTest.java` (renamed),

@@ -30,6 +30,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ru
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.credentials.CredentialsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.eventstore.EventStorePort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
@@ -48,7 +49,34 @@ final class Fakes {
     static final AnalysisAccess EVERYONE = new AnalysisAccess(OTHER, true, false);
     static final AnalysisAccess EVERYONE_SHARER = new AnalysisAccess(OTHER, true, true);
 
+    static final AnalysisFilter ALL = new AnalysisFilter(null, null, null, Set.of(), null);
+    static final AnalysisTransitionService TRANSITIONS = new AnalysisTransitionService(new AnalysisSpecService());
+
     private Fakes() {}
+
+    static AnalysisFilter filter(AnalysisStatus status, String ticker, OwnerId owner) {
+        return new AnalysisFilter(status, ticker, owner, Set.of(), null);
+    }
+
+    static AnalysisId newId() {
+        return new AnalysisIdService().newId();
+    }
+
+    static Analysis queued(AnalysisSpec spec, OwnerId owner, Instant now) {
+        return TRANSITIONS.queued(newId(), spec, owner, now);
+    }
+
+    static Analysis running(Analysis analysis, Instant now, String runnerRef) {
+        return TRANSITIONS.running(analysis, now, runnerRef);
+    }
+
+    static Analysis ended(Analysis analysis, AnalysisStatus status, Instant now) {
+        return TRANSITIONS.finished(analysis, status, now, null, null);
+    }
+
+    static Analysis withVisibility(Analysis analysis, Visibility visibility, Instant now) {
+        return TRANSITIONS.withVisibility(analysis, visibility, now);
+    }
 
     static AnalysisEventService events(AnalysisRepositoryPort repository, EventStorePort eventStore) {
         AnalysisTransitionService transitions = new AnalysisTransitionService(new AnalysisSpecService());

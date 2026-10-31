@@ -47,8 +47,10 @@ class AnalysisAccessServiceTest {
                 1,
                 "English",
                 false);
-        Analysis queued = Analysis.queued(new AnalysisId("r_1"), spec, OWNER, Instant.EPOCH);
-        return visibility == Visibility.PRIVATE ? queued : queued.withVisibility(visibility, Instant.EPOCH);
+        Analysis queued = Fakes.TRANSITIONS.queued(new AnalysisId("r_1"), spec, OWNER, Instant.EPOCH);
+        return visibility == Visibility.PRIVATE
+                ? queued
+                : Fakes.TRANSITIONS.withVisibility(queued, visibility, Instant.EPOCH);
     }
 
     @Test

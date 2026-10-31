@@ -13,8 +13,6 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
@@ -83,7 +81,7 @@ class ExternalAnalysisServiceTest {
         assertThat(analysis.source()).isEqualTo(AnalysisSource.EXTERNAL);
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.COMPLETED);
         assertThat(analysis.rating()).isEqualTo(Rating.HOLD);
-        assertThat(analysis.spec().llmProvider()).isEqualTo(Analysis.UNKNOWN);
+        assertThat(analysis.spec().llmProvider()).isEqualTo(AnalysisTransitionService.UNKNOWN);
         assertThat(analysis.spec().analysts()).containsExactly(Analyst.MARKET, Analyst.NEWS);
         assertThat(analysis.endedAt()).isEqualTo(FINISHED);
     }
@@ -93,7 +91,7 @@ class ExternalAnalysisServiceTest {
         Analysis analysis = register(external("NVDA", null, null, FINISHED)).analysis();
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.FAILED);
-        assertThat(analysis.errorCode()).isEqualTo(Analysis.INCOMPLETE_REPORT);
+        assertThat(analysis.errorCode()).isEqualTo(AnalysisTransitionService.INCOMPLETE_REPORT);
     }
 
     @Test
@@ -104,7 +102,7 @@ class ExternalAnalysisServiceTest {
         var updated = register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)));
 
         assertThat(updated.outcome()).isEqualTo(Outcome.UPDATED);
-        assertThat(repository.findAll(AnalysisFilter.ALL))
+        assertThat(repository.findAll(Fakes.ALL))
                 .singleElement()
                 .satisfies(a -> assertThat(a.status()).isEqualTo(AnalysisStatus.COMPLETED));
     }
@@ -112,7 +110,7 @@ class ExternalAnalysisServiceTest {
     @Test
     void carriesTheStoredVersionSoUnchangedFilesStayUnchanged() {
         ExternalAnalysis files = external("GOOG", Rating.HOLD, "Hold", FINISHED);
-        Analysis stored = Analysis.imported(AnalysisId.newId(), 3L, Fakes.OWNER, files);
+        Analysis stored = Fakes.TRANSITIONS.imported(Fakes.newId(), 3L, Fakes.OWNER, files, "report:GOOG/" + DATE);
         repository.rows.put(stored.id(), stored);
 
         var registration = register(files);
@@ -125,7 +123,7 @@ class ExternalAnalysisServiceTest {
     void aRescanOfAnUnchangedPublicImportIsUnchangedAndWritesNothing() {
         Analysis created =
                 register(external("GOOG", Rating.HOLD, "Hold", FINISHED)).analysis();
-        Analysis shared = created.withVisibility(Visibility.PUBLIC, FINISHED.plusSeconds(5));
+        Analysis shared = Fakes.withVisibility(created, Visibility.PUBLIC, FINISHED.plusSeconds(5));
         repository.rows.put(shared.id(), shared);
         repository.failOnWrite = new OptimisticLockingFailureException("no write expected");
 
@@ -139,7 +137,7 @@ class ExternalAnalysisServiceTest {
     @Test
     void changedFilesUpdateAPublicImportAndKeepItPublic() {
         Analysis created = register(external("GOOG", null, null, FINISHED)).analysis();
-        Analysis shared = created.withVisibility(Visibility.PUBLIC, FINISHED.plusSeconds(5));
+        Analysis shared = Fakes.withVisibility(created, Visibility.PUBLIC, FINISHED.plusSeconds(5));
         repository.rows.put(shared.id(), shared);
 
         var registration = register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)));
@@ -162,22 +160,29 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void leavesTickersAndDatesThePlatformRanAlone() {
-        Analysis platformRun = Analysis.queued(AnalysisId.newId(), Fakes.spec("MU", DATE), Fakes.OWNER, Instant.now());
+        Analysis platformRun = Fakes.queued(Fakes.spec("MU", DATE), Fakes.OWNER, Instant.now());
         repository.insert(platformRun);
 
         var registration = register(external("MU", Rating.BUY, "Buy", FINISHED));
 
         assertThat(registration.outcome()).isEqualTo(Outcome.UNCHANGED);
         assertThat(registration.analysis().id()).isEqualTo(platformRun.id());
-        assertThat(repository.findAll(AnalysisFilter.ALL)).hasSize(1);
+        assertThat(repository.findAll(Fakes.ALL)).hasSize(1);
     }
 
     @Test
     void takesModelsUsageAndTimesFromTheRunHistory() {
         ExternalRun run = run("a2cd", AnalysisStatus.COMPLETED, null);
 
-        Analysis analysis = register(ExternalAnalysis.reportFiles(
-                        "GOOG", DATE, List.of(Analyst.MARKET), Rating.HOLD, "Hold", run, FINISHED))
+        Analysis analysis = register(new ExternalAnalysis(
+                        ExternalAnalysis.Origin.REPORT_FILES,
+                        "GOOG",
+                        DATE,
+                        List.of(Analyst.MARKET),
+                        Rating.HOLD,
+                        "Hold",
+                        run,
+                        FINISHED))
                 .analysis();
 
         assertThat(analysis.spec().llmProvider()).isEqualTo("deepseek");
@@ -194,12 +199,12 @@ class ExternalAnalysisServiceTest {
     @Test
     void importsEachFailedRunOfTheHistoryOnItsOwn() {
         register(external("NVDA", Rating.BUY, "Buy", FINISHED));
-        var failed = register(ExternalAnalysis.runHistory(
+        var failed = register(runHistory(
                 "NVDA",
                 DATE,
                 List.of(Analyst.MARKET),
                 run("6d10", AnalysisStatus.FAILED, "OpenAIError: Missing credentials.")));
-        register(ExternalAnalysis.runHistory(
+        register(runHistory(
                 "NVDA",
                 DATE,
                 List.of(Analyst.MARKET),
@@ -210,8 +215,8 @@ class ExternalAnalysisServiceTest {
         assertThat(failed.analysis().errorCode()).isNull();
         assertThat(failed.analysis().errorMessage()).isEqualTo("OpenAIError: Missing credentials.");
         assertThat(failed.analysis().externalRef()).isEqualTo("run:6d10");
-        assertThat(repository.findAll(AnalysisFilter.ALL)).hasSize(3);
-        assertThat(register(ExternalAnalysis.runHistory(
+        assertThat(repository.findAll(Fakes.ALL)).hasSize(3);
+        assertThat(register(runHistory(
                                 "NVDA",
                                 DATE,
                                 List.of(Analyst.MARKET),
@@ -222,10 +227,10 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void importsFailedRunsEvenWhenThePlatformRanTheTickerAndDate() {
-        repository.insert(Analysis.queued(AnalysisId.newId(), Fakes.spec("MU", DATE), Fakes.OWNER, Instant.now()));
+        repository.insert(Fakes.queued(Fakes.spec("MU", DATE), Fakes.OWNER, Instant.now()));
 
-        var failed = register(ExternalAnalysis.runHistory(
-                "MU", DATE, List.of(Analyst.MARKET), run("fe90", AnalysisStatus.FAILED, "boom")));
+        var failed =
+                register(runHistory("MU", DATE, List.of(Analyst.MARKET), run("fe90", AnalysisStatus.FAILED, "boom")));
 
         assertThat(failed.outcome()).isEqualTo(Outcome.CREATED);
     }
@@ -246,7 +251,19 @@ class ExternalAnalysisServiceTest {
     }
 
     private static ExternalAnalysis external(String ticker, Rating rating, String decision, Instant finishedAt) {
-        return ExternalAnalysis.reportFiles(
-                ticker, DATE, List.of(Analyst.NEWS, Analyst.MARKET), rating, decision, null, finishedAt);
+        return new ExternalAnalysis(
+                ExternalAnalysis.Origin.REPORT_FILES,
+                ticker,
+                DATE,
+                List.of(Analyst.NEWS, Analyst.MARKET),
+                rating,
+                decision,
+                null,
+                finishedAt);
+    }
+
+    private static ExternalAnalysis runHistory(String ticker, LocalDate date, List<Analyst> analysts, ExternalRun run) {
+        return new ExternalAnalysis(
+                ExternalAnalysis.Origin.RUN_HISTORY, ticker, date, analysts, null, null, run, run.endedAt());
     }
 }

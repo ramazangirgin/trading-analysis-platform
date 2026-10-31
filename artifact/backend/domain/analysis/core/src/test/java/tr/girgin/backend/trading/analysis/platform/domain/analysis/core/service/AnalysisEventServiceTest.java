@@ -29,8 +29,8 @@ class AnalysisEventServiceTest {
         repository = new Fakes.Repository();
         eventStore = new Fakes.EventStore();
         hub = Fakes.events(repository, eventStore);
-        Analysis running = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Fakes.OWNER, Instant.now())
-                .running(Instant.now(), "4242");
+        Analysis running =
+                Fakes.running(Fakes.queued(Fakes.spec("NVDA"), Fakes.OWNER, Instant.now()), Instant.now(), "4242");
         repository.insert(running);
         id = running.id();
     }
@@ -78,8 +78,7 @@ class AnalysisEventServiceTest {
     @Test
     void replaysAFinishedRunAndCompletesAtOnce() {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.finished(2, RunOutcome.COMPLETED, null));
-        repository.update(
-                repository.findById(id).orElseThrow().finished(AnalysisStatus.COMPLETED, Instant.now(), null, null));
+        repository.update(Fakes.ended(repository.findById(id).orElseThrow(), AnalysisStatus.COMPLETED, Instant.now()));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
         hub.subscribe(id, 0, Fakes.OWN, listener);
@@ -116,14 +115,14 @@ class AnalysisEventServiceTest {
     void replaysAnotherUsersPublicRunButNotAPrivateOne() {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.finished(2, RunOutcome.COMPLETED, null));
         Analysis completed =
-                repository.findById(id).orElseThrow().finished(AnalysisStatus.COMPLETED, Instant.now(), null, null);
+                Fakes.ended(repository.findById(id).orElseThrow(), AnalysisStatus.COMPLETED, Instant.now());
         repository.update(completed);
         Fakes.RecordingListener refused = new Fakes.RecordingListener();
         assertThatThrownBy(() -> hub.subscribe(id, 0, Fakes.OTHERS, refused))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
 
-        repository.update(completed.withVisibility(Visibility.PUBLIC, Instant.now()));
+        repository.update(Fakes.withVisibility(completed, Visibility.PUBLIC, Instant.now()));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
         hub.subscribe(id, 0, Fakes.OTHERS, listener);
 

@@ -72,7 +72,7 @@ class AnalysisLogServiceTest {
         AnalysisLogService service =
                 new AnalysisLogService(analyses, (_, _) -> List.of("line"), new AnalysisAccessService());
         AnalysisId id = analyses.start(Fakes.spec("NVDA"), Fakes.OWNER).id();
-        repository.rows.put(id, repository.rows.get(id).withVisibility(visibility, Instant.now()));
+        repository.rows.put(id, Fakes.withVisibility(repository.rows.get(id), visibility, Instant.now()));
 
         assertThatThrownBy(() -> service.tailLogs(id, Fakes.OTHERS, 10))
                 .isInstanceOfSatisfying(

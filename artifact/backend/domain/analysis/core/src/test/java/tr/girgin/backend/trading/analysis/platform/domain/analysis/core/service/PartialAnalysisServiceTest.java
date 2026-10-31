@@ -29,10 +29,9 @@ class PartialAnalysisServiceTest {
     }
 
     private Analysis store(Visibility visibility, AnalysisStatus status) {
-        Analysis queued =
-                Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Fakes.OWNER, BASE.plusSeconds(created++));
-        Analysis stored = status == AnalysisStatus.QUEUED ? queued : queued.finished(status, BASE, null, null);
-        Analysis shared = stored.withVisibility(visibility, BASE);
+        Analysis queued = Fakes.queued(Fakes.spec("NVDA"), Fakes.OWNER, BASE.plusSeconds(created++));
+        Analysis stored = status == AnalysisStatus.QUEUED ? queued : Fakes.ended(queued, status, BASE);
+        Analysis shared = Fakes.withVisibility(stored, visibility, BASE);
         repository.insert(shared);
         return shared;
     }
