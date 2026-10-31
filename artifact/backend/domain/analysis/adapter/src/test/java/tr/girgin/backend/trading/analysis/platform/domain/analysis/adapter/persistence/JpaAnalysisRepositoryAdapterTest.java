@@ -539,7 +539,7 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
         LocalDate tradeDate = LocalDate.of(2026, 9, 27);
         var origin = ExternalAnalysis.Origin.REPORT_FILES;
         var external = new ExternalAnalysis(origin, ticker, tradeDate, analysts, rating, decision, run, ended);
-        return TestAnalyses.imported(id, version, owner, external);
+        return TestAnalyses.importedFromReportFiles(id, version, owner, external);
     }
 
     private Analysis inserted(Analysis analysis) {

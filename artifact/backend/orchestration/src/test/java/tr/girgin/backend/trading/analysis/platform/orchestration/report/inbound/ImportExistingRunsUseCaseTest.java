@@ -18,8 +18,10 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ValidateExternalAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration.Outcome;
@@ -295,7 +297,19 @@ class ImportExistingRunsUseCaseTest {
     }
 
     private static Analysis imported(OwnerId owner, ExternalAnalysis external) {
-        return TestAnalyses.imported(TestAnalyses.newId(), null, owner, external);
+        var spec = new AnalysisSpec(
+                external.ticker(),
+                external.tradeDate(),
+                AssetType.STOCK,
+                external.analysts(),
+                "unknown",
+                "unknown",
+                "unknown",
+                1,
+                1,
+                "English",
+                false);
+        return TestAnalyses.queued(TestAnalyses.newId(), spec, owner, external.finishedAt());
     }
 
     private static RunHistoryEntry entry(

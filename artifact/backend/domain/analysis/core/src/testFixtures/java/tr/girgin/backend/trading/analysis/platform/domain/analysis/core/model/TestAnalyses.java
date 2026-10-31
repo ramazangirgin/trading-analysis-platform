@@ -90,7 +90,11 @@ public final class TestAnalyses {
     }
 
     /** An EXTERNAL record made from report files; {@code run}, the history entry that wrote them, may be null. */
-    public static Analysis imported(AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external) {
+    public static Analysis importedFromReportFiles(
+            AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external) {
+        if (external.origin() != ExternalAnalysis.Origin.REPORT_FILES) {
+            throw new IllegalArgumentException("only report files are supported, got " + external.origin());
+        }
         String ticker = external.ticker();
         LocalDate tradeDate = external.tradeDate();
         List<Analyst> analysts = external.analysts();
