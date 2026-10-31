@@ -16,6 +16,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ru
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.eventstore.EventStorePort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 class AnalysisEventServiceTest {
 
@@ -99,6 +101,18 @@ class AnalysisEventServiceTest {
 
         assertThat(listener.seqs).isEmpty();
         assertThat(listener.completed).isFalse();
+    }
+
+    @Test
+    void anInvalidIdIsNotFoundWithoutAPortCall() {
+        AnalysisEventService untouched =
+                Fakes.events(Fakes.untouched(AnalysisRepositoryPort.class), Fakes.untouched(EventStorePort.class));
+        Fakes.RecordingListener listener = new Fakes.RecordingListener();
+
+        assertThatThrownBy(() -> untouched.subscribe(new AnalysisId("../x"), 0, Fakes.OWN, listener))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
+        assertThat(listener.seqs).isEmpty();
     }
 
     @Test

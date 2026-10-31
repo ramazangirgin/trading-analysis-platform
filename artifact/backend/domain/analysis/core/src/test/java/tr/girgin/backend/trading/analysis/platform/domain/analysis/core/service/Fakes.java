@@ -78,6 +78,14 @@ final class Fakes {
         return TRANSITIONS.withVisibility(analysis, visibility, now);
     }
 
+    /** A port that fails the test on any call. */
+    static <T> T untouched(Class<T> port) {
+        return port.cast(java.lang.reflect.Proxy.newProxyInstance(
+                port.getClassLoader(), new Class<?>[] {port}, (_, method, _) -> {
+                    throw new AssertionError("Unexpected call of " + port.getSimpleName() + "." + method.getName());
+                }));
+    }
+
     static AnalysisEventService events(AnalysisRepositoryPort repository, EventStorePort eventStore) {
         AnalysisTransitionService transitions = new AnalysisTransitionService(new AnalysisSpecService());
         return new AnalysisEventService(

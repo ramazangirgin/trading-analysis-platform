@@ -13,6 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.PartialAnalysisPage;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 class PartialAnalysisServiceTest {
 
@@ -51,6 +52,16 @@ class PartialAnalysisServiceTest {
         assertNotFound(hidden.id());
         assertNotFound(shared.id());
         assertNotFound(new AnalysisId("r_missing"));
+    }
+
+    @Test
+    void getAnswersAnInvalidIdAsNotFoundWithoutAPortCall() {
+        PartialAnalysisService untouched =
+                new PartialAnalysisService(Fakes.untouched(AnalysisRepositoryPort.class), new AnalysisIdService());
+
+        assertThatThrownBy(() -> untouched.get(new AnalysisId("../x")))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }
 
     @Test

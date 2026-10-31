@@ -19,6 +19,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 class AnalysisVisibilityServiceTest {
 
@@ -231,6 +232,20 @@ class AnalysisVisibilityServiceTest {
     @Test
     void anUnknownAnalysisIsNotFound() {
         assertNotFound(new AnalysisId("r_missing"), Visibility.PUBLIC, Fakes.OWN_SHARER);
+    }
+
+    @Test
+    void anInvalidIdIsNotFoundWithoutAPortCall() {
+        AnalysisVisibilityService untouched = new AnalysisVisibilityService(
+                Fakes.untouched(AnalysisRepositoryPort.class),
+                new AnalysisAccessService(),
+                new AnalysisTransitionService(new AnalysisSpecService()),
+                new AnalysisIdService(),
+                Clock.fixed(NOW, ZoneOffset.UTC));
+
+        assertThatThrownBy(() -> untouched.change(new AnalysisId("../x"), Visibility.PUBLIC, Fakes.OWN_SHARER, null))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }
 
     private void assertNotFound(AnalysisId target, Visibility visibility, AnalysisAccess access) {
