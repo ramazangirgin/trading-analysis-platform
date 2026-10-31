@@ -191,7 +191,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP9: Identity adapter test
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: identity adapter, test: `persistence/JpaIdentityRepositoryTest.java`
 - **Tests**: it passes with canonical constructors in place of `with*`.
