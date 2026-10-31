@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -99,6 +100,58 @@ class ReportServiceTest {
     @Test
     void unknownKeysAreEmpty() {
         assertThat(service.get(new ReportKey("AAPL", LocalDate.of(2026, 1, 2)))).isEmpty();
+    }
+
+    @Test
+    void scanDropsFilesWithAnInvalidTicker() {
+        ReportKey bad = new ReportKey("not a ticker", LocalDate.of(2026, 9, 28));
+        ReportKey traversal = new ReportKey("../x", LocalDate.of(2026, 9, 28));
+        List<ReportContent> withInvalid = new ArrayList<>(files);
+        for (ReportKey key : List.of(bad, traversal)) {
+            withInvalid.add(new ReportContent(
+                    key,
+                    ReportSource.REPORT_TREE,
+                    Map.of(ReportSection.MARKET_REPORT, "x"),
+                    Map.of(),
+                    Instant.parse("2026-09-28T12:00:00Z")));
+        }
+        ReportService scanning = new ReportService(
+                new DataDirPort() {
+                    @Override
+                    public List<ReportContent> readAll() {
+                        return withInvalid;
+                    }
+
+                    @Override
+                    public List<ReportContent> read(ReportKey key) {
+                        return List.of();
+                    }
+                },
+                new ReportKeyService(),
+                ratings);
+
+        assertThat(scanning.scan()).extracting(Report::key).containsExactly(GOOG, MU);
+    }
+
+    @Test
+    void anInvalidTickerIsEmptyWithoutReadingTheDataDir() {
+        ReportService guarded = new ReportService(
+                new DataDirPort() {
+                    @Override
+                    public List<ReportContent> readAll() {
+                        throw new AssertionError("readAll must not be called");
+                    }
+
+                    @Override
+                    public List<ReportContent> read(ReportKey key) {
+                        throw new AssertionError("read must not be called for " + key);
+                    }
+                },
+                new ReportKeyService(),
+                ratings);
+
+        assertThat(guarded.get(new ReportKey("../x", LocalDate.of(2026, 9, 28))))
+                .isEmpty();
     }
 
     @ParameterizedTest

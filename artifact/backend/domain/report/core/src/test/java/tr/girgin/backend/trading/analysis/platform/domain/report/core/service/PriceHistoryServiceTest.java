@@ -58,6 +58,17 @@ class PriceHistoryServiceTest {
     }
 
     @Test
+    void anInvalidTickerIsEmptyWithoutReadingTheCache() {
+        PriceHistoryService service = new PriceHistoryService(
+                (_, _) -> {
+                    throw new AssertionError("the cache must not be read");
+                },
+                new ReportKeyService());
+
+        assertThat(service.get(new ReportKey("../x", START))).isEmpty();
+    }
+
+    @Test
     void isEmptyWithoutCachedPrices() {
         PriceHistoryService service = new PriceHistoryService((_, _) -> List.of(), new ReportKeyService());
         assertThat(service.get(new ReportKey("MU", START))).isEmpty();
