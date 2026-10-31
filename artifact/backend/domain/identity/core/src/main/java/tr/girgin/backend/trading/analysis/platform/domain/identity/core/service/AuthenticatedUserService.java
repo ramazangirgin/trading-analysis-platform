@@ -24,7 +24,8 @@ class AuthenticatedUserService {
         Set<Permission> permissions = new HashSet<>();
         user.roleIds()
                 .forEach(roleId -> roles.findById(roleId).ifPresent(role -> addRole(role, roleNames, permissions)));
-        return new AuthenticatedUser(user.id(), user.username(), roleNames, permissions, user.mustChangePassword());
+        return new AuthenticatedUser(
+                user.id(), user.username(), Set.copyOf(roleNames), Set.copyOf(permissions), user.mustChangePassword());
     }
 
     private void addRole(Role role, Set<String> roleNames, Set<Permission> permissions) {

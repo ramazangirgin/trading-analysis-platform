@@ -183,7 +183,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP8: Identity models, the rest
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP4
 - **Files**: identity core, main: `model/AuthenticatedUser.java`, `model/PasswordHash.java`,
   `model/PasswordPolicyViolation.java`, `model/Permission.java`
