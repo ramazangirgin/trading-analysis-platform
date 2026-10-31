@@ -166,7 +166,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP6: Identity model tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP4
 - **Files**: identity core, test: `service/RoleManagementServiceTest.java`, `model/UserTest.java` (deleted),
   `model/RoleTest.java` (deleted), `model/UsernameTest.java` (deleted), `model/PermissionTest.java`
