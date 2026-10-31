@@ -366,7 +366,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP28: Report models
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP13, WP14, WP23
 - **Files**: report core, main: `model/PriceBar.java`, `model/PriceHistory.java`, `model/Report.java`,
   `model/ReportContent.java`, `model/ReportKey.java`, `model/RunHistoryEntry.java`

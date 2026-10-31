@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * One finished run from a third-party UI's run history ({@code <data-dir>/runs.json}). It knows
@@ -37,14 +36,5 @@ public record RunHistoryEntry(
         COMPLETED,
         FAILED,
         STOPPED
-    }
-
-    public RunHistoryEntry {
-        Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(key, "key");
-        Objects.requireNonNull(status, "status");
-        Objects.requireNonNull(elapsed, "elapsed");
-        Objects.requireNonNull(endedAt, "endedAt");
-        analysts = List.copyOf(analysts);
     }
 }
