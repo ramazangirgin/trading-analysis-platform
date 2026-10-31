@@ -24,7 +24,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RegisterExternalAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ValidateExternalAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
@@ -34,6 +34,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ow
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
@@ -52,6 +53,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(ImportExistingRunsUseCase.class);
 
+    private static final String UNKNOWN = "unknown";
+
     private static final Map<ReportSection, Analyst> ANALYST_SECTIONS = Map.of(
             ReportSection.MARKET_REPORT, Analyst.MARKET,
             ReportSection.SENTIMENT_REPORT, Analyst.SOCIAL,
@@ -65,6 +68,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     private final ScanReportsUseCase scanReports;
     private final ScanRunHistoryUseCase scanHistory;
+    private final CheckReportDecisionUseCase checkDecision;
+    private final ValidateExternalAnalysesUseCase validateExternals;
     private final RegisterExternalAnalysisUseCase registerExternal;
     private final UserDirectoryUseCase userDirectory;
     private final WatchDataDirUseCase watchDataDir;
@@ -82,6 +87,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     ImportExistingRunsUseCase(
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
+            CheckReportDecisionUseCase checkDecision,
+            ValidateExternalAnalysesUseCase validateExternals,
             RegisterExternalAnalysisUseCase registerExternal,
             UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
@@ -91,6 +98,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         this(
                 scanReports,
                 scanHistory,
+                checkDecision,
+                validateExternals,
                 registerExternal,
                 userDirectory,
                 watchDataDir,
@@ -104,6 +113,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     ImportExistingRunsUseCase(
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
+            CheckReportDecisionUseCase checkDecision,
+            ValidateExternalAnalysesUseCase validateExternals,
             RegisterExternalAnalysisUseCase registerExternal,
             UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
@@ -113,6 +124,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             Clock clock) {
         this.scanReports = scanReports;
         this.scanHistory = scanHistory;
+        this.checkDecision = checkDecision;
+        this.validateExternals = validateExternals;
         this.registerExternal = registerExternal;
         this.userDirectory = userDirectory;
         this.watchDataDir = watchDataDir;
@@ -179,7 +192,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         Instant settledBefore = clock.instant().minus(settleTime);
         Instant lastUnsettled = null;
         for (Report report : scanReports.scan()) {
-            if (!report.hasDecision() && report.modifiedAt().isAfter(settledBefore)) {
+            if (!checkDecision.hasDecision(report) && report.modifiedAt().isAfter(settledBefore)) {
                 // Likely a run still being written: importing it now would show it as failed.
                 lastUnsettled = max(lastUnsettled, report.modifiedAt());
                 continue;
@@ -193,9 +206,9 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         // little or nothing, so the history is all there is of it.
         history.stream()
                 .filter(entry -> entry.status() != RunHistoryEntry.Status.COMPLETED)
-                .map(entry -> ExternalAnalysis.runHistory(
-                        entry.key().ticker(), entry.key().tradeDate(), analysts(entry), toRun(entry)))
+                .map(this::fromHistory)
                 .forEach(externals::add);
+        validateExternals.validate(externals);
 
         Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
         // No platform user started these runs, so they belong to the first admin (none yet on a fresh install).
@@ -245,7 +258,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         }
         Rating rating =
                 report.rating() == null ? null : Rating.valueOf(report.rating().name());
-        return ExternalAnalysis.reportFiles(
+        return new ExternalAnalysis(
+                ExternalAnalysis.Origin.REPORT_FILES,
                 report.key().ticker(),
                 report.key().tradeDate(),
                 analysts,
@@ -253,6 +267,18 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 report.sections().get(ReportSection.FINAL_TRADE_DECISION),
                 run == null ? null : toRun(run),
                 run == null ? report.modifiedAt() : run.endedAt());
+    }
+
+    private ExternalAnalysis fromHistory(RunHistoryEntry entry) {
+        return new ExternalAnalysis(
+                ExternalAnalysis.Origin.RUN_HISTORY,
+                entry.key().ticker(),
+                entry.key().tradeDate(),
+                analysts(entry),
+                null,
+                null,
+                toRun(entry),
+                entry.endedAt());
     }
 
     private ExternalRun toRun(RunHistoryEntry entry) {
@@ -266,9 +292,9 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 entry.id(),
                 status,
                 entry.error(),
-                Objects.requireNonNullElse(entry.llmProvider(), Analysis.UNKNOWN),
-                Objects.requireNonNullElse(entry.deepThinkLlm(), Analysis.UNKNOWN),
-                Objects.requireNonNullElse(entry.quickThinkLlm(), Analysis.UNKNOWN),
+                Objects.requireNonNullElse(entry.llmProvider(), UNKNOWN),
+                Objects.requireNonNullElse(entry.deepThinkLlm(), UNKNOWN),
+                Objects.requireNonNullElse(entry.quickThinkLlm(), UNKNOWN),
                 depth == null || depth < 1 ? 1 : depth,
                 Objects.requireNonNullElse(entry.outputLanguage(), "English"),
                 new RunStats(

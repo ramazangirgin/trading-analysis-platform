@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ValidateExternalAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
@@ -26,6 +27,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ow
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
@@ -38,6 +40,9 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.model.Im
 class ImportExistingRunsUseCaseTest {
 
     private static final WatchDataDirUseCase NO_WATCH = _ -> () -> {};
+    private static final CheckReportDecisionUseCase HAS_DECISION =
+            report -> report.sections().containsKey(ReportSection.FINAL_TRADE_DECISION);
+    private static final ValidateExternalAnalysesUseCase NO_VALIDATION = _ -> {};
     private static final Duration SETTLE_TIME = Duration.ofMinutes(10);
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-30T12:00:00Z"), ZoneOffset.UTC);
 
@@ -81,6 +86,8 @@ class ImportExistingRunsUseCaseTest {
         ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(goog, mu),
                 List::of,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     registered.add(external);
                     Outcome outcome = external.ticker().equals("GOOG") ? Outcome.CREATED : Outcome.UNCHANGED;
@@ -137,6 +144,8 @@ class ImportExistingRunsUseCaseTest {
         ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(report),
                 () -> history,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     registered.add(external);
                     return new ExternalRegistration(
@@ -194,6 +203,8 @@ class ImportExistingRunsUseCaseTest {
         ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(running, crashed, finished),
                 List::of,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     registered.add(external);
                     return new ExternalRegistration(
@@ -222,6 +233,8 @@ class ImportExistingRunsUseCaseTest {
         ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
                 () -> List.of(goog),
                 List::of,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     owners.add(owner);
                     return new ExternalRegistration(

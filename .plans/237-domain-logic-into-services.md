@@ -321,7 +321,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP23: Orchestration use cases
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP12, WP17
 - **Files**: orchestration, main: `report/inbound/ImportExistingRunsUseCase.java`, `report/inbound/GetAnalysisReportUseCase.java`,
   `report/inbound/GetAnalysisPricesUseCase.java`, `preview/inbound/PreviewCutter.java`

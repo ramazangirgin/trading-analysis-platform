@@ -65,10 +65,8 @@ class PreviewCutter {
     }
 
     private Optional<Report> report(Analysis analysis) {
-        return ReportKey.isValidTicker(analysis.spec().ticker())
-                ? getReport.get(
-                        new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()))
-                : Optional.empty();
+        return getReport.get(
+                new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()));
     }
 
     private String excerpt(String text) {
