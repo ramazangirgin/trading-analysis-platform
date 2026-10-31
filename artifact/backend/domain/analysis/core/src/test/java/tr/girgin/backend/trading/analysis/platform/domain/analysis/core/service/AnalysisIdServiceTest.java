@@ -2,10 +2,13 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
 class AnalysisIdServiceTest {
@@ -42,5 +45,14 @@ class AnalysisIdServiceTest {
     @Test
     void aValidIdPassesTheRequirement() {
         assertThatCode(() -> service.requireValid(new AnalysisId("r_1"))).doesNotThrowAnyException();
+    }
+
+    @Test
+    void anInvalidIdIsNotFound() {
+        assertThatThrownBy(() -> service.requireValid(new AnalysisId("../etc")))
+                .isInstanceOfSatisfying(AnalysisException.class, e -> {
+                    assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND);
+                    assertThat(e.params()).containsEntry("id", "../etc");
+                });
     }
 }
