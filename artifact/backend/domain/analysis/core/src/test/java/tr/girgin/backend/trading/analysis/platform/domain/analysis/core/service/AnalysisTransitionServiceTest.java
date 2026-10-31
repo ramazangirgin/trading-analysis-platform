@@ -222,6 +222,38 @@ class AnalysisTransitionServiceTest {
         assertThat(analysis.startedAt()).isEqualTo(Instant.parse("2026-10-01T05:05:37.123Z"));
     }
 
+    @Test
+    void importedRunWithoutModelsOrLanguageSaysUnknownAndEnglish() {
+        ExternalRun run = new ExternalRun(
+                "run-2",
+                AnalysisStatus.FAILED,
+                "boom",
+                null,
+                null,
+                null,
+                1,
+                null,
+                new RunStats(0, 0, 0, 0, null, Duration.ZERO),
+                NOW.minusSeconds(30),
+                NOW);
+        ExternalAnalysis external = new ExternalAnalysis(
+                ExternalAnalysis.Origin.RUN_HISTORY,
+                "NVDA",
+                LocalDate.of(2026, 9, 25),
+                List.of(Analyst.MARKET),
+                null,
+                null,
+                run,
+                NOW);
+
+        Analysis analysis = service.imported(new AnalysisId("e_3"), null, OWNER, external, "run:run-2");
+
+        assertThat(analysis.spec().llmProvider()).isEqualTo("unknown");
+        assertThat(analysis.spec().deepThinkLlm()).isEqualTo("unknown");
+        assertThat(analysis.spec().quickThinkLlm()).isEqualTo("unknown");
+        assertThat(analysis.spec().outputLanguage()).isEqualTo("English");
+    }
+
     private Analysis copyOf(
             Analysis base, RunStats stats, String decision, Visibility visibility, Instant visibilityChangedAt) {
         return new Analysis(

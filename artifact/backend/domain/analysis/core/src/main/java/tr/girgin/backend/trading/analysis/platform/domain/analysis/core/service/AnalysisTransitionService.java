@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -25,6 +26,7 @@ class AnalysisTransitionService {
     // Upstream's model choices are not in its report files, so a run without run history says "unknown".
     static final String UNKNOWN = "unknown";
     static final String INCOMPLETE_REPORT = "incomplete_report";
+    private static final String DEFAULT_LANGUAGE = "English";
 
     private static final RunStats NO_STATS = new RunStats(0, 0, 0, 0, null, Duration.ZERO);
 
@@ -75,19 +77,19 @@ class AnalysisTransitionService {
                                 UNKNOWN,
                                 1,
                                 1,
-                                "English",
+                                DEFAULT_LANGUAGE,
                                 false)
                         : new AnalysisSpec(
                                 external.ticker(),
                                 external.tradeDate(),
                                 AssetType.STOCK,
                                 external.analysts(),
-                                run.llmProvider(),
-                                run.deepThinkLlm(),
-                                run.quickThinkLlm(),
+                                Objects.requireNonNullElse(run.llmProvider(), UNKNOWN),
+                                Objects.requireNonNullElse(run.deepThinkLlm(), UNKNOWN),
+                                Objects.requireNonNullElse(run.quickThinkLlm(), UNKNOWN),
                                 run.debateRounds(),
                                 run.debateRounds(),
-                                run.outputLanguage(),
+                                Objects.requireNonNullElse(run.outputLanguage(), DEFAULT_LANGUAGE),
                                 false));
         AnalysisStatus status;
         String errorCode = null;

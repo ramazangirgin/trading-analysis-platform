@@ -163,7 +163,7 @@ class ImportExistingRunsUseCaseTest {
         assertThat(fromReport.origin()).isEqualTo(ExternalAnalysis.Origin.REPORT_FILES);
         assertThat(fromReport.run().id()).isEqualTo("a2cd");
         assertThat(fromReport.run().llmProvider()).isEqualTo("deepseek");
-        assertThat(fromReport.run().quickThinkLlm()).isEqualTo("unknown");
+        assertThat(fromReport.run().quickThinkLlm()).isNull();
         assertThat(fromReport.run().debateRounds()).isEqualTo(5);
         assertThat(fromReport.run().stats().costUsd()).isEqualByComparingTo("0.0277");
         assertThat(registered.subList(1, 3)).allSatisfy(external -> {

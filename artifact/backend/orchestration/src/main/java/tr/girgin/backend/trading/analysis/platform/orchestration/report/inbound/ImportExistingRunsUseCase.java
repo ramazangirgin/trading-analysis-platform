@@ -53,8 +53,6 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(ImportExistingRunsUseCase.class);
 
-    private static final String UNKNOWN = "unknown";
-
     private static final Map<ReportSection, Analyst> ANALYST_SECTIONS = Map.of(
             ReportSection.MARKET_REPORT, Analyst.MARKET,
             ReportSection.SENTIMENT_REPORT, Analyst.SOCIAL,
@@ -292,11 +290,11 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 entry.id(),
                 status,
                 entry.error(),
-                Objects.requireNonNullElse(entry.llmProvider(), UNKNOWN),
-                Objects.requireNonNullElse(entry.deepThinkLlm(), UNKNOWN),
-                Objects.requireNonNullElse(entry.quickThinkLlm(), UNKNOWN),
+                entry.llmProvider(),
+                entry.deepThinkLlm(),
+                entry.quickThinkLlm(),
                 depth == null || depth < 1 ? 1 : depth,
-                Objects.requireNonNullElse(entry.outputLanguage(), "English"),
+                entry.outputLanguage(),
                 new RunStats(
                         entry.llmCalls(),
                         entry.toolCalls(),
