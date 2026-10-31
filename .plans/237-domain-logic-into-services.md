@@ -224,7 +224,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP13: Report service tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP12
 - **Files**: report core, test: `service/ReportKeyServiceTest.java`, `service/ReportServiceTest.java`,
   `service/PriceHistoryServiceTest.java`

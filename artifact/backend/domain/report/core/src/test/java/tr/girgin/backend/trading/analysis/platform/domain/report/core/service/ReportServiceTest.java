@@ -82,8 +82,13 @@ class ReportServiceTest {
     void aReportWithoutDecisionHasNoRating() {
         Report mu = service.get(MU).orElseThrow();
 
-        assertThat(mu.hasDecision()).isFalse();
+        assertThat(service.hasDecision(mu)).isFalse();
         assertThat(mu.rating()).isNull();
+    }
+
+    @Test
+    void aReportWithTheFinalTradeDecisionHasADecision() {
+        assertThat(service.hasDecision(service.get(GOOG).orElseThrow())).isTrue();
     }
 
     @Test
