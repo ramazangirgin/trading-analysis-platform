@@ -63,19 +63,6 @@ class UserManagementService implements ManageUsersUseCase {
             RoleRepositoryPort roles,
             PasswordHasherPort hasher,
             PasswordPolicyService policy,
-            Clock clock,
-            UserChangeService userChanges,
-            UsernameService usernames,
-            LoginLockoutService lockout) {
-        this(users, roles, hasher, policy, new OneTimePasswordService(), clock, userChanges, usernames, lockout);
-    }
-
-    @SuppressWarnings("checkstyle:ParameterNumber") // the same, with the generator given
-    UserManagementService(
-            UserRepositoryPort users,
-            RoleRepositoryPort roles,
-            PasswordHasherPort hasher,
-            PasswordPolicyService policy,
             OneTimePasswordService generator,
             Clock clock,
             UserChangeService userChanges,

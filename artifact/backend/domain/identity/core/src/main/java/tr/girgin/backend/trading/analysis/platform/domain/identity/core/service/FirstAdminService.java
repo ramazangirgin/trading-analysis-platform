@@ -37,17 +37,6 @@ class FirstAdminService implements CreateFirstAdminUseCase {
     private final String password;
 
     @Autowired
-    FirstAdminService(
-            UserRepositoryPort users,
-            PasswordHasherPort hasher,
-            PasswordPolicyService policy,
-            UserChangeService userChanges,
-            UsernameService usernames,
-            @Value("${platform.admin.username:admin}") String username,
-            @Value("${platform.admin.password:}") String password) {
-        this(users, hasher, new OneTimePasswordService(), policy, userChanges, usernames, username, password);
-    }
-
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     FirstAdminService(
             UserRepositoryPort users,
@@ -56,8 +45,8 @@ class FirstAdminService implements CreateFirstAdminUseCase {
             PasswordPolicyService policy,
             UserChangeService userChanges,
             UsernameService usernames,
-            String username,
-            String password) {
+            @Value("${platform.admin.username:admin}") String username,
+            @Value("${platform.admin.password:}") String password) {
         this.users = users;
         this.hasher = hasher;
         this.generator = generator;
