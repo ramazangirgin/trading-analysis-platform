@@ -199,7 +199,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             docker.startContainerCmd(containerId).exec();
         } catch (DockerException | IllegalArgumentException e) {
             throw new IllegalStateException(
-                    "Could not start a ta-runner container (" + image + ") for " + id + ": " + e.getMessage(), e);
+                    "Could not start a ta-runner container (" + image + ") for " + id.value() + ": " + e.getMessage(),
+                    e);
         }
         follow(id, containerId, 0, false, sink);
         return new RunHandle(containerId);
@@ -232,7 +233,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             if (DockerClients.isNoSuchContainer(e)) {
                 return false;
             }
-            log.warn("Cannot inspect container {} of {}: {}", shortId(handle.ref()), id, e.getMessage());
+            log.warn("Cannot inspect container {} of {}: {}", shortId(handle.ref()), id.value(), e.getMessage());
             return false;
         }
         Map<String, String> labels =
@@ -285,7 +286,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         try {
             Files.createDirectories(runDir);
         } catch (IOException e) {
-            log.warn("{}: cannot create {}: {}", id, runDir, e.getMessage());
+            log.warn("{}: cannot create {}: {}", id.value(), runDir, e.getMessage());
         }
         Thread.ofVirtual().name("runner-" + id.value()).start(() -> {
             OutputPump pump = new OutputPump(id, runDir, afterSeq, sink, reattached ? runLogModified(runDir) : null);
@@ -315,18 +316,26 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                     Long exit = state == null ? null : state.getExitCodeLong();
                     return exit == null ? -1 : exit.intValue();
                 }
-                log.debug("{}: log stream of {} ended while it runs; reopening", id, shortId(containerId));
+                log.debug("{}: log stream of {} ended while it runs; reopening", id.value(), shortId(containerId));
             } catch (DockerException e) {
                 if (DockerClients.isNoSuchContainer(e)) {
-                    log.warn("{}: container {} is gone", id, shortId(containerId));
+                    log.warn("{}: container {} is gone", id.value(), shortId(containerId));
                     return -1;
                 }
-                log.warn("{}: following container {} failed ({}); retrying", id, shortId(containerId), e.getMessage());
+                log.warn(
+                        "{}: following container {} failed ({}); retrying",
+                        id.value(),
+                        shortId(containerId),
+                        e.getMessage());
             } catch (InterruptedException _) {
                 Thread.currentThread().interrupt();
                 return -1;
             } catch (RuntimeException e) {
-                log.warn("{}: following container {} failed ({}); retrying", id, shortId(containerId), e.getMessage());
+                log.warn(
+                        "{}: following container {} failed ({}); retrying",
+                        id.value(),
+                        shortId(containerId),
+                        e.getMessage());
             }
             try {
                 Thread.sleep(RECONNECT_PAUSE);
@@ -499,7 +508,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             try {
                 Optional<RunEvent> event = parser.parse(text).map(eventMapper::map);
                 if (event.isEmpty()) {
-                    log.warn("{}: ignoring a runner output line that is not a protocol event", id);
+                    log.warn("{}: ignoring a runner output line that is not a protocol event", id.value());
                 } else if (event.get().seq() > lastSeq) {
                     lastSeq = event.get().seq();
                     // File first: a client replaying events.jsonl must find what the sink published.
@@ -507,7 +516,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                     sink.onEvent(event.get());
                 }
             } catch (RuntimeException e) {
-                log.error("{}: failed to handle a runner event", id, e);
+                log.error("{}: failed to handle a runner event", id.value(), e);
             }
         }
 
@@ -520,7 +529,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
                         StandardOpenOption.CREATE,
                         StandardOpenOption.APPEND);
             } catch (IOException e) {
-                log.warn("{}: cannot write {}: {}", id, file.getFileName(), e.getMessage());
+                log.warn("{}: cannot write {}: {}", id.value(), file.getFileName(), e.getMessage());
             }
         }
     }

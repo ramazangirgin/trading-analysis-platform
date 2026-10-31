@@ -102,7 +102,7 @@ class ProcessRunnerAdapter implements RunnerPort {
             builder.environment().put("TA_RUNNER_PRICES", pricesFile.toString());
             process = builder.start();
         } catch (IOException e) {
-            throw new UncheckedIOException("Could not start ta-runner for " + id + ": " + e.getMessage(), e);
+            throw new UncheckedIOException("Could not start ta-runner for " + id.value() + ": " + e.getMessage(), e);
         }
         String ref = ref(process.toHandle());
         processes.put(ref, process.toHandle());
@@ -186,7 +186,7 @@ class ProcessRunnerAdapter implements RunnerPort {
                             sink.onEvent(event.get());
                         }
                     } catch (RuntimeException e) {
-                        log.error("{}: failed to handle a runner event", id, e);
+                        log.error("{}: failed to handle a runner event", id.value(), e);
                     }
                 }
                 if (alive) {
@@ -194,7 +194,7 @@ class ProcessRunnerAdapter implements RunnerPort {
                 }
             } while (alive);
         } catch (IOException e) {
-            log.warn("{}: cannot follow {}: {}", id, events, e.getMessage());
+            log.warn("{}: cannot follow {}: {}", id.value(), events, e.getMessage());
         } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         }
@@ -214,13 +214,14 @@ class ProcessRunnerAdapter implements RunnerPort {
                             .ifPresentOrElse(
                                     sink::onEvent,
                                     () -> log.warn(
-                                            "{}: ignoring a runner output line that is not a protocol event", id));
+                                            "{}: ignoring a runner output line that is not a protocol event",
+                                            id.value()));
                 } catch (RuntimeException e) {
                     log.error("{}: failed to handle a runner event", id, e);
                 }
             }
         } catch (IOException e) {
-            log.warn("{}: runner output ended unexpectedly: {}", id, e.getMessage());
+            log.warn("{}: runner output ended unexpectedly: {}", id.value(), e.getMessage());
         }
         int exitCode;
         try {

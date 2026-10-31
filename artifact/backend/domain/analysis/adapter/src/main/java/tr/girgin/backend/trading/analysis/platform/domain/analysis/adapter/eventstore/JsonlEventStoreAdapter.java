@@ -58,7 +58,7 @@ class JsonlEventStoreAdapter implements EventStorePort {
                     .filter(event -> event.seq() > afterSeq)
                     .toList();
         } catch (IOException e) {
-            throw new UncheckedIOException("Could not read events of " + id, e);
+            throw new UncheckedIOException("Could not read events of " + id.value(), e);
         }
     }
 
@@ -81,7 +81,7 @@ class JsonlEventStoreAdapter implements EventStorePort {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND);
         } catch (IOException e) {
-            throw new UncheckedIOException("Could not append an event for " + id, e);
+            throw new UncheckedIOException("Could not append an event for " + id.value(), e);
         }
     }
 
