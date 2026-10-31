@@ -392,7 +392,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP31: The rules, checked
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP5-WP11, WP24, WP27, WP28, WP30
 - **Files**: `:backend`, test: `ArchitectureTest.java`
 - **Tests**: `ArchitectureTest` passes. By hand, once: a method or a compact constructor added to a

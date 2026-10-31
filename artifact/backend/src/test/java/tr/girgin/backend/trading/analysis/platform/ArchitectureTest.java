@@ -75,6 +75,13 @@ class ArchitectureTest {
     private static final String BFF_API_ERROR = BASE + ".bff.controller.api.error..";
     private static final String BFF_IMPL_ERROR = BASE + ".bff.delegate.impl.error..";
     private static final String ORCHESTRATION_INBOUND = BASE + ".orchestration.*.inbound..";
+    private static final String[] MODEL_PACKAGES = {
+        BASE + ".domain.*.core.model..",
+        BASE + ".domain.*.core.inbound..",
+        BASE + ".domain.*.core.outbound..",
+        BASE + ".orchestration.*.model..",
+        BASE + ".bff.controller.api.model.."
+    };
 
     /** Shared helper packages under {@code adapter} that serve several ports and implement none. */
     private static final String[] SHARED_ADAPTER_PACKAGES = {BASE + ".domain.analysis.adapter.eventline"};
@@ -423,6 +430,26 @@ class ArchitectureTest {
     @ArchTest
     static final ArchRule services_live_in_service_packages =
             classes().that().haveSimpleNameEndingWith("Service").should().resideInAPackage(SERVICE);
+
+    @ArchTest
+    static final ArchRule service_packages_hold_only_services = topLevelClasses()
+            .and()
+            .resideInAPackage(DOMAIN_SERVICE)
+            .should()
+            .beAnnotatedWith(Service.class)
+            .andShould()
+            .haveSimpleNameEndingWith("Service")
+            .because("behaviour of a domain lives in its services, and a service package holds nothing else");
+
+    @ArchTest
+    static final ArchRule models_are_data = topLevelClasses()
+            .and()
+            .areNotInterfaces()
+            .and()
+            .resideInAnyPackage(MODEL_PACKAGES)
+            .should(DataOnlyCondition.declareOnlyWhatTheCompilerGenerates())
+            .because("a model holds its components only; validation, copies and derived values live in services"
+                    + " and mappers");
 
     @ArchTest
     static final ArchRule exceptions_live_in_exception_packages = topLevelClasses()
