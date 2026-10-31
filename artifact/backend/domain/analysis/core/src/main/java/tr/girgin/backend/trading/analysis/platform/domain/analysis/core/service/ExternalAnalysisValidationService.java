@@ -9,10 +9,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ex
 @Service
 class ExternalAnalysisValidationService implements ValidateExternalAnalysesUseCase {
 
-    private final AnalysisTransitionService transitions;
+    private final AnalysisTransitionService analysisTransitionService;
 
-    ExternalAnalysisValidationService(AnalysisTransitionService transitions) {
-        this.transitions = transitions;
+    ExternalAnalysisValidationService(AnalysisTransitionService analysisTransitionService) {
+        this.analysisTransitionService = analysisTransitionService;
     }
 
     @Override
@@ -28,7 +28,7 @@ class ExternalAnalysisValidationService implements ValidateExternalAnalysesUseCa
             }
             return;
         }
-        if (!transitions.isTerminal(run.status())) {
+        if (!analysisTransitionService.isTerminal(run.status())) {
             throw new IllegalArgumentException("Not a finished run: " + run.status());
         }
         if (run.debateRounds() < 1) {

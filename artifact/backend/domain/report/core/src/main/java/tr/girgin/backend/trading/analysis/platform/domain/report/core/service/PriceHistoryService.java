@@ -27,16 +27,16 @@ class PriceHistoryService implements GetPriceHistoryUseCase {
     private static final int SMA_LONG = 200;
 
     private final PriceCachePort cache;
-    private final ReportKeyService keys;
+    private final ReportKeyService reportKeyService;
 
-    PriceHistoryService(PriceCachePort cache, ReportKeyService keys) {
+    PriceHistoryService(PriceCachePort cache, ReportKeyService reportKeyService) {
         this.cache = cache;
-        this.keys = keys;
+        this.reportKeyService = reportKeyService;
     }
 
     @Override
     public Optional<PriceHistory> get(ReportKey key) {
-        if (!keys.isValid(key)) {
+        if (!reportKeyService.isValid(key)) {
             return Optional.empty();
         }
         List<PriceBar> bars = cache.read(key.ticker(), key.tradeDate()).stream()

@@ -81,7 +81,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final GetAnalysisReportUseCase getReport;
     private final GetAnalysisPricesUseCase getPrices;
     private final ReadAnalysisLogsUseCase readLogs;
-    private final GetAnalysisRightsUseCase getRights;
+    private final GetAnalysisRightsUseCase getAnalysisRightsUseCase;
     private final StartAnalysisRequestToRequestedAnalysisMapper requestMapper;
     private final AnalysisToAnalysisDtoMapper analysisMapper;
     private final RunEventToRunEventDtoMapper eventMapper;
@@ -107,7 +107,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             GetAnalysisReportUseCase getReport,
             GetAnalysisPricesUseCase getPrices,
             ReadAnalysisLogsUseCase readLogs,
-            GetAnalysisRightsUseCase getRights,
+            GetAnalysisRightsUseCase getAnalysisRightsUseCase,
             StartAnalysisRequestToRequestedAnalysisMapper requestMapper,
             AnalysisToAnalysisDtoMapper analysisMapper,
             RunEventToRunEventDtoMapper eventMapper,
@@ -130,7 +130,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.getReport = getReport;
         this.getPrices = getPrices;
         this.readLogs = readLogs;
-        this.getRights = getRights;
+        this.getAnalysisRightsUseCase = getAnalysisRightsUseCase;
         this.requestMapper = requestMapper;
         this.analysisMapper = analysisMapper;
         this.eventMapper = eventMapper;
@@ -163,7 +163,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
                 listAnalyses.list(filter, scopeMapper.map(scope == null ? AnalysisScopeEnumDto.MINE : scope), access);
         Map<UserId, Username> usernames = usernames(analyses);
         return analyses.stream()
-                .map(a -> analysisMapper.map(a, usernames, getRights.rights(a, access)))
+                .map(a -> analysisMapper.map(a, usernames, getAnalysisRightsUseCase.rights(a, access)))
                 .toList();
     }
 
@@ -293,7 +293,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     private AnalysisDto dto(Analysis analysis) {
-        return analysisMapper.map(analysis, usernames(List.of(analysis)), getRights.rights(analysis, access()));
+        return analysisMapper.map(
+                analysis, usernames(List.of(analysis)), getAnalysisRightsUseCase.rights(analysis, access()));
     }
 
     private Map<UserId, Username> usernames(List<Analysis> analyses) {

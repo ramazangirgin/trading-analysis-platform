@@ -19,7 +19,7 @@ class AnalysisSpecServiceTest {
 
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 1);
 
-    private final AnalysisSpecService service = new AnalysisSpecService();
+    private final AnalysisSpecService analysisSpecService = new AnalysisSpecService();
 
     private static AnalysisSpec spec(String ticker, LocalDate tradeDate, int rounds, String language) {
         return new AnalysisSpec(
@@ -51,7 +51,7 @@ class AnalysisSpecServiceTest {
                 "English",
                 true);
 
-        AnalysisSpec normalized = service.normalized(spec);
+        AnalysisSpec normalized = analysisSpecService.normalized(spec);
 
         assertThat(normalized.ticker()).isEqualTo("NVDA");
         assertThat(normalized.llmProvider()).isEqualTo("deepseek");
@@ -76,12 +76,12 @@ class AnalysisSpecServiceTest {
                 "English",
                 false);
 
-        assertThat(service.normalized(spec).analysts()).containsExactly(all[0], all[all.length - 1]);
+        assertThat(analysisSpecService.normalized(spec).analysts()).containsExactly(all[0], all[all.length - 1]);
     }
 
     @Test
     void aValidSpecPasses() {
-        assertThatCode(() -> service.validate(spec("BRK.B", TODAY, 1, "English"), TODAY))
+        assertThatCode(() -> analysisSpecService.validate(spec("BRK.B", TODAY, 1, "English"), TODAY))
                 .doesNotThrowAnyException();
     }
 
@@ -109,9 +109,10 @@ class AnalysisSpecServiceTest {
     }
 
     private void assertInvalid(AnalysisSpec spec, String field) {
-        assertThatThrownBy(() -> service.validate(spec, TODAY)).isInstanceOfSatisfying(AnalysisException.class, e -> {
-            assertThat(e.error()).isEqualTo(AnalysisError.INVALID_SPEC);
-            assertThat(e.getMessage()).isEqualTo("Invalid " + field);
-        });
+        assertThatThrownBy(() -> analysisSpecService.validate(spec, TODAY))
+                .isInstanceOfSatisfying(AnalysisException.class, e -> {
+                    assertThat(e.error()).isEqualTo(AnalysisError.INVALID_SPEC);
+                    assertThat(e.getMessage()).isEqualTo("Invalid " + field);
+                });
     }
 }

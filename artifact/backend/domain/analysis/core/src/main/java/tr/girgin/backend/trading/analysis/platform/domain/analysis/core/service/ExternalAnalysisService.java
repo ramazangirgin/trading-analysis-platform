@@ -27,14 +27,16 @@ class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
 
     private final AnalysisRepositoryPort repository;
 
-    private final AnalysisTransitionService transitions;
-    private final AnalysisIdService ids;
+    private final AnalysisTransitionService analysisTransitionService;
+    private final AnalysisIdService analysisIdService;
 
     ExternalAnalysisService(
-            AnalysisRepositoryPort repository, AnalysisTransitionService transitions, AnalysisIdService ids) {
+            AnalysisRepositoryPort repository,
+            AnalysisTransitionService analysisTransitionService,
+            AnalysisIdService analysisIdService) {
         this.repository = repository;
-        this.transitions = transitions;
-        this.ids = ids;
+        this.analysisTransitionService = analysisTransitionService;
+        this.analysisIdService = analysisIdService;
     }
 
     @Override
@@ -48,14 +50,16 @@ class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
         String ref = ref(external);
         Optional<Analysis> existing = repository.findByExternalRef(ref);
         if (existing.isEmpty()) {
-            Analysis created = transitions.imported(ids.newId(), null, owner, external, ref);
+            Analysis created =
+                    analysisTransitionService.imported(analysisIdService.newId(), null, owner, external, ref);
             repository.insert(created);
             return new ExternalRegistration(created, Outcome.CREATED);
         }
         Analysis current = existing.get();
         OwnerId refreshedOwner = current.owner() != null ? current.owner() : owner;
-        Analysis refreshed = transitions.withVisibilityOf(
-                transitions.imported(current.id(), current.version(), refreshedOwner, external, ref), current);
+        Analysis refreshed = analysisTransitionService.withVisibilityOf(
+                analysisTransitionService.imported(current.id(), current.version(), refreshedOwner, external, ref),
+                current);
         if (refreshed.equals(current)) {
             return new ExternalRegistration(current, Outcome.UNCHANGED);
         }

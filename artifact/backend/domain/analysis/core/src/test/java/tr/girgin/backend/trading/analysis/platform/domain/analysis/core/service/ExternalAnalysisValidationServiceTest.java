@@ -18,12 +18,12 @@ class ExternalAnalysisValidationServiceTest {
 
     private static final Instant END = Instant.parse("2026-01-02T03:04:05Z");
 
-    private final ExternalAnalysisValidationService service =
+    private final ExternalAnalysisValidationService externalAnalysisValidationService =
             new ExternalAnalysisValidationService(new AnalysisTransitionService(new AnalysisSpecService()));
 
     @Test
     void validRecordsPass() {
-        assertThatCode(() -> service.validate(List.of(
+        assertThatCode(() -> externalAnalysisValidationService.validate(List.of(
                         reportFiles(null),
                         reportFiles(run(AnalysisStatus.COMPLETED, 2)),
                         runHistory(run(AnalysisStatus.FAILED, 1)))))
@@ -32,28 +32,31 @@ class ExternalAnalysisValidationServiceTest {
 
     @Test
     void aRunHistoryRecordWithoutItsRunIsRejected() {
-        assertThatThrownBy(() -> service.validate(List.of(runHistory(null))))
+        assertThatThrownBy(() -> externalAnalysisValidationService.validate(List.of(runHistory(null))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("needs its run");
     }
 
     @Test
     void aRunThatHasNotEndedIsRejected() {
-        assertThatThrownBy(() -> service.validate(List.of(runHistory(run(AnalysisStatus.RUNNING, 1)))))
+        assertThatThrownBy(() ->
+                        externalAnalysisValidationService.validate(List.of(runHistory(run(AnalysisStatus.RUNNING, 1)))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Not a finished run");
     }
 
     @Test
     void debateRoundsBelowOneAreRejected() {
-        assertThatThrownBy(() -> service.validate(List.of(reportFiles(run(AnalysisStatus.COMPLETED, 0)))))
+        assertThatThrownBy(() -> externalAnalysisValidationService.validate(
+                        List.of(reportFiles(run(AnalysisStatus.COMPLETED, 0)))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("debateRounds");
     }
 
     @Test
     void oneInvalidRecordRejectsTheBatch() {
-        assertThatThrownBy(() -> service.validate(List.of(reportFiles(null), runHistory(null))))
+        assertThatThrownBy(
+                        () -> externalAnalysisValidationService.validate(List.of(reportFiles(null), runHistory(null))))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

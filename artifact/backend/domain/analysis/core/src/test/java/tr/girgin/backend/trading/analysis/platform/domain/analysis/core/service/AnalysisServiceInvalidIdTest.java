@@ -20,7 +20,7 @@ class AnalysisServiceInvalidIdTest {
     void anInvalidIdIsNotFoundWithoutAPortCall() {
         AnalysisRepositoryPort repository = Fakes.untouched(AnalysisRepositoryPort.class);
         EventStorePort eventStore = Fakes.untouched(EventStorePort.class);
-        AnalysisService service = Fakes.analysisService(
+        AnalysisService analysisService = Fakes.analysisService(
                 repository,
                 Fakes.untouched(RunnerPort.class),
                 eventStore,
@@ -29,9 +29,9 @@ class AnalysisServiceInvalidIdTest {
                 2);
         AnalysisId id = new AnalysisId("../x");
 
-        assertNotFound(() -> service.get(id, Fakes.OWN));
-        assertNotFound(() -> service.stop(id, Fakes.OWN));
-        assertNotFound(() -> service.rerun(id, Fakes.OWN));
+        assertNotFound(() -> analysisService.get(id, Fakes.OWN));
+        assertNotFound(() -> analysisService.stop(id, Fakes.OWN));
+        assertNotFound(() -> analysisService.rerun(id, Fakes.OWN));
     }
 
     private void assertNotFound(Runnable call) {

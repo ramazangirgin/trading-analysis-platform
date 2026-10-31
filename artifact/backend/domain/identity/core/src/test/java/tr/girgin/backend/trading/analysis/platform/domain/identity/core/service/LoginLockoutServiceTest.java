@@ -20,7 +20,7 @@ class LoginLockoutServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
-    private final LoginLockoutService service = new LoginLockoutService(5, Duration.ofMinutes(15));
+    private final LoginLockoutService loginLockoutService = new LoginLockoutService(5, Duration.ofMinutes(15));
 
     private static User user(int failedLogins, Optional<Instant> lockedUntil, Set<RoleId> roles) {
         return new User(
@@ -43,9 +43,10 @@ class LoginLockoutServiceTest {
         Instant until = NOW.plusSeconds(900);
         User locked = user(5, Optional.of(until), Set.of());
 
-        assertThat(service.isLocked(user(0, Optional.empty(), Set.of()), NOW)).isFalse();
-        assertThat(service.isLocked(locked, until.minusMillis(1))).isTrue();
-        assertThat(service.isLocked(locked, until)).isFalse();
+        assertThat(loginLockoutService.isLocked(user(0, Optional.empty(), Set.of()), NOW))
+                .isFalse();
+        assertThat(loginLockoutService.isLocked(locked, until.minusMillis(1))).isTrue();
+        assertThat(loginLockoutService.isLocked(locked, until)).isFalse();
     }
 
     @Test
@@ -53,7 +54,7 @@ class LoginLockoutServiceTest {
         Set<RoleId> roles = Set.of(new RoleId(UUID.randomUUID().toString()));
         User user = user(2, Optional.of(NOW.plusSeconds(900)), roles);
 
-        assertThat(service.unlocked(user))
+        assertThat(loginLockoutService.unlocked(user))
                 .isEqualTo(new User(
                         user.id(),
                         user.username(),

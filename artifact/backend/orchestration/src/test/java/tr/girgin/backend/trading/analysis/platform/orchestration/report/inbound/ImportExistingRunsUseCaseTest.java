@@ -86,7 +86,7 @@ class ImportExistingRunsUseCaseTest {
                 null,
                 Set.of(ReportSource.REPORT_TREE),
                 Instant.parse("2026-09-27T12:00:00Z"));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(goog, mu),
                 List::of,
                 HAS_DECISION,
@@ -104,7 +104,7 @@ class ImportExistingRunsUseCaseTest {
                 SETTLE_TIME,
                 CLOCK);
 
-        ImportResult result = service.importExistingRuns();
+        ImportResult result = importExistingRunsUseCase.importExistingRuns();
 
         assertThat(result).isEqualTo(new ImportResult(2, 1, 0, 1));
         assertThat(registered.getFirst().analysts()).containsExactlyInAnyOrder(Analyst.MARKET, Analyst.SOCIAL);
@@ -143,7 +143,7 @@ class ImportExistingRunsUseCaseTest {
                         RunHistoryEntry.Status.STOPPED,
                         null,
                         "2026-09-27T20:55:22Z"));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(report),
                 () -> history,
                 HAS_DECISION,
@@ -159,7 +159,7 @@ class ImportExistingRunsUseCaseTest {
                 SETTLE_TIME,
                 CLOCK);
 
-        assertThat(service.importExistingRuns()).isEqualTo(new ImportResult(3, 3, 0, 0));
+        assertThat(importExistingRunsUseCase.importExistingRuns()).isEqualTo(new ImportResult(3, 3, 0, 0));
 
         ExternalAnalysis fromReport = registered.getFirst();
         assertThat(fromReport.origin()).isEqualTo(ExternalAnalysis.Origin.REPORT_FILES);
@@ -201,7 +201,7 @@ class ImportExistingRunsUseCaseTest {
                 Rating.HOLD,
                 Set.of(ReportSource.REPORT_TREE),
                 CLOCK.instant().minus(Duration.ofMinutes(1)));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(running, crashed, finished),
                 List::of,
                 HAS_DECISION,
@@ -217,7 +217,7 @@ class ImportExistingRunsUseCaseTest {
                 SETTLE_TIME,
                 CLOCK);
 
-        assertThat(service.importExistingRuns().scanned()).isEqualTo(2);
+        assertThat(importExistingRunsUseCase.importExistingRuns().scanned()).isEqualTo(2);
         assertThat(registered).extracting(ExternalAnalysis::ticker).containsExactly("INTC", "NVDA");
     }
 
@@ -230,7 +230,7 @@ class ImportExistingRunsUseCaseTest {
                 Rating.HOLD,
                 Set.of(ReportSource.REPORT_TREE),
                 Instant.parse("2026-09-28T12:00:00Z"));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(goog),
                 List::of,
                 HAS_DECISION,
@@ -247,9 +247,9 @@ class ImportExistingRunsUseCaseTest {
                 CLOCK);
 
         firstAdmin = Optional.empty();
-        service.importExistingRuns();
+        importExistingRunsUseCase.importExistingRuns();
         firstAdmin = Optional.of(new UserId("admin-1"));
-        service.importExistingRuns();
+        importExistingRunsUseCase.importExistingRuns();
 
         assertThat(owners).containsExactly(null, new OwnerId("admin-1"));
     }
@@ -267,7 +267,7 @@ class ImportExistingRunsUseCaseTest {
         List<RunHistoryEntry> history =
                 List.of(entry("62ae", nvda, RunHistoryEntry.Status.FAILED, "boom", "2026-09-27T21:11:06Z"));
         List<List<ExternalAnalysis>> validated = new ArrayList<>();
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(report),
                 () -> history,
                 HAS_DECISION,
@@ -286,7 +286,7 @@ class ImportExistingRunsUseCaseTest {
                 SETTLE_TIME,
                 CLOCK);
 
-        assertThatThrownBy(service::importExistingRuns)
+        assertThatThrownBy(importExistingRunsUseCase::importExistingRuns)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("invalid run");
 

@@ -36,7 +36,7 @@ class AnalysisServiceTest {
     private Fakes.Repository repository;
     private Fakes.Runner runner;
     private Fakes.EventStore eventStore;
-    private AnalysisEventService hub;
+    private AnalysisEventService analysisEventService;
     private AnalysisService service;
     private AnalysisListService lists;
 
@@ -45,8 +45,8 @@ class AnalysisServiceTest {
         repository = new Fakes.Repository();
         runner = new Fakes.Runner();
         eventStore = new Fakes.EventStore();
-        hub = Fakes.events(repository, eventStore);
-        service = Fakes.analysisService(repository, runner, eventStore, hub, CLOCK, 2);
+        analysisEventService = Fakes.events(repository, eventStore);
+        service = Fakes.analysisService(repository, runner, eventStore, analysisEventService, CLOCK, 2);
         lists = new AnalysisListService(repository);
     }
 

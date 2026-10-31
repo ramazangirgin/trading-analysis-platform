@@ -24,19 +24,19 @@ class AnalysisLogService implements ReadAnalysisLogsUseCase {
 
     private final GetAnalysisUseCase getAnalysis;
     private final RunLogPort runLog;
-    private final AnalysisAccessService accessRules;
+    private final AnalysisAccessService analysisAccessService;
 
-    AnalysisLogService(GetAnalysisUseCase getAnalysis, RunLogPort runLog, AnalysisAccessService accessRules) {
+    AnalysisLogService(GetAnalysisUseCase getAnalysis, RunLogPort runLog, AnalysisAccessService analysisAccessService) {
         this.getAnalysis = getAnalysis;
         this.runLog = runLog;
-        this.accessRules = accessRules;
+        this.analysisAccessService = analysisAccessService;
     }
 
     @Override
     public List<String> tailLogs(AnalysisId id, AnalysisAccess access, int maxLines) {
         Analysis analysis = getAnalysis.get(id, access);
         // The log can hold internal details, so a reader of a public analysis does not get it.
-        if (!accessRules.canManage(analysis, access)) {
+        if (!analysisAccessService.canManage(analysis, access)) {
             throw new AnalysisException(
                     AnalysisError.NOT_FOUND, "Analysis not found: " + id.value(), Map.of("id", id.value()));
         }

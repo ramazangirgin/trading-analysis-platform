@@ -50,8 +50,8 @@ class ReportServiceTest {
                     Map.of(),
                     Instant.parse("2026-09-27T09:00:00Z")));
 
-    private final DecisionRatingService ratings = new DecisionRatingService();
-    private final ReportService service = new ReportService(
+    private final DecisionRatingService decisionRatingService = new DecisionRatingService();
+    private final ReportService reportService = new ReportService(
             new DataDirPort() {
                 @Override
                 public List<ReportContent> readAll() {
@@ -64,11 +64,11 @@ class ReportServiceTest {
                 }
             },
             new ReportKeyService(),
-            ratings);
+            decisionRatingService);
 
     @Test
     void mergesSourcesPreferringTheFullStateButNotItsBlanks() {
-        Report goog = service.get(GOOG).orElseThrow();
+        Report goog = reportService.get(GOOG).orElseThrow();
 
         assertThat(goog.sections())
                 .containsEntry(ReportSection.MARKET_REPORT, "state market")
@@ -81,25 +81,27 @@ class ReportServiceTest {
 
     @Test
     void aReportWithoutDecisionHasNoRating() {
-        Report mu = service.get(MU).orElseThrow();
+        Report mu = reportService.get(MU).orElseThrow();
 
-        assertThat(service.hasDecision(mu)).isFalse();
+        assertThat(reportService.hasDecision(mu)).isFalse();
         assertThat(mu.rating()).isNull();
     }
 
     @Test
     void aReportWithTheFinalTradeDecisionHasADecision() {
-        assertThat(service.hasDecision(service.get(GOOG).orElseThrow())).isTrue();
+        assertThat(reportService.hasDecision(reportService.get(GOOG).orElseThrow()))
+                .isTrue();
     }
 
     @Test
     void scansNewestTradeDateFirst() {
-        assertThat(service.scan()).extracting(Report::key).containsExactly(GOOG, MU);
+        assertThat(reportService.scan()).extracting(Report::key).containsExactly(GOOG, MU);
     }
 
     @Test
     void unknownKeysAreEmpty() {
-        assertThat(service.get(new ReportKey("AAPL", LocalDate.of(2026, 1, 2)))).isEmpty();
+        assertThat(reportService.get(new ReportKey("AAPL", LocalDate.of(2026, 1, 2))))
+                .isEmpty();
     }
 
     @Test
@@ -128,7 +130,7 @@ class ReportServiceTest {
                     }
                 },
                 new ReportKeyService(),
-                ratings);
+                decisionRatingService);
 
         assertThat(scanning.scan()).extracting(Report::key).containsExactly(GOOG, MU);
     }
@@ -148,7 +150,7 @@ class ReportServiceTest {
                     }
                 },
                 new ReportKeyService(),
-                ratings);
+                decisionRatingService);
 
         assertThat(guarded.get(new ReportKey("../x", LocalDate.of(2026, 9, 28))))
                 .isEmpty();
@@ -165,6 +167,6 @@ class ReportServiceTest {
                 "We like it a lot|REVIEW"
             })
     void parsesRatingsLikeUpstream(String decision, Rating expected) {
-        assertThat(ratings.parse(decision.replace("<NL>", "\n"))).isEqualTo(expected);
+        assertThat(decisionRatingService.parse(decision.replace("<NL>", "\n"))).isEqualTo(expected);
     }
 }

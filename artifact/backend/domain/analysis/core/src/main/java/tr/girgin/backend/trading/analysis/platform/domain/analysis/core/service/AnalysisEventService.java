@@ -33,30 +33,30 @@ class AnalysisEventService implements SubscribeAnalysisEventsUseCase {
 
     private final AnalysisRepositoryPort repository;
     private final EventStorePort eventStore;
-    private final AnalysisAccessService accessRules;
-    private final AnalysisIdService ids;
-    private final AnalysisTransitionService transitions;
+    private final AnalysisAccessService analysisAccessService;
+    private final AnalysisIdService analysisIdService;
+    private final AnalysisTransitionService analysisTransitionService;
     private final Map<AnalysisId, List<Subscriber>> subscribers = new ConcurrentHashMap<>();
 
     AnalysisEventService(
             AnalysisRepositoryPort repository,
             EventStorePort eventStore,
-            AnalysisAccessService accessRules,
-            AnalysisIdService ids,
-            AnalysisTransitionService transitions) {
+            AnalysisAccessService analysisAccessService,
+            AnalysisIdService analysisIdService,
+            AnalysisTransitionService analysisTransitionService) {
         this.repository = repository;
         this.eventStore = eventStore;
-        this.accessRules = accessRules;
-        this.ids = ids;
-        this.transitions = transitions;
+        this.analysisAccessService = analysisAccessService;
+        this.analysisIdService = analysisIdService;
+        this.analysisTransitionService = analysisTransitionService;
     }
 
     @Override
     public EventSubscription subscribe(AnalysisId id, long afterSeq, AnalysisAccess access, RunEventListener listener) {
-        ids.requireValid(id);
+        analysisIdService.requireValid(id);
         repository
                 .findById(id)
-                .filter(analysis -> accessRules.canSee(analysis, access))
+                .filter(analysis -> analysisAccessService.canSee(analysis, access))
                 .orElseThrow(() -> new AnalysisException(
                         AnalysisError.NOT_FOUND, "Analysis not found: " + id.value(), Map.of("id", id.value())));
         Subscriber subscriber = new Subscriber(listener, afterSeq);
@@ -66,7 +66,7 @@ class AnalysisEventService implements SubscribeAnalysisEventsUseCase {
         if (repository
                 .findById(id)
                 .map(Analysis::status)
-                .map(transitions::isTerminal)
+                .map(analysisTransitionService::isTerminal)
                 .orElse(true)) {
             subscriber.complete();
             remove(id, subscriber);

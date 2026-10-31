@@ -15,12 +15,12 @@ class PasswordPolicyServiceTest {
     private static final Username ALICE = new Username("alice");
     private static final String LIST = "# a comment\n\nPassword1234567\nqwertyuiop12\n";
 
-    private final PasswordPolicyService policy = new PasswordPolicyService(12, LIST);
+    private final PasswordPolicyService passwordPolicyService = new PasswordPolicyService(12, LIST);
 
     @Test
     void anUncommonPasswordOfTheMinimumLengthPasses() {
-        assertThatCode(() -> policy.check("x7Kq-m2Rz9aB", ALICE)).doesNotThrowAnyException();
-        assertThatCode(() -> policy.check("a b c d e f ", ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("x7Kq-m2Rz9aB", ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("a b c d e f ", ALICE)).doesNotThrowAnyException();
     }
 
     @Test
@@ -30,14 +30,17 @@ class PasswordPolicyServiceTest {
 
     @Test
     void theLengthIsCountedInCodePoints() {
-        assertThatCode(() -> policy.check("😀".repeat(12), ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("😀".repeat(12), ALICE))
+                .doesNotThrowAnyException();
         assertThat(reasons("😀".repeat(11))).containsExactly("too_short");
-        assertThatCode(() -> policy.check("ğüşiöçıĞÜŞİÖÇ", ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("ğüşiöçıĞÜŞİÖÇ", ALICE))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void theMaximumIsOneHundredTwentyEightCodePoints() {
-        assertThatCode(() -> policy.check("😀".repeat(128), ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("😀".repeat(128), ALICE))
+                .doesNotThrowAnyException();
         assertThat(reasons("😀".repeat(129))).containsExactly("too_long");
     }
 
@@ -52,7 +55,7 @@ class PasswordPolicyServiceTest {
     void theUsernameIsRejectedInAnyCase() {
         Username name = new Username("Alice.Smith-2026");
 
-        assertThatThrownBy(() -> policy.check("alice.smith-2026", name))
+        assertThatThrownBy(() -> passwordPolicyService.check("alice.smith-2026", name))
                 .isInstanceOfSatisfying(
                         IdentityException.class,
                         e -> assertThat(e.params().get("reasons")).isEqualTo(List.of("same_as_username")));
@@ -77,7 +80,7 @@ class PasswordPolicyServiceTest {
 
     @Test
     void theMessageNeverContainsThePassword() {
-        assertThatThrownBy(() -> policy.check("Xy7-weak", ALICE))
+        assertThatThrownBy(() -> passwordPolicyService.check("Xy7-weak", ALICE))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.getMessage()).doesNotContain("Xy7-weak"));
     }
@@ -125,7 +128,7 @@ class PasswordPolicyServiceTest {
 
     private List<String> reasons(String password) {
         try {
-            policy.check(password, ALICE);
+            passwordPolicyService.check(password, ALICE);
         } catch (IdentityException e) {
             @SuppressWarnings("unchecked")
             List<String> reasons = (List<String>) e.params().get("reasons");

@@ -6,16 +6,16 @@ import org.junit.jupiter.api.Test;
 
 class OneTimePasswordServiceTest {
 
-    private final OneTimePasswordService generator = new OneTimePasswordService();
+    private final OneTimePasswordService oneTimePasswordService = new OneTimePasswordService();
 
     @Test
     void generatesTheGivenLengthOfLettersAndDigits() {
-        assertThat(generator.generate(24)).hasSize(24).matches("[A-Za-z0-9]+");
-        assertThat(generator.generate(40)).hasSize(40).matches("[A-Za-z0-9]+");
+        assertThat(oneTimePasswordService.generate(24)).hasSize(24).matches("[A-Za-z0-9]+");
+        assertThat(oneTimePasswordService.generate(40)).hasSize(40).matches("[A-Za-z0-9]+");
     }
 
     @Test
     void twoCallsDiffer() {
-        assertThat(generator.generate(24)).isNotEqualTo(generator.generate(24));
+        assertThat(oneTimePasswordService.generate(24)).isNotEqualTo(oneTimePasswordService.generate(24));
     }
 }

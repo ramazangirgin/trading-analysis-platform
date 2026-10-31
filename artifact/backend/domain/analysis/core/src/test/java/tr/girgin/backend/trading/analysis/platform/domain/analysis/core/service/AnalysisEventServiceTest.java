@@ -23,14 +23,14 @@ class AnalysisEventServiceTest {
 
     private Fakes.Repository repository;
     private Fakes.EventStore eventStore;
-    private AnalysisEventService hub;
+    private AnalysisEventService analysisEventService;
     private AnalysisId id;
 
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
         eventStore = new Fakes.EventStore();
-        hub = Fakes.events(repository, eventStore);
+        analysisEventService = Fakes.events(repository, eventStore);
         Analysis running =
                 Fakes.running(Fakes.queued(Fakes.spec("NVDA"), Fakes.OWNER, Instant.now()), Instant.now(), "4242");
         repository.insert(running);
@@ -45,8 +45,8 @@ class AnalysisEventServiceTest {
                 Fakes.event(3, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        hub.subscribe(id, 1, Fakes.OWN, listener);
-        hub.publish(id, Fakes.event(4, RunEventType.MESSAGE));
+        analysisEventService.subscribe(id, 1, Fakes.OWN, listener);
+        analysisEventService.publish(id, Fakes.event(4, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).containsExactly(2L, 3L, 4L);
         assertThat(listener.completed).isFalse();
@@ -56,11 +56,11 @@ class AnalysisEventServiceTest {
     void dropsLiveEventsAlreadySeenInTheReplay() {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OWN, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
         // The runner writes the file before stdout, so a live event may repeat a replayed one.
-        hub.publish(id, Fakes.event(2, RunEventType.MESSAGE));
-        hub.publish(id, Fakes.event(3, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(2, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(3, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).containsExactly(1L, 2L, 3L);
     }
@@ -68,10 +68,10 @@ class AnalysisEventServiceTest {
     @Test
     void completesSubscribersWhenTheRunFinishes() {
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OWN, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
-        hub.publish(id, Fakes.finished(1, RunOutcome.COMPLETED, null));
-        hub.publish(id, Fakes.event(2, RunEventType.LOG));
+        analysisEventService.publish(id, Fakes.finished(1, RunOutcome.COMPLETED, null));
+        analysisEventService.publish(id, Fakes.event(2, RunEventType.LOG));
 
         assertThat(listener.seqs).containsExactly(1L);
         assertThat(listener.completed).isTrue();
@@ -83,7 +83,7 @@ class AnalysisEventServiceTest {
         repository.update(Fakes.ended(repository.findById(id).orElseThrow(), AnalysisStatus.COMPLETED, Instant.now()));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        hub.subscribe(id, 0, Fakes.OWN, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
         assertThat(listener.seqs).containsExactly(1L, 2L);
         assertThat(listener.completed).isTrue();
@@ -94,10 +94,10 @@ class AnalysisEventServiceTest {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        assertThatThrownBy(() -> hub.subscribe(id, 0, Fakes.OTHERS, listener))
+        assertThatThrownBy(() -> analysisEventService.subscribe(id, 0, Fakes.OTHERS, listener))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
-        hub.publish(id, Fakes.event(3, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(3, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).isEmpty();
         assertThat(listener.completed).isFalse();
@@ -120,7 +120,7 @@ class AnalysisEventServiceTest {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        hub.subscribe(id, 0, Fakes.EVERYONE, listener);
+        analysisEventService.subscribe(id, 0, Fakes.EVERYONE, listener);
 
         assertThat(listener.seqs).containsExactly(1L, 2L);
     }
@@ -132,13 +132,13 @@ class AnalysisEventServiceTest {
                 Fakes.ended(repository.findById(id).orElseThrow(), AnalysisStatus.COMPLETED, Instant.now());
         repository.update(completed);
         Fakes.RecordingListener refused = new Fakes.RecordingListener();
-        assertThatThrownBy(() -> hub.subscribe(id, 0, Fakes.OTHERS, refused))
+        assertThatThrownBy(() -> analysisEventService.subscribe(id, 0, Fakes.OTHERS, refused))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
 
         repository.update(Fakes.withVisibility(completed, Visibility.PUBLIC, Instant.now()));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OTHERS, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OTHERS, listener);
 
         assertThat(listener.seqs).containsExactly(1L, 2L);
         assertThat(listener.completed).isTrue();
@@ -147,10 +147,10 @@ class AnalysisEventServiceTest {
     @Test
     void cancelledSubscribersGetNothingMore() {
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        EventSubscription subscription = hub.subscribe(id, 0, Fakes.OWN, listener);
+        EventSubscription subscription = analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
         subscription.cancel();
-        hub.publish(id, Fakes.event(1, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(1, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).isEmpty();
     }
@@ -158,16 +158,16 @@ class AnalysisEventServiceTest {
     @Test
     void aFailingListenerDoesNotAffectOthers() {
         Fakes.RecordingListener healthy = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OWN, new Fakes.RecordingListener() {
+        analysisEventService.subscribe(id, 0, Fakes.OWN, new Fakes.RecordingListener() {
             @Override
             public void onEvent(RunEvent event) {
                 throw new IllegalStateException("client went away");
             }
         });
-        hub.subscribe(id, 0, Fakes.OWN, healthy);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, healthy);
 
-        hub.publish(id, Fakes.event(1, RunEventType.MESSAGE));
-        hub.publish(id, Fakes.event(2, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(1, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(2, RunEventType.MESSAGE));
 
         assertThat(healthy.seqs).containsExactly(1L, 2L);
     }

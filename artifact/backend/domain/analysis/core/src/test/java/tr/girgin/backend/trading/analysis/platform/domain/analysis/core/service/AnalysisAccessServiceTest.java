@@ -29,7 +29,7 @@ class AnalysisAccessServiceTest {
     private static final AnalysisAccess ADMIN_PLAIN = new AnalysisAccess(OTHER, true, false);
     private static final AnalysisAccess ADMIN_SHARER = new AnalysisAccess(OTHER, true, true);
 
-    private final AnalysisAccessService service = new AnalysisAccessService();
+    private final AnalysisAccessService analysisAccessService = new AnalysisAccessService();
 
     private final Analysis privateRun = analysis(Visibility.PRIVATE);
     private final Analysis publicRun = analysis(Visibility.PUBLIC);
@@ -56,49 +56,49 @@ class AnalysisAccessServiceTest {
 
     @Test
     void aPrivateAnalysisIsSeenByItsOwnerAndByAllUsersOnly() {
-        assertThat(service.canSee(privateRun, OWNER_PLAIN)).isTrue();
-        assertThat(service.canSee(privateRun, ADMIN_PLAIN)).isTrue();
-        assertThat(service.canSee(privateRun, OTHER_PLAIN)).isFalse();
-        assertThat(service.canSee(privateRun, OTHER_SHARER)).isFalse();
+        assertThat(analysisAccessService.canSee(privateRun, OWNER_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(privateRun, ADMIN_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(privateRun, OTHER_PLAIN)).isFalse();
+        assertThat(analysisAccessService.canSee(privateRun, OTHER_SHARER)).isFalse();
     }
 
     @Test
     void aPublicAnalysisIsSeenByEveryone() {
-        assertThat(service.canSee(publicRun, OTHER_PLAIN)).isTrue();
-        assertThat(service.canSee(publicRun, OWNER_PLAIN)).isTrue();
-        assertThat(service.canSee(publicRun, ADMIN_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(publicRun, OTHER_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(publicRun, OWNER_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(publicRun, ADMIN_PLAIN)).isTrue();
     }
 
     @Test
     void anAnalysisWithoutAnOwnerIsSeenByAllUsersOnly() {
         Analysis unowned = TestAnalyses.queued(privateRun.id(), privateRun.spec(), null, Instant.EPOCH);
 
-        assertThat(service.canSee(unowned, OWNER_PLAIN)).isFalse();
-        assertThat(service.canSee(unowned, ADMIN_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(unowned, OWNER_PLAIN)).isFalse();
+        assertThat(analysisAccessService.canSee(unowned, ADMIN_PLAIN)).isTrue();
     }
 
     @Test
     void onlyTheOwnerAndAllUsersManageAnAnalysisPublicOrNot() {
         for (Analysis analysis : List.of(privateRun, publicRun, partialRun)) {
-            assertThat(service.canManage(analysis, OWNER_PLAIN)).isTrue();
-            assertThat(service.canManage(analysis, ADMIN_PLAIN)).isTrue();
-            assertThat(service.canManage(analysis, OTHER_PLAIN)).isFalse();
-            assertThat(service.canManage(analysis, OTHER_SHARER)).isFalse();
+            assertThat(analysisAccessService.canManage(analysis, OWNER_PLAIN)).isTrue();
+            assertThat(analysisAccessService.canManage(analysis, ADMIN_PLAIN)).isTrue();
+            assertThat(analysisAccessService.canManage(analysis, OTHER_PLAIN)).isFalse();
+            assertThat(analysisAccessService.canManage(analysis, OTHER_SHARER)).isFalse();
         }
     }
 
     @Test
     void aPartialAnalysisIsSeenByEveryLoggedInUser() {
-        assertThat(service.canSee(partialRun, OTHER_PLAIN)).isTrue();
-        assertThat(service.canSee(partialRun, OWNER_PLAIN)).isTrue();
-        assertThat(service.canSee(partialRun, ADMIN_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(partialRun, OTHER_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(partialRun, OWNER_PLAIN)).isTrue();
+        assertThat(analysisAccessService.canSee(partialRun, ADMIN_PLAIN)).isTrue();
     }
 
     @Test
     void onlyTheSharedVisibilitiesAreSharedWithUsers() {
-        assertThat(service.sharedWithUsers(Visibility.PRIVATE)).isFalse();
-        assertThat(service.sharedWithUsers(Visibility.PUBLIC)).isTrue();
-        assertThat(service.sharedWithUsers(Visibility.PARTIAL)).isTrue();
+        assertThat(analysisAccessService.sharedWithUsers(Visibility.PRIVATE)).isFalse();
+        assertThat(analysisAccessService.sharedWithUsers(Visibility.PUBLIC)).isTrue();
+        assertThat(analysisAccessService.sharedWithUsers(Visibility.PARTIAL)).isTrue();
     }
 
     @Test
@@ -118,49 +118,60 @@ class AnalysisAccessServiceTest {
 
     @Test
     void allowedVisibilitiesListsTheTargetsInEnumOrder() {
-        assertThat(service.allowedVisibilities(privateRun, OWNER_SHARER))
+        assertThat(analysisAccessService.allowedVisibilities(privateRun, OWNER_SHARER))
                 .containsExactly(Visibility.PUBLIC, Visibility.PARTIAL);
-        assertThat(service.allowedVisibilities(privateRun, OWNER_PLAIN)).isEmpty();
-        assertThat(service.allowedVisibilities(privateRun, ADMIN_SHARER)).isEmpty();
+        assertThat(analysisAccessService.allowedVisibilities(privateRun, OWNER_PLAIN))
+                .isEmpty();
+        assertThat(analysisAccessService.allowedVisibilities(privateRun, ADMIN_SHARER))
+                .isEmpty();
 
-        assertThat(service.allowedVisibilities(publicRun, OWNER_SHARER))
+        assertThat(analysisAccessService.allowedVisibilities(publicRun, OWNER_SHARER))
                 .containsExactly(Visibility.PRIVATE, Visibility.PARTIAL);
-        assertThat(service.allowedVisibilities(publicRun, OWNER_PLAIN)).containsExactly(Visibility.PRIVATE);
-        assertThat(service.allowedVisibilities(publicRun, ADMIN_SHARER)).containsExactly(Visibility.PRIVATE);
-        assertThat(service.allowedVisibilities(publicRun, ADMIN_PLAIN)).isEmpty();
-        assertThat(service.allowedVisibilities(publicRun, OTHER_SHARER)).isEmpty();
+        assertThat(analysisAccessService.allowedVisibilities(publicRun, OWNER_PLAIN))
+                .containsExactly(Visibility.PRIVATE);
+        assertThat(analysisAccessService.allowedVisibilities(publicRun, ADMIN_SHARER))
+                .containsExactly(Visibility.PRIVATE);
+        assertThat(analysisAccessService.allowedVisibilities(publicRun, ADMIN_PLAIN))
+                .isEmpty();
+        assertThat(analysisAccessService.allowedVisibilities(publicRun, OTHER_SHARER))
+                .isEmpty();
 
-        assertThat(service.allowedVisibilities(partialRun, OWNER_SHARER))
+        assertThat(analysisAccessService.allowedVisibilities(partialRun, OWNER_SHARER))
                 .containsExactly(Visibility.PRIVATE, Visibility.PUBLIC);
-        assertThat(service.allowedVisibilities(partialRun, ADMIN_SHARER))
+        assertThat(analysisAccessService.allowedVisibilities(partialRun, ADMIN_SHARER))
                 .containsExactly(Visibility.PRIVATE, Visibility.PUBLIC);
-        assertThat(service.allowedVisibilities(partialRun, ADMIN_PLAIN)).isEmpty();
-        assertThat(service.allowedVisibilities(partialRun, OTHER_SHARER)).isEmpty();
+        assertThat(analysisAccessService.allowedVisibilities(partialRun, ADMIN_PLAIN))
+                .isEmpty();
+        assertThat(analysisAccessService.allowedVisibilities(partialRun, OTHER_SHARER))
+                .isEmpty();
     }
 
     @Test
     void rightsOfAnOwnerWithShareManageAndChangeToTheOtherVisibilities() {
-        assertThat(service.rights(privateRun, OWNER_SHARER))
+        assertThat(analysisAccessService.rights(privateRun, OWNER_SHARER))
                 .isEqualTo(new AnalysisRights(true, List.of(Visibility.PUBLIC, Visibility.PARTIAL)));
     }
 
     @Test
     void rightsOfAnOwnerWithoutShareMayOnlyGoBackToPrivate() {
-        assertThat(service.rights(publicRun, OWNER_PLAIN))
+        assertThat(analysisAccessService.rights(publicRun, OWNER_PLAIN))
                 .isEqualTo(new AnalysisRights(true, List.of(Visibility.PRIVATE)));
-        assertThat(service.rights(privateRun, OWNER_PLAIN)).isEqualTo(new AnalysisRights(true, List.of()));
+        assertThat(analysisAccessService.rights(privateRun, OWNER_PLAIN))
+                .isEqualTo(new AnalysisRights(true, List.of()));
     }
 
     @Test
     void rightsOfAnotherUserAreEmpty() {
-        assertThat(service.rights(publicRun, OTHER_SHARER)).isEqualTo(new AnalysisRights(false, List.of()));
+        assertThat(analysisAccessService.rights(publicRun, OTHER_SHARER))
+                .isEqualTo(new AnalysisRights(false, List.of()));
     }
 
     @Test
     void rightsOfAnAdminOnSomeoneElsesPartialAnalysisNarrowOrPublish() {
-        assertThat(service.rights(partialRun, ADMIN_SHARER))
+        assertThat(analysisAccessService.rights(partialRun, ADMIN_SHARER))
                 .isEqualTo(new AnalysisRights(true, List.of(Visibility.PRIVATE, Visibility.PUBLIC)));
-        assertThat(service.rights(partialRun, ADMIN_PLAIN)).isEqualTo(new AnalysisRights(true, List.of()));
+        assertThat(analysisAccessService.rights(partialRun, ADMIN_PLAIN))
+                .isEqualTo(new AnalysisRights(true, List.of()));
     }
 
     // Asserts that exactly the given callers, out of every kind of caller, may change the analysis to target.
@@ -168,7 +179,7 @@ class AnalysisAccessServiceTest {
         List<AnalysisAccess> everyone =
                 List.of(OWNER_PLAIN, OWNER_SHARER, OTHER_PLAIN, OTHER_SHARER, ADMIN_PLAIN, ADMIN_SHARER);
         for (AnalysisAccess caller : everyone) {
-            assertThat(service.canChangeTo(analysis, caller, target))
+            assertThat(analysisAccessService.canChangeTo(analysis, caller, target))
                     .as("%s -> %s by %s", analysis.visibility(), target, caller)
                     .isEqualTo(List.of(allowed).contains(caller));
         }

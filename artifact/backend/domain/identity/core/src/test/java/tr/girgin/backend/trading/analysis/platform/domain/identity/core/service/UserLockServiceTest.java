@@ -25,7 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 class UserLockServiceTest {
 
     private final FakeUserRepository users = new FakeUserRepository();
-    private final UserLockService service =
+    private final UserLockService userLockService =
             new UserLockService(users, new LoginLockoutService(5, Duration.ofMinutes(15)));
 
     @Test
@@ -33,7 +33,7 @@ class UserLockServiceTest {
         User locked = user(3, Optional.of(Instant.parse("2026-10-01T10:15:00Z")));
         users.user = locked;
 
-        service.unlock(locked.id());
+        userLockService.unlock(locked.id());
 
         assertThat(users.user.failedLoginCount()).isZero();
         assertThat(users.user.lockedUntil()).isEmpty();
@@ -45,7 +45,7 @@ class UserLockServiceTest {
         User free = user(0, Optional.empty());
         users.user = free;
 
-        service.unlock(free.id());
+        userLockService.unlock(free.id());
 
         assertThat(users.saved).isEmpty();
     }
@@ -54,7 +54,7 @@ class UserLockServiceTest {
     void anUnknownIdIsUserNotFound() {
         UserId id = new UserId(UUID.randomUUID().toString());
 
-        assertThatThrownBy(() -> service.unlock(id)).isInstanceOfSatisfying(IdentityException.class, e -> {
+        assertThatThrownBy(() -> userLockService.unlock(id)).isInstanceOfSatisfying(IdentityException.class, e -> {
             assertThat(e.error()).isEqualTo(IdentityError.USER_NOT_FOUND);
             assertThat(e.params()).containsEntry("id", id.value());
         });
@@ -66,7 +66,7 @@ class UserLockServiceTest {
         users.user = locked;
         users.failSaves = 2;
 
-        service.unlock(locked.id());
+        userLockService.unlock(locked.id());
 
         assertThat(users.user.lockedUntil()).isEmpty();
     }
@@ -77,7 +77,8 @@ class UserLockServiceTest {
         users.user = locked;
         users.failSaves = 3;
 
-        assertThatThrownBy(() -> service.unlock(locked.id())).isInstanceOf(OptimisticLockingFailureException.class);
+        assertThatThrownBy(() -> userLockService.unlock(locked.id()))
+                .isInstanceOf(OptimisticLockingFailureException.class);
     }
 
     private static User user(int failedLoginCount, Optional<Instant> lockedUntil) {

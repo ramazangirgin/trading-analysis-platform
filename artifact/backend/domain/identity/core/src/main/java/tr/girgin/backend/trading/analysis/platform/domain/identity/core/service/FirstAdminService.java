@@ -29,10 +29,10 @@ class FirstAdminService implements CreateFirstAdminUseCase {
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
-    private final OneTimePasswordService generator;
-    private final PasswordPolicyService policy;
-    private final UserChangeService userChanges;
-    private final UsernameService usernames;
+    private final OneTimePasswordService oneTimePasswordService;
+    private final PasswordPolicyService passwordPolicyService;
+    private final UserChangeService userChangeService;
+    private final UsernameService usernameService;
     private final String username;
     private final String password;
 
@@ -41,18 +41,18 @@ class FirstAdminService implements CreateFirstAdminUseCase {
     FirstAdminService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            OneTimePasswordService generator,
-            PasswordPolicyService policy,
-            UserChangeService userChanges,
-            UsernameService usernames,
+            OneTimePasswordService oneTimePasswordService,
+            PasswordPolicyService passwordPolicyService,
+            UserChangeService userChangeService,
+            UsernameService usernameService,
             @Value("${platform.admin.username:admin}") String username,
             @Value("${platform.admin.password:}") String password) {
         this.users = users;
         this.hasher = hasher;
-        this.generator = generator;
-        this.policy = policy;
-        this.userChanges = userChanges;
-        this.usernames = usernames;
+        this.oneTimePasswordService = oneTimePasswordService;
+        this.passwordPolicyService = passwordPolicyService;
+        this.userChangeService = userChangeService;
+        this.usernameService = usernameService;
         this.username = username;
         this.password = password;
     }
@@ -71,15 +71,16 @@ class FirstAdminService implements CreateFirstAdminUseCase {
             }
             return;
         }
-        Username name = usernames.username(username);
+        Username name = usernameService.username(username);
         if (configured) {
             checkConfiguredPassword(name);
         }
         String plain = configured
                 ? password
-                : generator.generate(Math.max(OneTimePasswordService.DEFAULT_LENGTH, policy.minLength()));
+                : oneTimePasswordService.generate(
+                        Math.max(OneTimePasswordService.DEFAULT_LENGTH, passwordPolicyService.minLength()));
         User admin = new User(
-                userChanges.newId(),
+                userChangeService.newId(),
                 name,
                 hasher.hash(plain),
                 true,
@@ -110,7 +111,7 @@ class FirstAdminService implements CreateFirstAdminUseCase {
 
     private void checkConfiguredPassword(Username name) {
         try {
-            policy.check(password, name);
+            passwordPolicyService.check(password, name);
         } catch (IdentityException e) {
             throw new IllegalStateException("PLATFORM_ADMIN_PASSWORD breaks the password policy: "
                     + e.params().get("reasons")

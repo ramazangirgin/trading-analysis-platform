@@ -18,7 +18,7 @@ class UserChangeServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
-    private final UserChangeService service = new UserChangeService();
+    private final UserChangeService userChangeService = new UserChangeService();
 
     private static User user(Set<RoleId> roleIds) {
         return new User(
@@ -38,7 +38,7 @@ class UserChangeServiceTest {
 
     @Test
     void newIdsAreDistinct() {
-        assertThat(service.newId()).isNotEqualTo(service.newId());
+        assertThat(userChangeService.newId()).isNotEqualTo(userChangeService.newId());
     }
 
     @Test
@@ -57,7 +57,7 @@ class UserChangeServiceTest {
                 Set.of(),
                 null);
 
-        User changed = service.withRoleIds(unsaved, Set.of(new RoleId("r1")));
+        User changed = userChangeService.withRoleIds(unsaved, Set.of(new RoleId("r1")));
 
         assertThat(changed.createdAt()).isNull();
         assertThat(changed.updatedAt()).isNull();
@@ -67,7 +67,7 @@ class UserChangeServiceTest {
     @Test
     void copiesTheRoleSetAndKeepsItImmutable() {
         Set<RoleId> roles = new HashSet<>(Set.of(new RoleId("r1")));
-        User changed = service.withRoleIds(user(Set.of()), roles);
+        User changed = userChangeService.withRoleIds(user(Set.of()), roles);
 
         roles.add(new RoleId("r2"));
 
@@ -81,7 +81,7 @@ class UserChangeServiceTest {
         User user = user(Set.of());
         Set<RoleId> roles = Set.of(new RoleId("r1"));
 
-        assertThat(service.withRoleIds(user, roles))
+        assertThat(userChangeService.withRoleIds(user, roles))
                 .isEqualTo(new User(
                         user.id(),
                         user.username(),
@@ -101,7 +101,7 @@ class UserChangeServiceTest {
     void withEnabledReplacesOnlyTheFlag() {
         User user = user(Set.of());
 
-        assertThat(service.withEnabled(user, false))
+        assertThat(userChangeService.withEnabled(user, false))
                 .isEqualTo(new User(
                         user.id(),
                         user.username(),
@@ -123,7 +123,7 @@ class UserChangeServiceTest {
         User user = user(roles);
         PasswordHash hash = new PasswordHash("{noop}y");
 
-        assertThat(service.withPassword(user, hash, true))
+        assertThat(userChangeService.withPassword(user, hash, true))
                 .isEqualTo(new User(
                         user.id(),
                         user.username(),
@@ -145,7 +145,7 @@ class UserChangeServiceTest {
         User user = user(roles);
         Instant until = NOW.plusSeconds(900);
 
-        assertThat(service.withFailedLogin(user, 4, Optional.of(until)))
+        assertThat(userChangeService.withFailedLogin(user, 4, Optional.of(until)))
                 .isEqualTo(new User(
                         user.id(),
                         user.username(),
@@ -167,7 +167,7 @@ class UserChangeServiceTest {
         User user = user(roles);
         Instant at = NOW.plusSeconds(60);
 
-        assertThat(service.withLastLogin(user, at))
+        assertThat(userChangeService.withLastLogin(user, at))
                 .isEqualTo(new User(
                         user.id(),
                         user.username(),

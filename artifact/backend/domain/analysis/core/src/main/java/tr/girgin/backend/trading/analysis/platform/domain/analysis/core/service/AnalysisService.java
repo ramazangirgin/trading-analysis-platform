@@ -67,11 +67,11 @@ class AnalysisService
     private final RunnerPort runner;
     private final CredentialsPort credentials;
     private final EventStorePort eventStore;
-    private final AnalysisEventService events;
-    private final AnalysisSpecService specs;
-    private final AnalysisTransitionService transitions;
-    private final AnalysisIdService ids;
-    private final AnalysisAccessService accessRules;
+    private final AnalysisEventService analysisEventService;
+    private final AnalysisSpecService analysisSpecService;
+    private final AnalysisTransitionService analysisTransitionService;
+    private final AnalysisIdService analysisIdService;
+    private final AnalysisAccessService analysisAccessService;
     private final Clock clock;
     private final int maxConcurrentRuns;
 
@@ -87,11 +87,11 @@ class AnalysisService
             RunnerPort runner,
             CredentialsPort credentials,
             EventStorePort eventStore,
-            AnalysisEventService events,
-            AnalysisSpecService specs,
-            AnalysisTransitionService transitions,
-            AnalysisIdService ids,
-            AnalysisAccessService accessRules,
+            AnalysisEventService analysisEventService,
+            AnalysisSpecService analysisSpecService,
+            AnalysisTransitionService analysisTransitionService,
+            AnalysisIdService analysisIdService,
+            AnalysisAccessService analysisAccessService,
             Clock clock,
             @Value("${platform.analysis.max-concurrent-runs:2}") int maxConcurrentRuns) {
         if (maxConcurrentRuns < 1) {
@@ -101,11 +101,11 @@ class AnalysisService
         this.runner = runner;
         this.credentials = credentials;
         this.eventStore = eventStore;
-        this.events = events;
-        this.specs = specs;
-        this.transitions = transitions;
-        this.ids = ids;
-        this.accessRules = accessRules;
+        this.analysisEventService = analysisEventService;
+        this.analysisSpecService = analysisSpecService;
+        this.analysisTransitionService = analysisTransitionService;
+        this.analysisIdService = analysisIdService;
+        this.analysisAccessService = analysisAccessService;
         this.clock = clock;
         this.maxConcurrentRuns = maxConcurrentRuns;
     }
@@ -163,9 +163,9 @@ class AnalysisService
 
     @Override
     public Analysis start(AnalysisSpec requested, OwnerId owner) {
-        AnalysisSpec spec = specs.normalized(requested);
-        specs.validate(spec, LocalDate.now(clock));
-        Analysis analysis = transitions.queued(ids.newId(), spec, owner, clock.instant());
+        AnalysisSpec spec = analysisSpecService.normalized(requested);
+        analysisSpecService.validate(spec, LocalDate.now(clock));
+        Analysis analysis = analysisTransitionService.queued(analysisIdService.newId(), spec, owner, clock.instant());
         synchronized (lock) {
             ensureNotActive(spec);
             repository.insert(analysis);
@@ -207,9 +207,9 @@ class AnalysisService
 
     @Override
     public Analysis get(AnalysisId id, AnalysisAccess access) {
-        ids.requireValid(id);
+        analysisIdService.requireValid(id);
         Analysis analysis = get(id);
-        if (!accessRules.canSee(analysis, access)) {
+        if (!analysisAccessService.canSee(analysis, access)) {
             throw notFound(id);
         }
         return analysis;
@@ -220,9 +220,9 @@ class AnalysisService
     }
 
     private Analysis getManaged(AnalysisId id, AnalysisAccess access) {
-        ids.requireValid(id);
+        analysisIdService.requireValid(id);
         Analysis analysis = get(id);
-        if (!accessRules.canManage(analysis, access)) {
+        if (!analysisAccessService.canManage(analysis, access)) {
             throw notFound(id);
         }
         return analysis;
@@ -282,7 +282,7 @@ class AnalysisService
             try {
                 RunHandle handle = runner.start(id, analysis.spec(), credentials.environment(), new Sink(id));
                 running.put(id, handle);
-                update(transitions.running(analysis, clock.instant(), handle.ref()));
+                update(analysisTransitionService.running(analysis, clock.instant(), handle.ref()));
                 log.info("Started {} ({})", id.value(), handle.ref());
             } catch (RuntimeException e) {
                 log.error("Could not start {}", id.value(), e);
@@ -297,7 +297,8 @@ class AnalysisService
      * end is recorded and a RUN_FINISHED event appended, so replaying clients see it too.
      */
     private void end(Analysis analysis, RunOutcome outcome, String errorCode, String message) {
-        update(transitions.finished(analysis, transitions.toStatus(outcome), clock.instant(), errorCode, message));
+        update(analysisTransitionService.finished(
+                analysis, analysisTransitionService.toStatus(outcome), clock.instant(), errorCode, message));
         long seq = eventStore.read(analysis.id(), 0).stream()
                         .mapToLong(RunEvent::seq)
                         .max()
@@ -318,7 +319,7 @@ class AnalysisService
         RunEvent event =
                 new RunEvent(seq, clock.instant(), RunEventType.RUN_FINISHED, null, outcome, null, message, payload);
         eventStore.append(analysis.id(), event);
-        events.publish(analysis.id(), event);
+        analysisEventService.publish(analysis.id(), event);
     }
 
     /** Applies one run's events to its record, then fans them out. Called from the runner's thread. */
@@ -336,20 +337,25 @@ class AnalysisService
             synchronized (lock) {
                 Analysis analysis = get(id);
                 Analysis updated = switch (event.type()) {
-                    case STATS -> event.stats() == null ? analysis : transitions.withStats(analysis, event.stats());
+                    case STATS ->
+                        event.stats() == null ? analysis : analysisTransitionService.withStats(analysis, event.stats());
                     case DECISION ->
-                        transitions.withDecision(analysis, event.rating(), (String)
+                        analysisTransitionService.withDecision(analysis, event.rating(), (String)
                                 event.payload().get("raw"));
                     case RUN_FINISHED -> {
                         finishedReported = true;
                         RunOutcome outcome = event.outcome() == null ? RunOutcome.FAILED : event.outcome();
                         if (outcome != RunOutcome.FAILED) {
-                            yield transitions.finished(
-                                    analysis, transitions.toStatus(outcome), event.timestamp(), null, null);
+                            yield analysisTransitionService.finished(
+                                    analysis,
+                                    analysisTransitionService.toStatus(outcome),
+                                    event.timestamp(),
+                                    null,
+                                    null);
                         }
                         Object type = event.payload().get("error_type");
                         String message = type == null ? event.error() : type + ": " + event.error();
-                        yield transitions.finished(
+                        yield analysisTransitionService.finished(
                                 analysis, AnalysisStatus.FAILED, event.timestamp(), RUNNER_ERROR, message);
                     }
                     default -> analysis;
@@ -358,7 +364,7 @@ class AnalysisService
                     update(updated);
                 }
             }
-            events.publish(id, event);
+            analysisEventService.publish(id, event);
         }
 
         @Override

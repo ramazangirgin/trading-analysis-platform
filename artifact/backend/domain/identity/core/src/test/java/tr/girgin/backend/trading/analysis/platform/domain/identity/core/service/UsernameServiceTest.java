@@ -10,18 +10,18 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exceptio
 
 class UsernameServiceTest {
 
-    private final UsernameService service = new UsernameService();
+    private final UsernameService usernameService = new UsernameService();
 
     @ParameterizedTest
     @ValueSource(strings = {"abc", "Alice", "a.b_c-d", "alice@example.com", "user42"})
     void acceptsValidNames(String name) {
-        assertThat(service.username(name).value()).isEqualTo(name);
+        assertThat(usernameService.username(name).value()).isEqualTo(name);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "ab", "has space", "tab\tname", "ünal", "İlhan", "semi;colon"})
     void rejectsInvalidNames(String name) {
-        assertThatThrownBy(() -> service.username(name))
+        assertThatThrownBy(() -> usernameService.username(name))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.INVALID_USERNAME));
     }
@@ -32,9 +32,9 @@ class UsernameServiceTest {
         String name = "a".repeat(length);
 
         if (length == 64) {
-            assertThat(service.username(name).value()).hasSize(64);
+            assertThat(usernameService.username(name).value()).hasSize(64);
         } else {
-            assertThatThrownBy(() -> service.username(name)).isInstanceOf(IdentityException.class);
+            assertThatThrownBy(() -> usernameService.username(name)).isInstanceOf(IdentityException.class);
         }
     }
 }

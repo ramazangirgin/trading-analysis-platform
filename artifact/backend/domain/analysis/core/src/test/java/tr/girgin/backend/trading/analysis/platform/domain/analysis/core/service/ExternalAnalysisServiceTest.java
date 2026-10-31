@@ -31,21 +31,22 @@ class ExternalAnalysisServiceTest {
     private static final Instant STARTED = Instant.parse("2026-09-28T11:30:00.123Z");
 
     private final Fakes.Repository repository = new Fakes.Repository();
-    private final ExternalAnalysisService service = new ExternalAnalysisService(
+    private final ExternalAnalysisService externalAnalysisService = new ExternalAnalysisService(
             repository, new AnalysisTransitionService(new AnalysisSpecService()), new AnalysisIdService());
 
     private ExternalRegistration register(ExternalAnalysis external) {
-        return service.register(external, Fakes.OWNER);
+        return externalAnalysisService.register(external, Fakes.OWNER);
     }
 
     @Test
     void aNewImportGetsTheGivenOwnerAndARefreshKeepsTheStoredOne() {
-        Analysis created = service.register(external("GOOG", null, null, FINISHED), Fakes.OTHER)
+        Analysis created = externalAnalysisService
+                .register(external("GOOG", null, null, FINISHED), Fakes.OTHER)
                 .analysis();
         assertThat(created.owner()).isEqualTo(Fakes.OTHER);
 
-        Analysis refreshed = service.register(
-                        external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)), Fakes.OWNER)
+        Analysis refreshed = externalAnalysisService
+                .register(external("GOOG", Rating.SELL, "Sell", FINISHED.plusSeconds(60)), Fakes.OWNER)
                 .analysis();
 
         assertThat(refreshed.id()).isEqualTo(created.id());
@@ -54,7 +55,8 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void aNewImportMayHaveNoOwnerYet() {
-        assertThat(service.register(external("GOOG", null, null, FINISHED), null)
+        assertThat(externalAnalysisService
+                        .register(external("GOOG", null, null, FINISHED), null)
                         .analysis()
                         .owner())
                 .isNull();
@@ -62,8 +64,9 @@ class ExternalAnalysisServiceTest {
 
     @Test
     void aRefreshGivesAStoredUnownedImportTheGivenOwner() {
-        Analysis created =
-                service.register(external("GOOG", null, null, FINISHED), null).analysis();
+        Analysis created = externalAnalysisService
+                .register(external("GOOG", null, null, FINISHED), null)
+                .analysis();
 
         var refreshed = register(external("GOOG", null, null, FINISHED));
 

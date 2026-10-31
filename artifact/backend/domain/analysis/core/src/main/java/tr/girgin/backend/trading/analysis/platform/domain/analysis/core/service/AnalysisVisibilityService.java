@@ -19,30 +19,30 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
 
     private final AnalysisRepositoryPort repository;
-    private final AnalysisAccessService accessRules;
-    private final AnalysisTransitionService transitions;
-    private final AnalysisIdService ids;
+    private final AnalysisAccessService analysisAccessService;
+    private final AnalysisTransitionService analysisTransitionService;
+    private final AnalysisIdService analysisIdService;
     private final Clock clock;
 
     AnalysisVisibilityService(
             AnalysisRepositoryPort repository,
-            AnalysisAccessService accessRules,
-            AnalysisTransitionService transitions,
-            AnalysisIdService ids,
+            AnalysisAccessService analysisAccessService,
+            AnalysisTransitionService analysisTransitionService,
+            AnalysisIdService analysisIdService,
             Clock clock) {
         this.repository = repository;
-        this.accessRules = accessRules;
-        this.transitions = transitions;
-        this.ids = ids;
+        this.analysisAccessService = analysisAccessService;
+        this.analysisTransitionService = analysisTransitionService;
+        this.analysisIdService = analysisIdService;
         this.clock = clock;
     }
 
     @Override
     public Analysis change(AnalysisId id, Visibility visibility, AnalysisAccess access, Long version) {
-        ids.requireValid(id);
+        analysisIdService.requireValid(id);
         Analysis analysis = repository
                 .findById(id)
-                .filter(found -> accessRules.canSee(found, access))
+                .filter(found -> analysisAccessService.canSee(found, access))
                 .orElseThrow(() -> notFound(id));
         if (!Objects.equals(version, analysis.version())) {
             throw concurrentUpdate(id);
@@ -50,7 +50,7 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
         if (analysis.visibility() == visibility) {
             return analysis;
         }
-        if (!accessRules.canChangeTo(analysis, access, visibility)) {
+        if (!analysisAccessService.canChangeTo(analysis, access, visibility)) {
             throw refusal(analysis, visibility, access);
         }
         if (visibility != Visibility.PRIVATE && analysis.status() != AnalysisStatus.COMPLETED) {
@@ -60,7 +60,7 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
                     Map.of("id", id.value(), "status", analysis.status().name()));
         }
         try {
-            return repository.update(transitions.withVisibility(analysis, visibility, clock.instant()));
+            return repository.update(analysisTransitionService.withVisibility(analysis, visibility, clock.instant()));
         } catch (OptimisticLockingFailureException _) {
             throw concurrentUpdate(id);
         }
@@ -68,7 +68,7 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
 
     // Only the owner who lacks the permission learns why; anyone else must not learn the analysis can be shared.
     private AnalysisException refusal(Analysis analysis, Visibility target, AnalysisAccess access) {
-        if (target != Visibility.PRIVATE && accessRules.isOwner(analysis, access) && !access.share()) {
+        if (target != Visibility.PRIVATE && analysisAccessService.isOwner(analysis, access) && !access.share()) {
             return new AnalysisException(
                     AnalysisError.SHARE_FORBIDDEN,
                     "Missing the permission to share analyses",

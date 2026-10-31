@@ -13,17 +13,18 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 @Service
 class AuthenticatedUserService {
 
-    private final RoleRepositoryPort roles;
+    private final RoleRepositoryPort roleRepositoryPort;
 
-    AuthenticatedUserService(RoleRepositoryPort roles) {
-        this.roles = roles;
+    AuthenticatedUserService(RoleRepositoryPort roleRepositoryPort) {
+        this.roleRepositoryPort = roleRepositoryPort;
     }
 
     AuthenticatedUser create(User user) {
         Set<String> roleNames = new HashSet<>();
         Set<Permission> permissions = new HashSet<>();
         user.roleIds()
-                .forEach(roleId -> roles.findById(roleId).ifPresent(role -> addRole(role, roleNames, permissions)));
+                .forEach(roleId ->
+                        roleRepositoryPort.findById(roleId).ifPresent(role -> addRole(role, roleNames, permissions)));
         return new AuthenticatedUser(
                 user.id(), user.username(), Set.copyOf(roleNames), Set.copyOf(permissions), user.mustChangePassword());
     }

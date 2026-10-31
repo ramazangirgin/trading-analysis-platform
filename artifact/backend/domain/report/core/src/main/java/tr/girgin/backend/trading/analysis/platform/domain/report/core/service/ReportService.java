@@ -32,19 +32,19 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase, CheckReport
             Comparator.comparing((ReportContent c) -> c.source() == ReportSource.FULL_STATE ? 1 : 0);
 
     private final DataDirPort dataDir;
-    private final ReportKeyService keys;
-    private final DecisionRatingService ratings;
+    private final ReportKeyService reportKeyService;
+    private final DecisionRatingService decisionRatingService;
 
-    ReportService(DataDirPort dataDir, ReportKeyService keys, DecisionRatingService ratings) {
+    ReportService(DataDirPort dataDir, ReportKeyService reportKeyService, DecisionRatingService decisionRatingService) {
         this.dataDir = dataDir;
-        this.keys = keys;
-        this.ratings = ratings;
+        this.reportKeyService = reportKeyService;
+        this.decisionRatingService = decisionRatingService;
     }
 
     @Override
     public List<Report> scan() {
         Map<ReportKey, List<ReportContent>> byKey = dataDir.readAll().stream()
-                .filter(content -> keys.isValid(content.key()))
+                .filter(content -> reportKeyService.isValid(content.key()))
                 .collect(Collectors.groupingBy(ReportContent::key, LinkedHashMap::new, Collectors.toList()));
         return byKey.values().stream()
                 .map(this::merge)
@@ -56,7 +56,7 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase, CheckReport
 
     @Override
     public Optional<Report> get(ReportKey key) {
-        if (!keys.isValid(key)) {
+        if (!reportKeyService.isValid(key)) {
             return Optional.empty();
         }
         List<ReportContent> contents = dataDir.read(key);
@@ -86,7 +86,7 @@ class ReportService implements ScanReportsUseCase, GetReportUseCase, CheckReport
                 contents.getFirst().key(),
                 sections,
                 debates,
-                decision == null ? null : ratings.parse(decision),
+                decision == null ? null : decisionRatingService.parse(decision),
                 sources,
                 modified);
     }

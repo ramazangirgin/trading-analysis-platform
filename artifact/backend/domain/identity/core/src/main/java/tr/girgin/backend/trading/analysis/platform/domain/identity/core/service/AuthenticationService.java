@@ -29,31 +29,31 @@ class AuthenticationService implements AuthenticateUseCase {
     private static final int MAX_ATTEMPTS = 3;
 
     private final UserRepositoryPort users;
-    private final AuthenticatedUserService authenticatedUsers;
+    private final AuthenticatedUserService authenticatedUserService;
     private final PasswordHasherPort hasher;
     /** Checked when the user is unknown, so that case takes as long as a wrong password. */
     private final PasswordHash decoyHash;
 
     private final Clock clock;
-    private final LoginLockoutService lockoutPolicy;
-    private final UserChangeService userChanges;
-    private final UsernameService usernames;
+    private final LoginLockoutService loginLockoutService;
+    private final UserChangeService userChangeService;
+    private final UsernameService usernameService;
 
     AuthenticationService(
             UserRepositoryPort users,
-            AuthenticatedUserService authenticatedUsers,
+            AuthenticatedUserService authenticatedUserService,
             PasswordHasherPort hasher,
             Clock clock,
-            LoginLockoutService lockoutPolicy,
-            UserChangeService userChanges,
-            UsernameService usernames) {
+            LoginLockoutService loginLockoutService,
+            UserChangeService userChangeService,
+            UsernameService usernameService) {
         this.users = users;
-        this.authenticatedUsers = authenticatedUsers;
+        this.authenticatedUserService = authenticatedUserService;
         this.hasher = hasher;
         this.clock = clock;
-        this.lockoutPolicy = lockoutPolicy;
-        this.userChanges = userChanges;
-        this.usernames = usernames;
+        this.loginLockoutService = loginLockoutService;
+        this.userChangeService = userChangeService;
+        this.usernameService = usernameService;
         this.decoyHash = hasher.hash(UUID.randomUUID().toString());
     }
 
@@ -66,7 +66,7 @@ class AuthenticationService implements AuthenticateUseCase {
         }
         User user = found.get();
         boolean matches = hasher.matches(password, user.passwordHash());
-        if (lockoutPolicy.isLocked(user, clock.instant())) {
+        if (loginLockoutService.isLocked(user, clock.instant())) {
             throw badCredentials();
         }
         if (!matches) {
@@ -76,18 +76,18 @@ class AuthenticationService implements AuthenticateUseCase {
         if (!user.enabled()) {
             throw badCredentials();
         }
-        return authenticatedUsers.create(recordSuccess(user, password));
+        return authenticatedUserService.create(recordSuccess(user, password));
     }
 
     @Override
     public Optional<AuthenticatedUser> findActiveUser(UserId id) {
-        return users.findById(id).filter(User::enabled).map(authenticatedUsers::create);
+        return users.findById(id).filter(User::enabled).map(authenticatedUserService::create);
     }
 
     private Optional<User> findByUsername(String username) {
         Username name;
         try {
-            name = usernames.username(username);
+            name = usernameService.username(username);
         } catch (IdentityException _) {
             return Optional.empty();
         }
@@ -110,7 +110,7 @@ class AuthenticationService implements AuthenticateUseCase {
                     "User {} locked until {} after {} failed logins",
                     user.id().value(),
                     until,
-                    lockoutPolicy.maxFailedAttempts());
+                    loginLockoutService.maxFailedAttempts());
         }
     }
 
@@ -118,16 +118,16 @@ class AuthenticationService implements AuthenticateUseCase {
     private User withFailure(User user, AtomicReference<Instant> lockSet) {
         lockSet.set(null);
         Instant now = clock.instant();
-        if (lockoutPolicy.isLocked(user, now)) {
+        if (loginLockoutService.isLocked(user, now)) {
             return user;
         }
         int count = user.failedLoginCount() + 1;
-        if (count >= lockoutPolicy.maxFailedAttempts()) {
-            Instant until = now.plus(lockoutPolicy.lockoutDuration());
+        if (count >= loginLockoutService.maxFailedAttempts()) {
+            Instant until = now.plus(loginLockoutService.lockoutDuration());
             lockSet.set(until);
-            return userChanges.withFailedLogin(user, 0, Optional.of(until));
+            return userChangeService.withFailedLogin(user, 0, Optional.of(until));
         }
-        return userChanges.withFailedLogin(user, count, Optional.empty());
+        return userChangeService.withFailedLogin(user, count, Optional.empty());
     }
 
     /**
@@ -139,13 +139,13 @@ class AuthenticationService implements AuthenticateUseCase {
         PasswordHash checked = user.passwordHash();
         return saveWithRetry(user, current -> {
                     requireStillValid(current, checked, password);
-                    User updated = userChanges.withLastLogin(current, clock.instant());
+                    User updated = userChangeService.withLastLogin(current, clock.instant());
                     if (current.failedLoginCount() > 0 || current.lockedUntil().isPresent()) {
-                        updated = lockoutPolicy.unlocked(updated);
+                        updated = loginLockoutService.unlocked(updated);
                     }
                     if (hasher.needsRehash(current.passwordHash())) {
-                        updated =
-                                userChanges.withPassword(updated, hasher.hash(password), current.mustChangePassword());
+                        updated = userChangeService.withPassword(
+                                updated, hasher.hash(password), current.mustChangePassword());
                     }
                     return updated;
                 })

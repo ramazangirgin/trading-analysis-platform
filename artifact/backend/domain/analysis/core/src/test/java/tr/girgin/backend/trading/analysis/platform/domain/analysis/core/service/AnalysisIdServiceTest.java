@@ -13,43 +13,44 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 
 class AnalysisIdServiceTest {
 
-    private final AnalysisIdService service = new AnalysisIdService();
+    private final AnalysisIdService analysisIdService = new AnalysisIdService();
 
     @ParameterizedTest
     @ValueSource(strings = {"r_1", "abc-DEF_09", "a"})
     void aSimpleNameIsValid(String value) {
-        assertThat(service.isValid(value)).isTrue();
+        assertThat(analysisIdService.isValid(value)).isTrue();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "a b", "../etc", "a/b", "a.b", "ünï"})
     void anythingElseIsInvalid(String value) {
-        assertThat(service.isValid(value)).isFalse();
+        assertThat(analysisIdService.isValid(value)).isFalse();
     }
 
     @Test
     void sixtyFourCharactersAreValidAndSixtyFiveAreNot() {
-        assertThat(service.isValid("a".repeat(64))).isTrue();
-        assertThat(service.isValid("a".repeat(65))).isFalse();
+        assertThat(analysisIdService.isValid("a".repeat(64))).isTrue();
+        assertThat(analysisIdService.isValid("a".repeat(65))).isFalse();
     }
 
     @Test
     void newIdsAreValidAndDiffer() {
-        AnalysisId first = service.newId();
+        AnalysisId first = analysisIdService.newId();
 
         assertThat(first.value()).startsWith("r_");
-        assertThat(service.isValid(first.value())).isTrue();
-        assertThat(service.newId()).isNotEqualTo(first);
+        assertThat(analysisIdService.isValid(first.value())).isTrue();
+        assertThat(analysisIdService.newId()).isNotEqualTo(first);
     }
 
     @Test
     void aValidIdPassesTheRequirement() {
-        assertThatCode(() -> service.requireValid(new AnalysisId("r_1"))).doesNotThrowAnyException();
+        assertThatCode(() -> analysisIdService.requireValid(new AnalysisId("r_1")))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void anInvalidIdIsNotFound() {
-        assertThatThrownBy(() -> service.requireValid(new AnalysisId("../etc")))
+        assertThatThrownBy(() -> analysisIdService.requireValid(new AnalysisId("../etc")))
                 .isInstanceOfSatisfying(AnalysisException.class, e -> {
                     assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND);
                     assertThat(e.params()).containsEntry("id", "../etc");

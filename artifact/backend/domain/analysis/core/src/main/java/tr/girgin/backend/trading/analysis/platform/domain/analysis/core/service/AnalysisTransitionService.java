@@ -30,10 +30,10 @@ class AnalysisTransitionService {
 
     private static final RunStats NO_STATS = new RunStats(0, 0, 0, 0, null, Duration.ZERO);
 
-    private final AnalysisSpecService specs;
+    private final AnalysisSpecService analysisSpecService;
 
-    AnalysisTransitionService(AnalysisSpecService specs) {
-        this.specs = specs;
+    AnalysisTransitionService(AnalysisSpecService analysisSpecService) {
+        this.analysisSpecService = analysisSpecService;
     }
 
     Analysis queued(AnalysisId id, AnalysisSpec spec, OwnerId owner, Instant now) {
@@ -65,7 +65,7 @@ class AnalysisTransitionService {
      */
     Analysis imported(AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external, String externalRef) {
         ExternalRun run = external.run();
-        AnalysisSpec spec = specs.normalized(
+        AnalysisSpec spec = analysisSpecService.normalized(
                 run == null
                         ? new AnalysisSpec(
                                 external.ticker(),

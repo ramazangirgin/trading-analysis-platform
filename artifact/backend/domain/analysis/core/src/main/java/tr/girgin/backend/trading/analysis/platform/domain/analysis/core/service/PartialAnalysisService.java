@@ -20,16 +20,16 @@ class PartialAnalysisService implements GetPartialAnalysisUseCase, ListPartialAn
 
     private final AnalysisRepositoryPort repository;
 
-    private final AnalysisIdService ids;
+    private final AnalysisIdService analysisIdService;
 
-    PartialAnalysisService(AnalysisRepositoryPort repository, AnalysisIdService ids) {
+    PartialAnalysisService(AnalysisRepositoryPort repository, AnalysisIdService analysisIdService) {
         this.repository = repository;
-        this.ids = ids;
+        this.analysisIdService = analysisIdService;
     }
 
     @Override
     public Analysis get(AnalysisId id) {
-        ids.requireValid(id);
+        analysisIdService.requireValid(id);
         return repository
                 .findById(id)
                 .filter(analysis ->

@@ -28,10 +28,11 @@ class AnalysisTransitionServiceTest {
     private static final Instant NOW = Instant.parse("2026-10-01T05:06:07.123456789Z");
     private static final Instant LATER = NOW.plusSeconds(60);
 
-    private final AnalysisTransitionService service = new AnalysisTransitionService(new AnalysisSpecService());
+    private final AnalysisTransitionService analysisTransitionService =
+            new AnalysisTransitionService(new AnalysisSpecService());
 
     private Analysis queued() {
-        return service.queued(new AnalysisId("r_1"), Fakes.spec("NVDA"), OWNER, NOW);
+        return analysisTransitionService.queued(new AnalysisId("r_1"), Fakes.spec("NVDA"), OWNER, NOW);
     }
 
     @Test
@@ -49,7 +50,7 @@ class AnalysisTransitionServiceTest {
 
     @Test
     void runningSetsTheStartAndTheRunnerRef() {
-        Analysis analysis = service.running(queued(), LATER, "4242");
+        Analysis analysis = analysisTransitionService.running(queued(), LATER, "4242");
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.RUNNING);
         assertThat(analysis.startedAt()).isEqualTo(LATER);
@@ -58,7 +59,8 @@ class AnalysisTransitionServiceTest {
 
     @Test
     void finishedRecordsTheEnd() {
-        Analysis analysis = service.finished(queued(), AnalysisStatus.FAILED, LATER, "code", "message");
+        Analysis analysis =
+                analysisTransitionService.finished(queued(), AnalysisStatus.FAILED, LATER, "code", "message");
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.FAILED);
         assertThat(analysis.endedAt()).isEqualTo(LATER);
@@ -73,7 +75,7 @@ class AnalysisTransitionServiceTest {
     void finishedRejectsANonTerminalStatus(AnalysisStatus status) {
         Analysis analysis = queued();
 
-        assertThatThrownBy(() -> service.finished(analysis, status, LATER, null, null))
+        assertThatThrownBy(() -> analysisTransitionService.finished(analysis, status, LATER, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Not a terminal status: " + status);
     }
@@ -101,9 +103,9 @@ class AnalysisTransitionServiceTest {
                 7L);
         RunStats stats = new RunStats(1, 2, 3, 4, null, Duration.ofSeconds(5));
 
-        Analysis withStats = service.withStats(base, stats);
-        Analysis withDecision = service.withDecision(base, null, "BUY");
-        Analysis withVisibility = service.withVisibility(base, Visibility.PUBLIC, LATER);
+        Analysis withStats = analysisTransitionService.withStats(base, stats);
+        Analysis withDecision = analysisTransitionService.withDecision(base, null, "BUY");
+        Analysis withVisibility = analysisTransitionService.withVisibility(base, Visibility.PUBLIC, LATER);
 
         assertThat(withStats).isEqualTo(copyOf(base, stats, null, Visibility.PRIVATE, null));
         assertThat(withDecision.decision()).isEqualTo("BUY");
@@ -115,9 +117,9 @@ class AnalysisTransitionServiceTest {
 
     @Test
     void withVisibilityOfTakesTheVisibilityAndItsTimeOfTheOther() {
-        Analysis shared = service.withVisibility(queued(), Visibility.PARTIAL, LATER);
+        Analysis shared = analysisTransitionService.withVisibility(queued(), Visibility.PARTIAL, LATER);
 
-        Analysis refreshed = service.withVisibilityOf(queued(), shared);
+        Analysis refreshed = analysisTransitionService.withVisibilityOf(queued(), shared);
 
         assertThat(refreshed.visibility()).isEqualTo(Visibility.PARTIAL);
         assertThat(refreshed.visibilityChangedAt()).isEqualTo(LATER);
@@ -125,17 +127,18 @@ class AnalysisTransitionServiceTest {
 
     @Test
     void terminalStatusesAreTheEndedOnes() {
-        assertThat(service.isTerminal(AnalysisStatus.QUEUED)).isFalse();
-        assertThat(service.isTerminal(AnalysisStatus.RUNNING)).isFalse();
-        assertThat(service.isTerminal(AnalysisStatus.COMPLETED)).isTrue();
-        assertThat(service.isTerminal(AnalysisStatus.STOPPED)).isTrue();
-        assertThat(service.isTerminal(AnalysisStatus.FAILED)).isTrue();
+        assertThat(analysisTransitionService.isTerminal(AnalysisStatus.QUEUED)).isFalse();
+        assertThat(analysisTransitionService.isTerminal(AnalysisStatus.RUNNING)).isFalse();
+        assertThat(analysisTransitionService.isTerminal(AnalysisStatus.COMPLETED))
+                .isTrue();
+        assertThat(analysisTransitionService.isTerminal(AnalysisStatus.STOPPED)).isTrue();
+        assertThat(analysisTransitionService.isTerminal(AnalysisStatus.FAILED)).isTrue();
     }
 
     @Test
     void anOutcomeMapsToTheStatusOfTheSameName() {
         for (RunOutcome outcome : RunOutcome.values()) {
-            assertThat(service.toStatus(outcome).name()).isEqualTo(outcome.name());
+            assertThat(analysisTransitionService.toStatus(outcome).name()).isEqualTo(outcome.name());
         }
     }
 
@@ -151,7 +154,8 @@ class AnalysisTransitionServiceTest {
                 null,
                 NOW);
 
-        Analysis analysis = service.imported(new AnalysisId("e_1"), null, OWNER, external, "report:NVDA/2026-09-25");
+        Analysis analysis = analysisTransitionService.imported(
+                new AnalysisId("e_1"), null, OWNER, external, "report:NVDA/2026-09-25");
 
         assertThat(analysis.spec().ticker()).isEqualTo("NVDA");
         assertThat(analysis.spec().llmProvider()).isEqualTo("unknown");
@@ -178,7 +182,7 @@ class AnalysisTransitionServiceTest {
                 null,
                 NOW);
 
-        Analysis analysis = service.imported(new AnalysisId("e_1"), 3L, OWNER, external, "ref");
+        Analysis analysis = analysisTransitionService.imported(new AnalysisId("e_1"), 3L, OWNER, external, "ref");
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.FAILED);
         assertThat(analysis.errorCode()).isEqualTo("incomplete_report");
@@ -210,7 +214,8 @@ class AnalysisTransitionServiceTest {
                 run,
                 NOW);
 
-        Analysis analysis = service.imported(new AnalysisId("e_2"), null, OWNER, external, "run:run-1");
+        Analysis analysis =
+                analysisTransitionService.imported(new AnalysisId("e_2"), null, OWNER, external, "run:run-1");
 
         assertThat(analysis.status()).isEqualTo(AnalysisStatus.STOPPED);
         assertThat(analysis.errorMessage()).isEqualTo("stopped early");
@@ -246,7 +251,8 @@ class AnalysisTransitionServiceTest {
                 run,
                 NOW);
 
-        Analysis analysis = service.imported(new AnalysisId("e_3"), null, OWNER, external, "run:run-2");
+        Analysis analysis =
+                analysisTransitionService.imported(new AnalysisId("e_3"), null, OWNER, external, "run:run-2");
 
         assertThat(analysis.spec().llmProvider()).isEqualTo("unknown");
         assertThat(analysis.spec().deepThinkLlm()).isEqualTo("unknown");

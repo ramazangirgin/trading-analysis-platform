@@ -66,8 +66,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     private final ScanReportsUseCase scanReports;
     private final ScanRunHistoryUseCase scanHistory;
-    private final CheckReportDecisionUseCase checkDecision;
-    private final ValidateExternalAnalysesUseCase validateExternals;
+    private final CheckReportDecisionUseCase checkReportDecisionUseCase;
+    private final ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase;
     private final RegisterExternalAnalysisUseCase registerExternal;
     private final UserDirectoryUseCase userDirectory;
     private final WatchDataDirUseCase watchDataDir;
@@ -85,8 +85,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     ImportExistingRunsUseCase(
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
-            CheckReportDecisionUseCase checkDecision,
-            ValidateExternalAnalysesUseCase validateExternals,
+            CheckReportDecisionUseCase checkReportDecisionUseCase,
+            ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase,
             RegisterExternalAnalysisUseCase registerExternal,
             UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
@@ -96,8 +96,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         this(
                 scanReports,
                 scanHistory,
-                checkDecision,
-                validateExternals,
+                checkReportDecisionUseCase,
+                validateExternalAnalysesUseCase,
                 registerExternal,
                 userDirectory,
                 watchDataDir,
@@ -111,8 +111,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     ImportExistingRunsUseCase(
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
-            CheckReportDecisionUseCase checkDecision,
-            ValidateExternalAnalysesUseCase validateExternals,
+            CheckReportDecisionUseCase checkReportDecisionUseCase,
+            ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase,
             RegisterExternalAnalysisUseCase registerExternal,
             UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
@@ -122,8 +122,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             Clock clock) {
         this.scanReports = scanReports;
         this.scanHistory = scanHistory;
-        this.checkDecision = checkDecision;
-        this.validateExternals = validateExternals;
+        this.checkReportDecisionUseCase = checkReportDecisionUseCase;
+        this.validateExternalAnalysesUseCase = validateExternalAnalysesUseCase;
         this.registerExternal = registerExternal;
         this.userDirectory = userDirectory;
         this.watchDataDir = watchDataDir;
@@ -190,7 +190,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         Instant settledBefore = clock.instant().minus(settleTime);
         Instant lastUnsettled = null;
         for (Report report : scanReports.scan()) {
-            if (!checkDecision.hasDecision(report) && report.modifiedAt().isAfter(settledBefore)) {
+            if (!checkReportDecisionUseCase.hasDecision(report)
+                    && report.modifiedAt().isAfter(settledBefore)) {
                 // Likely a run still being written: importing it now would show it as failed.
                 lastUnsettled = max(lastUnsettled, report.modifiedAt());
                 continue;
@@ -206,7 +207,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 .filter(entry -> entry.status() != RunHistoryEntry.Status.COMPLETED)
                 .map(this::fromHistory)
                 .forEach(externals::add);
-        validateExternals.validate(externals);
+        validateExternalAnalysesUseCase.validate(externals);
 
         Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
         // No platform user started these runs, so they belong to the first admin (none yet on a fresh install).
