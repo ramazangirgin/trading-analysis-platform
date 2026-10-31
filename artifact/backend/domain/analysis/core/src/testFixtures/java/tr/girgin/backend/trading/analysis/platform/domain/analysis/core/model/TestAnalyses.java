@@ -90,17 +90,14 @@ public final class TestAnalyses {
     }
 
     /** An EXTERNAL record made from report files; {@code run}, the history entry that wrote them, may be null. */
-    public static Analysis imported(
-            AnalysisId id,
-            Long version,
-            OwnerId owner,
-            String ticker,
-            LocalDate tradeDate,
-            List<Analyst> analysts,
-            Rating rating,
-            String decision,
-            ExternalRun run,
-            Instant ended) {
+    public static Analysis imported(AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external) {
+        String ticker = external.ticker();
+        LocalDate tradeDate = external.tradeDate();
+        List<Analyst> analysts = external.analysts();
+        Rating rating = external.rating();
+        String decision = external.decision();
+        ExternalRun run = external.run();
+        Instant ended = external.finishedAt();
         AnalysisSpec spec = run == null
                 ? new AnalysisSpec(
                         ticker,

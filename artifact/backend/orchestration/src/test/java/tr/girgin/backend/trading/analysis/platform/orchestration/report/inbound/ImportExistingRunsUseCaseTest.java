@@ -295,17 +295,7 @@ class ImportExistingRunsUseCaseTest {
     }
 
     private static Analysis imported(OwnerId owner, ExternalAnalysis external) {
-        return TestAnalyses.imported(
-                TestAnalyses.newId(),
-                null,
-                owner,
-                external.ticker(),
-                external.tradeDate(),
-                external.analysts(),
-                external.rating(),
-                external.decision(),
-                external.run(),
-                external.finishedAt());
+        return TestAnalyses.imported(TestAnalyses.newId(), null, owner, external);
     }
 
     private static RunHistoryEntry entry(

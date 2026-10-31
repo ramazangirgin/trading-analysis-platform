@@ -25,6 +25,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRun;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
@@ -535,8 +536,10 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
             String decision,
             ExternalRun run,
             Instant ended) {
-        return TestAnalyses.imported(
-                id, version, owner, ticker, LocalDate.of(2026, 9, 27), analysts, rating, decision, run, ended);
+        LocalDate tradeDate = LocalDate.of(2026, 9, 27);
+        var origin = ExternalAnalysis.Origin.REPORT_FILES;
+        var external = new ExternalAnalysis(origin, ticker, tradeDate, analysts, rating, decision, run, ended);
+        return TestAnalyses.imported(id, version, owner, external);
     }
 
     private Analysis inserted(Analysis analysis) {
