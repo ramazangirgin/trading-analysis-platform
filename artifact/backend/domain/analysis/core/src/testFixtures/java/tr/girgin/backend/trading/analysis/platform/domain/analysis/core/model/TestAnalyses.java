@@ -89,7 +89,11 @@ public final class TestAnalyses {
                 analysis.version());
     }
 
-    /** An EXTERNAL record made from report files; {@code run}, the history entry that wrote them, may be null. */
+    /**
+     * An EXTERNAL record made from report files; {@code run}, the history entry that wrote them, may be null.
+     *
+     * @throws IllegalArgumentException when the origin is not report files
+     */
     public static Analysis importedFromReportFiles(
             AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external) {
         if (external.origin() != ExternalAnalysis.Origin.REPORT_FILES) {
