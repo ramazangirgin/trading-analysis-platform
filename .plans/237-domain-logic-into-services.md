@@ -243,7 +243,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP15: Analysis access service
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: analysis core: `main/…/inbound/GetAnalysisRightsUseCase.java`, `main/…/inbound/AnalysisRights.java`,
   `main/…/service/AnalysisAccessService.java`, `test/…/service/AnalysisAccessServiceTest.java`,
