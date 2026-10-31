@@ -15,12 +15,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetPartialAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.DebateSpeaker;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
@@ -34,8 +34,9 @@ class GetAnalysisPreviewUseCaseTest {
     private static final ReportKey KEY = new ReportKey("NVDA", LocalDate.of(2026, 9, 25));
     private static final PreviewSettings DEFAULTS = new PreviewSettings(Set.of(ReportSection.MARKET_REPORT), 400);
 
-    private final Analysis analysis = Analysis.queued(
-                    AnalysisId.newId(),
+    private final Analysis analysis = TestAnalyses.withDecision(
+            TestAnalyses.queued(
+                    TestAnalyses.newId(),
                     new AnalysisSpec(
                             "NVDA",
                             LocalDate.of(2026, 9, 25),
@@ -49,8 +50,9 @@ class GetAnalysisPreviewUseCaseTest {
                             "English",
                             false),
                     new OwnerId("secret-owner"),
-                    Instant.parse("2026-09-25T10:00:00Z"))
-            .withDecision(Rating.BUY, "Buy it");
+                    Instant.parse("2026-09-25T10:00:00Z")),
+            Rating.BUY,
+            "Buy it");
     private final GetPartialAnalysisUseCase getPartial = id -> {
         if (!id.equals(analysis.id())) {
             throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of());
@@ -129,7 +131,7 @@ class GetAnalysisPreviewUseCaseTest {
         GetAnalysisPreviewUseCase useCase =
                 new GetAnalysisPreviewUseCase(getPartial, new PreviewCutter(_ -> report, DEFAULTS));
 
-        assertThatThrownBy(() -> useCase.get(AnalysisId.newId()))
+        assertThatThrownBy(() -> useCase.get(TestAnalyses.newId()))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }

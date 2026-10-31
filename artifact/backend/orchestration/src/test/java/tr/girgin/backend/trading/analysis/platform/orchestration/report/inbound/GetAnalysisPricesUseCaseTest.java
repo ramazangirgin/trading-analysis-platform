@@ -15,11 +15,11 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 
 class GetAnalysisPricesUseCaseTest {
@@ -29,8 +29,8 @@ class GetAnalysisPricesUseCaseTest {
     private static final AnalysisAccess EVERYONE = new AnalysisAccess(new OwnerId("user-b"), true, false);
 
     private final List<ReportKey> priceKeys = new ArrayList<>();
-    private final Analysis analysis = Analysis.queued(
-            AnalysisId.newId(),
+    private final Analysis analysis = TestAnalyses.queued(
+            TestAnalyses.newId(),
             new AnalysisSpec(
                     "NVDA",
                     LocalDate.of(2026, 9, 25),
@@ -46,7 +46,7 @@ class GetAnalysisPricesUseCaseTest {
             OWNER,
             Instant.parse("2026-09-25T10:00:00Z"));
     private final GetAnalysisUseCase getAnalysis = (id, access) -> {
-        if (!id.equals(analysis.id()) || !access.canSee(analysis)) {
+        if (!id.equals(analysis.id()) || !(access.allUsers() || OWNER.equals(access.user()))) {
             throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of());
         }
         return analysis;

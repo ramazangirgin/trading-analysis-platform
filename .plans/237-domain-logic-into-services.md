@@ -338,7 +338,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP25: Orchestration tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP20, WP23
 - **Files**: orchestration, test: `report/inbound/ImportExistingRunsUseCaseTest.java`, `report/inbound/GetAnalysisReportUseCaseTest.java`,
   `report/inbound/GetAnalysisPricesUseCaseTest.java`, `preview/inbound/GetAnalysisPreviewUseCaseTest.java`,
