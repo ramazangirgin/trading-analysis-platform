@@ -292,7 +292,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP20: Test fixture
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/backend/domain/analysis/core/build.gradle.kts`,
   `artifact/backend/domain/analysis/core/src/testFixtures/java/…/analysis/core/model/TestAnalyses.java`,
