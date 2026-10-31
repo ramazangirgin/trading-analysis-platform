@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -32,6 +33,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
 class AuthenticationServiceTest {
+
+    private static final UserChangeService CHANGES = new UserChangeService();
 
     private final FakeUserRepository users = new FakeUserRepository();
     private final FakeRoleRepository roles = new FakeRoleRepository();
@@ -243,7 +246,7 @@ class AuthenticationServiceTest {
         service.authenticate("alice", "secret");
 
         assertThat(users.saved).hasSize(1);
-        assertThat(users.saved.getFirst()).isEqualTo(alice.withLastLogin(clock.instant()));
+        assertThat(users.saved.getFirst()).isEqualTo(CHANGES.withLastLogin(alice, clock.instant()));
     }
 
     @Test
@@ -346,7 +349,7 @@ class AuthenticationServiceTest {
         User alice = user("alice", "secret", true);
         users.users.add(alice);
         users.failSaves = 1;
-        users.concurrentChange = current -> current.withEnabled(false);
+        users.concurrentChange = current -> CHANGES.withEnabled(current, false);
 
         IdentityException e = failure("alice", "secret");
 
@@ -359,7 +362,7 @@ class AuthenticationServiceTest {
         User alice = user("alice", "secret", true);
         users.users.add(alice);
         users.failSaves = 1;
-        users.concurrentChange = current -> current.withPassword(new PasswordHash("new:other"), true);
+        users.concurrentChange = current -> CHANGES.withPassword(current, new PasswordHash("new:other"), true);
 
         IdentityException e = failure("alice", "secret");
 
@@ -372,7 +375,7 @@ class AuthenticationServiceTest {
         User alice = user("alice", "secret", true);
         users.users.add(alice);
         users.failSaves = 3;
-        users.concurrentChange = current -> current.withEnabled(false);
+        users.concurrentChange = current -> CHANGES.withEnabled(current, false);
 
         IdentityException e = failure("alice", "secret");
 
@@ -384,7 +387,7 @@ class AuthenticationServiceTest {
         User alice = user("alice", "secret", true);
         users.users.add(alice);
         users.failSaves = 1;
-        users.concurrentChange = current -> current.withPassword(new PasswordHash("new:secret"), false);
+        users.concurrentChange = current -> CHANGES.withPassword(current, new PasswordHash("new:secret"), false);
 
         assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
     }
@@ -398,7 +401,8 @@ class AuthenticationServiceTest {
         User disabled = user("bob", "secret", false);
         users.users.add(disabled);
 
-        assertThat(service.findActiveUser(UserId.newId())).isEmpty();
+        assertThat(service.findActiveUser(new UserId(UUID.randomUUID().toString())))
+                .isEmpty();
         assertThat(service.findActiveUser(disabled.id())).isEmpty();
     }
 
@@ -419,12 +423,12 @@ class AuthenticationServiceTest {
     }
 
     private static Role role(String name, Permission... permissions) {
-        return new Role(RoleId.newId(), name, false, name, Set.of(permissions), 1L);
+        return new Role(new RoleId(UUID.randomUUID().toString()), name, false, name, Set.of(permissions), 1L);
     }
 
     private static User user(String name, String password, boolean enabled, RoleId... roleIds) {
         return new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username(name),
                 new PasswordHash("old:" + password),
                 enabled,

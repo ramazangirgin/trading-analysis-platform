@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -206,7 +207,7 @@ class FirstAdminServiceTest {
 
     private static User existing() {
         return new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username("someone"),
                 new PasswordHash("hash:x"),
                 true,

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -42,7 +43,13 @@ class RoleManagementServiceTest {
         analyst = roles.add(
                 new Role(RoleId.ANALYST, "ANALYST", true, "Runs analyses", Set.of(Permission.ANALYSIS_RUN), 0L));
         viewer = roles.add(new Role(RoleId.VIEWER, "VIEWER", true, "Reads", Set.of(Permission.ANALYSIS_READ), 0L));
-        custom = roles.add(new Role(RoleId.newId(), "Auditor", false, "Audits", Set.of(Permission.AUDIT_READ), 3L));
+        custom = roles.add(new Role(
+                new RoleId(UUID.randomUUID().toString()),
+                "Auditor",
+                false,
+                "Audits",
+                Set.of(Permission.AUDIT_READ),
+                3L));
     }
 
     @Test
@@ -67,7 +74,7 @@ class RoleManagementServiceTest {
 
     @Test
     void getFailsForAnUnknownRole() {
-        assertThatThrownBy(() -> service.get(RoleId.newId()))
+        assertThatThrownBy(() -> service.get(new RoleId(UUID.randomUUID().toString())))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 
@@ -279,8 +286,12 @@ class RoleManagementServiceTest {
 
     @Test
     void updateFailsForAnUnknownRole() {
-        assertThatThrownBy(() ->
-                        service.update(RoleId.newId(), Optional.of("Other"), Optional.empty(), Optional.empty(), null))
+        assertThatThrownBy(() -> service.update(
+                        new RoleId(UUID.randomUUID().toString()),
+                        Optional.of("Other"),
+                        Optional.empty(),
+                        Optional.empty(),
+                        null))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 
@@ -371,7 +382,7 @@ class RoleManagementServiceTest {
 
     @Test
     void deleteFailsForAnUnknownRole() {
-        assertThatThrownBy(() -> service.delete(RoleId.newId()))
+        assertThatThrownBy(() -> service.delete(new RoleId(UUID.randomUUID().toString())))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 

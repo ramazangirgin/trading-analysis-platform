@@ -225,8 +225,8 @@ class AnalysisSharingIntegrationTest {
     void anOwnerWhoLostAnalysisShareCanStillTakeItBack() throws Exception {
         String id = startAndAwait(analystA, "SHRF");
         makePublic(id);
-        users.save(
-                users.findByUsername(new Username(analystAName)).orElseThrow().withRoleIds(Set.of(RoleId.ANALYST)));
+        users.save(TestUsers.withRoleIds(
+                users.findByUsername(new Username(analystAName)).orElseThrow(), Set.of(RoleId.ANALYST)));
         analystA = loggedInAs(analystAName);
 
         HttpResponse<String> back = setVisibility(analystA, id, PRIVATE, version(get(analystA, id)));
@@ -300,7 +300,7 @@ class AnalysisSharingIntegrationTest {
 
     private void grantPublisher(String username) {
         User user = users.findByUsername(new Username(username)).orElseThrow();
-        users.save(user.withRoleIds(Set.of(RoleId.ANALYST, RoleId.PUBLISHER)));
+        users.save(TestUsers.withRoleIds(user, Set.of(RoleId.ANALYST, RoleId.PUBLISHER)));
     }
 
     private OwnerId ownerOf(String username) {

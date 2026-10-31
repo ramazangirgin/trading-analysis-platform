@@ -1,6 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.model;
 
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -11,27 +10,4 @@ import java.util.Set;
  *     role whose version differs from the stored one fails.
  */
 public record Role(
-        RoleId id, String name, boolean builtIn, String description, Set<Permission> permissions, Long version) {
-
-    public Role {
-        Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(name, "name");
-        Objects.requireNonNull(description, "description");
-        permissions = Set.copyOf(permissions);
-    }
-
-    /** The same role with another name. */
-    public Role withName(String newName) {
-        return new Role(id, newName, builtIn, description, permissions, version);
-    }
-
-    /** The same role with another description. */
-    public Role withDescription(String newDescription) {
-        return new Role(id, name, builtIn, newDescription, permissions, version);
-    }
-
-    /** The same role with another set of permissions. */
-    public Role withPermissions(Set<Permission> newPermissions) {
-        return new Role(id, name, builtIn, description, newPermissions, version);
-    }
-}
+        RoleId id, String name, boolean builtIn, String description, Set<Permission> permissions, Long version) {}

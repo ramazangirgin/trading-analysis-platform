@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
@@ -31,6 +32,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 
 class PasswordChangeServiceTest {
 
+    private static final UserChangeService CHANGES = new UserChangeService();
+
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
     private final FakeUserRepository users = new FakeUserRepository();
@@ -44,7 +47,13 @@ class PasswordChangeServiceTest {
 
     @Test
     void aCorrectChangeStoresTheNewHashClearsTheFlagAndKeepsTheRest() {
-        Role reader = new Role(RoleId.newId(), "reader", false, "reader", Set.of(Permission.ANALYSIS_READ), 1L);
+        Role reader = new Role(
+                new RoleId(UUID.randomUUID().toString()),
+                "reader",
+                false,
+                "reader",
+                Set.of(Permission.ANALYSIS_READ),
+                1L);
         roles.roles.put(reader.id(), reader);
         User user = user("alice", true, true, reader.id());
         users.users.add(user);
@@ -53,7 +62,7 @@ class PasswordChangeServiceTest {
 
         assertThat(users.saved)
                 .singleElement()
-                .isEqualTo(user.withPassword(new PasswordHash("hash:new-secret"), false));
+                .isEqualTo(CHANGES.withPassword(user, new PasswordHash("hash:new-secret"), false));
         assertThat(users.saved.getFirst().version()).isEqualTo(7L);
         assertThat(result.id()).isEqualTo(user.id());
         assertThat(result.roleNames()).containsExactly("reader");
@@ -114,7 +123,7 @@ class PasswordChangeServiceTest {
         User disabled = user("bob", false, false);
         users.users.add(disabled);
 
-        for (UserId id : List.of(UserId.newId(), disabled.id())) {
+        for (UserId id : List.of(new UserId(UUID.randomUUID().toString()), disabled.id())) {
             assertThatThrownBy(() -> service.changePassword(id, "old-secret", "new-secret"))
                     .isInstanceOfSatisfying(
                             IdentityException.class,
@@ -147,7 +156,7 @@ class PasswordChangeServiceTest {
 
     private static User user(String name, boolean enabled, boolean mustChangePassword, RoleId... roleIds) {
         return new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username(name),
                 new PasswordHash("hash:old-secret"),
                 enabled,

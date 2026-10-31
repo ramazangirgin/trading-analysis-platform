@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
@@ -39,7 +40,7 @@ class RoleAuthoritiesRefreshFilterTest {
     private final SecurityContextRepository repository = mock(SecurityContextRepository.class);
     private final RoleAuthoritiesRefreshFilter filter =
             new RoleAuthoritiesRefreshFilter(sessionAuthorities, authentication, repository);
-    private final UserId id = UserId.newId();
+    private final UserId id = new UserId(UUID.randomUUID().toString());
     private final AtomicInteger chainCalls = new AtomicInteger();
     private final MockHttpSession session = new MockHttpSession();
 

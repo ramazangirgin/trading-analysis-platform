@@ -175,7 +175,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP7: Identity models, users and roles
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP4
 - **Files**: identity core, main: `model/User.java`, `model/Role.java`, `model/RoleId.java`, `model/UserId.java`,
   `model/Username.java`

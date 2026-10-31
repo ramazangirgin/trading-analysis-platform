@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
@@ -45,7 +46,8 @@ class UserDirectoryServiceTest {
         User bob = user("bob", "2026-10-01T10:00:00Z", true, RoleId.ANALYST);
         UserDirectoryService service = service(alice, bob);
 
-        assertThat(service.usernames(List.of(alice.id(), UserId.newId())))
+        assertThat(service.usernames(
+                        List.of(alice.id(), new UserId(UUID.randomUUID().toString()))))
                 .containsExactly(Map.entry(alice.id(), new Username("alice")));
         assertThat(service.usernames(List.of())).isEmpty();
     }
@@ -56,7 +58,7 @@ class UserDirectoryServiceTest {
 
     private static User user(String name, String createdAt, boolean enabled, RoleId... roleIds) {
         return new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username(name),
                 new PasswordHash("hash"),
                 enabled,
