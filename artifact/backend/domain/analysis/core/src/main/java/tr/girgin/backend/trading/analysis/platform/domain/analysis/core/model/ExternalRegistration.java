@@ -1,7 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model;
 
-import java.util.Objects;
-
 /** What registering an external run did. */
 public record ExternalRegistration(Analysis analysis, Outcome outcome) {
 
@@ -12,10 +10,5 @@ public record ExternalRegistration(Analysis analysis, Outcome outcome) {
         UPDATED,
         /** Nothing changed: the record is current, or the platform itself ran this ticker and date. */
         UNCHANGED
-    }
-
-    public ExternalRegistration {
-        Objects.requireNonNull(analysis, "analysis");
-        Objects.requireNonNull(outcome, "outcome");
     }
 }

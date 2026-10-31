@@ -383,7 +383,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP30: Analysis models, runs and imports
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP29
 - **Files**: analysis core, main: `model/ExternalAnalysis.java`, `model/ExternalRegistration.java`,
   `model/ExternalRun.java`, `model/PartialAnalysisPage.java`, `model/RunEvent.java`, `model/RunOutcome.java`,

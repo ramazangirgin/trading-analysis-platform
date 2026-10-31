@@ -3,7 +3,6 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A run found in the data dir that the platform did not start (CLI, a third-party UI, an older
@@ -29,41 +28,5 @@ public record ExternalAnalysis(
     public enum Origin {
         REPORT_FILES,
         RUN_HISTORY
-    }
-
-    public ExternalAnalysis {
-        Objects.requireNonNull(origin, "origin");
-        Objects.requireNonNull(ticker, "ticker");
-        Objects.requireNonNull(tradeDate, "tradeDate");
-        Objects.requireNonNull(finishedAt, "finishedAt");
-        if (origin == Origin.RUN_HISTORY && run == null) {
-            throw new IllegalArgumentException("A run history record needs its run");
-        }
-        analysts = List.copyOf(analysts);
-    }
-
-    public static ExternalAnalysis reportFiles(
-            String ticker,
-            LocalDate tradeDate,
-            List<Analyst> analysts,
-            Rating rating,
-            String decision,
-            ExternalRun run,
-            Instant finishedAt) {
-        return new ExternalAnalysis(
-                Origin.REPORT_FILES, ticker, tradeDate, analysts, rating, decision, run, finishedAt);
-    }
-
-    public static ExternalAnalysis runHistory(
-            String ticker, LocalDate tradeDate, List<Analyst> analysts, ExternalRun run) {
-        return new ExternalAnalysis(Origin.RUN_HISTORY, ticker, tradeDate, analysts, null, null, run, run.endedAt());
-    }
-
-    /** Stable identity in the data dir, so a rescan finds the same record. */
-    public String ref() {
-        return switch (origin) {
-            case REPORT_FILES -> "report:" + ticker + "/" + tradeDate;
-            case RUN_HISTORY -> "run:" + run.id();
-        };
     }
 }
