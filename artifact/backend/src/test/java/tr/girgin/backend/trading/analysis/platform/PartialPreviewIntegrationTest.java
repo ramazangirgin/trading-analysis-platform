@@ -24,12 +24,12 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -131,9 +131,9 @@ class PartialPreviewIntegrationTest {
 
     @Test
     void aRunningAnalysisCannotBeMadePartial() throws Exception {
-        AnalysisId running = AnalysisId.newId();
-        analyses.insert(Analysis.queued(running, spec("PRVB"), ownerId(ownerName), Instant.now()));
-        analyses.update(analyses.findById(running).orElseThrow().running(Instant.now(), "ref"));
+        AnalysisId running = TestAnalyses.newId();
+        analyses.insert(TestAnalyses.queued(running, spec("PRVB"), ownerId(ownerName), Instant.now()));
+        analyses.update(TestAnalyses.running(analyses.findById(running).orElseThrow(), Instant.now(), "ref"));
 
         HttpResponse<String> response =
                 setVisibility(owner, running.value(), PARTIAL, version(get(owner, running.value())));

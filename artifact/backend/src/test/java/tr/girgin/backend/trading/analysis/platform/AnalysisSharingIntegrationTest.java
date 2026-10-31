@@ -24,13 +24,13 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
@@ -139,14 +139,13 @@ class AnalysisSharingIntegrationTest {
         grantPublisher(analystAName);
         analystA = loggedInAs(analystAName);
         OwnerId owner = ownerOf(analystAName);
-        AnalysisId running = AnalysisId.newId();
-        analyses.insert(Analysis.queued(running, spec("SHRB"), owner, Instant.now()));
-        analyses.update(analyses.findById(running).orElseThrow().running(Instant.now(), "ref"));
-        AnalysisId failed = AnalysisId.newId();
-        analyses.insert(Analysis.queued(failed, spec("SHRC"), owner, Instant.now()));
-        analyses.update(analyses.findById(failed)
-                .orElseThrow()
-                .finished(AnalysisStatus.FAILED, Instant.now(), "boom", "failed"));
+        AnalysisId running = TestAnalyses.newId();
+        analyses.insert(TestAnalyses.queued(running, spec("SHRB"), owner, Instant.now()));
+        analyses.update(TestAnalyses.running(analyses.findById(running).orElseThrow(), Instant.now(), "ref"));
+        AnalysisId failed = TestAnalyses.newId();
+        analyses.insert(TestAnalyses.queued(failed, spec("SHRC"), owner, Instant.now()));
+        analyses.update(TestAnalyses.finished(
+                analyses.findById(failed).orElseThrow(), AnalysisStatus.FAILED, Instant.now(), "boom", "failed"));
 
         for (AnalysisId id : List.of(running, failed)) {
             JsonNode dto = get(analystA, id.value());

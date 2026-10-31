@@ -349,7 +349,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP26: Analysis integration tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP20
 - **Files**: `:backend`, test: `PartialPreviewConfigurationIntegrationTest.java`, `PartialPreviewIntegrationTest.java`,
   `AnalysisOwnershipIntegrationTest.java`, `AnalysisSharingIntegrationTest.java`
