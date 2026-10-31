@@ -66,6 +66,7 @@ class AnalysisService
     private final CredentialsPort credentials;
     private final EventStorePort eventStore;
     private final AnalysisEventHub hub;
+    private final AnalysisSpecService specs;
     private final Clock clock;
     private final int maxConcurrentRuns;
 
@@ -75,12 +76,14 @@ class AnalysisService
     private final Map<AnalysisId, RunHandle> running = new HashMap<>();
     private final Map<AnalysisId, AnalysisSpec> active = new LinkedHashMap<>();
 
+    @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysisService(
             AnalysisRepositoryPort repository,
             RunnerPort runner,
             CredentialsPort credentials,
             EventStorePort eventStore,
             AnalysisEventHub hub,
+            AnalysisSpecService specs,
             Clock clock,
             @Value("${platform.analysis.max-concurrent-runs:2}") int maxConcurrentRuns) {
         if (maxConcurrentRuns < 1) {
@@ -91,6 +94,7 @@ class AnalysisService
         this.credentials = credentials;
         this.eventStore = eventStore;
         this.hub = hub;
+        this.specs = specs;
         this.clock = clock;
         this.maxConcurrentRuns = maxConcurrentRuns;
     }
@@ -145,8 +149,9 @@ class AnalysisService
     }
 
     @Override
-    public Analysis start(AnalysisSpec spec, OwnerId owner) {
-        AnalysisSpecValidator.validate(spec, LocalDate.now(clock));
+    public Analysis start(AnalysisSpec requested, OwnerId owner) {
+        AnalysisSpec spec = specs.normalized(requested);
+        specs.validate(spec, LocalDate.now(clock));
         Analysis analysis = Analysis.queued(AnalysisId.newId(), spec, owner, clock.instant());
         synchronized (lock) {
             ensureNotActive(spec);

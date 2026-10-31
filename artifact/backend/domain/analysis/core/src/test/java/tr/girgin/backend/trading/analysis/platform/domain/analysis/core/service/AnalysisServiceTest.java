@@ -47,7 +47,8 @@ class AnalysisServiceTest {
         runner = new Fakes.Runner();
         eventStore = new Fakes.EventStore();
         hub = new AnalysisEventHub(repository, eventStore);
-        service = new AnalysisService(repository, runner, new Fakes.Credentials(), eventStore, hub, CLOCK, 2);
+        service = new AnalysisService(
+                repository, runner, new Fakes.Credentials(), eventStore, hub, new AnalysisSpecService(), CLOCK, 2);
         lists = new AnalysisListService(repository);
     }
 

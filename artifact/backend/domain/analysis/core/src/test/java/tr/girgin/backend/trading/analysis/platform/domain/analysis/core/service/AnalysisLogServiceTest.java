@@ -42,6 +42,7 @@ class AnalysisLogServiceTest {
                 new Fakes.Credentials(),
                 eventStore,
                 new AnalysisEventHub(repository, eventStore),
+                new AnalysisSpecService(),
                 Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
                 2);
         AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("key=sk-1234567890abcdef"));
@@ -68,6 +69,7 @@ class AnalysisLogServiceTest {
                 new Fakes.Credentials(),
                 eventStore,
                 new AnalysisEventHub(repository, eventStore),
+                new AnalysisSpecService(),
                 Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
                 2);
         AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("line"));

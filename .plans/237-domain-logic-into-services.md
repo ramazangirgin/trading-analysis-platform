@@ -254,7 +254,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP16: Analysis transition, ID and spec services
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: analysis core: `main/…/service/AnalysisTransitionService.java`, `main/…/service/AnalysisIdService.java`,
   `main/…/service/AnalysisSpecValidator.java` (renamed, gains `normalized`), `main/…/service/AnalysisService.java`,
