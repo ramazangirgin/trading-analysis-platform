@@ -157,7 +157,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     public List<AnalysisDto> listAnalyses(AnalysisStatusEnumDto status, String ticker, AnalysisScopeEnumDto scope) {
         String normalizedTicker =
                 ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
-        AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker, null);
+        AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker, null, Set.of(), null);
         AnalysisAccess access = access();
         List<Analysis> analyses =
                 listAnalyses.list(filter, scopeMapper.map(scope == null ? AnalysisScopeEnumDto.MINE : scope), access);

@@ -46,7 +46,7 @@ public abstract class AdapterTestSupport {
                 ticker,
                 LocalDate.of(2026, 9, 25),
                 AssetType.STOCK,
-                List.of(Analyst.NEWS, Analyst.MARKET),
+                List.of(Analyst.MARKET, Analyst.NEWS),
                 "deepseek",
                 "deepseek-v4-pro",
                 "deepseek-v4-flash",

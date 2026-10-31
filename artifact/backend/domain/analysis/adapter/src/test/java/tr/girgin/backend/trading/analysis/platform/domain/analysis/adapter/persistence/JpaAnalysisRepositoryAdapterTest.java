@@ -35,7 +35,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Vi
 class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
 
     private static final int LIST_LIMIT = 500;
-    private static final AnalysisFilter ALL = new AnalysisFilter(null, null, null);
+    private static final AnalysisFilter ALL = new AnalysisFilter(null, null, null, Set.of(), null);
     private static final OwnerId OWNER = new OwnerId("zz-owner");
     private static final OwnerId OTHER_OWNER = new OwnerId("zz-other-owner");
 
@@ -177,8 +177,9 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
 
         List<Analysis> all = repository.findAll(ALL);
         assertThat(all.indexOf(newer)).isLessThan(all.indexOf(older));
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOLD", null))).containsExactly(older);
-        assertThat(repository.findAll(new AnalysisFilter(AnalysisStatus.RUNNING, "ZZNEW", null)))
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOLD", null, Set.of(), null)))
+                .containsExactly(older);
+        assertThat(repository.findAll(new AnalysisFilter(AnalysisStatus.RUNNING, "ZZNEW", null, Set.of(), null)))
                 .containsExactly(newer);
         assertThat(repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED)))
                 .contains(older)
@@ -195,10 +196,11 @@ class JpaAnalysisRepositoryAdapterTest extends AdapterTestSupport {
 
         assertThat(mine.owner()).isEqualTo(OWNER);
         assertThat(nobodys.owner()).isNull();
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOWN", OWNER))).containsExactly(mine);
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOWN", OTHER_OWNER)))
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOWN", OWNER, Set.of(), null)))
+                .containsExactly(mine);
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOWN", OTHER_OWNER, Set.of(), null)))
                 .containsExactly(theirs);
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOWN", null)))
+        assertThat(repository.findAll(new AnalysisFilter(null, "ZZOWN", null, Set.of(), null)))
                 .containsExactlyInAnyOrder(mine, theirs, nobodys);
     }
 

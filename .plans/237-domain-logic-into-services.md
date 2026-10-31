@@ -374,7 +374,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP29: Analysis models, analyses
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP18, WP19, WP21, WP22, WP23, WP25, WP26
 - **Files**: analysis core, main: `model/Analysis.java`, `model/AnalysisAccess.java`, `model/AnalysisFilter.java`,
   `model/AnalysisId.java`, `model/AnalysisSpec.java`, `model/AnalysisStatus.java`, `model/OwnerId.java`,

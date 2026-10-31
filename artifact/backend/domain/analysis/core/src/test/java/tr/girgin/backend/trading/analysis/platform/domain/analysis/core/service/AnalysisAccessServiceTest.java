@@ -14,6 +14,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 class AnalysisAccessServiceTest {
@@ -70,7 +71,7 @@ class AnalysisAccessServiceTest {
 
     @Test
     void anAnalysisWithoutAnOwnerIsSeenByAllUsersOnly() {
-        Analysis unowned = Analysis.queued(privateRun.id(), privateRun.spec(), null, Instant.EPOCH);
+        Analysis unowned = TestAnalyses.queued(privateRun.id(), privateRun.spec(), null, Instant.EPOCH);
 
         assertThat(service.canSee(unowned, OWNER_PLAIN)).isFalse();
         assertThat(service.canSee(unowned, ADMIN_PLAIN)).isTrue();
