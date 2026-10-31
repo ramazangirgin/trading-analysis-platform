@@ -155,7 +155,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP5: Identity service tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP4
 - **Files**: identity core, test: `service/LoginLockoutPolicyTest.java` (renamed, gains the `isLockedAt` cases of `UserTest`),
   `service/OneTimePasswordGeneratorTest.java` (renamed), `service/PasswordPolicyTest.java` (renamed),
