@@ -217,7 +217,7 @@ class ProcessRunnerAdapter implements RunnerPort {
                                             "{}: ignoring a runner output line that is not a protocol event",
                                             id.value()));
                 } catch (RuntimeException e) {
-                    log.error("{}: failed to handle a runner event", id, e);
+                    log.error("{}: failed to handle a runner event", id.value(), e);
                 }
             }
         } catch (IOException e) {
