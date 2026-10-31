@@ -17,18 +17,18 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ru
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
-class AnalysisEventHubTest {
+class AnalysisEventServiceTest {
 
     private Fakes.Repository repository;
     private Fakes.EventStore eventStore;
-    private AnalysisEventHub hub;
+    private AnalysisEventService hub;
     private AnalysisId id;
 
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
         eventStore = new Fakes.EventStore();
-        hub = new AnalysisEventHub(repository, eventStore);
+        hub = Fakes.events(repository, eventStore);
         Analysis running = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Fakes.OWNER, Instant.now())
                 .running(Instant.now(), "4242");
         repository.insert(running);

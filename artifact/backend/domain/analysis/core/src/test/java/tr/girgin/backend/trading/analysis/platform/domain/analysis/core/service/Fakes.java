@@ -1,5 +1,6 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -48,6 +49,35 @@ final class Fakes {
     static final AnalysisAccess EVERYONE_SHARER = new AnalysisAccess(OTHER, true, true);
 
     private Fakes() {}
+
+    static AnalysisEventService events(AnalysisRepositoryPort repository, EventStorePort eventStore) {
+        AnalysisTransitionService transitions = new AnalysisTransitionService(new AnalysisSpecService());
+        return new AnalysisEventService(
+                repository, eventStore, new AnalysisAccessService(), new AnalysisIdService(), transitions);
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber") // one argument per collaborator the tests vary
+    static AnalysisService analysisService(
+            AnalysisRepositoryPort repository,
+            RunnerPort runner,
+            EventStorePort eventStore,
+            AnalysisEventService events,
+            Clock clock,
+            int maxConcurrentRuns) {
+        AnalysisSpecService specs = new AnalysisSpecService();
+        return new AnalysisService(
+                repository,
+                runner,
+                new Credentials(),
+                eventStore,
+                events,
+                specs,
+                new AnalysisTransitionService(specs),
+                new AnalysisIdService(),
+                new AnalysisAccessService(),
+                clock,
+                maxConcurrentRuns);
+    }
 
     static AnalysisSpec spec(String ticker) {
         return spec(ticker, LocalDate.of(2026, 9, 25));

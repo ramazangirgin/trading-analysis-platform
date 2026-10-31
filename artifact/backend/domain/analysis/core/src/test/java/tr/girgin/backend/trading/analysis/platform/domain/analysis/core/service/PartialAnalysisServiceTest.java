@@ -25,7 +25,7 @@ class PartialAnalysisServiceTest {
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
-        service = new PartialAnalysisService(repository);
+        service = new PartialAnalysisService(repository, new AnalysisIdService());
     }
 
     private Analysis store(Visibility visibility, AnalysisStatus status) {

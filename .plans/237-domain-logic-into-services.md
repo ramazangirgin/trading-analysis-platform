@@ -274,7 +274,7 @@ File paths below are relative to the package root of the named module and source
 
 ### WP18: Analysis services use them
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP15, WP16
 - **Files**: analysis core, main: `service/AnalysisService.java`, `service/AnalysisVisibilityService.java`,
   `service/AnalysisLogService.java`, `service/AnalysisEventHub.java` (renamed), `service/ExternalAnalysisService.java`,

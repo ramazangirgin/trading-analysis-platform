@@ -33,7 +33,8 @@ class ExternalAnalysisServiceTest {
     private static final Instant STARTED = Instant.parse("2026-09-28T11:30:00.123Z");
 
     private final Fakes.Repository repository = new Fakes.Repository();
-    private final ExternalAnalysisService service = new ExternalAnalysisService(repository);
+    private final ExternalAnalysisService service = new ExternalAnalysisService(
+            repository, new AnalysisTransitionService(new AnalysisSpecService()), new AnalysisIdService());
 
     private ExternalRegistration register(ExternalAnalysis external) {
         return service.register(external, Fakes.OWNER);

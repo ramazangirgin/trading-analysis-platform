@@ -31,7 +31,12 @@ class AnalysisVisibilityServiceTest {
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
-        service = new AnalysisVisibilityService(repository, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new AnalysisVisibilityService(
+                repository,
+                new AnalysisAccessService(),
+                new AnalysisTransitionService(new AnalysisSpecService()),
+                new AnalysisIdService(),
+                Clock.fixed(NOW, ZoneOffset.UTC));
         id = store(AnalysisStatus.COMPLETED, Visibility.PRIVATE);
     }
 
