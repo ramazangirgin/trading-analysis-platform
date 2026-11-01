@@ -68,6 +68,7 @@ dependencies {
     testImplementation(libs.hibernate.core)
     testImplementation(libs.jackson.databind)
     testImplementation(testFixtures(project(":backend:library:persistence")))
+    testImplementation(testFixtures(project(":backend:domain:analysis:core")))
 }
 
 springBoot {

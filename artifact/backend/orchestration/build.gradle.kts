@@ -15,4 +15,6 @@ dependencies {
     implementation(project(":backend:domain:report:core"))
     implementation(project(":backend:domain:catalog:core"))
     implementation(project(":backend:domain:settings:core"))
+
+    testImplementation(testFixtures(project(":backend:domain:analysis:core")))
 }

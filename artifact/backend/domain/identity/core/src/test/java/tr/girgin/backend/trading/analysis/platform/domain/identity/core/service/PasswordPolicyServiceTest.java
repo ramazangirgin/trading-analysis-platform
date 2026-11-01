@@ -10,17 +10,17 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 
-class PasswordPolicyTest {
+class PasswordPolicyServiceTest {
 
     private static final Username ALICE = new Username("alice");
     private static final String LIST = "# a comment\n\nPassword1234567\nqwertyuiop12\n";
 
-    private final PasswordPolicy policy = new PasswordPolicy(12, LIST);
+    private final PasswordPolicyService passwordPolicyService = new PasswordPolicyService(12, LIST);
 
     @Test
     void anUncommonPasswordOfTheMinimumLengthPasses() {
-        assertThatCode(() -> policy.check("x7Kq-m2Rz9aB", ALICE)).doesNotThrowAnyException();
-        assertThatCode(() -> policy.check("a b c d e f ", ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("x7Kq-m2Rz9aB", ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("a b c d e f ", ALICE)).doesNotThrowAnyException();
     }
 
     @Test
@@ -30,14 +30,17 @@ class PasswordPolicyTest {
 
     @Test
     void theLengthIsCountedInCodePoints() {
-        assertThatCode(() -> policy.check("😀".repeat(12), ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("😀".repeat(12), ALICE))
+                .doesNotThrowAnyException();
         assertThat(reasons("😀".repeat(11))).containsExactly("too_short");
-        assertThatCode(() -> policy.check("ğüşiöçıĞÜŞİÖÇ", ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("ğüşiöçıĞÜŞİÖÇ", ALICE))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void theMaximumIsOneHundredTwentyEightCodePoints() {
-        assertThatCode(() -> policy.check("😀".repeat(128), ALICE)).doesNotThrowAnyException();
+        assertThatCode(() -> passwordPolicyService.check("😀".repeat(128), ALICE))
+                .doesNotThrowAnyException();
         assertThat(reasons("😀".repeat(129))).containsExactly("too_long");
     }
 
@@ -52,7 +55,7 @@ class PasswordPolicyTest {
     void theUsernameIsRejectedInAnyCase() {
         Username name = new Username("Alice.Smith-2026");
 
-        assertThatThrownBy(() -> policy.check("alice.smith-2026", name))
+        assertThatThrownBy(() -> passwordPolicyService.check("alice.smith-2026", name))
                 .isInstanceOfSatisfying(
                         IdentityException.class,
                         e -> assertThat(e.params().get("reasons")).isEqualTo(List.of("same_as_username")));
@@ -61,7 +64,7 @@ class PasswordPolicyTest {
     @Test
     void severalBrokenRulesComeInTheFixedOrderWithTheLengths() {
         Username name = new Username("password");
-        PasswordPolicy withShortCommon = new PasswordPolicy(12, "password\n");
+        PasswordPolicyService withShortCommon = new PasswordPolicyService(12, "password\n");
 
         assertThatThrownBy(() -> withShortCommon.check("Password", name))
                 .isInstanceOfSatisfying(IdentityException.class, e -> {
@@ -77,26 +80,26 @@ class PasswordPolicyTest {
 
     @Test
     void theMessageNeverContainsThePassword() {
-        assertThatThrownBy(() -> policy.check("Xy7-weak", ALICE))
+        assertThatThrownBy(() -> passwordPolicyService.check("Xy7-weak", ALICE))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.getMessage()).doesNotContain("Xy7-weak"));
     }
 
     @Test
     void theConfiguredMinimumMustBeBetweenEightAndSixtyFour() {
-        assertThatThrownBy(() -> new PasswordPolicy(7, LIST))
+        assertThatThrownBy(() -> new PasswordPolicyService(7, LIST))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("platform.password.min-length")
                 .hasMessageContaining("8")
                 .hasMessageContaining("64");
-        assertThatThrownBy(() -> new PasswordPolicy(65, LIST)).isInstanceOf(IllegalArgumentException.class);
-        assertThat(new PasswordPolicy(8, LIST).minLength()).isEqualTo(8);
-        assertThat(new PasswordPolicy(64, LIST).minLength()).isEqualTo(64);
+        assertThatThrownBy(() -> new PasswordPolicyService(65, LIST)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(new PasswordPolicyService(8, LIST).minLength()).isEqualTo(8);
+        assertThat(new PasswordPolicyService(64, LIST).minLength()).isEqualTo(64);
     }
 
     @Test
     void aLoweredMinimumLetsAnEightCharacterPasswordThrough() {
-        PasswordPolicy lowered = new PasswordPolicy(8, LIST);
+        PasswordPolicyService lowered = new PasswordPolicyService(8, LIST);
 
         assertThatCode(() -> lowered.check("x7Kq-m2R", ALICE)).doesNotThrowAnyException();
         assertThatThrownBy(() -> lowered.check("x7Kq-m2", ALICE)).isInstanceOf(IdentityException.class);
@@ -104,7 +107,7 @@ class PasswordPolicyTest {
 
     @Test
     void theBundledListLoadsAndHoldsTheUsualSuspects() {
-        PasswordPolicy bundled = new PasswordPolicy(8);
+        PasswordPolicyService bundled = new PasswordPolicyService(8);
 
         assertThat(bundled.minLength()).isEqualTo(8);
         assertThatThrownBy(() -> bundled.check("password", ALICE))
@@ -119,13 +122,13 @@ class PasswordPolicyTest {
 
     @Test
     void anEmptyListFailsTheStartup() {
-        assertThatThrownBy(() -> new PasswordPolicy(12, "# only a header\n\n"))
+        assertThatThrownBy(() -> new PasswordPolicyService(12, "# only a header\n\n"))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     private List<String> reasons(String password) {
         try {
-            policy.check(password, ALICE);
+            passwordPolicyService.check(password, ALICE);
         } catch (IdentityException e) {
             @SuppressWarnings("unchecked")
             List<String> reasons = (List<String>) e.params().get("reasons");

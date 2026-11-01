@@ -17,10 +17,4 @@ public record AnalysisPreview(
         LocalDate analysisDate,
         Rating rating,
         Map<ReportSection, String> sections,
-        List<String> lockedSections) {
-
-    public AnalysisPreview {
-        sections = Map.copyOf(sections);
-        lockedSections = List.copyOf(lockedSections);
-    }
-}
+        List<String> lockedSections) {}

@@ -11,14 +11,17 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.h
 class RunHistoryService implements ScanRunHistoryUseCase {
 
     private final RunHistoryPort history;
+    private final ReportKeyService reportKeyService;
 
-    RunHistoryService(RunHistoryPort history) {
+    RunHistoryService(RunHistoryPort history, ReportKeyService reportKeyService) {
         this.history = history;
+        this.reportKeyService = reportKeyService;
     }
 
     @Override
     public List<RunHistoryEntry> scan() {
         return history.readAll().stream()
+                .filter(entry -> reportKeyService.isValid(entry.key()))
                 .sorted(Comparator.comparing(RunHistoryEntry::endedAt).reversed())
                 .toList();
     }

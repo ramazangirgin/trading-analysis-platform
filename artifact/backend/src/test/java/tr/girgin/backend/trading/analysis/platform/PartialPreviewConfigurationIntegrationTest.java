@@ -31,6 +31,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.TestDatabaseConfiguration;
@@ -65,8 +66,8 @@ class PartialPreviewConfigurationIntegrationTest {
 
     @Test
     void theConfiguredSectionsDecideWhatAVisitorReadsAndTheRequestsOverTheLimitAreRefused() throws Exception {
-        AnalysisId id = AnalysisId.newId();
-        analyses.insert(Analysis.queued(
+        AnalysisId id = TestAnalyses.newId();
+        analyses.insert(TestAnalyses.queued(
                 id,
                 new AnalysisSpec(
                         "CFGA",
@@ -82,12 +83,11 @@ class PartialPreviewConfigurationIntegrationTest {
                         true),
                 new OwnerId("00000000-0000-0000-0000-000000000001"),
                 Instant.now()));
-        analyses.update(analyses.findById(id)
-                .orElseThrow()
-                .running(Instant.now(), "ref")
-                .withDecision(Rating.HOLD, "Hold")
-                .finished(AnalysisStatus.COMPLETED, Instant.now(), null, null));
-        analyses.update(analyses.findById(id).orElseThrow().withVisibility(Visibility.PARTIAL, Instant.now()));
+        Analysis running = TestAnalyses.running(analyses.findById(id).orElseThrow(), Instant.now(), "ref");
+        Analysis decided = TestAnalyses.withDecision(running, Rating.HOLD, "Hold");
+        analyses.update(TestAnalyses.finished(decided, AnalysisStatus.COMPLETED, Instant.now(), null, null));
+        analyses.update(
+                TestAnalyses.withVisibility(analyses.findById(id).orElseThrow(), Visibility.PARTIAL, Instant.now()));
         writeReport();
 
         HttpResponse<String> preview = get("/api/public/analyses/" + id.value());

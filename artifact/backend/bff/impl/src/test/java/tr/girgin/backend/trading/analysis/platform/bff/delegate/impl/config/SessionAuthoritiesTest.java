@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,7 +19,7 @@ class SessionAuthoritiesTest {
 
     private static AuthenticatedUser user(boolean mustChangePassword) {
         return new AuthenticatedUser(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username("ada"),
                 Set.of("ANALYST"),
                 Set.of(Permission.ANALYSIS_READ),

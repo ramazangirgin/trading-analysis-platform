@@ -1,5 +1,8 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.mapper;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.eventline.json.RunnerOutputLine;
@@ -21,4 +24,9 @@ public interface RunnerOutputLineToRunEventMapper {
     @Mapping(target = "outcome", source = "status")
     @Mapping(target = "stats", source = ".")
     RunEvent map(RunnerOutputLine source);
+
+    // Not a MapStruct copy: JSON payloads may carry null values, which Map.copyOf rejects.
+    default Map<String, Object> map(Map<String, Object> payload) {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(payload == null ? Map.of() : payload));
+    }
 }

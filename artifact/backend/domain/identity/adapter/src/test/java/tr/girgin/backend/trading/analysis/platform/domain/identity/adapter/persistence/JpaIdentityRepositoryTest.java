@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +63,7 @@ class JpaIdentityRepositoryTest {
         Role admin = saveRole("admin-roundtrip", Set.of(Permission.USER_MANAGE));
         Role viewer = saveRole("viewer-roundtrip", Set.of());
         User user = new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username("Round.Trip"),
                 new PasswordHash("{bcrypt}$2a$10$hash"),
                 false,
@@ -97,14 +98,14 @@ class JpaIdentityRepositoryTest {
     void theFailedLoginCountAndTheLockRoundTripThroughASave() {
         User user = users.save(user("lockout", Set.of()));
 
-        User locked = users.save(user.withFailedLogin(4, Optional.of(LOCKED_UNTIL)));
+        User locked = users.save(IdentityCopies.withFailedLogin(user, 4, Optional.of(LOCKED_UNTIL)));
 
         assertThat(users.findById(user.id())).hasValueSatisfying(found -> {
             assertThat(found.failedLoginCount()).isEqualTo(4);
             assertThat(found.lockedUntil()).contains(LOCKED_UNTIL);
             assertThat(found).isEqualTo(locked);
         });
-        User cleared = users.save(locked.withLoginSucceeded());
+        User cleared = users.save(IdentityCopies.withFailedLogin(locked, 0, Optional.empty()));
         assertThat(users.findById(user.id())).hasValueSatisfying(found -> {
             assertThat(found.failedLoginCount()).isZero();
             assertThat(found.lockedUntil()).isEmpty();
@@ -118,7 +119,7 @@ class JpaIdentityRepositoryTest {
         assertThat(users.findById(saved.id()).orElseThrow().lastLoginAt()).isEmpty();
 
         Instant at = Instant.parse("2026-10-04T08:30:00Z");
-        User loggedIn = users.save(saved.withLastLogin(at));
+        User loggedIn = users.save(IdentityCopies.withLastLogin(saved, at));
 
         assertThat(loggedIn.lastLoginAt()).contains(at);
         assertThat(users.findById(saved.id())).contains(loggedIn);
@@ -130,12 +131,12 @@ class JpaIdentityRepositoryTest {
         Role other = saveRole("count-other-role", Set.of());
         users.save(user("count-role-enabled-one", Set.of(role.id())));
         users.save(user("count-role-enabled-two", Set.of(role.id(), other.id())));
-        users.save(user("count-role-disabled", Set.of(role.id())).withEnabled(false));
+        users.save(IdentityCopies.withEnabled(user("count-role-disabled", Set.of(role.id())), false));
         users.save(user("count-role-other", Set.of(other.id())));
 
         assertThat(users.countEnabledWithRole(role.id())).isEqualTo(2);
         assertThat(users.countEnabledWithRole(other.id())).isEqualTo(2);
-        assertThat(users.countEnabledWithRole(RoleId.newId())).isZero();
+        assertThat(users.countEnabledWithRole(IdentityCopies.newRoleId())).isZero();
     }
 
     @Test
@@ -200,7 +201,7 @@ class JpaIdentityRepositoryTest {
         User first = users.save(user("only-role-change", Set.of()));
         clock.advance(Duration.ofMinutes(10));
 
-        User resaved = users.save(first.withRoleIds(Set.of(role.id())));
+        User resaved = users.save(IdentityCopies.withRoleIds(first, Set.of(role.id())));
 
         Instant later = MutableTestClock.START.plus(Duration.ofMinutes(10));
         assertThat(resaved.roleIds()).containsExactly(role.id());
@@ -261,10 +262,10 @@ class JpaIdentityRepositoryTest {
         User saved = users.save(user("stale-user", Set.of()));
         User firstCopy = users.findById(saved.id()).orElseThrow();
         User staleCopy = users.findById(saved.id()).orElseThrow();
-        User firstWrite = users.save(firstCopy.withRoleIds(Set.of(role.id())));
+        User firstWrite = users.save(IdentityCopies.withRoleIds(firstCopy, Set.of(role.id())));
 
         assertThat(firstWrite.version()).isEqualTo(1);
-        assertThatThrownBy(() -> users.save(staleCopy.withRoleIds(Set.of())))
+        assertThatThrownBy(() -> users.save(IdentityCopies.withRoleIds(staleCopy, Set.of())))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(users.findById(saved.id())).contains(firstWrite);
@@ -294,11 +295,11 @@ class JpaIdentityRepositoryTest {
         Role saved = saveRole("stale-role", Set.of(Permission.ANALYSIS_READ));
         Role firstCopy = roles.findById(saved.id()).orElseThrow();
         Role staleCopy = roles.findById(saved.id()).orElseThrow();
-        Role firstWrite = roles.save(firstCopy.withPermissions(Set.of(Permission.AUDIT_READ)));
+        Role firstWrite = roles.save(IdentityCopies.withPermissions(firstCopy, Set.of(Permission.AUDIT_READ)));
 
         assertThat(saved.version()).isZero();
         assertThat(firstWrite.version()).isEqualTo(1);
-        assertThatThrownBy(() -> roles.save(staleCopy.withPermissions(Set.of(Permission.USER_READ))))
+        assertThatThrownBy(() -> roles.save(IdentityCopies.withPermissions(staleCopy, Set.of(Permission.USER_READ))))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(roles.findById(saved.id())).contains(firstWrite);
@@ -380,7 +381,7 @@ class JpaIdentityRepositoryTest {
         saveRole("Held Role Name", Set.of());
         Role other = saveRole("other role name", Set.of());
 
-        assertThatThrownBy(() -> roles.save(other.withName("HELD ROLE NAME")))
+        assertThatThrownBy(() -> roles.save(IdentityCopies.withName(other, "HELD ROLE NAME")))
                 .isInstanceOf(DuplicateKeyException.class);
     }
 
@@ -408,7 +409,7 @@ class JpaIdentityRepositoryTest {
         Role other = saveRole("all-count-other-role", Set.of());
         Role unused = saveRole("all-count-unused-role", Set.of());
         users.save(user("all-count-enabled", Set.of(role.id())));
-        users.save(user("all-count-disabled", Set.of(role.id(), other.id())).withEnabled(false));
+        users.save(IdentityCopies.withEnabled(user("all-count-disabled", Set.of(role.id(), other.id())), false));
 
         assertThat(users.countWithRole(role.id())).isEqualTo(2);
         assertThat(users.countWithRole(other.id())).isEqualTo(1);
@@ -434,7 +435,7 @@ class JpaIdentityRepositoryTest {
     @Test
     void aFailingSaveLeavesNoPartialAssignment() {
         Role known = saveRole("known-role", Set.of());
-        User user = user("half-written", Set.of(known.id(), RoleId.newId()));
+        User user = user("half-written", Set.of(known.id(), IdentityCopies.newRoleId()));
 
         assertThatThrownBy(() -> users.save(user)).isInstanceOf(DataAccessException.class);
 
@@ -511,12 +512,12 @@ class JpaIdentityRepositoryTest {
     }
 
     private Role saveRole(String name, Set<Permission> permissions) {
-        return roles.save(new Role(RoleId.newId(), name, false, "", permissions, null));
+        return roles.save(new Role(IdentityCopies.newRoleId(), name, false, "", permissions, null));
     }
 
     private static User user(String username, Set<RoleId> roleIds) {
         return new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username(username),
                 new PasswordHash("{bcrypt}$2a$10$hash"),
                 true,

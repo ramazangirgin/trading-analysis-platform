@@ -1,17 +1,20 @@
 package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service;
 
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 
 /**
- * Domain checks on a spec. The values end up as process arguments and path components in the
+ * Normalization and domain checks on a spec. The values end up as process arguments and path components in the
  * runner, so they are held to strict formats.
  */
-final class AnalysisSpecValidator {
+@Service
+class AnalysisSpecService {
 
     // Exchange suffixes (BRK.B, THYAO.IS, 7203.T), crypto pairs (BTC-USD) and indices (^GSPC).
     private static final Pattern TICKER = Pattern.compile("\\^?[A-Z0-9][A-Z0-9.\\-=]{0,19}");
@@ -21,9 +24,23 @@ final class AnalysisSpecValidator {
     private static final LocalDate EARLIEST = LocalDate.of(1990, 1, 1);
     private static final int MAX_ROUNDS = 10;
 
-    private AnalysisSpecValidator() {}
+    AnalysisSpec normalized(AnalysisSpec spec) {
+        return new AnalysisSpec(
+                spec.ticker().strip().toUpperCase(Locale.ROOT),
+                spec.tradeDate(),
+                spec.assetType(),
+                // Upstream runs analysts in a fixed order, whatever order they were picked in.
+                spec.analysts().stream().distinct().sorted().toList(),
+                spec.llmProvider().strip().toLowerCase(Locale.ROOT),
+                spec.deepThinkLlm(),
+                spec.quickThinkLlm(),
+                spec.maxDebateRounds(),
+                spec.maxRiskDiscussRounds(),
+                spec.outputLanguage(),
+                spec.checkpointEnabled());
+    }
 
-    static void validate(AnalysisSpec spec, LocalDate today) {
+    void validate(AnalysisSpec spec, LocalDate today) {
         require(TICKER.matcher(spec.ticker()).matches(), "ticker");
         require(!spec.tradeDate().isAfter(today) && !spec.tradeDate().isBefore(EARLIEST), "tradeDate");
         require(!spec.analysts().isEmpty(), "analysts");
@@ -35,11 +52,11 @@ final class AnalysisSpecValidator {
         require(LANGUAGE.matcher(spec.outputLanguage()).matches(), "outputLanguage");
     }
 
-    private static boolean inRange(int rounds) {
+    private boolean inRange(int rounds) {
         return rounds >= 1 && rounds <= MAX_ROUNDS;
     }
 
-    private static void require(boolean valid, String field) {
+    private void require(boolean valid, String field) {
         if (!valid) {
             throw new AnalysisException(AnalysisError.INVALID_SPEC, "Invalid " + field, Map.of("field", field));
         }

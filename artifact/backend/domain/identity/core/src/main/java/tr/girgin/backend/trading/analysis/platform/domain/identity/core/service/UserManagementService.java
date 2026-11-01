@@ -48,34 +48,35 @@ class UserManagementService implements ManageUsersUseCase {
     private final UserRepositoryPort users;
     private final RoleRepositoryPort roles;
     private final PasswordHasherPort hasher;
-    private final PasswordPolicy policy;
-    private final OneTimePasswordGenerator generator;
+    private final PasswordPolicyService passwordPolicyService;
+    private final OneTimePasswordService oneTimePasswordService;
     private final Clock clock;
+    private final UserChangeService userChangeService;
+    private final UsernameService usernameService;
+    private final LoginLockoutService loginLockoutService;
     private final ReentrantLock adminGuard = new ReentrantLock();
 
     @Autowired
+    @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     UserManagementService(
             UserRepositoryPort users,
             RoleRepositoryPort roles,
             PasswordHasherPort hasher,
-            PasswordPolicy policy,
-            Clock clock) {
-        this(users, roles, hasher, policy, new OneTimePasswordGenerator(), clock);
-    }
-
-    UserManagementService(
-            UserRepositoryPort users,
-            RoleRepositoryPort roles,
-            PasswordHasherPort hasher,
-            PasswordPolicy policy,
-            OneTimePasswordGenerator generator,
-            Clock clock) {
+            PasswordPolicyService passwordPolicyService,
+            OneTimePasswordService oneTimePasswordService,
+            Clock clock,
+            UserChangeService userChangeService,
+            UsernameService usernameService,
+            LoginLockoutService loginLockoutService) {
         this.users = users;
         this.roles = roles;
         this.hasher = hasher;
-        this.policy = policy;
-        this.generator = generator;
+        this.passwordPolicyService = passwordPolicyService;
+        this.oneTimePasswordService = oneTimePasswordService;
         this.clock = clock;
+        this.userChangeService = userChangeService;
+        this.usernameService = usernameService;
+        this.loginLockoutService = loginLockoutService;
     }
 
     @Override
@@ -92,15 +93,15 @@ class UserManagementService implements ManageUsersUseCase {
 
     @Override
     public CreatedUserAccount create(String username, Set<RoleId> roleIds, Optional<String> password) {
-        Username name = new Username(username);
+        Username name = usernameService.username(username);
         Map<RoleId, Role> byId = rolesById();
         requireKnown(roleIds, byId);
         Optional<String> entered = password.filter(p -> !p.isBlank());
-        entered.ifPresent(p -> policy.check(p, name));
+        entered.ifPresent(p -> passwordPolicyService.check(p, name));
         Optional<String> generated = entered.isPresent() ? Optional.empty() : Optional.of(generate());
         String plain = entered.orElseGet(generated::orElseThrow);
         User toSave = new User(
-                UserId.newId(),
+                userChangeService.newId(),
                 name,
                 hasher.hash(plain),
                 true,
@@ -110,7 +111,7 @@ class UserManagementService implements ManageUsersUseCase {
                 Optional.empty(),
                 null,
                 null,
-                roleIds,
+                Set.copyOf(roleIds),
                 null);
         User saved;
         try {
@@ -153,7 +154,7 @@ class UserManagementService implements ManageUsersUseCase {
             if (!rolesChanged && !enabledChanged) {
                 return toAccount(user, byId, clock.instant());
             }
-            User saved = save(user.withRoleIds(newRoles).withEnabled(newEnabled));
+            User saved = save(userChangeService.withEnabled(userChangeService.withRoleIds(user, newRoles), newEnabled));
             if (rolesChanged) {
                 log.info("Roles of user {} changed to {}", target.value(), roleNames(newRoles));
             }
@@ -202,10 +203,10 @@ class UserManagementService implements ManageUsersUseCase {
     public Optional<String> resetPassword(UserId target, Optional<String> password) {
         User user = find(target);
         Optional<String> entered = password.filter(p -> !p.isBlank());
-        entered.ifPresent(p -> policy.check(p, user.username()));
+        entered.ifPresent(p -> passwordPolicyService.check(p, user.username()));
         Optional<String> generated = entered.isPresent() ? Optional.empty() : Optional.of(generate());
         String plain = entered.orElseGet(generated::orElseThrow);
-        save(user.withPassword(hasher.hash(plain), true).withLoginSucceeded());
+        save(loginLockoutService.unlocked(userChangeService.withPassword(user, hasher.hash(plain), true)));
         log.info(
                 "Password of user {} reset, password {}",
                 target.value(),
@@ -214,7 +215,8 @@ class UserManagementService implements ManageUsersUseCase {
     }
 
     private String generate() {
-        return generator.generate(Math.max(OneTimePasswordGenerator.DEFAULT_LENGTH, policy.minLength()));
+        return oneTimePasswordService.generate(
+                Math.max(OneTimePasswordService.DEFAULT_LENGTH, passwordPolicyService.minLength()));
     }
 
     private User find(UserId id) {
@@ -271,7 +273,7 @@ class UserManagementService implements ManageUsersUseCase {
                 userRoles,
                 user.enabled(),
                 user.mustChangePassword(),
-                user.isLockedAt(now),
+                loginLockoutService.isLocked(user, now),
                 user.lockedUntil(),
                 user.lastLoginAt(),
                 user.createdAt(),

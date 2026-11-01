@@ -1,8 +1,9 @@
 plugins {
     id("tradinganalysisplatform.java-library")
+    `java-test-fixtures`
 }
 
-description = "Analysis domain: model, ports and services"
+description = "Analysis domain: model, ports and services, and the test fixture that builds analyses"
 
 dependencies {
     implementation(libs.spring.beans)

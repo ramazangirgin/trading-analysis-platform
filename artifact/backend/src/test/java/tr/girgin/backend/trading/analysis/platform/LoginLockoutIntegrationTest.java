@@ -78,7 +78,7 @@ class LoginLockoutIntegrationTest {
     private String createAdmin() {
         String username = "admin-" + UUID.randomUUID();
         users.save(new User(
-                UserId.newId(),
+                new UserId(UUID.randomUUID().toString()),
                 new Username(username),
                 hasher.hash(TestSession.PASSWORD),
                 true,
@@ -168,7 +168,7 @@ class LoginLockoutIntegrationTest {
 
     @Test
     void unlockNeedsASessionAndTheUserManagePermission() throws Exception {
-        String id = UserId.newId().value();
+        String id = UUID.randomUUID().toString();
 
         HttpResponse<String> anonymous = TestSession.anonymous(port).send("POST", "/api/users/" + id + "/unlock", null);
         assertThat(anonymous.statusCode()).isEqualTo(401);
@@ -186,8 +186,7 @@ class LoginLockoutIntegrationTest {
         assertThat(admin.login(createAdmin(), TestSession.PASSWORD).statusCode())
                 .isEqualTo(200);
 
-        HttpResponse<String> response =
-                admin.send("POST", "/api/users/" + UserId.newId().value() + "/unlock", null);
+        HttpResponse<String> response = admin.send("POST", "/api/users/" + UUID.randomUUID() + "/unlock", null);
 
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(errorCode(response)).isEqualTo("user_not_found");

@@ -4,10 +4,5 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model;
 public enum Visibility {
     PRIVATE,
     PUBLIC,
-    PARTIAL;
-
-    /** Whether every logged-in user reads the analysis in full. */
-    public boolean sharedWithUsers() {
-        return this != PRIVATE;
-    }
+    PARTIAL
 }

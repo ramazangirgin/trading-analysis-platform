@@ -2,7 +2,6 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.pers
 
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.persistence.entity.AnalysisEntity;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
@@ -16,9 +15,6 @@ import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperCo
         })
 public interface AnalysisEntityToAnalysisMapper {
 
-    // Single-argument transitions on Analysis look like fluent setters to MapStruct.
     @BeanMapping(ignoreUnmappedSourceProperties = "new")
-    @Mapping(target = "withStats", ignore = true)
-    @Mapping(target = "withVisibilityOf", ignore = true)
     Analysis map(AnalysisEntity source);
 }

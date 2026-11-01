@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -15,17 +16,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ValidateExternalAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration.Outcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
@@ -38,6 +43,9 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.model.Im
 class ImportExistingRunsUseCaseTest {
 
     private static final WatchDataDirUseCase NO_WATCH = _ -> () -> {};
+    private static final CheckReportDecisionUseCase HAS_DECISION =
+            report -> report.sections().containsKey(ReportSection.FINAL_TRADE_DECISION);
+    private static final ValidateExternalAnalysesUseCase NO_VALIDATION = _ -> {};
     private static final Duration SETTLE_TIME = Duration.ofMinutes(10);
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-09-30T12:00:00Z"), ZoneOffset.UTC);
 
@@ -78,15 +86,16 @@ class ImportExistingRunsUseCaseTest {
                 null,
                 Set.of(ReportSource.REPORT_TREE),
                 Instant.parse("2026-09-27T12:00:00Z"));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(goog, mu),
                 List::of,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     registered.add(external);
                     Outcome outcome = external.ticker().equals("GOOG") ? Outcome.CREATED : Outcome.UNCHANGED;
                     owners.add(owner);
-                    return new ExternalRegistration(
-                            Analysis.imported(AnalysisId.newId(), null, owner, external), outcome);
+                    return new ExternalRegistration(imported(owner, external), outcome);
                 },
                 directory,
                 NO_WATCH,
@@ -95,7 +104,7 @@ class ImportExistingRunsUseCaseTest {
                 SETTLE_TIME,
                 CLOCK);
 
-        ImportResult result = service.importExistingRuns();
+        ImportResult result = importExistingRunsUseCase.importExistingRuns();
 
         assertThat(result).isEqualTo(new ImportResult(2, 1, 0, 1));
         assertThat(registered.getFirst().analysts()).containsExactlyInAnyOrder(Analyst.MARKET, Analyst.SOCIAL);
@@ -134,13 +143,14 @@ class ImportExistingRunsUseCaseTest {
                         RunHistoryEntry.Status.STOPPED,
                         null,
                         "2026-09-27T20:55:22Z"));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(report),
                 () -> history,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     registered.add(external);
-                    return new ExternalRegistration(
-                            Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
+                    return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
                 },
                 directory,
                 NO_WATCH,
@@ -149,13 +159,13 @@ class ImportExistingRunsUseCaseTest {
                 SETTLE_TIME,
                 CLOCK);
 
-        assertThat(service.importExistingRuns()).isEqualTo(new ImportResult(3, 3, 0, 0));
+        assertThat(importExistingRunsUseCase.importExistingRuns()).isEqualTo(new ImportResult(3, 3, 0, 0));
 
         ExternalAnalysis fromReport = registered.getFirst();
         assertThat(fromReport.origin()).isEqualTo(ExternalAnalysis.Origin.REPORT_FILES);
         assertThat(fromReport.run().id()).isEqualTo("a2cd");
         assertThat(fromReport.run().llmProvider()).isEqualTo("deepseek");
-        assertThat(fromReport.run().quickThinkLlm()).isEqualTo(Analysis.UNKNOWN);
+        assertThat(fromReport.run().quickThinkLlm()).isNull();
         assertThat(fromReport.run().debateRounds()).isEqualTo(5);
         assertThat(fromReport.run().stats().costUsd()).isEqualByComparingTo("0.0277");
         assertThat(registered.subList(1, 3)).allSatisfy(external -> {
@@ -191,13 +201,14 @@ class ImportExistingRunsUseCaseTest {
                 Rating.HOLD,
                 Set.of(ReportSource.REPORT_TREE),
                 CLOCK.instant().minus(Duration.ofMinutes(1)));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(running, crashed, finished),
                 List::of,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     registered.add(external);
-                    return new ExternalRegistration(
-                            Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
+                    return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
                 },
                 directory,
                 NO_WATCH,
@@ -206,7 +217,7 @@ class ImportExistingRunsUseCaseTest {
                 SETTLE_TIME,
                 CLOCK);
 
-        assertThat(service.importExistingRuns().scanned()).isEqualTo(2);
+        assertThat(importExistingRunsUseCase.importExistingRuns().scanned()).isEqualTo(2);
         assertThat(registered).extracting(ExternalAnalysis::ticker).containsExactly("INTC", "NVDA");
     }
 
@@ -219,13 +230,14 @@ class ImportExistingRunsUseCaseTest {
                 Rating.HOLD,
                 Set.of(ReportSource.REPORT_TREE),
                 Instant.parse("2026-09-28T12:00:00Z"));
-        ImportExistingRunsUseCase service = new ImportExistingRunsUseCase(
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
                 () -> List.of(goog),
                 List::of,
+                HAS_DECISION,
+                NO_VALIDATION,
                 (external, owner) -> {
                     owners.add(owner);
-                    return new ExternalRegistration(
-                            Analysis.imported(AnalysisId.newId(), null, owner, external), Outcome.CREATED);
+                    return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
                 },
                 directory,
                 NO_WATCH,
@@ -235,11 +247,69 @@ class ImportExistingRunsUseCaseTest {
                 CLOCK);
 
         firstAdmin = Optional.empty();
-        service.importExistingRuns();
+        importExistingRunsUseCase.importExistingRuns();
         firstAdmin = Optional.of(new UserId("admin-1"));
-        service.importExistingRuns();
+        importExistingRunsUseCase.importExistingRuns();
 
         assertThat(owners).containsExactly(null, new OwnerId("admin-1"));
+    }
+
+    @Test
+    void anInvalidRunStopsTheImportBeforeAnythingIsRegistered() {
+        ReportKey nvda = new ReportKey("NVDA", LocalDate.of(2026, 9, 27));
+        Report report = new Report(
+                nvda,
+                Map.of(ReportSection.FINAL_TRADE_DECISION, "**Rating**: Hold"),
+                Map.of(),
+                Rating.HOLD,
+                Set.of(ReportSource.REPORT_TREE),
+                Instant.parse("2026-09-27T21:34:35Z"));
+        List<RunHistoryEntry> history =
+                List.of(entry("62ae", nvda, RunHistoryEntry.Status.FAILED, "boom", "2026-09-27T21:11:06Z"));
+        List<List<ExternalAnalysis>> validated = new ArrayList<>();
+        ImportExistingRunsUseCase importExistingRunsUseCase = new ImportExistingRunsUseCase(
+                () -> List.of(report),
+                () -> history,
+                HAS_DECISION,
+                externals -> {
+                    validated.add(externals);
+                    throw new IllegalArgumentException("invalid run");
+                },
+                (external, owner) -> {
+                    registered.add(external);
+                    return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
+                },
+                directory,
+                NO_WATCH,
+                false,
+                false,
+                SETTLE_TIME,
+                CLOCK);
+
+        assertThatThrownBy(importExistingRunsUseCase::importExistingRuns)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("invalid run");
+
+        assertThat(validated)
+                .singleElement()
+                .satisfies(batch -> assertThat(batch).hasSize(2));
+        assertThat(registered).isEmpty();
+    }
+
+    private static Analysis imported(OwnerId owner, ExternalAnalysis external) {
+        var spec = new AnalysisSpec(
+                external.ticker(),
+                external.tradeDate(),
+                AssetType.STOCK,
+                external.analysts(),
+                "unknown",
+                "unknown",
+                "unknown",
+                1,
+                1,
+                "English",
+                false);
+        return TestAnalyses.queued(TestAnalyses.newId(), spec, owner, external.finishedAt());
     }
 
     private static RunHistoryEntry entry(

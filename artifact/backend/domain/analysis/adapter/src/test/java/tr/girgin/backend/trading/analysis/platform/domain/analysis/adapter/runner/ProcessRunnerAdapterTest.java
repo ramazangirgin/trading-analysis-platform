@@ -22,6 +22,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ra
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunEventSink;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 
@@ -42,7 +43,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 echo '{"v":1,"ts":"2026-09-29T10:00:03Z","run_id":"x","seq":4,"type":"run_finished","status":"completed"}'
                 exit 0
                 """);
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         RecordingSink sink = new RecordingSink();
 
         runner.start(id, spec("NVDA"), Map.of("DEEPSEEK_API_KEY", "sk-from-env"), sink);
@@ -74,7 +75,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         script("""
                 printf '{"v":1,"ts":"2026-09-29T10:00:00Z","run_id":"x","seq":1,"type":"log","message":"%s"}\\n' "$*"
                 """);
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         RecordingSink sink = new RecordingSink();
 
         runner.start(id, spec("MU"), Map.of(), sink);
@@ -93,7 +94,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 """);
         RecordingSink sink = new RecordingSink();
 
-        runner.start(AnalysisId.newId(), spec("MU"), Map.of(), sink);
+        runner.start(TestAnalyses.newId(), spec("MU"), Map.of(), sink);
 
         sink.awaitExit();
         assertThat(sink.events.getFirst().payload().get("message"))
@@ -110,7 +111,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 while true; do sleep 0.1; done
                 """);
         RecordingSink sink = new RecordingSink();
-        RunHandle handle = runner.start(AnalysisId.newId(), spec("GOOG"), Map.of(), sink);
+        RunHandle handle = runner.start(TestAnalyses.newId(), spec("GOOG"), Map.of(), sink);
         sink.awaitEvents(1);
 
         runner.stop(handle);
@@ -128,7 +129,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 while true; do sleep 0.1; done
                 """);
         RecordingSink sink = new RecordingSink();
-        RunHandle handle = runner.start(AnalysisId.newId(), spec("AAPL"), Map.of(), sink);
+        RunHandle handle = runner.start(TestAnalyses.newId(), spec("AAPL"), Map.of(), sink);
         sink.awaitEvents(1);
 
         runner.stop(handle);
@@ -139,7 +140,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     @Test
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void followsARunnerAnEarlierPlatformStartedThroughItsEventsFile() throws Exception {
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value()))
                 .resolve("events.jsonl");
         // Like a ta-runner whose platform has gone: stdout leads nowhere, events.jsonl gets everything.
@@ -163,7 +164,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
     @Test
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
     void stopsARunnerItFollowsAgain() throws Exception {
-        AnalysisId id = AnalysisId.newId();
+        AnalysisId id = TestAnalyses.newId();
         Path events = Files.createDirectories(HOME.resolve("runs").resolve(id.value()))
                 .resolve("events.jsonl");
         Process orphan = orphan(events, """
@@ -189,7 +190,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         try {
             RunHandle stale = new RunHandle(other.pid() + "@1000");
 
-            assertThat(runner.reattach(AnalysisId.newId(), stale, 0, new RecordingSink()))
+            assertThat(runner.reattach(TestAnalyses.newId(), stale, 0, new RecordingSink()))
                     .isFalse();
         } finally {
             other.destroyForcibly();
@@ -202,9 +203,9 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         gone.waitFor();
         String ref = gone.pid() + "@" + Instant.now().toEpochMilli();
 
-        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle(ref), 0, new RecordingSink()))
+        assertThat(runner.reattach(TestAnalyses.newId(), new RunHandle(ref), 0, new RecordingSink()))
                 .isFalse();
-        assertThat(runner.reattach(AnalysisId.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink()))
+        assertThat(runner.reattach(TestAnalyses.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink()))
                 .isFalse();
     }
 

@@ -12,12 +12,12 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
@@ -60,7 +60,7 @@ class StartAnalysisWithDefaultsUseCaseTest {
     private final StartAnalysisWithDefaultsUseCase service = new StartAnalysisWithDefaultsUseCase(
             new ManageAnalysisDefaultsUseCase(new StoredDefaults(), catalog), catalog, (spec, owner) -> {
                 started.add(spec);
-                return Analysis.queued(new AnalysisId("r_1"), spec, owner, Instant.EPOCH);
+                return TestAnalyses.queued(new AnalysisId("r_1"), spec, owner, Instant.EPOCH);
             });
 
     @Test

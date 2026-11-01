@@ -46,7 +46,7 @@ class RunLogFileAdapter implements RunLogPort {
             }
             return List.copyOf(lines.subList(Math.max(0, lines.size() - maxLines), lines.size()));
         } catch (IOException e) {
-            throw new UncheckedIOException("Could not read the log of " + id, e);
+            throw new UncheckedIOException("Could not read the log of " + id.value(), e);
         }
     }
 }

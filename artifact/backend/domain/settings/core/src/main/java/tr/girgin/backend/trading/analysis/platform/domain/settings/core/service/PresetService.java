@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.settings.core.service
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsError;
@@ -37,7 +38,7 @@ class PresetService implements ManagePresetsUseCase, AssignUnownedPresetsUseCase
 
     @Override
     public Preset createPreset(String name, String payload, OwnerId owner) {
-        return repository.save(new Preset(PresetId.newId(), validName(name), validPayload(payload), owner, null, null));
+        return repository.save(new Preset(newId(), validName(name), validPayload(payload), owner, null, null));
     }
 
     @Override
@@ -69,7 +70,16 @@ class PresetService implements ManagePresetsUseCase, AssignUnownedPresetsUseCase
     }
 
     private Preset visible(PresetId id, PresetAccess access) {
-        return repository.findById(id).filter(access::canSee).orElseThrow(() -> notFound(id));
+        return repository.findById(id).filter(preset -> canSee(access, preset)).orElseThrow(() -> notFound(id));
+    }
+
+    // A preset without an owner is seen by allUsers only.
+    private boolean canSee(PresetAccess access, Preset preset) {
+        return access.allUsers() || access.user().equals(preset.owner());
+    }
+
+    private PresetId newId() {
+        return new PresetId(UUID.randomUUID().toString());
     }
 
     private String validName(String name) {

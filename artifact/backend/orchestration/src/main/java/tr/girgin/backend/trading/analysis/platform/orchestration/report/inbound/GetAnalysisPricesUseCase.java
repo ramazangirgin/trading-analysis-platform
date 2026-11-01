@@ -27,9 +27,7 @@ public class GetAnalysisPricesUseCase {
      */
     public Optional<PriceHistory> getPrices(AnalysisId id, AnalysisAccess access) {
         Analysis analysis = getAnalysis.get(id, access);
-        return ReportKey.isValidTicker(analysis.spec().ticker())
-                ? getPrices.get(
-                        new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()))
-                : Optional.empty();
+        return getPrices.get(
+                new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()));
     }
 }

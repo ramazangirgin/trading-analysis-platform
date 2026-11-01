@@ -16,21 +16,23 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ru
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.eventstore.EventStorePort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
-class AnalysisEventHubTest {
+class AnalysisEventServiceTest {
 
     private Fakes.Repository repository;
     private Fakes.EventStore eventStore;
-    private AnalysisEventHub hub;
+    private AnalysisEventService analysisEventService;
     private AnalysisId id;
 
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
         eventStore = new Fakes.EventStore();
-        hub = new AnalysisEventHub(repository, eventStore);
-        Analysis running = Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Fakes.OWNER, Instant.now())
-                .running(Instant.now(), "4242");
+        analysisEventService = Fakes.events(repository, eventStore);
+        Analysis running =
+                Fakes.running(Fakes.queued(Fakes.spec("NVDA"), Fakes.OWNER, Instant.now()), Instant.now(), "4242");
         repository.insert(running);
         id = running.id();
     }
@@ -43,8 +45,8 @@ class AnalysisEventHubTest {
                 Fakes.event(3, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        hub.subscribe(id, 1, Fakes.OWN, listener);
-        hub.publish(id, Fakes.event(4, RunEventType.MESSAGE));
+        analysisEventService.subscribe(id, 1, Fakes.OWN, listener);
+        analysisEventService.publish(id, Fakes.event(4, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).containsExactly(2L, 3L, 4L);
         assertThat(listener.completed).isFalse();
@@ -54,11 +56,11 @@ class AnalysisEventHubTest {
     void dropsLiveEventsAlreadySeenInTheReplay() {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OWN, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
         // The runner writes the file before stdout, so a live event may repeat a replayed one.
-        hub.publish(id, Fakes.event(2, RunEventType.MESSAGE));
-        hub.publish(id, Fakes.event(3, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(2, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(3, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).containsExactly(1L, 2L, 3L);
     }
@@ -66,10 +68,10 @@ class AnalysisEventHubTest {
     @Test
     void completesSubscribersWhenTheRunFinishes() {
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OWN, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
-        hub.publish(id, Fakes.finished(1, RunOutcome.COMPLETED, null));
-        hub.publish(id, Fakes.event(2, RunEventType.LOG));
+        analysisEventService.publish(id, Fakes.finished(1, RunOutcome.COMPLETED, null));
+        analysisEventService.publish(id, Fakes.event(2, RunEventType.LOG));
 
         assertThat(listener.seqs).containsExactly(1L);
         assertThat(listener.completed).isTrue();
@@ -78,11 +80,10 @@ class AnalysisEventHubTest {
     @Test
     void replaysAFinishedRunAndCompletesAtOnce() {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.finished(2, RunOutcome.COMPLETED, null));
-        repository.update(
-                repository.findById(id).orElseThrow().finished(AnalysisStatus.COMPLETED, Instant.now(), null, null));
+        repository.update(Fakes.ended(repository.findById(id).orElseThrow(), AnalysisStatus.COMPLETED, Instant.now()));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        hub.subscribe(id, 0, Fakes.OWN, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
         assertThat(listener.seqs).containsExactly(1L, 2L);
         assertThat(listener.completed).isTrue();
@@ -93,13 +94,25 @@ class AnalysisEventHubTest {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        assertThatThrownBy(() -> hub.subscribe(id, 0, Fakes.OTHERS, listener))
+        assertThatThrownBy(() -> analysisEventService.subscribe(id, 0, Fakes.OTHERS, listener))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
-        hub.publish(id, Fakes.event(3, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(3, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).isEmpty();
         assertThat(listener.completed).isFalse();
+    }
+
+    @Test
+    void anInvalidIdIsNotFoundWithoutAPortCall() {
+        AnalysisEventService untouched =
+                Fakes.events(Fakes.untouched(AnalysisRepositoryPort.class), Fakes.untouched(EventStorePort.class));
+        Fakes.RecordingListener listener = new Fakes.RecordingListener();
+
+        assertThatThrownBy(() -> untouched.subscribe(new AnalysisId("../x"), 0, Fakes.OWN, listener))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
+        assertThat(listener.seqs).isEmpty();
     }
 
     @Test
@@ -107,7 +120,7 @@ class AnalysisEventHubTest {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.event(2, RunEventType.MESSAGE));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
 
-        hub.subscribe(id, 0, Fakes.EVERYONE, listener);
+        analysisEventService.subscribe(id, 0, Fakes.EVERYONE, listener);
 
         assertThat(listener.seqs).containsExactly(1L, 2L);
     }
@@ -116,16 +129,16 @@ class AnalysisEventHubTest {
     void replaysAnotherUsersPublicRunButNotAPrivateOne() {
         store(Fakes.event(1, RunEventType.RUN_STARTED), Fakes.finished(2, RunOutcome.COMPLETED, null));
         Analysis completed =
-                repository.findById(id).orElseThrow().finished(AnalysisStatus.COMPLETED, Instant.now(), null, null);
+                Fakes.ended(repository.findById(id).orElseThrow(), AnalysisStatus.COMPLETED, Instant.now());
         repository.update(completed);
         Fakes.RecordingListener refused = new Fakes.RecordingListener();
-        assertThatThrownBy(() -> hub.subscribe(id, 0, Fakes.OTHERS, refused))
+        assertThatThrownBy(() -> analysisEventService.subscribe(id, 0, Fakes.OTHERS, refused))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
 
-        repository.update(completed.withVisibility(Visibility.PUBLIC, Instant.now()));
+        repository.update(Fakes.withVisibility(completed, Visibility.PUBLIC, Instant.now()));
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OTHERS, listener);
+        analysisEventService.subscribe(id, 0, Fakes.OTHERS, listener);
 
         assertThat(listener.seqs).containsExactly(1L, 2L);
         assertThat(listener.completed).isTrue();
@@ -134,10 +147,10 @@ class AnalysisEventHubTest {
     @Test
     void cancelledSubscribersGetNothingMore() {
         Fakes.RecordingListener listener = new Fakes.RecordingListener();
-        EventSubscription subscription = hub.subscribe(id, 0, Fakes.OWN, listener);
+        EventSubscription subscription = analysisEventService.subscribe(id, 0, Fakes.OWN, listener);
 
         subscription.cancel();
-        hub.publish(id, Fakes.event(1, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(1, RunEventType.MESSAGE));
 
         assertThat(listener.seqs).isEmpty();
     }
@@ -145,16 +158,16 @@ class AnalysisEventHubTest {
     @Test
     void aFailingListenerDoesNotAffectOthers() {
         Fakes.RecordingListener healthy = new Fakes.RecordingListener();
-        hub.subscribe(id, 0, Fakes.OWN, new Fakes.RecordingListener() {
+        analysisEventService.subscribe(id, 0, Fakes.OWN, new Fakes.RecordingListener() {
             @Override
             public void onEvent(RunEvent event) {
                 throw new IllegalStateException("client went away");
             }
         });
-        hub.subscribe(id, 0, Fakes.OWN, healthy);
+        analysisEventService.subscribe(id, 0, Fakes.OWN, healthy);
 
-        hub.publish(id, Fakes.event(1, RunEventType.MESSAGE));
-        hub.publish(id, Fakes.event(2, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(1, RunEventType.MESSAGE));
+        analysisEventService.publish(id, Fakes.event(2, RunEventType.MESSAGE));
 
         assertThat(healthy.seqs).containsExactly(1L, 2L);
     }

@@ -12,12 +12,12 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListPartialAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.PartialAnalysisPage;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
@@ -29,8 +29,8 @@ class ListAnalysisPreviewsUseCaseTest {
     private static final LocalDate DATE = LocalDate.of(2026, 9, 25);
 
     private final List<int[]> requests = new ArrayList<>();
-    private final Analysis analysis = Analysis.queued(
-            AnalysisId.newId(),
+    private final Analysis analysis = TestAnalyses.queued(
+            TestAnalyses.newId(),
             new AnalysisSpec(
                     "NVDA",
                     DATE,

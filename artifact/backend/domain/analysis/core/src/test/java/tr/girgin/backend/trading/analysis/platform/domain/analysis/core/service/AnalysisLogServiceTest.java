@@ -29,30 +29,30 @@ class AnalysisLogServiceTest {
                 "nothing secret here, sk- alone|nothing secret here, sk- alone"
             })
     void masksApiKeys(String line, String expected) {
-        assertThat(new AnalysisLogService(null, null).mask(line)).isEqualTo(expected);
+        assertThat(new AnalysisLogService(null, null, null).mask(line)).isEqualTo(expected);
     }
 
     @Test
     void anotherUsersLogIsNotFoundUnlessTheCallerSeesAllUsers() {
         Fakes.Repository repository = new Fakes.Repository();
         Fakes.EventStore eventStore = new Fakes.EventStore();
-        AnalysisService analyses = new AnalysisService(
+        AnalysisService analysisService = Fakes.analysisService(
                 repository,
                 new Fakes.Runner(),
-                new Fakes.Credentials(),
                 eventStore,
-                new AnalysisEventHub(repository, eventStore),
+                Fakes.events(repository, eventStore),
                 Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
                 2);
-        AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("key=sk-1234567890abcdef"));
-        Analysis analysis = analyses.start(Fakes.spec("NVDA"), Fakes.OWNER);
+        AnalysisLogService analysisLogService = new AnalysisLogService(
+                analysisService, (_, _) -> List.of("key=sk-1234567890abcdef"), new AnalysisAccessService());
+        Analysis analysis = analysisService.start(Fakes.spec("NVDA"), Fakes.OWNER);
         AnalysisId id = analysis.id();
 
-        assertThatThrownBy(() -> service.tailLogs(id, Fakes.OTHERS, 10))
+        assertThatThrownBy(() -> analysisLogService.tailLogs(id, Fakes.OTHERS, 10))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
-        assertThat(service.tailLogs(id, Fakes.OWN, 10)).containsExactly("key=sk-1234****");
-        assertThat(service.tailLogs(id, Fakes.EVERYONE, 10)).containsExactly("key=sk-1234****");
+        assertThat(analysisLogService.tailLogs(id, Fakes.OWN, 10)).containsExactly("key=sk-1234****");
+        assertThat(analysisLogService.tailLogs(id, Fakes.EVERYONE, 10)).containsExactly("key=sk-1234****");
     }
 
     @ParameterizedTest
@@ -62,22 +62,22 @@ class AnalysisLogServiceTest {
     void anotherUsersSharedAnalysisHasNoLogForTheCaller(Visibility visibility) {
         Fakes.Repository repository = new Fakes.Repository();
         Fakes.EventStore eventStore = new Fakes.EventStore();
-        AnalysisService analyses = new AnalysisService(
+        AnalysisService analysisService = Fakes.analysisService(
                 repository,
                 new Fakes.Runner(),
-                new Fakes.Credentials(),
                 eventStore,
-                new AnalysisEventHub(repository, eventStore),
+                Fakes.events(repository, eventStore),
                 Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
                 2);
-        AnalysisLogService service = new AnalysisLogService(analyses, (_, _) -> List.of("line"));
-        AnalysisId id = analyses.start(Fakes.spec("NVDA"), Fakes.OWNER).id();
-        repository.rows.put(id, repository.rows.get(id).withVisibility(visibility, Instant.now()));
+        AnalysisLogService analysisLogService =
+                new AnalysisLogService(analysisService, (_, _) -> List.of("line"), new AnalysisAccessService());
+        AnalysisId id = analysisService.start(Fakes.spec("NVDA"), Fakes.OWNER).id();
+        repository.rows.put(id, Fakes.withVisibility(repository.rows.get(id), visibility, Instant.now()));
 
-        assertThatThrownBy(() -> service.tailLogs(id, Fakes.OTHERS, 10))
+        assertThatThrownBy(() -> analysisLogService.tailLogs(id, Fakes.OTHERS, 10))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
-        assertThat(service.tailLogs(id, Fakes.OWN, 10)).containsExactly("line");
-        assertThat(service.tailLogs(id, Fakes.EVERYONE, 10)).containsExactly("line");
+        assertThat(analysisLogService.tailLogs(id, Fakes.OWN, 10)).containsExactly("line");
+        assertThat(analysisLogService.tailLogs(id, Fakes.EVERYONE, 10)).containsExactly("line");
     }
 }

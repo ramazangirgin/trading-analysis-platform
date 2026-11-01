@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -31,6 +33,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 
 class UserManagementServiceTest {
 
+    private static final UserChangeService CHANGES = new UserChangeService();
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
     private final FakeUserRepository users = new FakeUserRepository();
@@ -40,9 +43,12 @@ class UserManagementServiceTest {
             users,
             roles,
             new FakeHasher(),
-            new PasswordPolicy(12, "password1234567\n"),
+            new PasswordPolicyService(12, "password1234567\n"),
             generator,
-            Clock.fixed(NOW, ZoneOffset.UTC));
+            Clock.fixed(NOW, ZoneOffset.UTC),
+            new UserChangeService(),
+            new UsernameService(),
+            new LoginLockoutService(5, Duration.ofMinutes(15)));
 
     private final Role admin = role(RoleId.ADMIN, "ADMIN", Permission.USER_MANAGE);
     private final Role analyst = role(RoleId.ANALYST, "ANALYST", Permission.ANALYSIS_READ);
@@ -50,6 +56,10 @@ class UserManagementServiceTest {
 
     UserManagementServiceTest() {
         List.of(viewer, admin, analyst).forEach(roles::add);
+    }
+
+    private static UserId newId() {
+        return new UserId(UUID.randomUUID().toString());
     }
 
     @Test
@@ -94,9 +104,12 @@ class UserManagementServiceTest {
                 users,
                 roles,
                 new FakeHasher(),
-                new PasswordPolicy(40, "password1234567\n"),
+                new PasswordPolicyService(40, "password1234567\n"),
                 generator,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                new UserChangeService(),
+                new UsernameService(),
+                new LoginLockoutService(5, Duration.ofMinutes(15)));
 
         strict.create("alice", Set.of(), Optional.empty());
 
@@ -145,8 +158,8 @@ class UserManagementServiceTest {
     void updateChangesTheRoles() {
         User target = users.add(user("bob", true, RoleId.VIEWER));
 
-        UserAccount updated = service.update(
-                UserId.newId(), target.id(), Optional.of(Set.of(RoleId.ANALYST)), Optional.empty(), null);
+        UserAccount updated =
+                service.update(newId(), target.id(), Optional.of(Set.of(RoleId.ANALYST)), Optional.empty(), null);
 
         assertThat(updated.roles()).extracting(Role::name).containsExactly("ANALYST");
         assertThat(users.findById(target.id()).orElseThrow().roleIds()).containsExactly(RoleId.ANALYST);
@@ -156,7 +169,7 @@ class UserManagementServiceTest {
     @Test
     void updateDisablesAndEnables() {
         User target = users.add(user("bob", true, RoleId.VIEWER));
-        UserId actor = UserId.newId();
+        UserId actor = newId();
 
         UserAccount disabled = service.update(actor, target.id(), Optional.empty(), Optional.of(false), null);
         assertThat(disabled.enabled()).isFalse();
@@ -170,8 +183,8 @@ class UserManagementServiceTest {
     void anUpdateThatChangesNothingWritesNothing() {
         User target = users.add(user("bob", true, RoleId.VIEWER));
 
-        service.update(UserId.newId(), target.id(), Optional.empty(), Optional.empty(), null);
-        service.update(UserId.newId(), target.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.of(true), null);
+        service.update(newId(), target.id(), Optional.empty(), Optional.empty(), null);
+        service.update(newId(), target.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.of(true), null);
 
         assertThat(users.saved).isEmpty();
     }
@@ -181,7 +194,7 @@ class UserManagementServiceTest {
         User target = users.add(user("bob", true));
 
         assertThatThrownBy(() -> service.update(
-                        UserId.newId(), target.id(), Optional.of(Set.of(new RoleId("nope"))), Optional.empty(), null))
+                        newId(), target.id(), Optional.of(Set.of(new RoleId("nope"))), Optional.empty(), null))
                 .isInstanceOfSatisfying(IdentityException.class, e -> {
                     assertThat(e.error()).isEqualTo(IdentityError.UNKNOWN_ROLE);
                     assertThat(e.params()).containsEntry("roleId", "nope");
@@ -190,9 +203,9 @@ class UserManagementServiceTest {
 
     @Test
     void updateOfAnUnknownUserIsUserNotFound() {
-        UserId id = UserId.newId();
+        UserId id = newId();
 
-        assertThatThrownBy(() -> service.update(UserId.newId(), id, Optional.empty(), Optional.of(false), null))
+        assertThatThrownBy(() -> service.update(newId(), id, Optional.empty(), Optional.of(false), null))
                 .isInstanceOfSatisfying(IdentityException.class, e -> {
                     assertThat(e.error()).isEqualTo(IdentityError.USER_NOT_FOUND);
                     assertThat(e.params()).containsEntry("id", id.value());
@@ -204,7 +217,7 @@ class UserManagementServiceTest {
         User target = users.add(user("bob", true, RoleId.VIEWER));
 
         assertThatThrownBy(() -> service.update(
-                        UserId.newId(), target.id(), Optional.empty(), Optional.of(false), target.version() + 1))
+                        newId(), target.id(), Optional.empty(), Optional.of(false), target.version() + 1))
                 .isInstanceOfSatisfying(IdentityException.class, e -> {
                     assertThat(e.error()).isEqualTo(IdentityError.CONCURRENT_UPDATE);
                     assertThat(e.params()).containsEntry("id", target.id().value());
@@ -217,7 +230,7 @@ class UserManagementServiceTest {
         User target = users.add(user("bob", true, RoleId.VIEWER));
 
         UserAccount updated =
-                service.update(UserId.newId(), target.id(), Optional.empty(), Optional.of(false), target.version());
+                service.update(newId(), target.id(), Optional.empty(), Optional.of(false), target.version());
 
         assertThat(updated.enabled()).isFalse();
     }
@@ -227,8 +240,7 @@ class UserManagementServiceTest {
         User target = users.add(user("bob", true, RoleId.VIEWER));
         users.failSaves = 1;
 
-        assertThatThrownBy(
-                        () -> service.update(UserId.newId(), target.id(), Optional.empty(), Optional.of(false), null))
+        assertThatThrownBy(() -> service.update(newId(), target.id(), Optional.empty(), Optional.of(false), null))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.CONCURRENT_UPDATE));
     }
@@ -270,7 +282,7 @@ class UserManagementServiceTest {
     void theLastEnabledAdminCannotBeDisabled() {
         User onlyAdmin = users.add(user("root", true, RoleId.ADMIN));
         users.add(user("off", false, RoleId.ADMIN));
-        UserId manager = UserId.newId();
+        UserId manager = newId();
 
         assertThatThrownBy(() -> service.update(manager, onlyAdmin.id(), Optional.empty(), Optional.of(false), null))
                 .isInstanceOfSatisfying(
@@ -281,7 +293,7 @@ class UserManagementServiceTest {
     @Test
     void theLastEnabledAdminCannotBeDemoted() {
         User onlyAdmin = users.add(user("root", true, RoleId.ADMIN));
-        UserId manager = UserId.newId();
+        UserId manager = newId();
 
         assertThatThrownBy(() -> service.update(
                         manager, onlyAdmin.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.empty(), null))
@@ -293,7 +305,7 @@ class UserManagementServiceTest {
     void anotherEnabledAdminLetsBothChangesThrough() {
         User first = users.add(user("root", true, RoleId.ADMIN));
         User second = users.add(user("second", true, RoleId.ADMIN));
-        UserId manager = UserId.newId();
+        UserId manager = newId();
 
         UserAccount demoted =
                 service.update(manager, first.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.empty(), null);
@@ -311,8 +323,7 @@ class UserManagementServiceTest {
         User enabledAdmin = users.add(user("root", true, RoleId.ADMIN));
         users.add(user("off", false, RoleId.ADMIN));
 
-        assertThatThrownBy(() ->
-                        service.update(UserId.newId(), enabledAdmin.id(), Optional.empty(), Optional.of(false), null))
+        assertThatThrownBy(() -> service.update(newId(), enabledAdmin.id(), Optional.empty(), Optional.of(false), null))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.LAST_ADMIN));
     }
@@ -321,8 +332,7 @@ class UserManagementServiceTest {
     void aNonAdminCanBeDisabledWithoutAnyAdminLeft() {
         User viewerUser = users.add(user("bob", true, RoleId.VIEWER));
 
-        UserAccount disabled =
-                service.update(UserId.newId(), viewerUser.id(), Optional.empty(), Optional.of(false), null);
+        UserAccount disabled = service.update(newId(), viewerUser.id(), Optional.empty(), Optional.of(false), null);
 
         assertThat(disabled.enabled()).isFalse();
     }
@@ -330,7 +340,7 @@ class UserManagementServiceTest {
     @Test
     void aDisabledAdminCanBeDemotedAndEnabledAgain() {
         User off = users.add(user("off", false, RoleId.ADMIN));
-        UserId manager = UserId.newId();
+        UserId manager = newId();
 
         service.update(manager, off.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.empty(), null);
         UserAccount enabled = service.update(manager, off.id(), Optional.empty(), Optional.of(true), null);
@@ -340,7 +350,8 @@ class UserManagementServiceTest {
 
     @Test
     void resetWithAnEnteredPasswordFlagsTheUserAndClearsTheLock() {
-        User locked = users.add(user("bob", true, RoleId.VIEWER).withFailedLogin(2, Optional.of(NOW.plusSeconds(600))));
+        User locked = users.add(
+                CHANGES.withFailedLogin(user("bob", true, RoleId.VIEWER), 2, Optional.of(NOW.plusSeconds(600))));
 
         Optional<String> generated = service.resetPassword(locked.id(), Optional.of("another-long-password"));
 
@@ -386,7 +397,7 @@ class UserManagementServiceTest {
 
     @Test
     void resetOfAnUnknownUserIsUserNotFound() {
-        assertThatThrownBy(() -> service.resetPassword(UserId.newId(), Optional.empty()))
+        assertThatThrownBy(() -> service.resetPassword(newId(), Optional.empty()))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.USER_NOT_FOUND));
     }
@@ -403,9 +414,12 @@ class UserManagementServiceTest {
 
     @Test
     void getGivesTheRoleNamesSortedAndTheLockAsOfNow() {
-        User lockedUser = users.add(user("bob", true, RoleId.VIEWER, RoleId.ADMIN, RoleId.ANALYST)
-                .withFailedLogin(0, Optional.of(NOW.plusSeconds(60)))
-                .withLastLogin(NOW.minusSeconds(5)));
+        User lockedUser = users.add(CHANGES.withLastLogin(
+                CHANGES.withFailedLogin(
+                        user("bob", true, RoleId.VIEWER, RoleId.ADMIN, RoleId.ANALYST),
+                        0,
+                        Optional.of(NOW.plusSeconds(60))),
+                NOW.minusSeconds(5)));
 
         UserAccount account = service.get(lockedUser.id());
 
@@ -419,7 +433,7 @@ class UserManagementServiceTest {
 
     @Test
     void anExpiredLockReadsAsNotLocked() {
-        User expired = users.add(user("bob", true).withFailedLogin(0, Optional.of(NOW.minusSeconds(1))));
+        User expired = users.add(CHANGES.withFailedLogin(user("bob", true), 0, Optional.of(NOW.minusSeconds(1))));
 
         UserAccount account = service.get(expired.id());
 
@@ -429,7 +443,7 @@ class UserManagementServiceTest {
 
     @Test
     void getOfAnUnknownUserIsUserNotFound() {
-        assertThatThrownBy(() -> service.get(UserId.newId()))
+        assertThatThrownBy(() -> service.get(newId()))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.USER_NOT_FOUND));
     }
@@ -453,7 +467,7 @@ class UserManagementServiceTest {
 
     private static User user(String name, boolean enabled, RoleId... roleIds) {
         return new User(
-                UserId.newId(),
+                newId(),
                 new Username(name),
                 new PasswordHash("hash:old"),
                 enabled,
@@ -467,7 +481,7 @@ class UserManagementServiceTest {
                 1L);
     }
 
-    private static final class FixedGenerator extends OneTimePasswordGenerator {
+    private static final class FixedGenerator extends OneTimePasswordService {
 
         private int lastLength;
 

@@ -8,8 +8,8 @@ import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AnalysisOwnerDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.VisibilityEnumDto;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AnalysisRights;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -24,13 +24,13 @@ import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperCo
         })
 public interface AnalysisToAnalysisDtoMapper {
 
-    @Mapping(target = "canManage", expression = "java(access.canManage(source))")
-    @Mapping(target = "canChangeVisibility", expression = "java(!access.allowedVisibilities(source).isEmpty())")
+    @Mapping(target = "canManage", expression = "java(rights.canManage())")
+    @Mapping(target = "canChangeVisibility", expression = "java(!rights.allowedVisibilities().isEmpty())")
     @Mapping(target = "allowedVisibilities", source = ".")
-    AnalysisDto map(Analysis source, @Context Map<UserId, Username> usernames, @Context AnalysisAccess access);
+    AnalysisDto map(Analysis source, @Context Map<UserId, Username> usernames, @Context AnalysisRights rights);
 
-    default List<VisibilityEnumDto> map(Analysis source, @Context AnalysisAccess access) {
-        return access.allowedVisibilities(source).stream()
+    default List<VisibilityEnumDto> map(Analysis source, @Context AnalysisRights rights) {
+        return rights.allowedVisibilities().stream()
                 .map(visibility -> VisibilityEnumDto.valueOf(visibility.name()))
                 .toList();
     }

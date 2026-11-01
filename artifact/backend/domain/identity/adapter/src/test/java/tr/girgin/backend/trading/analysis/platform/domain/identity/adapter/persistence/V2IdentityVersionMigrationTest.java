@@ -79,7 +79,19 @@ class V2IdentityVersionMigrationTest {
     void aMigratedUserCanBeSavedAtItsVersion() {
         User seeded = users.findById(USER).orElseThrow();
 
-        User saved = users.save(seeded.withRoleIds(Set.of()));
+        User saved = users.save(new User(
+                seeded.id(),
+                seeded.username(),
+                seeded.passwordHash(),
+                seeded.enabled(),
+                seeded.mustChangePassword(),
+                seeded.failedLoginCount(),
+                seeded.lockedUntil(),
+                seeded.lastLoginAt(),
+                seeded.createdAt(),
+                seeded.updatedAt(),
+                Set.of(),
+                seeded.version()));
 
         assertThat(saved.version()).isEqualTo(1);
         assertThat(saved.roleIds()).isEmpty();

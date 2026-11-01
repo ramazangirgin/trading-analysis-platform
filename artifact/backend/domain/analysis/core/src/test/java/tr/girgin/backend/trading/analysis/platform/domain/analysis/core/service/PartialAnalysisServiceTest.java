@@ -13,6 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.PartialAnalysisPage;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 class PartialAnalysisServiceTest {
 
@@ -25,14 +26,13 @@ class PartialAnalysisServiceTest {
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
-        service = new PartialAnalysisService(repository);
+        service = new PartialAnalysisService(repository, new AnalysisIdService());
     }
 
     private Analysis store(Visibility visibility, AnalysisStatus status) {
-        Analysis queued =
-                Analysis.queued(AnalysisId.newId(), Fakes.spec("NVDA"), Fakes.OWNER, BASE.plusSeconds(created++));
-        Analysis stored = status == AnalysisStatus.QUEUED ? queued : queued.finished(status, BASE, null, null);
-        Analysis shared = stored.withVisibility(visibility, BASE);
+        Analysis queued = Fakes.queued(Fakes.spec("NVDA"), Fakes.OWNER, BASE.plusSeconds(created++));
+        Analysis stored = status == AnalysisStatus.QUEUED ? queued : Fakes.ended(queued, status, BASE);
+        Analysis shared = Fakes.withVisibility(stored, visibility, BASE);
         repository.insert(shared);
         return shared;
     }
@@ -52,6 +52,16 @@ class PartialAnalysisServiceTest {
         assertNotFound(hidden.id());
         assertNotFound(shared.id());
         assertNotFound(new AnalysisId("r_missing"));
+    }
+
+    @Test
+    void getAnswersAnInvalidIdAsNotFoundWithoutAPortCall() {
+        PartialAnalysisService untouched =
+                new PartialAnalysisService(Fakes.untouched(AnalysisRepositoryPort.class), new AnalysisIdService());
+
+        assertThatThrownBy(() -> untouched.get(new AnalysisId("../x")))
+                .isInstanceOfSatisfying(
+                        AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }
 
     @Test

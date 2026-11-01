@@ -1,12 +1,14 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.service;
 
 import java.security.SecureRandom;
+import org.springframework.stereotype.Service;
 
 /**
  * Generates random passwords of a given length from {@code A-Z a-z 0-9} (about 6 bits a character), free of
  * characters that need quoting in a shell.
  */
-class OneTimePasswordGenerator {
+@Service
+class OneTimePasswordService {
 
     /** The length of a generated password, unless the password policy asks for more. */
     static final int DEFAULT_LENGTH = 24;

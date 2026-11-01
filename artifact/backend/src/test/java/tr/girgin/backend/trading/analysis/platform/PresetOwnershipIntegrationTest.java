@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -141,7 +142,8 @@ class PresetOwnershipIntegrationTest {
 
     @Test
     void presetsWithoutAnOwnerGoToTheFirstAdmin() throws Exception {
-        PresetId unowned = presets.save(new Preset(PresetId.newId(), "Old", "{\"ticker\":\"NVDA\"}", null, null, null))
+        PresetId unowned = presets.save(new Preset(
+                        new PresetId(UUID.randomUUID().toString()), "Old", "{\"ticker\":\"NVDA\"}", null, null, null))
                 .id();
         String firstAdmin = userDirectory.firstAdmin().orElseThrow().value();
 

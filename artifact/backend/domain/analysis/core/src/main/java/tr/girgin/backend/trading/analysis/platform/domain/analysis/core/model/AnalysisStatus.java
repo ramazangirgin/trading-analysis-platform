@@ -5,9 +5,5 @@ public enum AnalysisStatus {
     RUNNING,
     COMPLETED,
     STOPPED,
-    FAILED;
-
-    public boolean isTerminal() {
-        return this == COMPLETED || this == STOPPED || this == FAILED;
-    }
+    FAILED
 }

@@ -17,9 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.AdapterTestSupport;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.PartialAnalysisPage;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 class JpaPartialVisibilityTest extends AdapterTestSupport {
@@ -91,12 +91,13 @@ class JpaPartialVisibilityTest extends AdapterTestSupport {
     }
 
     private Analysis inserted(String ticker, OwnerId owner, Instant createdAt) {
-        Analysis queued = Analysis.queued(AnalysisId.newId(), spec(ticker), owner, createdAt);
+        Analysis queued = TestAnalyses.queued(TestAnalyses.newId(), spec(ticker), owner, createdAt);
         repository.insert(queued);
         return repository.findById(queued.id()).orElseThrow();
     }
 
     private Analysis shared(String ticker, OwnerId owner, Visibility visibility, Instant createdAt) {
-        return repository.update(inserted(ticker, owner, createdAt).withVisibility(visibility, createdAt));
+        return repository.update(
+                TestAnalyses.withVisibility(inserted(ticker, owner, createdAt), visibility, createdAt));
     }
 }

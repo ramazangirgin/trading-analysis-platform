@@ -121,7 +121,7 @@ abstract class UsersApiTestBase {
     // Locks the account until the given time, as failed logins do.
     void lock(Account account, Instant until) {
         User user = users.findByUsername(new Username(account.username())).orElseThrow();
-        users.save(user.withFailedLogin(5, Optional.of(until)));
+        users.save(TestUsers.withFailedLogin(user, 5, Optional.of(until)));
     }
 
     JsonNode getUser(TestSession session, String id) throws Exception {

@@ -20,18 +20,21 @@ class PasswordChangeService implements ChangePasswordUseCase {
 
     private final UserRepositoryPort users;
     private final PasswordHasherPort hasher;
-    private final AuthenticatedUserFactory authenticatedUsers;
-    private final PasswordPolicy policy;
+    private final AuthenticatedUserService authenticatedUserService;
+    private final PasswordPolicyService passwordPolicyService;
+    private final UserChangeService userChangeService;
 
     PasswordChangeService(
             UserRepositoryPort users,
             PasswordHasherPort hasher,
-            AuthenticatedUserFactory authenticatedUsers,
-            PasswordPolicy policy) {
+            AuthenticatedUserService authenticatedUserService,
+            PasswordPolicyService passwordPolicyService,
+            UserChangeService userChangeService) {
         this.users = users;
         this.hasher = hasher;
-        this.authenticatedUsers = authenticatedUsers;
-        this.policy = policy;
+        this.authenticatedUserService = authenticatedUserService;
+        this.passwordPolicyService = passwordPolicyService;
+        this.userChangeService = userChangeService;
     }
 
     @Override
@@ -43,13 +46,13 @@ class PasswordChangeService implements ChangePasswordUseCase {
             throw new IdentityException(
                     IdentityError.WRONG_CURRENT_PASSWORD, "The current password is wrong", Map.of());
         }
-        policy.check(newPassword, user.username());
+        passwordPolicyService.check(newPassword, user.username());
         if (hasher.matches(newPassword, user.passwordHash())) {
             throw new IdentityException(
                     IdentityError.PASSWORD_UNCHANGED, "The new password is the same as the current one", Map.of());
         }
-        User saved = users.save(user.withPassword(hasher.hash(newPassword), false));
+        User saved = users.save(userChangeService.withPassword(user, hasher.hash(newPassword), false));
         log.info("Password changed for user {}", saved.id().value());
-        return authenticatedUsers.create(saved);
+        return authenticatedUserService.create(saved);
     }
 }

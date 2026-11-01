@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,8 @@ class RoleManagementService implements ManageRolesUseCase {
         requireNameFree(validName, null);
         Role saved;
         try {
-            saved = roles.save(new Role(RoleId.newId(), validName, false, validDescription, permissions, null));
+            saved = roles.save(
+                    new Role(newRoleId(), validName, false, validDescription, Set.copyOf(permissions), null));
         } catch (DuplicateKeyException e) {
             throw nameTaken(validName, e);
         }
@@ -95,13 +97,13 @@ class RoleManagementService implements ManageRolesUseCase {
         }
         Role changed = role;
         if (newName.isPresent()) {
-            changed = changed.withName(freeName(newName.get(), id));
+            changed = withName(changed, freeName(newName.get(), id));
         }
         if (newDescription.isPresent()) {
-            changed = changed.withDescription(validDescription(newDescription.get()));
+            changed = withDescription(changed, validDescription(newDescription.get()));
         }
         if (newPermissions.isPresent()) {
-            changed = changed.withPermissions(newPermissions.get());
+            changed = withPermissions(changed, newPermissions.get());
         }
         if (changed.equals(role)) {
             return new RoleSummary(role, users.countWithRole(id));
@@ -109,6 +111,23 @@ class RoleManagementService implements ManageRolesUseCase {
         Role saved = save(changed);
         logChanges(role, saved);
         return new RoleSummary(saved, users.countWithRole(id));
+    }
+
+    private RoleId newRoleId() {
+        return new RoleId(UUID.randomUUID().toString());
+    }
+
+    private Role withName(Role role, String name) {
+        return new Role(role.id(), name, role.builtIn(), role.description(), role.permissions(), role.version());
+    }
+
+    private Role withDescription(Role role, String description) {
+        return new Role(role.id(), role.name(), role.builtIn(), description, role.permissions(), role.version());
+    }
+
+    private Role withPermissions(Role role, Set<Permission> permissions) {
+        return new Role(
+                role.id(), role.name(), role.builtIn(), role.description(), Set.copyOf(permissions), role.version());
     }
 
     private void logChanges(Role before, Role after) {

@@ -23,11 +23,11 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
@@ -184,8 +184,8 @@ class AnalysisOwnershipIntegrationTest {
 
     @Test
     void analysesWithoutAnOwnerGoToTheFirstAdmin() throws Exception {
-        AnalysisId unowned = AnalysisId.newId();
-        analyses.insert(Analysis.queued(unowned, spec("OWNE"), null, Instant.now()));
+        AnalysisId unowned = TestAnalyses.newId();
+        analyses.insert(TestAnalyses.queued(unowned, spec("OWNE"), null, Instant.now()));
         String firstAdmin = userDirectory.firstAdmin().orElseThrow().value();
 
         assignOwners.assignUnownedToFirstAdmin();

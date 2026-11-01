@@ -25,4 +25,5 @@ dependencies {
     implementation(libs.docker.java.transport.httpclient5)
 
     testImplementation(testFixtures(project(":backend:library:persistence")))
+    testImplementation(testFixtures(project(":backend:domain:analysis:core")))
 }
