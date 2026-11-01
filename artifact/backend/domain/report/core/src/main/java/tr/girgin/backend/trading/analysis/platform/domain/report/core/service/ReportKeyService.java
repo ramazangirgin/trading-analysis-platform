@@ -4,7 +4,6 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 
-/** The ticker is a directory name in the data dir, so it is held to a strict format. */
 @Service
 class ReportKeyService {
 

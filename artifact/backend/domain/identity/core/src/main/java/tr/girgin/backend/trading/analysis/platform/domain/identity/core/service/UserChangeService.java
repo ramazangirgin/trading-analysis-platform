@@ -10,7 +10,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Ro
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
-/** Copies of a {@link User} with one aspect changed, and new user IDs. */
 @Service
 class UserChangeService {
 

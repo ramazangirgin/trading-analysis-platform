@@ -9,7 +9,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
-// The rules on who may see, manage and publish an analysis are written here and nowhere else.
 @Service
 class AnalysisAccessService implements GetAnalysisRightsUseCase {
 

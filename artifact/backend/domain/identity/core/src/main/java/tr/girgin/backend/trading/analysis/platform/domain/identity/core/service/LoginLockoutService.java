@@ -39,12 +39,11 @@ class LoginLockoutService {
         this.lockoutDuration = lockoutDuration;
     }
 
-    /** Whether the account is locked at the given time: a lock is in force until its instant is reached. */
+    // A lock is in force until its instant is reached.
     boolean isLocked(User user, Instant now) {
         return user.lockedUntil().filter(now::isBefore).isPresent();
     }
 
-    /** The same user with no failed logins and no lock. */
     User unlocked(User user) {
         return new User(
                 user.id(),

@@ -9,7 +9,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
-/** An analysis ID is also the run directory name, so its format is strict. */
 @Service
 class AnalysisIdService {
 

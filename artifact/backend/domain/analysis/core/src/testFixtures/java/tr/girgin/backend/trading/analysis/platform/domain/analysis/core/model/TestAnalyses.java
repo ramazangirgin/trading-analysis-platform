@@ -8,7 +8,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
 
-/** Builds analyses in a given state for tests, with the canonical constructor. */
 public final class TestAnalyses {
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -89,11 +88,6 @@ public final class TestAnalyses {
                 analysis.version());
     }
 
-    /**
-     * An EXTERNAL record made from report files; {@code run}, the history entry that wrote them, may be null.
-     *
-     * @throws IllegalArgumentException when the origin is not report files
-     */
     public static Analysis importedFromReportFiles(
             AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external) {
         if (external.origin() != ExternalAnalysis.Origin.REPORT_FILES) {

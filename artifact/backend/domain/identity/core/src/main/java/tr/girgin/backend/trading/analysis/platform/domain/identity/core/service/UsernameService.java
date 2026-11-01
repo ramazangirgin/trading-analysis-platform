@@ -8,9 +8,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 
 /**
- * Builds a {@link Username}: 3 to 64 ASCII characters of {@code A-Z a-z 0-9 . _ @ -}. It keeps the case it was
- * entered in; lookups ignore case with PostgreSQL's {@code lower()}. ASCII only, because its result for non-ASCII
- * letters depends on the database's locale, and which names are equal must not.
+ * Names are ASCII only: lookups ignore case with PostgreSQL's {@code lower()}, whose result for non-ASCII letters
+ * depends on the database's locale, and which names are equal must not. The case entered is kept.
  */
 @Service
 class UsernameService {

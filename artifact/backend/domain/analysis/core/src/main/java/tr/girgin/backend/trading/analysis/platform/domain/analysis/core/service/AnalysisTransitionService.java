@@ -19,7 +19,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ru
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
-/** Builds an analysis and moves it from one state to the next. Every transition keeps the record's version. */
 @Service
 class AnalysisTransitionService {
 
@@ -61,7 +60,7 @@ class AnalysisTransitionService {
     /**
      * An EXTERNAL record for what the data dir holds. Times are cut to milliseconds, as stored, so that importing
      * the same files again yields an equal record. {@code version} is {@code null} for a new import, and the
-     * stored record's version for a refresh. {@code run} may be {@code null}: the models are then "unknown".
+     * stored record's version for a refresh.
      */
     Analysis imported(AnalysisId id, Long version, OwnerId owner, ExternalAnalysis external, String externalRef) {
         ExternalRun run = external.run();

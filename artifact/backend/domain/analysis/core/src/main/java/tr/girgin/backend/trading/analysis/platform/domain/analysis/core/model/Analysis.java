@@ -3,7 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model;
 import java.time.Instant;
 
 /**
- * One analysis run and its outcome. Immutable: transitions return a new instance.
+ * One analysis run and its outcome.
  * {@code externalRef} is where an EXTERNAL record came from in the data dir (see {@link ExternalAnalysis#ref()});
  * {@code runnerRef} is the runner's handle on a started run (a process or container), kept so a
  * restarted platform can find the run again.

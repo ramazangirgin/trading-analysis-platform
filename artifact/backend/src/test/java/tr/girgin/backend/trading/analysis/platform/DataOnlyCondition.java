@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** The condition of {@code ArchitectureTest.models_are_data}: a class declares only what the compiler generates. */
 final class DataOnlyCondition {
 
     /** The one model whose {@code toString} is written by hand: the generated one would print the hash. */

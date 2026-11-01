@@ -174,7 +174,6 @@ class AnalysisAccessServiceTest {
                 .isEqualTo(new AnalysisRights(true, List.of()));
     }
 
-    // Asserts that exactly the given callers, out of every kind of caller, may change the analysis to target.
     private void assertAllowed(Analysis analysis, Visibility target, AnalysisAccess... allowed) {
         List<AnalysisAccess> everyone =
                 List.of(OWNER_PLAIN, OWNER_SHARER, OTHER_PLAIN, OTHER_SHARER, ADMIN_PLAIN, ADMIN_SHARER);

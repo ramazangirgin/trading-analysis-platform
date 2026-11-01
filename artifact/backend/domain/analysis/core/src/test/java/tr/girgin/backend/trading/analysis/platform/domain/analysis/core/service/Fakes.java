@@ -78,7 +78,6 @@ final class Fakes {
         return TRANSITIONS.withVisibility(analysis, visibility, now);
     }
 
-    /** A port that fails the test on any call. */
     static <T> T untouched(Class<T> port) {
         return port.cast(java.lang.reflect.Proxy.newProxyInstance(
                 port.getClassLoader(), new Class<?>[] {port}, (_, method, _) -> {

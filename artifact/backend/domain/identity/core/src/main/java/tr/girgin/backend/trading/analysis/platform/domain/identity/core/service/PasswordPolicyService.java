@@ -82,7 +82,6 @@ class PasswordPolicyService {
                 Map.of("reasons", reasons, "minLength", minLength, "maxLength", MAX_LENGTH));
     }
 
-    /** The reason code that goes into the error's params, e.g. {@code too_short}. */
     String code(PasswordPolicyViolation violation) {
         return violation.name().toLowerCase(Locale.ROOT);
     }
