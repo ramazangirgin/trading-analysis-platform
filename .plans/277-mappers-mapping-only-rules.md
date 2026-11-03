@@ -285,11 +285,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP13: PriceHistoryToPriceHistoryDtoMapper as a MapStruct mapping
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `bff/impl/src/main/java/…/mapper/PriceHistoryToPriceHistoryDtoMapper.java`, `bff/impl/src/test/java/…/mapper/PriceHistoryToPriceHistoryDtoMapperTest.java`
 - **Steps**:
-  - [ ] Rewrite the mapper as an abstract MapStruct mapping.
+  - [x] Rewrite the mapper as an abstract MapStruct mapping.
 - **Tests**: `PriceHistoryToPriceHistoryDtoMapperTest`: the ticker, the trade date, and the points in
   order with all their values.
 
