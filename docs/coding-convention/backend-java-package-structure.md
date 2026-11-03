@@ -215,9 +215,7 @@ modules that are kept independent on purpose. These duplicates are accepted:
 | `DockerClients`, `RunnerKind` | `domain.analysis.adapter.runner.support`, `domain.catalog.adapter.runner.support` | `domains_are_independent`; both are a few lines, and the analysis copy has more (`isNoSuchContainer`). Runner support, not a generic library (yet) |
 | `Rating` | `domain.analysis.core.model`, `domain.report.core.model` | `domains_are_independent`; the orchestration maps between them |
 
-No two mappers share a simple name (`mappers_are_not_duplicated_across_modules`): the BFF's
-`StringToAnalysisIdMapper`, which turns an invalid ID into a 404, is the only one left, since the
-persistence adapter maps IDs through `AnalysisIdEmbeddable`.
+No two mappers share a simple name (`mappers_are_not_duplicated_across_modules`).
 
 Not enforced: a maximum number of classes per package. The DTO package and the BFF mapper package
 are large because the API is; the sub-package rules keep each package to one kind of class instead.

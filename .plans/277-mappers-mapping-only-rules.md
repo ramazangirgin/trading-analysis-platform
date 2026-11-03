@@ -255,11 +255,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP10: Remove StringToAnalysisIdMapper
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: `bff/impl/src/main/java/…/mapper/StringToAnalysisIdMapper.java` (deleted), `bff/impl/src/main/java/…/AnalysesApiDelegateImpl.java`, `bff/impl/src/main/java/…/PublicAnalysesApiDelegateImpl.java`
 - **Steps**:
-  - [ ] Replace each `idMapper.map(id)` with `new AnalysisId(id)`.
+  - [x] Replace each `idMapper.map(id)` with `new AnalysisId(id)`.
 - **Tests**: `AnalysesApiIntegrationTest`, `AnalysisSharingIntegrationTest` and the public analyses
   tests pass unchanged; an invalid ID still answers 404.
 

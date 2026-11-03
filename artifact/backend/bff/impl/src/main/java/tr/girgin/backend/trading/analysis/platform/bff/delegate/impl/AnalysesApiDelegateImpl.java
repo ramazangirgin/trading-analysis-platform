@@ -36,7 +36,6 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Pric
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.ReportToAnalysisReportDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RunEventToRunEventDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToRequestedAnalysisMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StringToAnalysisIdMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.VisibilityEnumDtoToVisibilityMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
@@ -50,6 +49,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
@@ -80,7 +80,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final StartAnalysisRequestToRequestedAnalysisMapper requestMapper;
     private final AnalysisViewToAnalysisDtoMapper analysisMapper;
     private final RunEventToRunEventDtoMapper eventMapper;
-    private final StringToAnalysisIdMapper idMapper;
     private final AnalysisStatusEnumDtoToAnalysisStatusMapper statusMapper;
     private final AnalysisScopeEnumDtoToAnalysisScopeMapper scopeMapper;
     private final VisibilityEnumDtoToVisibilityMapper visibilityMapper;
@@ -105,7 +104,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             StartAnalysisRequestToRequestedAnalysisMapper requestMapper,
             AnalysisViewToAnalysisDtoMapper analysisMapper,
             RunEventToRunEventDtoMapper eventMapper,
-            StringToAnalysisIdMapper idMapper,
             AnalysisStatusEnumDtoToAnalysisStatusMapper statusMapper,
             AnalysisScopeEnumDtoToAnalysisScopeMapper scopeMapper,
             VisibilityEnumDtoToVisibilityMapper visibilityMapper,
@@ -127,7 +125,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.requestMapper = requestMapper;
         this.analysisMapper = analysisMapper;
         this.eventMapper = eventMapper;
-        this.idMapper = idMapper;
         this.statusMapper = statusMapper;
         this.scopeMapper = scopeMapper;
         this.visibilityMapper = visibilityMapper;
@@ -161,33 +158,33 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto getAnalysis(String id) {
-        return dto(getAnalysis.get(idMapper.map(id), access()));
+        return dto(getAnalysis.get(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto changeVisibility(String id, ChangeVisibilityRequest request) {
         return dto(changeVisibility.change(
-                idMapper.map(id), visibilityMapper.map(request.visibility()), access(), request.version()));
+                new AnalysisId(id), visibilityMapper.map(request.visibility()), access(), request.version()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public AnalysisDto stopAnalysis(String id) {
-        return dto(stopAnalysis.stop(idMapper.map(id), access()));
+        return dto(stopAnalysis.stop(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> rerunAnalysis(String id) {
-        return created(rerunAnalysis.rerun(idMapper.map(id), access()));
+        return created(rerunAnalysis.rerun(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisReportDto getReport(String id) {
         return getReport
-                .getReport(idMapper.map(id), access())
+                .getReport(new AnalysisId(id), access())
                 .map(reportMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
@@ -200,7 +197,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @RequiresPermission(Permission.ANALYSIS_READ)
     public PriceHistoryDto getPrices(String id) {
         return getPrices
-                .getPrices(idMapper.map(id), access())
+                .getPrices(new AnalysisId(id), access())
                 .map(pricesMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
@@ -212,7 +209,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public RunLogDto getLogs(String id, int tail) {
-        return new RunLogDto(readLogs.tailLogs(idMapper.map(id), access(), tail));
+        return new RunLogDto(readLogs.tailLogs(new AnalysisId(id), access(), tail));
     }
 
     @Override
@@ -235,7 +232,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         // client sees it open while the run has yet to send an event (and can be closed meanwhile).
         send(emitter, SseEmitter.event().comment("open"));
         // Events sent before this method returns are buffered by the emitter.
-        subscription.set(subscribeEvents.subscribe(idMapper.map(id), afterSeq, access(), new RunEventListener() {
+        subscription.set(subscribeEvents.subscribe(new AnalysisId(id), afterSeq, access(), new RunEventListener() {
             @Override
             public void onEvent(RunEvent event) {
                 send(
