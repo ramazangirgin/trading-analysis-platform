@@ -232,11 +232,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP8: TAP-M2
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3, WP7
 - **Files**: `config/checkstyle/checkstyle.xml`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M2/Violation.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M2/Compliant.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M2/Suppressed.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M2/sources`
 - **Steps**:
-  - [ ] Add the rule and its main-only filter after `TAP-M1`.
+  - [x] Add the rule and its main-only filter after `TAP-M1`.
 - **Tests**: `ProjectRulesTest` runs the `TAP-M2` fixtures (`sources` = `main`), and
   `checkstyleMain` passes on the backend.
 

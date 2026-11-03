@@ -47,6 +47,12 @@
         <property name="files" value="^(?!.*[\\/]bff[\\/]api[\\/]src[\\/]main[\\/]).*$"/>
     </module>
 
+    <!-- TAP-M2 applies to main code only (not a suppression of a finding). -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-M2"/>
+        <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/]).*$"/>
+    </module>
+
     <!-- Files ===================================================================================== -->
     <module name="NewlineAtEndOfFile"/>
     <module name="FileTabCharacter">
@@ -356,6 +362,11 @@
             <property name="annotations" value="org.mapstruct.Mapper"/>
             <property name="attributes" value="config"/>
             <property name="suggestion" value="Use the shared configuration: @Mapper(config = SharedMapperConfig.class)."/>
+        </module>
+        <module name="tr.girgin.checkstyle.ForbiddenAnnotationCheck">
+            <property name="id" value="TAP-M2"/>
+            <property name="annotations" value="org.mapstruct.Context"/>
+            <property name="suggestion" value="Put the data into the source object (the delegate or a use case builds it) instead of passing it as @Context."/>
         </module>
     </module>
 </module>

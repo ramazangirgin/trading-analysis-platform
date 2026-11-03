@@ -152,6 +152,7 @@ the repository.
 | `TAP-D7` | No `static` method in a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`; static fields and nested types stay allowed | main | [`StaticMethodInAnnotatedClassCheck`](../../build-logic/checkstyle-rules/docs/StaticMethodInAnnotatedClassCheck.md) | `annotations = ...stereotype.Service, ...stereotype.Component, ...stereotype.Repository, ...stereotype.Controller, ...annotation.RestController, ...annotation.RestControllerAdvice, ...annotation.Configuration` | A Spring bean is a singleton already, so its methods are instance methods; a static method hides a dependency from the bean and from its tests (it cannot be injected or replaced). The one known exception is a `static @Bean` method that Spring needs before it creates the configuration, such as a method interceptor or a bean post-processor: suppress it with `@SuppressWarnings("checkstyle:TAP-D7")` and that reason | `@Service class PriceService { static BigDecimal round(BigDecimal v) {...} }` / `@Service class PriceService { BigDecimal round(BigDecimal v) {...} }` |
 | `TAP-D8` | A web DTO enum (an `enum` in `bff/api` main sources) is named `...EnumDto` | `bff/api` main | [`TypeName`](https://checkstyle.org/checks/naming/typename.html) | `tokens = ENUM_DEF`, `format = ^[A-Z][A-Za-z0-9]*EnumDto$` | The suffix tells an enum DTO from a record DTO where it is used, and a MapStruct enum mapper (`VisibilityToVisibilityEnumDtoMapper`) reads the same way | `enum VisibilityDto {...}` / `enum VisibilityEnumDto {...}` |
 | `TAP-M1` | Every `@Mapper` sets `config`, the shared `SharedMapperConfig` | main and test | [`RequiredAnnotationAttributeCheck`](../../build-logic/checkstyle-rules/docs/RequiredAnnotationAttributeCheck.md) | `annotations = org.mapstruct.Mapper`, `attributes = config` | One place sets deep copying and the unmapped source and target policies; a mapper without it silently shares state with its source and drops fields | `@Mapper(uses = X.class)` / `@Mapper(config = SharedMapperConfig.class, uses = X.class)` |
+| `TAP-M2` | A mapper takes no `@Context` parameter | main | [`ForbiddenAnnotationCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenAnnotationCheck.md) | `annotations = org.mapstruct.Context` | The data comes with the source object, which the delegate or a use case builds; a context parameter lets a mapper depend on data its source does not carry | `String map(Integer v, @Context Set<String> names)` / a source object that carries the names |
 
 ## Suppressing a finding
 
@@ -172,12 +173,13 @@ class ArchitectureTest {
 
 The check's name comes after `checkstyle:` (the name in the report, without `Check`). There is no
 central suppressions file, so each exception is visible where it applies and is reviewed with the
-code around it. Three settings in `checkstyle.xml` limit where a check applies. They are not
+code around it. Five settings in `checkstyle.xml` limit where a check applies. They are not
 suppressions:
 
 - `MissingJavadocType` applies to `core/inbound` and `core/outbound` only (`SuppressionSingleFilter`).
 - `TAP-D7` applies to main sources only (`SuppressionSingleFilter`).
 - `TAP-D8` applies to the main sources of `bff/api` only (`SuppressionSingleFilter`).
+- `TAP-M2` applies to main sources only (`SuppressionSingleFilter`).
 - `MagicNumber` applies to main sources only: the build turns it off for test sources, where tests
   spell out the values they expect.
 
