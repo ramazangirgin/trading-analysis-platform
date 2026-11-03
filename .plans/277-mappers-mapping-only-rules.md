@@ -142,11 +142,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Rights carry canChangeVisibility
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/analysis/core/src/main/java/…/inbound/AnalysisRights.java`, `domain/analysis/core/src/main/java/…/service/AnalysisAccessService.java`, `domain/analysis/core/src/test/java/…/service/AnalysisAccessServiceTest.java`
 - **Steps**:
-  - [ ] Add the component and set it in `rights`.
+  - [x] Add the component and set it in `rights`.
 - **Tests**: in `AnalysisAccessServiceTest`'s rights cases, `canChangeVisibility` is true exactly
   where `allowedVisibilities` is not empty.
 

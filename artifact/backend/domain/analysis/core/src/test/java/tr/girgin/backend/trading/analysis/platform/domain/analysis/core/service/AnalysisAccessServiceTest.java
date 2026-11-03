@@ -149,29 +149,29 @@ class AnalysisAccessServiceTest {
     @Test
     void rightsOfAnOwnerWithShareManageAndChangeToTheOtherVisibilities() {
         assertThat(analysisAccessService.rights(privateRun, OWNER_SHARER))
-                .isEqualTo(new AnalysisRights(true, List.of(Visibility.PUBLIC, Visibility.PARTIAL)));
+                .isEqualTo(new AnalysisRights(true, true, List.of(Visibility.PUBLIC, Visibility.PARTIAL)));
     }
 
     @Test
     void rightsOfAnOwnerWithoutShareMayOnlyGoBackToPrivate() {
         assertThat(analysisAccessService.rights(publicRun, OWNER_PLAIN))
-                .isEqualTo(new AnalysisRights(true, List.of(Visibility.PRIVATE)));
+                .isEqualTo(new AnalysisRights(true, true, List.of(Visibility.PRIVATE)));
         assertThat(analysisAccessService.rights(privateRun, OWNER_PLAIN))
-                .isEqualTo(new AnalysisRights(true, List.of()));
+                .isEqualTo(new AnalysisRights(true, false, List.of()));
     }
 
     @Test
     void rightsOfAnotherUserAreEmpty() {
         assertThat(analysisAccessService.rights(publicRun, OTHER_SHARER))
-                .isEqualTo(new AnalysisRights(false, List.of()));
+                .isEqualTo(new AnalysisRights(false, false, List.of()));
     }
 
     @Test
     void rightsOfAnAdminOnSomeoneElsesPartialAnalysisNarrowOrPublish() {
         assertThat(analysisAccessService.rights(partialRun, ADMIN_SHARER))
-                .isEqualTo(new AnalysisRights(true, List.of(Visibility.PRIVATE, Visibility.PUBLIC)));
+                .isEqualTo(new AnalysisRights(true, true, List.of(Visibility.PRIVATE, Visibility.PUBLIC)));
         assertThat(analysisAccessService.rights(partialRun, ADMIN_PLAIN))
-                .isEqualTo(new AnalysisRights(true, List.of()));
+                .isEqualTo(new AnalysisRights(true, false, List.of()));
     }
 
     private void assertAllowed(Analysis analysis, Visibility target, AnalysisAccess... allowed) {

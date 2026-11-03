@@ -14,7 +14,8 @@ class AnalysisAccessService implements GetAnalysisRightsUseCase {
 
     @Override
     public AnalysisRights rights(Analysis analysis, AnalysisAccess access) {
-        return new AnalysisRights(canManage(analysis, access), allowedVisibilities(analysis, access));
+        List<Visibility> allowedVisibilities = allowedVisibilities(analysis, access);
+        return new AnalysisRights(canManage(analysis, access), !allowedVisibilities.isEmpty(), allowedVisibilities);
     }
 
     boolean canSee(Analysis analysis, AnalysisAccess access) {
