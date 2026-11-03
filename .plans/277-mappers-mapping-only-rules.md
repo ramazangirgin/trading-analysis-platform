@@ -192,11 +192,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP5: CatalogJsonToCatalogMapper without defaultExpression
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/catalog/adapter/src/main/java/…/runner/mapper/CatalogJsonToCatalogMapper.java`, `domain/catalog/adapter/src/test/java/…/runner/mapper/CatalogJsonToCatalogMapperTest.java`
 - **Steps**:
-  - [ ] Replace the `defaultExpression`s with the null-value strategy.
+  - [x] Replace the `defaultExpression`s with the null-value strategy.
 - **Tests**:
   - A new `CatalogJsonToCatalogMapperTest`: a catalog JSON without `providers`, `analysts` and
     `assetTypes`, and a provider without `quick_models` and `deep_models`, map to empty lists; a
