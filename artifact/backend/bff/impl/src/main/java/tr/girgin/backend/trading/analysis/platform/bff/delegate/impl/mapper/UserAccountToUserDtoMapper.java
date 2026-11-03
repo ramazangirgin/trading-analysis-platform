@@ -1,6 +1,5 @@
 package tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper;
 
-import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.UserDto;
@@ -18,6 +17,5 @@ public interface UserAccountToUserDtoMapper {
     UserDto map(UserAccount source);
 
     @Mapping(target = "id", source = "id.value")
-    @BeanMapping(ignoreUnmappedSourceProperties = {"builtIn", "description", "permissions", "version"})
     UserRoleDto map(Role source);
 }

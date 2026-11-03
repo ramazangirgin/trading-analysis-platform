@@ -11,7 +11,7 @@ its tests ([package structure](../../../../docs/coding-convention/backend-java-p
 |---|---|---|
 | `DurationToMillisMapper` | `Duration` to its milliseconds (`long`) | the BFF's and the domain adapters' MapStruct mappers |
 | `OptionalInstantToInstantMapper` | An empty `Optional<Instant>` to null, a present one to its value | the identity adapter's and the BFF's MapStruct mappers |
-| `SharedMapperConfig` | The `@MapperConfig` of every mapper: Spring component, constructor injection, deep copy, unmapped target and source properties fail the compile | every mapper of the backend |
+| `SharedMapperConfig` | The `@MapperConfig` of every mapper: Spring component, constructor injection, deep copy, an unmapped target property fails the compile | every mapper of the backend |
 | `DeepCloneWithConversions` | The mapping control of `SharedMapperConfig`: mapping methods and built-in conversions only | `SharedMapperConfig` |
 | `EnumToLowerCaseNameMapper` | An enum to its lower-case constant name (`SAMPLE_VALUE` to `sample_value`), only where a mapping asks for it with `qualifiedByName = "lowerCaseName"` | the BFF's and the domain adapters' MapStruct mappers |
 
@@ -22,10 +22,10 @@ Only MapStruct mappers, the shared config and its mapping control live here
 
 - **One configuration for every mapper.** Every `@Mapper` sets `config = SharedMapperConfig.class`,
   enforced by `TAP-M1`. The config makes MapStruct deep-copy what it maps, so a mapped object never
-  shares a mutable object with its source, and sets both unmapped policies to `ERROR`: a target
-  property without a source and a source property that is not mapped fail the compile. A source
-  property left out on purpose is listed in `@BeanMapping(ignoreUnmappedSourceProperties = ...)`
-  on the mapper's `map` method. The mapping control is `DeepCloneWithConversions`, not MapStruct's
+  shares a mutable object with its source, and sets `unmappedTargetPolicy` to `ERROR`: a target
+  property without a source fails the compile. A source property that is not mapped is allowed
+  (`unmappedSourcePolicy` stays at MapStruct's default, `IGNORE`), so a mapper never lists the
+  source properties it leaves out. The mapping control is `DeepCloneWithConversions`, not MapStruct's
   `DeepClone`: `DeepClone` also forbids built-in conversions (enum to `String`, `Double` to
   `BigDecimal`, `LocalDate` to `String`), which always create a new immutable value and cannot
   share state. The config carries no `uses`: every mapper names its own converters, so it stays

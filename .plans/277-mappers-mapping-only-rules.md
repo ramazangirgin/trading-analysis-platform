@@ -105,8 +105,7 @@ How today's `default`-only mappers (a `@Mapper` with no abstract method) are sor
   delegates, so they become declarative mappings: nested sources (`key.ticker`, `id.value`,
   `username.value`), generated list and map methods, and converters in `uses`.
   - `UserAccountToUserDtoMapper`:
-    - an abstract `UserRoleDto map(Role)`, with `id` from `id.value` and the other role properties
-      listed in `@BeanMapping(ignoreUnmappedSourceProperties = ...)`;
+    - an abstract `UserRoleDto map(Role)`, with `id` from `id.value`;
     - `OptionalInstantToInstantMapper` for `lockedUntil` and `lastLoginAt`. That converter now has a
       second module using it, so it moves from the identity adapter to `library.mapper`
       (`mappers_are_not_duplicated_across_modules`).
