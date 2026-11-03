@@ -265,11 +265,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP11: OptionalInstantToInstantMapper into the mapper library
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/identity/adapter/src/main/java/…/persistence/mapper/OptionalInstantToInstantMapper.java` (deleted), `library/mapper/src/main/java/…/library/mapper/OptionalInstantToInstantMapper.java`, `domain/identity/adapter/src/main/java/…/persistence/mapper/UserToUserEntityMapper.java`, `library/mapper/src/test/java/…/library/mapper/OptionalInstantToInstantMapperTest.java`
 - **Steps**:
-  - [ ] Move the class; `UserToUserEntityMapper` imports it from the library.
+  - [x] Move the class; `UserToUserEntityMapper` imports it from the library.
 - **Tests**: `OptionalInstantToInstantMapperTest` (empty maps to null, present maps to its value, no
   domain names); the identity adapter's repository tests pass unchanged.
 

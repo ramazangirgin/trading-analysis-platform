@@ -31,6 +31,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.OptionalInstantToInstantMapper;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.MutableTestClock;
 
@@ -559,6 +560,6 @@ class JpaIdentityRepositoryTest {
 
     @Configuration
     @AutoConfigurationPackage
-    @ComponentScan(basePackageClasses = JpaIdentityRepositoryTest.class)
+    @ComponentScan(basePackageClasses = {JpaIdentityRepositoryTest.class, OptionalInstantToInstantMapper.class})
     static class Config {}
 }

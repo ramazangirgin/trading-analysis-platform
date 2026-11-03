@@ -10,6 +10,7 @@ its tests ([package structure](../../../../docs/coding-convention/backend-java-p
 | Class | Maps | Used by |
 |---|---|---|
 | `DurationToMillisMapper` | `Duration` to its milliseconds (`long`) | the BFF's and the domain adapters' MapStruct mappers |
+| `OptionalInstantToInstantMapper` | An empty `Optional<Instant>` to null, a present one to its value | the identity adapter's and the BFF's MapStruct mappers |
 | `SharedMapperConfig` | The `@MapperConfig` of every mapper: Spring component, constructor injection, deep copy, unmapped target and source properties fail the compile | every mapper of the backend |
 | `DeepCloneWithConversions` | The mapping control of `SharedMapperConfig`: mapping methods and built-in conversions only | `SharedMapperConfig` |
 | `EnumToLowerCaseNameMapper` | An enum to its lower-case constant name (`SAMPLE_VALUE` to `sample_value`), only where a mapping asks for it with `qualifiedByName = "lowerCaseName"` | the BFF's and the domain adapters' MapStruct mappers |
