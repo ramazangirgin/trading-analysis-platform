@@ -315,11 +315,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP16: AnalysisPreviewToAnalysisPreviewDtoMapper as a MapStruct mapping
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP14, WP15
 - **Files**: `bff/impl/src/main/java/…/mapper/AnalysisPreviewToAnalysisPreviewDtoMapper.java`, `bff/impl/src/test/java/…/mapper/AnalysisPreviewToAnalysisPreviewDtoMapperTest.java`
 - **Steps**:
-  - [ ] Rewrite the mapper as an abstract MapStruct mapping, with the key mapping chosen in WP14.
+  - [x] Rewrite the mapper as an abstract MapStruct mapping, with the key mapping chosen in WP14.
 - **Tests**: `AnalysisPreviewToAnalysisPreviewDtoMapperTest`: the ID, the ticker, the date, the
   rating, lower-case section keys in source order, and the locked sections.
 
