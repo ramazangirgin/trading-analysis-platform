@@ -166,13 +166,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP3: Analysis DTO mapped from AnalysisView
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `bff/impl/src/main/java/…/mapper/AnalysisToAnalysisDtoMapper.java` (deleted), `bff/impl/src/main/java/…/mapper/AnalysisViewToAnalysisDtoMapper.java`, `bff/impl/src/main/java/…/AnalysesApiDelegateImpl.java`, `bff/impl/src/test/java/…/mapper/AnalysisViewToAnalysisDtoMapperTest.java`
 - **Steps**:
-  - [ ] Replace the mapper. Every `dto(...)` and the list in the delegate go through
+  - [x] Replace the mapper. Every `dto(...)` and the list in the delegate go through
         `ViewAnalysesUseCase`, and the delegate's `usernames` helper goes.
-  - [ ] Keep the delegate's `ParameterNumber` and `ClassFanOutComplexity` suppressions only if they
+  - [x] Keep the delegate's `ParameterNumber` and `ClassFanOutComplexity` suppressions only if they
         are still needed.
 - **Tests**:
   - `AnalysisViewToAnalysisDtoMapperTest`, built with the generated `*Impl`s like
