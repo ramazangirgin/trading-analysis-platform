@@ -183,11 +183,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP4: RoleSummaryToRoleDtoMapper without expression
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `bff/impl/src/main/java/…/mapper/RoleSummaryToRoleDtoMapper.java`
 - **Steps**:
-  - [ ] Replace the `expression` with the typed method.
+  - [x] Replace the `expression` with the typed method.
 - **Tests**: `RoleSummaryToRoleDtoMapperTest` passes unchanged (permissions sorted by key).
 
 ### WP5: CatalogJsonToCatalogMapper without defaultExpression
