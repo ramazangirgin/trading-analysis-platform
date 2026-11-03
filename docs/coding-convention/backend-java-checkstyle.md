@@ -153,6 +153,7 @@ the repository.
 | `TAP-D8` | A web DTO enum (an `enum` in `bff/api` main sources) is named `...EnumDto` | `bff/api` main | [`TypeName`](https://checkstyle.org/checks/naming/typename.html) | `tokens = ENUM_DEF`, `format = ^[A-Z][A-Za-z0-9]*EnumDto$` | The suffix tells an enum DTO from a record DTO where it is used, and a MapStruct enum mapper (`VisibilityToVisibilityEnumDtoMapper`) reads the same way | `enum VisibilityDto {...}` / `enum VisibilityEnumDto {...}` |
 | `TAP-M1` | Every `@Mapper` sets `config`, the shared `SharedMapperConfig` | main and test | [`RequiredAnnotationAttributeCheck`](../../build-logic/checkstyle-rules/docs/RequiredAnnotationAttributeCheck.md) | `annotations = org.mapstruct.Mapper`, `attributes = config` | One place sets deep copying and the unmapped source and target policies; a mapper without it silently shares state with its source and drops fields | `@Mapper(uses = X.class)` / `@Mapper(config = SharedMapperConfig.class, uses = X.class)` |
 | `TAP-M2` | A mapper takes no `@Context` parameter | main | [`ForbiddenAnnotationCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenAnnotationCheck.md) | `annotations = org.mapstruct.Context` | The data comes with the source object, which the delegate or a use case builds; a context parameter lets a mapper depend on data its source does not carry | `String map(Integer v, @Context Set<String> names)` / a source object that carries the names |
+| `TAP-M3` | A `@Mapping` sets none of `expression`, `defaultExpression` and `conditionExpression` | main | [`ForbiddenAnnotationCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenAnnotationCheck.md) | `annotations = org.mapstruct.Mapping`, `attributes = expression, defaultExpression, conditionExpression` | Java in a string is not compiled until MapStruct generates the code, so a mistake shows late and the IDE cannot help; a computed value comes from the service that builds the source, a nested value through `source = "a.b"` or a typed method, an empty list from `nullValueIterableMappingStrategy`. `constant` and `defaultValue` are literals and stay allowed | `@Mapping(target = "n", expression = "java(a.size())")` / `@Mapping(target = "n", source = "a.size")` |
 
 ## Suppressing a finding
 
@@ -173,13 +174,14 @@ class ArchitectureTest {
 
 The check's name comes after `checkstyle:` (the name in the report, without `Check`). There is no
 central suppressions file, so each exception is visible where it applies and is reviewed with the
-code around it. Five settings in `checkstyle.xml` limit where a check applies. They are not
+code around it. Six settings in `checkstyle.xml` limit where a check applies. They are not
 suppressions:
 
 - `MissingJavadocType` applies to `core/inbound` and `core/outbound` only (`SuppressionSingleFilter`).
 - `TAP-D7` applies to main sources only (`SuppressionSingleFilter`).
 - `TAP-D8` applies to the main sources of `bff/api` only (`SuppressionSingleFilter`).
 - `TAP-M2` applies to main sources only (`SuppressionSingleFilter`).
+- `TAP-M3` applies to main sources only (`SuppressionSingleFilter`).
 - `MagicNumber` applies to main sources only: the build turns it off for test sources, where tests
   spell out the values they expect.
 

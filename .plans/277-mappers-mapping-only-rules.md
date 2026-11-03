@@ -242,11 +242,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP9: TAP-M3
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3, WP4, WP5, WP8
 - **Files**: `config/checkstyle/checkstyle.xml`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M3/Violation.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M3/Compliant.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M3/Suppressed.java`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-M3/sources`
 - **Steps**:
-  - [ ] Add the rule and its main-only filter after `TAP-M2`.
+  - [x] Add the rule and its main-only filter after `TAP-M2`.
 - **Tests**:
   - `ProjectRulesTest` runs the `TAP-M3` fixtures: each of the three attributes, on a single
     `@Mapping` and inside `@Mappings`. `Compliant.java` uses `source`, `constant`, `defaultValue`
