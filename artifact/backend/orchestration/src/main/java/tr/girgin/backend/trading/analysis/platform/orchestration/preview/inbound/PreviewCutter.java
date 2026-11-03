@@ -1,6 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.orchestration.preview.inbound;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +49,7 @@ class PreviewCutter {
                 analysis.spec().ticker(),
                 analysis.spec().tradeDate(),
                 analysis.rating(),
-                Map.copyOf(allowed),
+                Collections.unmodifiableMap(allowed),
                 List.copyOf(locked));
     }
 

@@ -306,11 +306,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP15: Preview sections keep their order
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `orchestration/src/main/java/…/preview/inbound/PreviewCutter.java`, `orchestration/src/test/java/…/preview/inbound/GetAnalysisPreviewUseCaseTest.java`
 - **Steps**:
-  - [ ] Pass the `EnumMap` on unmodifiable instead of through `Map.copyOf`.
+  - [x] Pass the `EnumMap` on unmodifiable instead of through `Map.copyOf`.
 - **Tests**: `GetAnalysisPreviewUseCaseTest` checks that the sections come in `ReportSection` order.
 
 ### WP16: AnalysisPreviewToAnalysisPreviewDtoMapper as a MapStruct mapping
