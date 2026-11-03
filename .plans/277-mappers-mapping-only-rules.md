@@ -214,11 +214,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP7: ForbiddenAnnotationCheck
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP6
 - **Files**: `build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/ForbiddenAnnotationCheck.java`, `build-logic/checkstyle-rules/src/main/resources/tr/girgin/checkstyle/messages.properties`, `build-logic/checkstyle-rules/src/test/java/tr/girgin/checkstyle/ForbiddenAnnotationCheckTest.java`, `build-logic/checkstyle-rules/src/test/resources/checks/ForbiddenAnnotationCheck/Basic.java`, `build-logic/checkstyle-rules/src/test/resources/checks/ForbiddenAnnotationCheck/Attributes.java`, `build-logic/checkstyle-rules/src/test/resources/checks/ForbiddenAnnotationCheck/Qualified.java`, `build-logic/checkstyle-rules/src/test/resources/checks/ForbiddenAnnotationCheck/OtherImport.java`
 - **Steps**:
-  - [ ] Two message keys: one for the annotation itself, one for an attribute it sets.
+  - [x] Two message keys: one for the annotation itself, one for an attribute it sets.
 - **Tests**:
   - `ForbiddenAnnotationCheckTest`, with fixtures for:
     - a forbidden annotation on a parameter, a method and a type;
