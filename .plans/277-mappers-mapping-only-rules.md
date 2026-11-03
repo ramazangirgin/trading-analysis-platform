@@ -295,11 +295,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP14: ReportToAnalysisReportDtoMapper as a MapStruct mapping
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `bff/impl/src/main/java/…/mapper/ReportToAnalysisReportDtoMapper.java`, `bff/impl/src/test/java/…/mapper/ReportToAnalysisReportDtoMapperTest.java`
 - **Steps**:
-  - [ ] Rewrite the mapper as an abstract MapStruct mapping. Add the two key converters only if the
+  - [x] Rewrite the mapper as an abstract MapStruct mapping. Add the two key converters only if the
         erasure clash needs them.
 - **Tests**: `ReportToAnalysisReportDtoMapperTest`: lower-case keys in enum order for sections and
   debates, sources sorted by name, a rating with and without a value, and `modifiedAt`.
