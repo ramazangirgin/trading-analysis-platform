@@ -90,4 +90,7 @@ when the module has no `id`. The annotation is named as written in the code:
 
 ## Project rules that use it
 
-None yet.
+| Rule | Configuration |
+|---|---|
+| [`TAP-M2`](../../../docs/coding-convention/backend-java-checkstyle.md#project-rules) | `annotations = org.mapstruct.Context`: no context parameter in a mapper; main code |
+| [`TAP-M3`](../../../docs/coding-convention/backend-java-checkstyle.md#project-rules) | `annotations = org.mapstruct.Mapping`, `attributes = expression, defaultExpression, conditionExpression`: no Java in a string; main code |
