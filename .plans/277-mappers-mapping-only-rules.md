@@ -152,11 +152,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: ViewAnalysesUseCase
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `orchestration/src/main/java/…/analysisview/model/AnalysisView.java`, `orchestration/src/main/java/…/analysisview/model/AnalysisOwner.java`, `orchestration/src/main/java/…/analysisview/inbound/ViewAnalysesUseCase.java`, `orchestration/src/test/java/…/analysisview/inbound/ViewAnalysesUseCaseTest.java`
 - **Steps**:
-  - [ ] Write the model types and the use case.
+  - [x] Write the model types and the use case.
 - **Tests**: `ViewAnalysesUseCaseTest`:
   - one list with two analyses whose rights differ gets the rights of each;
   - the owner's username is set;
