@@ -205,11 +205,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP6: Shared annotation attribute helper
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/support/AnnotationAttributes.java`, `build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/RequiredAnnotationAttributeCheck.java`
 - **Steps**:
-  - [ ] Move the code that collects attribute names into the helper, and use it from the check.
+  - [x] Move the code that collects attribute names into the helper, and use it from the check.
 - **Tests**: `RequiredAnnotationAttributeCheckTest` passes unchanged, and coverage stays at 100%.
 
 ### WP7: ForbiddenAnnotationCheck
