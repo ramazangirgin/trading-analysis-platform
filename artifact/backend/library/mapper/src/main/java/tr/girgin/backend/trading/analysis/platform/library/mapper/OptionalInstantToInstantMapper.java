@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Optional;
 import org.mapstruct.Mapper;
 
-/** An empty {@link Optional} as a null column. */
+/** An empty {@link Optional} as null. */
 @Mapper(config = SharedMapperConfig.class)
 public interface OptionalInstantToInstantMapper {
 
