@@ -325,11 +325,11 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP17: ArchUnit rule for hand-written mappers
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3, WP10, WP12, WP13, WP14, WP16
 - **Files**: `src/test/java/…/ArchitectureTest.java`
 - **Steps**:
-  - [ ] Add the rule and its condition.
+  - [x] Add the rule and its condition.
 - **Tests**:
   - The rule passes on the code.
   - Before merging, show that it fails on a deliberately injected-only converter: put
