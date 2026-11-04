@@ -40,7 +40,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Visi
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
@@ -67,7 +67,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     static final String END_EVENT = "end";
 
     private final StartAnalysisWithDefaultsUseCase startAnalysis;
-    private final ListAnalysesUseCase listAnalyses;
+    private final ListAnalysesPort listAnalyses;
     private final GetAnalysisPort getAnalysis;
     private final ChangeAnalysisVisibilityPort changeVisibility;
     private final StopAnalysisPort stopAnalysis;
@@ -91,7 +91,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
             StartAnalysisWithDefaultsUseCase startAnalysis,
-            ListAnalysesUseCase listAnalyses,
+            ListAnalysesPort listAnalyses,
             GetAnalysisPort getAnalysis,
             ChangeAnalysisVisibilityPort changeVisibility,
             StopAnalysisPort stopAnalysis,

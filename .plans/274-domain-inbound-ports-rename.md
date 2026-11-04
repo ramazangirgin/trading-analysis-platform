@@ -115,7 +115,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP5: Rename analysis ports: list, rights
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP4
 - **Files**: `domain/analysis/core/inbound/ListAnalysesUseCase.java`,
   `domain/analysis/core/inbound/GetAnalysisRightsUseCase.java`,
@@ -125,7 +125,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/health/inbound/SystemHealthUseCase.java`,
   `orchestration/analysisview/inbound/ViewAnalysesUseCase.java`
 - **Steps**:
-  - [ ] Rename the two ports as in "Design".
+  - [x] Rename the two ports as in "Design".
 - **Tests**: the existing tests of the analysis core, `:backend:bff:impl` and `:backend:orchestration` pass.
 
 ### WP6: Rename analysis ports: unowned, external

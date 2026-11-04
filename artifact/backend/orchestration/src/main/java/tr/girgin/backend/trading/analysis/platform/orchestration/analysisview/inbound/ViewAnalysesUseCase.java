@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
@@ -20,10 +20,10 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.mo
 @Service
 public class ViewAnalysesUseCase {
 
-    private final GetAnalysisRightsUseCase getAnalysisRights;
+    private final GetAnalysisRightsPort getAnalysisRights;
     private final UserDirectoryUseCase userDirectory;
 
-    ViewAnalysesUseCase(GetAnalysisRightsUseCase getAnalysisRights, UserDirectoryUseCase userDirectory) {
+    ViewAnalysesUseCase(GetAnalysisRightsPort getAnalysisRights, UserDirectoryUseCase userDirectory) {
         this.getAnalysisRights = getAnalysisRights;
         this.userDirectory = userDirectory;
     }

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
@@ -37,14 +37,14 @@ public class SystemHealthUseCase {
     private final GetCatalogUseCase catalog;
     private final ScanReportsUseCase scanReports;
     private final ManageSecretsUseCase secrets;
-    private final ListAnalysesUseCase analyses;
+    private final ListAnalysesPort analyses;
 
     SystemHealthUseCase(
             GetEngineVersionUseCase engineVersion,
             GetCatalogUseCase catalog,
             ScanReportsUseCase scanReports,
             ManageSecretsUseCase secrets,
-            ListAnalysesUseCase analyses) {
+            ListAnalysesPort analyses) {
         this.engineVersion = engineVersion;
         this.catalog = catalog;
         this.scanReports = scanReports;

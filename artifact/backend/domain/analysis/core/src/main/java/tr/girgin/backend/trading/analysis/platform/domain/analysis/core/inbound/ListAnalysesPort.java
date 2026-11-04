@@ -7,7 +7,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
 
 /** Lists analysis runs. */
-public interface ListAnalysesUseCase {
+public interface ListAnalysesPort {
 
     List<Analysis> list(AnalysisFilter filter, AnalysisScope scope, AnalysisAccess access);
 }
