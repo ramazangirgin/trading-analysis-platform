@@ -21,7 +21,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.DebateSpeaker;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
@@ -71,7 +71,7 @@ class GetAnalysisPreviewUseCaseTest {
             Instant.parse("2026-09-25T11:00:00Z")));
 
     private AnalysisPreview preview(PreviewSettings settings) {
-        GetReportUseCase getReport = key -> key.equals(KEY) ? report : Optional.empty();
+        GetReportPort getReport = key -> key.equals(KEY) ? report : Optional.empty();
         return new GetAnalysisPreviewUseCase(getPartial, new PreviewCutter(getReport, settings)).get(analysis.id());
     }
 

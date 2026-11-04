@@ -6,7 +6,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 
@@ -14,9 +14,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 public class GetAnalysisReportUseCase {
 
     private final GetAnalysisPort getAnalysis;
-    private final GetReportUseCase getReport;
+    private final GetReportPort getReport;
 
-    GetAnalysisReportUseCase(GetAnalysisPort getAnalysis, GetReportUseCase getReport) {
+    GetAnalysisReportUseCase(GetAnalysisPort getAnalysis, GetReportPort getReport) {
         this.getAnalysis = getAnalysis;
         this.getReport = getReport;
     }

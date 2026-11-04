@@ -5,7 +5,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 
 /** Reads one report from the data dir, by ticker and trade date. */
-public interface GetReportUseCase {
+public interface GetReportPort {
 
     Optional<Report> get(ReportKey key);
 }

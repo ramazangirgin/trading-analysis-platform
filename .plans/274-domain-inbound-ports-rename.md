@@ -177,7 +177,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP9: Rename the report and price ports
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP8
 - **Files**: `domain/report/core/inbound/GetReportUseCase.java`,
   `domain/report/core/inbound/GetPriceHistoryUseCase.java`,
@@ -188,7 +188,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/report/inbound/GetAnalysisReportUseCase.java`,
   `orchestration/report/inbound/GetAnalysisPricesUseCase.java`
 - **Steps**:
-  - [ ] Rename the two ports as in "Design".
+  - [x] Rename the two ports as in "Design".
 - **Tests**: the existing tests of the report core and `:backend:orchestration` pass.
 
 ### WP10: Rename GetCatalogUseCase

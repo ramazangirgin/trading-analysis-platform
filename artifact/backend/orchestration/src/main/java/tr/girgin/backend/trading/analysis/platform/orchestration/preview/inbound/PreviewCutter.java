@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
@@ -22,10 +22,10 @@ class PreviewCutter {
 
     private static final String ELLIPSIS = "…";
 
-    private final GetReportUseCase getReport;
+    private final GetReportPort getReport;
     private final PreviewSettings settings;
 
-    PreviewCutter(GetReportUseCase getReport, PreviewSettings settings) {
+    PreviewCutter(GetReportPort getReport, PreviewSettings settings) {
         this.getReport = getReport;
         this.settings = settings;
     }

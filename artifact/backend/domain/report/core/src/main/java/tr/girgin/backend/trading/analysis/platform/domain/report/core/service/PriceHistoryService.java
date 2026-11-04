@@ -5,7 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetPriceHistoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetPriceHistoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.PriceBar;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.PriceHistory;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.PricePoint;
@@ -18,7 +18,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.p
  * the last year up to the trade date is returned.
  */
 @Service
-class PriceHistoryService implements GetPriceHistoryUseCase {
+class PriceHistoryService implements GetPriceHistoryPort {
 
     static final int DAYS_SHOWN = 252;
     // Moving-average periods, in trading days.
