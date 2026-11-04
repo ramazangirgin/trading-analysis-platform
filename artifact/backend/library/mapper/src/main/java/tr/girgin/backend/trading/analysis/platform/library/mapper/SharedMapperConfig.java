@@ -9,6 +9,5 @@ import org.mapstruct.ReportingPolicy;
         componentModel = MappingConstants.ComponentModel.SPRING,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR,
         unmappedTargetPolicy = ReportingPolicy.ERROR,
-        unmappedSourcePolicy = ReportingPolicy.ERROR,
         mappingControl = DeepCloneWithConversions.class)
 public interface SharedMapperConfig {}

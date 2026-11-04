@@ -11,6 +11,7 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -513,6 +514,43 @@ class ArchitectureTest {
             .areAnnotatedWith(Mapper.class)
             .should(haveASimpleNameNoOtherMapperHas())
             .because("a converter two modules need lives once, in the shared mapper library, never as a copy");
+
+    @ArchTest
+    static final ArchRule hand_written_mappers_are_used_by_other_mappers = classes()
+            .that(areHandWrittenMappers())
+            .should(beUsedByAnotherMapper())
+            .because("a mapper with only default methods is a converter that another mapper uses;"
+                    + " code that nobody maps with belongs in the caller, or in a MapStruct mapping");
+
+    private static DescribedPredicate<JavaClass> areHandWrittenMappers() {
+        return new DescribedPredicate<>("are hand-written mappers outside bff.delegate.impl.mapper.error") {
+            @Override
+            public boolean test(JavaClass javaClass) {
+                return javaClass.isAnnotatedWith(Mapper.class)
+                        && javaClass.isInterface()
+                        && !javaClass.getPackageName().endsWith(".bff.delegate.impl.mapper.error")
+                        && javaClass.getMethods().stream()
+                                .noneMatch(method -> method.getModifiers().contains(JavaModifier.ABSTRACT));
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> beUsedByAnotherMapper() {
+        return new ArchCondition<>("be used by another mapper") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                boolean used = javaClass.getDirectDependenciesToSelf().stream()
+                        .map(dependency -> dependency.getOriginClass())
+                        .filter(origin -> !origin.getName().matches(javaClass.getName() + "(Impl)?"))
+                        .anyMatch(origin -> origin.getPackageName().endsWith(".mapper")
+                                || origin.getPackageName().contains(".mapper."));
+                if (!used) {
+                    events.add(SimpleConditionEvent.violated(
+                            javaClass, javaClass.getName() + " is not used by any other mapper"));
+                }
+            }
+        };
+    }
 
     /** Top-level project classes, without {@code package-info} and generated nested types. */
     private static GivenClassesConjunction topLevelClasses() {

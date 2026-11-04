@@ -7,7 +7,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.NoPermissionRequired;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisPreviewToAnalysisPreviewDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StringToAnalysisIdMapper;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.inbound.GetAnalysisPreviewUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.inbound.ListAnalysisPreviewsUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.AnalysisPreviewPage;
@@ -19,19 +19,16 @@ class PublicAnalysesApiDelegateImpl implements PublicAnalysesApiDelegate {
     private final GetAnalysisPreviewUseCase getPreview;
     private final AnalysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper summaryMapper;
     private final AnalysisPreviewToAnalysisPreviewDtoMapper previewMapper;
-    private final StringToAnalysisIdMapper idMapper;
 
     PublicAnalysesApiDelegateImpl(
             ListAnalysisPreviewsUseCase listPreviews,
             GetAnalysisPreviewUseCase getPreview,
             AnalysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper summaryMapper,
-            AnalysisPreviewToAnalysisPreviewDtoMapper previewMapper,
-            StringToAnalysisIdMapper idMapper) {
+            AnalysisPreviewToAnalysisPreviewDtoMapper previewMapper) {
         this.listPreviews = listPreviews;
         this.getPreview = getPreview;
         this.summaryMapper = summaryMapper;
         this.previewMapper = previewMapper;
-        this.idMapper = idMapper;
     }
 
     @Override
@@ -45,6 +42,6 @@ class PublicAnalysesApiDelegateImpl implements PublicAnalysesApiDelegate {
     @Override
     @NoPermissionRequired("open to visitors: the preview of one partial analysis, cut on the server")
     public AnalysisPreviewDto getPublicAnalysis(String id) {
-        return previewMapper.map(getPreview.get(idMapper.map(id)));
+        return previewMapper.map(getPreview.get(new AnalysisId(id)));
     }
 }

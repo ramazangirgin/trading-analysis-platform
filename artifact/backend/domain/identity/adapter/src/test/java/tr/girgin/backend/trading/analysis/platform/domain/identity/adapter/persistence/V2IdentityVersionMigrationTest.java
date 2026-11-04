@@ -23,6 +23,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
+import tr.girgin.backend.trading.analysis.platform.library.mapper.OptionalInstantToInstantMapper;
 import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapterTest;
 
 /**
@@ -102,7 +103,7 @@ class V2IdentityVersionMigrationTest {
     // migrations with the seed between V1 and V2.
     @AutoConfigurationPackage
     @ComponentScan(
-            basePackageClasses = JpaUserRepositoryAdapter.class,
+            basePackageClasses = {JpaUserRepositoryAdapter.class, OptionalInstantToInstantMapper.class},
             excludeFilters = @ComponentScan.Filter(Configuration.class))
     static class Config {
 

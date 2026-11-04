@@ -107,7 +107,9 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | MapStruct mapper | an adapter's `…mapper` package, `bff.delegate.impl.mapper` or `library.mapper` (the shared mapper library) | `mappers_live_at_layer_boundaries` |
 | Anything in a `mapper` package | is a MapStruct mapper (or its generated `*Impl`), or in `library.mapper` the shared `@MapperConfig` (`SharedMapperConfig`) and its `@MappingControl` annotation (`DeepCloneWithConversions`) | `mapper_packages_hold_only_mappers` |
 | `@MapperConfig`, a `@MappingControl` annotation | `library.mapper`, so the config a mapper names can only be the shared one | `mapper_configs_live_in_the_mapper_library` |
-| `@Mapper` | sets `config = SharedMapperConfig.class` (deep copy, unmapped source and target properties fail the compile) | `TAP-M1` (Checkstyle) |
+| `@Mapper` | sets `config = SharedMapperConfig.class` (deep copy, an unmapped target property fails the compile) | `TAP-M1` (Checkstyle) |
+| A mapper maps only | no `@Context` parameter: the delegate or a use case puts the data into the source object. No `expression`, `defaultExpression` or `conditionExpression`: a computed value comes from the service or use case that builds the source, a nested value through `source = "a.b"` or a typed method, an empty list from `nullValueIterableMappingStrategy` | `TAP-M2`, `TAP-M3` (Checkstyle) |
+| A mapper interface with only `default` methods | a converter that another mapper uses (`uses`); the exception mappers are the exception | `hand_written_mappers_are_used_by_other_mappers` |
 | `*ExceptionToApiExceptionMapper` | `bff.delegate.impl.mapper.error`, nothing else there; used only by the exception handler, never by a delegate ([REST endpoints](backend-java-rest-api.md#errors)) | `exception_mappers_live_in_mapper_error`, `mapper_error_holds_only_exception_mappers`, `exception_mappers_are_used_only_by_exception_handlers` |
 | `@RestControllerAdvice` for the domains' exceptions (`DomainExceptionHandler`) | `bff.delegate.impl.error`, nothing else there | `exception_handlers_live_in_error_packages`, `bff_impl_error_holds_only_exception_handlers` |
 | `@Entity` `*Entity`, `@Embeddable` `*Embeddable`, `*AttributeConverter` | `domain.<d>.adapter.<port>.entity`, nothing else there | `entities_live_in_entity_packages`, `entity_packages_hold_only_entities`, `persistence_classes_are_named_by_kind` |
@@ -215,9 +217,7 @@ modules that are kept independent on purpose. These duplicates are accepted:
 | `DockerClients`, `RunnerKind` | `domain.analysis.adapter.runner.support`, `domain.catalog.adapter.runner.support` | `domains_are_independent`; both are a few lines, and the analysis copy has more (`isNoSuchContainer`). Runner support, not a generic library (yet) |
 | `Rating` | `domain.analysis.core.model`, `domain.report.core.model` | `domains_are_independent`; the orchestration maps between them |
 
-No two mappers share a simple name (`mappers_are_not_duplicated_across_modules`): the BFF's
-`StringToAnalysisIdMapper`, which turns an invalid ID into a 404, is the only one left, since the
-persistence adapter maps IDs through `AnalysisIdEmbeddable`.
+No two mappers share a simple name (`mappers_are_not_duplicated_across_modules`).
 
 Not enforced: a maximum number of classes per package. The DTO package and the BFF mapper package
 are large because the API is; the sub-package rules keep each package to one kind of class instead.

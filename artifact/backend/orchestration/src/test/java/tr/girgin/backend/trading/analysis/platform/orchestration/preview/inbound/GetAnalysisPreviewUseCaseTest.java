@@ -98,6 +98,22 @@ class GetAnalysisPreviewUseCaseTest {
     }
 
     @Test
+    void theSectionsComeInReportSectionOrder() {
+        AnalysisPreview preview = preview(new PreviewSettings(
+                EnumSet.of(
+                        ReportSection.FINAL_TRADE_DECISION,
+                        ReportSection.MARKET_REPORT,
+                        ReportSection.SENTIMENT_REPORT),
+                400));
+
+        assertThat(preview.sections().keySet())
+                .containsExactly(
+                        ReportSection.MARKET_REPORT,
+                        ReportSection.SENTIMENT_REPORT,
+                        ReportSection.FINAL_TRADE_DECISION);
+    }
+
+    @Test
     void noTextOfAHiddenPartAppearsInTheResult() {
         String everything = preview(DEFAULTS).toString();
 

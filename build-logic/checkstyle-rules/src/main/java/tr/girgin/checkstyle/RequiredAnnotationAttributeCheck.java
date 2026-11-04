@@ -4,9 +4,9 @@ import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import tr.girgin.checkstyle.support.AnnotationAttributes;
 import tr.girgin.checkstyle.support.Identifiers;
 import tr.girgin.checkstyle.support.Imports;
 import tr.girgin.checkstyle.support.SourceNames;
@@ -20,8 +20,6 @@ import tr.girgin.checkstyle.support.TypeName;
 public class RequiredAnnotationAttributeCheck extends AbstractCheck {
 
     public static final String MSG_MISSING = "required.annotation.attribute";
-
-    private static final String VALUE = "value";
 
     private List<TypeName> annotations = List.of();
     private List<String> attributes = List.of();
@@ -84,27 +82,12 @@ public class RequiredAnnotationAttributeCheck extends AbstractCheck {
         if (annotations.stream().noneMatch(type -> type.matches(written, imports))) {
             return;
         }
-        Set<String> set = setAttributes(annotation);
+        Set<String> set = AnnotationAttributes.of(annotation);
         for (String required : attributes) {
             if (!set.contains(required)) {
                 log(annotation, MSG_MISSING, idPrefix(), written, required, suggestionSuffix());
             }
         }
-    }
-
-    private static Set<String> setAttributes(DetailAST annotation) {
-        Set<String> names = new HashSet<>();
-        for (DetailAST child = annotation.getFirstChild(); child != null; child = child.getNextSibling()) {
-            int type = child.getType();
-            if (type == TokenTypes.ANNOTATION_MEMBER_VALUE_PAIR) {
-                names.add(child.findFirstToken(TokenTypes.IDENT).getText());
-            } else if (type == TokenTypes.EXPR
-                    || type == TokenTypes.ANNOTATION
-                    || type == TokenTypes.ANNOTATION_ARRAY_INIT) {
-                names.add(VALUE);
-            }
-        }
-        return names;
     }
 
     /** {@code TAP-M1: } for a module with an {@code id}, nothing without. */

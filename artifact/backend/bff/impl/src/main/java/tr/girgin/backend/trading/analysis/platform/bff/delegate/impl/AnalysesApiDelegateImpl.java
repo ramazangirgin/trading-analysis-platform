@@ -8,11 +8,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,16 +31,14 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.Requ
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionEventStreams;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisScopeEnumDtoToAnalysisScopeMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisStatusEnumDtoToAnalysisStatusMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisToAnalysisDtoMapper;
+import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.AnalysisViewToAnalysisDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PriceHistoryToPriceHistoryDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.ReportToAnalysisReportDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RunEventToRunEventDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToRequestedAnalysisMapper;
-import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StringToAnalysisIdMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.VisibilityEnumDtoToVisibilityMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
@@ -53,13 +49,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.inbound.StartAnalysisWithDefaultsUseCase;
+import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.inbound.ViewAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisPricesUseCase;
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisReportUseCase;
 
@@ -81,11 +76,10 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final GetAnalysisReportUseCase getReport;
     private final GetAnalysisPricesUseCase getPrices;
     private final ReadAnalysisLogsUseCase readLogs;
-    private final GetAnalysisRightsUseCase getAnalysisRightsUseCase;
+    private final ViewAnalysesUseCase viewAnalyses;
     private final StartAnalysisRequestToRequestedAnalysisMapper requestMapper;
-    private final AnalysisToAnalysisDtoMapper analysisMapper;
+    private final AnalysisViewToAnalysisDtoMapper analysisMapper;
     private final RunEventToRunEventDtoMapper eventMapper;
-    private final StringToAnalysisIdMapper idMapper;
     private final AnalysisStatusEnumDtoToAnalysisStatusMapper statusMapper;
     private final AnalysisScopeEnumDtoToAnalysisScopeMapper scopeMapper;
     private final VisibilityEnumDtoToVisibilityMapper visibilityMapper;
@@ -93,7 +87,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
     private final SessionEventStreams sessionEventStreams;
     private final CurrentUser currentUser;
-    private final UserDirectoryUseCase userDirectory;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
@@ -107,19 +100,17 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             GetAnalysisReportUseCase getReport,
             GetAnalysisPricesUseCase getPrices,
             ReadAnalysisLogsUseCase readLogs,
-            GetAnalysisRightsUseCase getAnalysisRightsUseCase,
+            ViewAnalysesUseCase viewAnalyses,
             StartAnalysisRequestToRequestedAnalysisMapper requestMapper,
-            AnalysisToAnalysisDtoMapper analysisMapper,
+            AnalysisViewToAnalysisDtoMapper analysisMapper,
             RunEventToRunEventDtoMapper eventMapper,
-            StringToAnalysisIdMapper idMapper,
             AnalysisStatusEnumDtoToAnalysisStatusMapper statusMapper,
             AnalysisScopeEnumDtoToAnalysisScopeMapper scopeMapper,
             VisibilityEnumDtoToVisibilityMapper visibilityMapper,
             ReportToAnalysisReportDtoMapper reportMapper,
             PriceHistoryToPriceHistoryDtoMapper pricesMapper,
             SessionEventStreams sessionEventStreams,
-            CurrentUser currentUser,
-            UserDirectoryUseCase userDirectory) {
+            CurrentUser currentUser) {
         this.startAnalysis = startAnalysis;
         this.listAnalyses = listAnalyses;
         this.getAnalysis = getAnalysis;
@@ -130,11 +121,10 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.getReport = getReport;
         this.getPrices = getPrices;
         this.readLogs = readLogs;
-        this.getAnalysisRightsUseCase = getAnalysisRightsUseCase;
+        this.viewAnalyses = viewAnalyses;
         this.requestMapper = requestMapper;
         this.analysisMapper = analysisMapper;
         this.eventMapper = eventMapper;
-        this.idMapper = idMapper;
         this.statusMapper = statusMapper;
         this.scopeMapper = scopeMapper;
         this.visibilityMapper = visibilityMapper;
@@ -142,7 +132,6 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         this.pricesMapper = pricesMapper;
         this.sessionEventStreams = sessionEventStreams;
         this.currentUser = currentUser;
-        this.userDirectory = userDirectory;
     }
 
     @Override
@@ -161,42 +150,41 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         AnalysisAccess access = access();
         List<Analysis> analyses =
                 listAnalyses.list(filter, scopeMapper.map(scope == null ? AnalysisScopeEnumDto.MINE : scope), access);
-        Map<UserId, Username> usernames = usernames(analyses);
-        return analyses.stream()
-                .map(a -> analysisMapper.map(a, usernames, getAnalysisRightsUseCase.rights(a, access)))
+        return viewAnalyses.view(analyses, access).stream()
+                .map(analysisMapper::map)
                 .toList();
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto getAnalysis(String id) {
-        return dto(getAnalysis.get(idMapper.map(id), access()));
+        return dto(getAnalysis.get(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto changeVisibility(String id, ChangeVisibilityRequest request) {
         return dto(changeVisibility.change(
-                idMapper.map(id), visibilityMapper.map(request.visibility()), access(), request.version()));
+                new AnalysisId(id), visibilityMapper.map(request.visibility()), access(), request.version()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public AnalysisDto stopAnalysis(String id) {
-        return dto(stopAnalysis.stop(idMapper.map(id), access()));
+        return dto(stopAnalysis.stop(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> rerunAnalysis(String id) {
-        return created(rerunAnalysis.rerun(idMapper.map(id), access()));
+        return created(rerunAnalysis.rerun(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisReportDto getReport(String id) {
         return getReport
-                .getReport(idMapper.map(id), access())
+                .getReport(new AnalysisId(id), access())
                 .map(reportMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
@@ -209,7 +197,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @RequiresPermission(Permission.ANALYSIS_READ)
     public PriceHistoryDto getPrices(String id) {
         return getPrices
-                .getPrices(idMapper.map(id), access())
+                .getPrices(new AnalysisId(id), access())
                 .map(pricesMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
@@ -221,7 +209,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public RunLogDto getLogs(String id, int tail) {
-        return new RunLogDto(readLogs.tailLogs(idMapper.map(id), access(), tail));
+        return new RunLogDto(readLogs.tailLogs(new AnalysisId(id), access(), tail));
     }
 
     @Override
@@ -244,7 +232,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         // client sees it open while the run has yet to send an event (and can be closed meanwhile).
         send(emitter, SseEmitter.event().comment("open"));
         // Events sent before this method returns are buffered by the emitter.
-        subscription.set(subscribeEvents.subscribe(idMapper.map(id), afterSeq, access(), new RunEventListener() {
+        subscription.set(subscribeEvents.subscribe(new AnalysisId(id), afterSeq, access(), new RunEventListener() {
             @Override
             public void onEvent(RunEvent event) {
                 send(
@@ -293,17 +281,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     private AnalysisDto dto(Analysis analysis) {
-        return analysisMapper.map(
-                analysis, usernames(List.of(analysis)), getAnalysisRightsUseCase.rights(analysis, access()));
-    }
-
-    private Map<UserId, Username> usernames(List<Analysis> analyses) {
-        Set<UserId> ids = analyses.stream()
-                .map(Analysis::owner)
-                .filter(Objects::nonNull)
-                .map(owner -> new UserId(owner.value()))
-                .collect(Collectors.toSet());
-        return userDirectory.usernames(ids);
+        return analysisMapper.map(viewAnalyses.view(analysis, access()));
     }
 
     private void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
