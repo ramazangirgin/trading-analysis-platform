@@ -10,7 +10,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Ro
  * What admins do with roles. The built-in roles cannot be renamed or deleted, and the permissions of ADMIN cannot
  * change, so the platform always has a role with every permission.
  */
-public interface ManageRolesUseCase {
+public interface ManageRolesPort {
 
     /** All roles, sorted by name. */
     List<RoleSummary> list();

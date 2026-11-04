@@ -7,7 +7,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.AssignUnownedPresetsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.AssignUnownedPresetsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 
 /** settings does not know users; identity knows who the first admin is. */
@@ -17,9 +17,9 @@ public class AssignPresetOwnersUseCase {
     private static final Logger log = LoggerFactory.getLogger(AssignPresetOwnersUseCase.class);
 
     private final UserDirectoryUseCase userDirectory;
-    private final AssignUnownedPresetsUseCase assignUnowned;
+    private final AssignUnownedPresetsPort assignUnowned;
 
-    AssignPresetOwnersUseCase(UserDirectoryUseCase userDirectory, AssignUnownedPresetsUseCase assignUnowned) {
+    AssignPresetOwnersUseCase(UserDirectoryUseCase userDirectory, AssignUnownedPresetsPort assignUnowned) {
         this.userDirectory = userDirectory;
         this.assignUnowned = assignUnowned;
     }

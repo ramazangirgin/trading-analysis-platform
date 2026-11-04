@@ -15,7 +15,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageRolesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageRolesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
@@ -28,7 +28,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
  * ignoring case must not depend on the database's locale.
  */
 @Service
-class RoleManagementService implements ManageRolesUseCase {
+class RoleManagementService implements ManageRolesPort {
 
     private static final Logger log = LoggerFactory.getLogger(RoleManagementService.class);
 

@@ -224,7 +224,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP12: Rename AssignUnownedPresetsUseCase and ManageRolesUseCase
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP11
 - **Files**: `domain/settings/core/inbound/AssignUnownedPresetsUseCase.java`,
   `domain/identity/core/inbound/ManageRolesUseCase.java`,
@@ -234,7 +234,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/ownership/inbound/AssignPresetOwnersUseCase.java`,
   `orchestration/ownership/inbound/AssignPresetOwnersUseCaseTest.java`
 - **Steps**:
-  - [ ] Rename the two ports as in "Design".
+  - [x] Rename the two ports as in "Design".
 - **Tests**: the existing tests of the settings and identity cores, `:backend:bff:impl` and `:backend:orchestration` pass.
 
 ### WP13: Rename the authentication ports

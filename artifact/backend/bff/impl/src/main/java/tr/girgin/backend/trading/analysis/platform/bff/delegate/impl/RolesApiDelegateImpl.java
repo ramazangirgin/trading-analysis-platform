@@ -19,20 +19,20 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.Requ
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.SessionAuthorities;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionEnumDtoToPermissionMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RoleSummaryToRoleDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageRolesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageRolesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 
 @Service
 class RolesApiDelegateImpl implements RolesApiDelegate {
 
-    private final ManageRolesUseCase manageRoles;
+    private final ManageRolesPort manageRoles;
     private final RoleSummaryToRoleDtoMapper roleMapper;
     private final PermissionEnumDtoToPermissionMapper permissionMapper;
     private final SessionAuthorities sessionAuthorities;
 
     RolesApiDelegateImpl(
-            ManageRolesUseCase manageRoles,
+            ManageRolesPort manageRoles,
             RoleSummaryToRoleDtoMapper roleMapper,
             PermissionEnumDtoToPermissionMapper permissionMapper,
             SessionAuthorities sessionAuthorities) {
