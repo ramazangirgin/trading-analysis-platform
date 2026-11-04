@@ -6,7 +6,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
 
@@ -17,9 +17,9 @@ public class AssignAnalysisOwnersUseCase {
     private static final Logger log = LoggerFactory.getLogger(AssignAnalysisOwnersUseCase.class);
 
     private final UserDirectoryUseCase userDirectory;
-    private final AssignUnownedAnalysesUseCase assignUnowned;
+    private final AssignUnownedAnalysesPort assignUnowned;
 
-    AssignAnalysisOwnersUseCase(UserDirectoryUseCase userDirectory, AssignUnownedAnalysesUseCase assignUnowned) {
+    AssignAnalysisOwnersUseCase(UserDirectoryUseCase userDirectory, AssignUnownedAnalysesPort assignUnowned) {
         this.userDirectory = userDirectory;
         this.assignUnowned = assignUnowned;
     }

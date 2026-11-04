@@ -5,7 +5,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ex
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 
 /** Records a run found in the data dir (made outside the platform) as an EXTERNAL analysis. */
-public interface RegisterExternalAnalysisUseCase {
+public interface RegisterExternalAnalysisPort {
 
     /**
      * Idempotent per data dir source; runs the platform started are never overwritten. A new record belongs to

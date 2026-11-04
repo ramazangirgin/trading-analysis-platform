@@ -130,7 +130,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP6: Rename analysis ports: unowned, external
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP5
 - **Files**: `domain/analysis/core/inbound/AssignUnownedAnalysesUseCase.java`,
   `domain/analysis/core/inbound/RegisterExternalAnalysisUseCase.java`,
@@ -140,7 +140,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/ownership/inbound/AssignAnalysisOwnersUseCaseTest.java`,
   `orchestration/report/inbound/ImportExistingRunsUseCase.java`
 - **Steps**:
-  - [ ] Rename the two ports as in "Design".
+  - [x] Rename the two ports as in "Design".
 - **Tests**: the existing tests of the analysis core and `:backend:orchestration` pass.
 
 ### WP7: Rename the import-checking ports

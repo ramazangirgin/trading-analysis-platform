@@ -23,7 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RegisterExternalAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RegisterExternalAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ValidateExternalAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
@@ -68,7 +68,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     private final ScanRunHistoryUseCase scanHistory;
     private final CheckReportDecisionUseCase checkReportDecisionUseCase;
     private final ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase;
-    private final RegisterExternalAnalysisUseCase registerExternal;
+    private final RegisterExternalAnalysisPort registerExternal;
     private final UserDirectoryUseCase userDirectory;
     private final WatchDataDirUseCase watchDataDir;
     private final boolean importOnStartup;
@@ -87,7 +87,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             ScanRunHistoryUseCase scanHistory,
             CheckReportDecisionUseCase checkReportDecisionUseCase,
             ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase,
-            RegisterExternalAnalysisUseCase registerExternal,
+            RegisterExternalAnalysisPort registerExternal,
             UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
             @Value("${platform.import.on-startup:true}") boolean importOnStartup,
@@ -113,7 +113,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             ScanRunHistoryUseCase scanHistory,
             CheckReportDecisionUseCase checkReportDecisionUseCase,
             ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase,
-            RegisterExternalAnalysisUseCase registerExternal,
+            RegisterExternalAnalysisPort registerExternal,
             UserDirectoryUseCase userDirectory,
             WatchDataDirUseCase watchDataDir,
             boolean importOnStartup,

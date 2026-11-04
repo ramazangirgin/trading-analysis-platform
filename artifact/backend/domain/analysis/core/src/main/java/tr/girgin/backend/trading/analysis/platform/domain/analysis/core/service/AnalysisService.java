@@ -18,7 +18,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisPort;
@@ -52,7 +52,7 @@ class AnalysisService
                 StopAnalysisPort,
                 RerunAnalysisPort,
                 GetAnalysisPort,
-                AssignUnownedAnalysesUseCase,
+                AssignUnownedAnalysesPort,
                 SmartInitializingSingleton {
 
     // Error codes stored on failed runs; the frontend translates them.
