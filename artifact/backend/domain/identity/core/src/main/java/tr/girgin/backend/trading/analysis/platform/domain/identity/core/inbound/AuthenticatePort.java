@@ -5,7 +5,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Au
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
 /** Checks a username and password, and looks up a signed-in user again. */
-public interface AuthenticateUseCase {
+public interface AuthenticatePort {
 
     /**
      * Checks the credentials. A username that is not a valid one, an unknown user, a disabled user, a locked

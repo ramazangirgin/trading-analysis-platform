@@ -26,7 +26,7 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import tools.jackson.databind.json.JsonMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticatePort;
 
 /**
  * Spring Security: the session login of {@code /api/auth} and the rules that every other {@code /api}
@@ -87,7 +87,7 @@ public class SecurityConfig {
             LoginAttemptLimiter loginAttemptLimiter,
             PublicRequestLimiter publicRequestLimiter,
             SessionAuthorities sessionAuthorities,
-            AuthenticateUseCase authentication,
+            AuthenticatePort authentication,
             JsonMapper jsonMapper)
             throws Exception {
         ApiErrorWriter writer = new ApiErrorWriter(jsonMapper);

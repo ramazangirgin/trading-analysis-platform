@@ -239,7 +239,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP13: Rename the authentication ports
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP12
 - **Files**: `domain/identity/core/inbound/AuthenticateUseCase.java`,
   `domain/identity/core/inbound/ChangePasswordUseCase.java`,
@@ -250,7 +250,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `bff/delegate/impl/config/RoleAuthoritiesRefreshFilter.java`,
   `bff/delegate/impl/config/RoleAuthoritiesRefreshFilterTest.java`
 - **Steps**:
-  - [ ] Rename the two ports as in "Design".
+  - [x] Rename the two ports as in "Design".
 - **Tests**: the existing tests of the identity core and `:backend:bff:impl` pass.
 
 ### WP14: Rename the user management ports

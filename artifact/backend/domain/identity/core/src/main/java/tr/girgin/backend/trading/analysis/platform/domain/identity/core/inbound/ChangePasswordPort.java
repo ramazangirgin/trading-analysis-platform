@@ -4,7 +4,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Au
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
 /** Lets a signed-in user set a new password. */
-public interface ChangePasswordUseCase {
+public interface ChangePasswordPort {
 
     /**
      * Stores the new password of the user and clears their change-password flag. The current password

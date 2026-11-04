@@ -27,7 +27,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticatePort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.AuthenticatedUser;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
@@ -36,7 +36,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 class RoleAuthoritiesRefreshFilterTest {
 
     private final SessionAuthorities sessionAuthorities = new SessionAuthorities();
-    private final AuthenticateUseCase authentication = mock(AuthenticateUseCase.class);
+    private final AuthenticatePort authentication = mock(AuthenticatePort.class);
     private final SecurityContextRepository repository = mock(SecurityContextRepository.class);
     private final RoleAuthoritiesRefreshFilter filter =
             new RoleAuthoritiesRefreshFilter(sessionAuthorities, authentication, repository);
