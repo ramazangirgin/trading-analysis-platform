@@ -332,5 +332,5 @@ their tests and the rule in `ArchitectureTest`; `mise run build` and `mise run c
 
 ## Open questions
 
-- The rename is 15 sequential packages, kept at 8 files each (WP15 excepted) so each compiles alone.
-  Would one package per domain, over the file cap but in fewer runs, be preferred?
+None. The developer decided to keep the 15 sequential packages (8 files each, WP15 excepted) so each
+compiles alone.
