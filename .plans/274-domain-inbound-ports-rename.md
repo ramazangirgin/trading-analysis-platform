@@ -84,7 +84,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP3: Rename GetAnalysisUseCase
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP2
 - **Files**: `domain/analysis/core/inbound/GetAnalysisUseCase.java`,
   `domain/analysis/core/service/AnalysisService.java`,
@@ -95,7 +95,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/report/inbound/GetAnalysisPricesUseCase.java`,
   `orchestration/report/inbound/GetAnalysisPricesUseCaseTest.java`
 - **Steps**:
-  - [ ] Rename the port as in "Design".
+  - [x] Rename the port as in "Design".
 - **Tests**: the existing tests of the analysis core, `:backend:bff:impl` and `:backend:orchestration` pass.
 
 ### WP4: Rename the partial analysis ports

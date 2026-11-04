@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisPort;
@@ -51,7 +51,7 @@ class AnalysisService
         implements StartAnalysisPort,
                 StopAnalysisPort,
                 RerunAnalysisPort,
-                GetAnalysisUseCase,
+                GetAnalysisPort,
                 AssignUnownedAnalysesUseCase,
                 SmartInitializingSingleton {
 

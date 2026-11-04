@@ -2,7 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound
 
 import java.util.Optional;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -13,10 +13,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 @Service
 public class GetAnalysisReportUseCase {
 
-    private final GetAnalysisUseCase getAnalysis;
+    private final GetAnalysisPort getAnalysis;
     private final GetReportUseCase getReport;
 
-    GetAnalysisReportUseCase(GetAnalysisUseCase getAnalysis, GetReportUseCase getReport) {
+    GetAnalysisReportUseCase(GetAnalysisPort getAnalysis, GetReportUseCase getReport) {
         this.getAnalysis = getAnalysis;
         this.getReport = getReport;
     }

@@ -39,7 +39,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Star
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.VisibilityEnumDtoToVisibilityMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisPort;
@@ -68,7 +68,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
     private final StartAnalysisWithDefaultsUseCase startAnalysis;
     private final ListAnalysesUseCase listAnalyses;
-    private final GetAnalysisUseCase getAnalysis;
+    private final GetAnalysisPort getAnalysis;
     private final ChangeAnalysisVisibilityPort changeVisibility;
     private final StopAnalysisPort stopAnalysis;
     private final RerunAnalysisPort rerunAnalysis;
@@ -92,7 +92,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     AnalysesApiDelegateImpl(
             StartAnalysisWithDefaultsUseCase startAnalysis,
             ListAnalysesUseCase listAnalyses,
-            GetAnalysisUseCase getAnalysis,
+            GetAnalysisPort getAnalysis,
             ChangeAnalysisVisibilityPort changeVisibility,
             StopAnalysisPort stopAnalysis,
             RerunAnalysisPort rerunAnalysis,

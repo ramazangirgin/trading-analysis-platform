@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
@@ -22,11 +22,11 @@ class AnalysisLogService implements ReadAnalysisLogsPort {
     private static final Pattern KEY =
             Pattern.compile("\\b(sk-[A-Za-z]*-?|AIza|xai-|gsk_)([A-Za-z0-9_\\-]{4})[A-Za-z0-9_\\-]{8,}");
 
-    private final GetAnalysisUseCase getAnalysis;
+    private final GetAnalysisPort getAnalysis;
     private final RunLogPort runLog;
     private final AnalysisAccessService analysisAccessService;
 
-    AnalysisLogService(GetAnalysisUseCase getAnalysis, RunLogPort runLog, AnalysisAccessService analysisAccessService) {
+    AnalysisLogService(GetAnalysisPort getAnalysis, RunLogPort runLog, AnalysisAccessService analysisAccessService) {
         this.getAnalysis = getAnalysis;
         this.runLog = runLog;
         this.analysisAccessService = analysisAccessService;

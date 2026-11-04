@@ -5,7 +5,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
 /** Reads one analysis run. */
-public interface GetAnalysisUseCase {
+public interface GetAnalysisPort {
 
     /** An analysis the caller may not see is reported as not found, like a missing one. */
     Analysis get(AnalysisId id, AnalysisAccess access);
