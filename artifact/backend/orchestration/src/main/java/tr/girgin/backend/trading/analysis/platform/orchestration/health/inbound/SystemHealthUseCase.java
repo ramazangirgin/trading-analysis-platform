@@ -13,7 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetEngineVersionPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
@@ -34,14 +34,14 @@ public class SystemHealthUseCase {
     private static final AnalysisAccess PLATFORM = new AnalysisAccess(new OwnerId("platform"), true, false);
 
     private final GetEngineVersionPort engineVersion;
-    private final GetCatalogUseCase catalog;
+    private final GetCatalogPort catalog;
     private final ScanReportsPort scanReports;
     private final ManageSecretsUseCase secrets;
     private final ListAnalysesPort analyses;
 
     SystemHealthUseCase(
             GetEngineVersionPort engineVersion,
-            GetCatalogUseCase catalog,
+            GetCatalogPort catalog,
             ScanReportsPort scanReports,
             ManageSecretsUseCase secrets,
             ListAnalysesPort analyses) {

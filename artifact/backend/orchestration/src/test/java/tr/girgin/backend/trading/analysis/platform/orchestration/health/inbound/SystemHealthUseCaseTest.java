@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
@@ -78,7 +78,7 @@ class SystemHealthUseCaseTest {
     }
 
     private static SystemHealthUseCase service(EngineVersion version, List<SecretStatus> secrets, int reports) {
-        GetCatalogUseCase catalog = () -> CATALOG;
+        GetCatalogPort catalog = () -> CATALOG;
         return new SystemHealthUseCase(
                 () -> version,
                 catalog,

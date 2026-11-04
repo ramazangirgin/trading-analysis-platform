@@ -11,7 +11,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelOption;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
@@ -23,11 +23,11 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.m
 public class StartAnalysisWithDefaultsUseCase {
 
     private final ManageAnalysisDefaultsUseCase defaults;
-    private final GetCatalogUseCase catalog;
+    private final GetCatalogPort catalog;
     private final StartAnalysisPort startAnalysis;
 
     StartAnalysisWithDefaultsUseCase(
-            ManageAnalysisDefaultsUseCase defaults, GetCatalogUseCase catalog, StartAnalysisPort startAnalysis) {
+            ManageAnalysisDefaultsUseCase defaults, GetCatalogPort catalog, StartAnalysisPort startAnalysis) {
         this.defaults = defaults;
         this.catalog = catalog;
         this.startAnalysis = startAnalysis;

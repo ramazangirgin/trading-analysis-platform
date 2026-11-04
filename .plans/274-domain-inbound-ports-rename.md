@@ -193,7 +193,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP10: Rename GetCatalogUseCase
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP9
 - **Files**: `domain/catalog/core/inbound/GetCatalogUseCase.java`,
   `domain/catalog/core/service/CatalogService.java`,
@@ -204,7 +204,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/health/inbound/SystemHealthUseCase.java`,
   `orchestration/health/inbound/SystemHealthUseCaseTest.java`
 - **Steps**:
-  - [ ] Rename the port as in "Design".
+  - [x] Rename the port as in "Design".
 - **Tests**: the existing tests of the catalog core, `:backend:bff:impl` and `:backend:orchestration` pass.
 
 ### WP11: Rename the preset and secret ports

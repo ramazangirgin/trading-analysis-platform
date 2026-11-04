@@ -5,7 +5,7 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelOption;
@@ -23,9 +23,9 @@ public class ManageAnalysisDefaultsUseCase {
     private static final int MAX_ROUNDS = 10;
 
     private final AnalysisDefaultsRepositoryPort repository;
-    private final GetCatalogUseCase catalog;
+    private final GetCatalogPort catalog;
 
-    public ManageAnalysisDefaultsUseCase(AnalysisDefaultsRepositoryPort repository, GetCatalogUseCase catalog) {
+    public ManageAnalysisDefaultsUseCase(AnalysisDefaultsRepositoryPort repository, GetCatalogPort catalog) {
         this.repository = repository;
         this.catalog = catalog;
     }

@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetEngineVersionPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
@@ -16,7 +16,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.outbound.
  * which takes seconds. Failures are not cached, so a fixed installation is picked up at once.
  */
 @Service
-class CatalogService implements GetCatalogUseCase, GetEngineVersionPort {
+class CatalogService implements GetCatalogPort, GetEngineVersionPort {
 
     private final EngineInfoPort engine;
     private final Duration ttl;

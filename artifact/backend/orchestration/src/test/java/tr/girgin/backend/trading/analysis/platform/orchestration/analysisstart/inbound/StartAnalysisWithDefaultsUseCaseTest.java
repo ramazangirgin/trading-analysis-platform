@@ -18,7 +18,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Catalog;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelOption;
@@ -53,7 +53,7 @@ class StartAnalysisWithDefaultsUseCaseTest {
 
     private final List<AnalysisSpec> started = new ArrayList<>();
     private int catalogCalls;
-    private final GetCatalogUseCase catalog = () -> {
+    private final GetCatalogPort catalog = () -> {
         catalogCalls++;
         return CATALOG;
     };

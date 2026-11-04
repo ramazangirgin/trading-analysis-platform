@@ -5,16 +5,16 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.CatalogApi
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.CatalogDto;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.RequiresPermission;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.CatalogToCatalogDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 
 @Service
 class CatalogApiDelegateImpl implements CatalogApiDelegate {
 
-    private final GetCatalogUseCase getCatalog;
+    private final GetCatalogPort getCatalog;
     private final CatalogToCatalogDtoMapper mapper;
 
-    CatalogApiDelegateImpl(GetCatalogUseCase getCatalog, CatalogToCatalogDtoMapper mapper) {
+    CatalogApiDelegateImpl(GetCatalogPort getCatalog, CatalogToCatalogDtoMapper mapper) {
         this.getCatalog = getCatalog;
         this.mapper = mapper;
     }
