@@ -54,7 +54,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP1: Rename analysis ports: visibility, logs, events
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/analysis/core/inbound/ChangeAnalysisVisibilityUseCase.java`,
   `domain/analysis/core/inbound/ReadAnalysisLogsUseCase.java`,
@@ -65,7 +65,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `domain/analysis/core/service/AnalysisEventService.java`,
   `bff/delegate/impl/AnalysesApiDelegateImpl.java`
 - **Steps**:
-  - [ ] Rename the three ports as in "Design".
+  - [x] Rename the three ports as in "Design".
 - **Tests**: the existing tests of `:backend:domain:analysis:core` and `:backend:bff:impl` pass.
 
 ### WP2: Rename analysis ports: start, rerun, stop

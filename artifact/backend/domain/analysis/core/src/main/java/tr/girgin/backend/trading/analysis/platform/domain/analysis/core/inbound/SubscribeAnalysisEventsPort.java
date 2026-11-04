@@ -4,7 +4,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
 /** Streams a run's events: the stored ones first, then live ones. */
-public interface SubscribeAnalysisEventsUseCase {
+public interface SubscribeAnalysisEventsPort {
 
     /**
      * Replays the stored events with {@code seq > afterSeq}, then delivers live ones in order and

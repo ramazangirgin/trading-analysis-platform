@@ -6,7 +6,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 /** Makes an analysis public or private. */
-public interface ChangeAnalysisVisibilityUseCase {
+public interface ChangeAnalysisVisibilityPort {
 
     /**
      * Asking for the visibility the analysis has returns it unchanged.
