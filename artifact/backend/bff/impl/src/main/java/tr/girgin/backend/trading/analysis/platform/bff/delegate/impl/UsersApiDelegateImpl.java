@@ -24,8 +24,8 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.Requ
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.UserSessions;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.UserAccountToUserDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreatedUserAccount;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageUsersUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UnlockUserUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageUsersPort;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UnlockUserPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserAccount;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
@@ -35,14 +35,14 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 @Service
 class UsersApiDelegateImpl implements UsersApiDelegate {
 
-    private final ManageUsersUseCase manageUsers;
-    private final UnlockUserUseCase unlockUser;
+    private final ManageUsersPort manageUsers;
+    private final UnlockUserPort unlockUser;
     private final UserSessions userSessions;
     private final UserAccountToUserDtoMapper userMapper;
 
     UsersApiDelegateImpl(
-            ManageUsersUseCase manageUsers,
-            UnlockUserUseCase unlockUser,
+            ManageUsersPort manageUsers,
+            UnlockUserPort unlockUser,
             UserSessions userSessions,
             UserAccountToUserDtoMapper userMapper) {
         this.manageUsers = manageUsers;

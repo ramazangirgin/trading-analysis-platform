@@ -7,13 +7,13 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UnlockUserUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UnlockUserPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
 @Service
-class UserLockService implements UnlockUserUseCase {
+class UserLockService implements UnlockUserPort {
 
     private static final Logger log = LoggerFactory.getLogger(UserLockService.class);
     private static final int MAX_ATTEMPTS = 3;

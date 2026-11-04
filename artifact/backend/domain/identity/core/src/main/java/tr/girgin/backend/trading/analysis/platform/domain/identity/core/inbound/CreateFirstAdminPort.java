@@ -1,7 +1,7 @@
 package tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound;
 
 /** Makes sure someone can log in on a fresh installation. */
-public interface CreateFirstAdminUseCase {
+public interface CreateFirstAdminPort {
 
     /**
      * Creates the first admin when no user exists, and does nothing otherwise, so a restart never resets

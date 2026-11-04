@@ -255,7 +255,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP14: Rename the user management ports
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP13
 - **Files**: `domain/identity/core/inbound/ManageUsersUseCase.java`,
   `domain/identity/core/inbound/UnlockUserUseCase.java`,
@@ -266,7 +266,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `bff/delegate/impl/UsersApiDelegateImpl.java`,
   `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/FirstAdminIntegrationTest.java`
 - **Steps**:
-  - [ ] Rename the three ports as in "Design".
+  - [x] Rename the three ports as in "Design".
 - **Tests**: the existing tests of the identity core, `:backend:bff:impl` and `FirstAdminIntegrationTest` pass.
 
 ### WP15: Rename UserDirectoryUseCase

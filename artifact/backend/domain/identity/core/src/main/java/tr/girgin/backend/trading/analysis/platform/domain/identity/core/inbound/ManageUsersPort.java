@@ -7,7 +7,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Ro
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
 /** What admins do with accounts. There is no hard delete: a user is disabled instead. */
-public interface ManageUsersUseCase {
+public interface ManageUsersPort {
 
     /** All users, sorted by username, ignoring case. */
     List<UserAccount> list();
