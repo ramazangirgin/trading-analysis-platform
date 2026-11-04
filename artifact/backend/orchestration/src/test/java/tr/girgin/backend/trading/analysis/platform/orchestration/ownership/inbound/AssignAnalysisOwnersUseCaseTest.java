@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 
@@ -56,7 +56,7 @@ class AssignAnalysisOwnersUseCaseTest {
 
     private AssignAnalysisOwnersUseCase service(Optional<UserId> firstAdmin, AssignUnownedAnalysesPort assignUnowned) {
         return new AssignAnalysisOwnersUseCase(
-                new UserDirectoryUseCase() {
+                new UserDirectoryPort() {
                     @Override
                     public Optional<UserId> firstAdmin() {
                         return firstAdmin;

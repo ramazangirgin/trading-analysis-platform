@@ -7,7 +7,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 
 /** Looks users up for other domains' data: who the first admin is and what users are called. */
-public interface UserDirectoryUseCase {
+public interface UserDirectoryPort {
 
     /** The enabled ADMIN created first; empty when there is none yet. */
     Optional<UserId> firstAdmin();

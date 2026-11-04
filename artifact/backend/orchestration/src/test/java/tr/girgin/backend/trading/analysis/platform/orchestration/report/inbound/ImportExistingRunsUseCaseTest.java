@@ -27,7 +27,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ex
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalRegistration.Outcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionPort;
@@ -52,7 +52,7 @@ class ImportExistingRunsUseCaseTest {
     private final List<ExternalAnalysis> registered = new ArrayList<>();
     private final List<OwnerId> owners = new ArrayList<>();
     private Optional<UserId> firstAdmin = Optional.of(new UserId("admin-1"));
-    private final UserDirectoryUseCase directory = new UserDirectoryUseCase() {
+    private final UserDirectoryPort directory = new UserDirectoryPort() {
         @Override
         public Optional<UserId> firstAdmin() {
             return firstAdmin;

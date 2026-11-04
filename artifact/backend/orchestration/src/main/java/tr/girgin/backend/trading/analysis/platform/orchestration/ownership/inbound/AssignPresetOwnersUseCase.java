@@ -6,7 +6,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.AssignUnownedPresetsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 
@@ -16,10 +16,10 @@ public class AssignPresetOwnersUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(AssignPresetOwnersUseCase.class);
 
-    private final UserDirectoryUseCase userDirectory;
+    private final UserDirectoryPort userDirectory;
     private final AssignUnownedPresetsPort assignUnowned;
 
-    AssignPresetOwnersUseCase(UserDirectoryUseCase userDirectory, AssignUnownedPresetsPort assignUnowned) {
+    AssignPresetOwnersUseCase(UserDirectoryPort userDirectory, AssignUnownedPresetsPort assignUnowned) {
         this.userDirectory = userDirectory;
         this.assignUnowned = assignUnowned;
     }

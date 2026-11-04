@@ -10,7 +10,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.model.AnalysisOwner;
@@ -21,9 +21,9 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.mo
 public class ViewAnalysesUseCase {
 
     private final GetAnalysisRightsPort getAnalysisRights;
-    private final UserDirectoryUseCase userDirectory;
+    private final UserDirectoryPort userDirectory;
 
-    ViewAnalysesUseCase(GetAnalysisRightsPort getAnalysisRights, UserDirectoryUseCase userDirectory) {
+    ViewAnalysesUseCase(GetAnalysisRightsPort getAnalysisRights, UserDirectoryPort userDirectory) {
         this.getAnalysisRights = getAnalysisRights;
         this.userDirectory = userDirectory;
     }

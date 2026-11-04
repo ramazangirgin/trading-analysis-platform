@@ -20,7 +20,7 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PresetToPresetDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PresetValuesDtoToJsonStringMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.SecretStatusToSecretStatusDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -44,7 +44,7 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     private final AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper;
     private final PresetValuesDtoToJsonStringMapper valuesMapper;
     private final CurrentUser currentUser;
-    private final UserDirectoryUseCase userDirectory;
+    private final UserDirectoryPort userDirectory;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     SettingsApiDelegateImpl(
@@ -56,7 +56,7 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
             AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper,
             PresetValuesDtoToJsonStringMapper valuesMapper,
             CurrentUser currentUser,
-            UserDirectoryUseCase userDirectory) {
+            UserDirectoryPort userDirectory) {
         this.currentUser = currentUser;
         this.userDirectory = userDirectory;
         this.secrets = secrets;

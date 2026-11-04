@@ -271,7 +271,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP15: Rename UserDirectoryUseCase
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP14
 - **Files**: `domain/identity/core/inbound/UserDirectoryUseCase.java`,
   `domain/identity/core/service/UserDirectoryService.java`,
@@ -287,7 +287,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PresetOwnershipIntegrationTest.java`,
   `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/AnalysisOwnershipIntegrationTest.java`
 - **Steps**:
-  - [ ] Rename the port as in "Design". It has 13 files, over the cap of 8: one port with that many
+  - [x] Rename the port as in "Design". It has 13 files, over the cap of 8: one port with that many
     users cannot be split without a temporary alias interface, and every change is the same
     one-line type rename.
 - **Tests**: the existing tests of the identity core, `:backend:bff:impl`, `:backend:orchestration`

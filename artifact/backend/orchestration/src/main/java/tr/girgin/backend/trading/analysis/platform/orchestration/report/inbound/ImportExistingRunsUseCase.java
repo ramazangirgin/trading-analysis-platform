@@ -33,7 +33,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ex
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryPort;
@@ -69,7 +69,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     private final CheckReportDecisionPort checkReportDecision;
     private final ValidateExternalAnalysesPort validateExternalAnalyses;
     private final RegisterExternalAnalysisPort registerExternal;
-    private final UserDirectoryUseCase userDirectory;
+    private final UserDirectoryPort userDirectory;
     private final WatchDataDirPort watchDataDir;
     private final boolean importOnStartup;
     private final boolean watch;
@@ -88,7 +88,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             CheckReportDecisionPort checkReportDecision,
             ValidateExternalAnalysesPort validateExternalAnalyses,
             RegisterExternalAnalysisPort registerExternal,
-            UserDirectoryUseCase userDirectory,
+            UserDirectoryPort userDirectory,
             WatchDataDirPort watchDataDir,
             @Value("${platform.import.on-startup:true}") boolean importOnStartup,
             @Value("${platform.import.watch.enabled:true}") boolean watch,
@@ -114,7 +114,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             CheckReportDecisionPort checkReportDecision,
             ValidateExternalAnalysesPort validateExternalAnalyses,
             RegisterExternalAnalysisPort registerExternal,
-            UserDirectoryUseCase userDirectory,
+            UserDirectoryPort userDirectory,
             WatchDataDirPort watchDataDir,
             boolean importOnStartup,
             boolean watch,
