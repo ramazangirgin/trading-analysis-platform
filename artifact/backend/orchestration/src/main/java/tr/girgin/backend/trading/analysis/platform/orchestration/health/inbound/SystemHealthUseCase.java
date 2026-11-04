@@ -18,7 +18,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.G
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsPort;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretStatus;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthCheck;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthStatus;
@@ -36,14 +36,14 @@ public class SystemHealthUseCase {
     private final GetEngineVersionPort engineVersion;
     private final GetCatalogPort catalog;
     private final ScanReportsPort scanReports;
-    private final ManageSecretsUseCase secrets;
+    private final ManageSecretsPort secrets;
     private final ListAnalysesPort analyses;
 
     SystemHealthUseCase(
             GetEngineVersionPort engineVersion,
             GetCatalogPort catalog,
             ScanReportsPort scanReports,
-            ManageSecretsUseCase secrets,
+            ManageSecretsPort secrets,
             ListAnalysesPort analyses) {
         this.engineVersion = engineVersion;
         this.catalog = catalog;

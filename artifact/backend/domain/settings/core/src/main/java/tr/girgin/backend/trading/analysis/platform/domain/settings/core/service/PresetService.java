@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsError;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsException;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.AssignUnownedPresetsUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.PresetAccess;
@@ -17,7 +17,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Pr
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound.persistence.PresetRepositoryPort;
 
 @Service
-class PresetService implements ManagePresetsUseCase, AssignUnownedPresetsUseCase {
+class PresetService implements ManagePresetsPort, AssignUnownedPresetsUseCase {
 
     private static final int MAX_NAME = 80;
     private static final int MAX_PAYLOAD = 20_000;

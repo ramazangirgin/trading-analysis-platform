@@ -10,7 +10,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Pr
  * Named run configurations (presets): list, create, update and delete. A preset the caller may not see fails
  * with {@code PRESET_NOT_FOUND}, as a missing one does.
  */
-public interface ManagePresetsUseCase {
+public interface ManagePresetsPort {
 
     /**
      * By name: the caller's own presets, or with {@code allUsers} and {@code access.allUsers()} everyone's.

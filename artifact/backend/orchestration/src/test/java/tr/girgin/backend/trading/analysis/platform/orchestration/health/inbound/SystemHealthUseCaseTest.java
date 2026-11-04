@@ -10,7 +10,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Cat
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretSource;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretStatus;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthCheck;
@@ -87,8 +87,8 @@ class SystemHealthUseCaseTest {
                 (_, _, _) -> List.of());
     }
 
-    private static ManageSecretsUseCase secrets(List<SecretStatus> statuses) {
-        return new ManageSecretsUseCase() {
+    private static ManageSecretsPort secrets(List<SecretStatus> statuses) {
+        return new ManageSecretsPort() {
             @Override
             public List<SecretStatus> listSecrets() {
                 return statuses;

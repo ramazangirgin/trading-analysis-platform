@@ -209,7 +209,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP11: Rename the preset and secret ports
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP10
 - **Files**: `domain/settings/core/inbound/ManagePresetsUseCase.java`,
   `domain/settings/core/inbound/ManageSecretsUseCase.java`,
@@ -219,7 +219,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/health/inbound/SystemHealthUseCase.java`,
   `orchestration/health/inbound/SystemHealthUseCaseTest.java`
 - **Steps**:
-  - [ ] Rename the two ports as in "Design".
+  - [x] Rename the two ports as in "Design".
 - **Tests**: the existing tests of the settings core, `:backend:bff:impl` and `:backend:orchestration` pass.
 
 ### WP12: Rename AssignUnownedPresetsUseCase and ManageRolesUseCase

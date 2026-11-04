@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsError;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exception.SettingsException;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretSource;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound.secrets.SecretStorePort;
@@ -19,7 +19,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound
  * be written: these files become the runner's environment, so PATH or PYTHONPATH must never be.
  */
 @Service
-class SecretsService implements ManageSecretsUseCase {
+class SecretsService implements ManageSecretsPort {
 
     private static final Pattern WRITABLE_NAME = Pattern.compile("[A-Z][A-Z0-9_]{0,60}_(API_KEY|BASE_URL)");
     private static final int MAX_VALUE_LENGTH = 4096;

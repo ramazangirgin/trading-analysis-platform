@@ -24,8 +24,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsPort;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
@@ -36,8 +36,8 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefault
 @Service
 class SettingsApiDelegateImpl implements SettingsApiDelegate {
 
-    private final ManageSecretsUseCase secrets;
-    private final ManagePresetsUseCase presets;
+    private final ManageSecretsPort secrets;
+    private final ManagePresetsPort presets;
     private final ManageAnalysisDefaultsUseCase analysisDefaults;
     private final SecretStatusToSecretStatusDtoMapper secretMapper;
     private final PresetToPresetDtoMapper presetMapper;
@@ -48,8 +48,8 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     SettingsApiDelegateImpl(
-            ManageSecretsUseCase secrets,
-            ManagePresetsUseCase presets,
+            ManageSecretsPort secrets,
+            ManagePresetsPort presets,
             ManageAnalysisDefaultsUseCase analysisDefaults,
             SecretStatusToSecretStatusDtoMapper secretMapper,
             PresetToPresetDtoMapper presetMapper,
