@@ -70,7 +70,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP2: Rename analysis ports: start, rerun, stop
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `domain/analysis/core/inbound/StartAnalysisUseCase.java`,
   `domain/analysis/core/inbound/RerunAnalysisUseCase.java`,
@@ -79,7 +79,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `bff/delegate/impl/AnalysesApiDelegateImpl.java`,
   `orchestration/analysisstart/inbound/StartAnalysisWithDefaultsUseCase.java`
 - **Steps**:
-  - [ ] Rename the three ports as in "Design".
+  - [x] Rename the three ports as in "Design".
 - **Tests**: the existing tests of the analysis core, `:backend:bff:impl` and `:backend:orchestration` pass.
 
 ### WP3: Rename GetAnalysisUseCase

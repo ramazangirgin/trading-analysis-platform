@@ -5,7 +5,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
 /** Runs an analysis again. */
-public interface RerunAnalysisUseCase {
+public interface RerunAnalysisPort {
 
     /**
      * Starts a new run with the same spec, owned by the caller. The new run is private. An analysis the

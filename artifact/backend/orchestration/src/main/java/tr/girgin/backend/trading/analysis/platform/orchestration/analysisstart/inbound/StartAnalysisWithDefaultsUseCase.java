@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
@@ -24,10 +24,10 @@ public class StartAnalysisWithDefaultsUseCase {
 
     private final ManageAnalysisDefaultsUseCase defaults;
     private final GetCatalogUseCase catalog;
-    private final StartAnalysisUseCase startAnalysis;
+    private final StartAnalysisPort startAnalysis;
 
     StartAnalysisWithDefaultsUseCase(
-            ManageAnalysisDefaultsUseCase defaults, GetCatalogUseCase catalog, StartAnalysisUseCase startAnalysis) {
+            ManageAnalysisDefaultsUseCase defaults, GetCatalogUseCase catalog, StartAnalysisPort startAnalysis) {
         this.defaults = defaults;
         this.catalog = catalog;
         this.startAnalysis = startAnalysis;

@@ -5,7 +5,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
 /** Stops a queued or running analysis. */
-public interface StopAnalysisUseCase {
+public interface StopAnalysisPort {
 
     /**
      * A queued run stops at once; a running one when the runner has shut down. An analysis the caller may not

@@ -42,9 +42,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsPort;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
@@ -70,8 +70,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     private final ListAnalysesUseCase listAnalyses;
     private final GetAnalysisUseCase getAnalysis;
     private final ChangeAnalysisVisibilityPort changeVisibility;
-    private final StopAnalysisUseCase stopAnalysis;
-    private final RerunAnalysisUseCase rerunAnalysis;
+    private final StopAnalysisPort stopAnalysis;
+    private final RerunAnalysisPort rerunAnalysis;
     private final SubscribeAnalysisEventsPort subscribeEvents;
     private final GetAnalysisReportUseCase getReport;
     private final GetAnalysisPricesUseCase getPrices;
@@ -94,8 +94,8 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
             ListAnalysesUseCase listAnalyses,
             GetAnalysisUseCase getAnalysis,
             ChangeAnalysisVisibilityPort changeVisibility,
-            StopAnalysisUseCase stopAnalysis,
-            RerunAnalysisUseCase rerunAnalysis,
+            StopAnalysisPort stopAnalysis,
+            RerunAnalysisPort rerunAnalysis,
             SubscribeAnalysisEventsPort subscribeEvents,
             GetAnalysisReportUseCase getReport,
             GetAnalysisPricesUseCase getPrices,

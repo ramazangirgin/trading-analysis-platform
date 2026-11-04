@@ -20,9 +20,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AssignUnownedAnalysesUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -48,9 +48,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 @SuppressWarnings("checkstyle:ClassFanOutComplexity")
 @Service
 class AnalysisService
-        implements StartAnalysisUseCase,
-                StopAnalysisUseCase,
-                RerunAnalysisUseCase,
+        implements StartAnalysisPort,
+                StopAnalysisPort,
+                RerunAnalysisPort,
                 GetAnalysisUseCase,
                 AssignUnownedAnalysesUseCase,
                 SmartInitializingSingleton {
