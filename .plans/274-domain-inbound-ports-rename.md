@@ -145,7 +145,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP7: Rename the import-checking ports
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP6
 - **Files**: `domain/analysis/core/inbound/ValidateExternalAnalysesUseCase.java`,
   `domain/report/core/inbound/CheckReportDecisionUseCase.java`,
@@ -156,7 +156,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/report/inbound/ImportExistingRunsUseCase.java`,
   `orchestration/report/inbound/ImportExistingRunsUseCaseTest.java`
 - **Steps**:
-  - [ ] Rename the three ports as in "Design", with the two fields named after them.
+  - [x] Rename the three ports as in "Design", with the two fields named after them.
 - **Tests**: the existing tests of the analysis and report cores and `:backend:orchestration` pass.
 
 ### WP8: Rename the scan ports and GetEngineVersionUseCase

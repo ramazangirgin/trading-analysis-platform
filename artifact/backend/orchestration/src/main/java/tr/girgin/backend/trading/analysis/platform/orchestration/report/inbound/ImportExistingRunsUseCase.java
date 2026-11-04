@@ -24,7 +24,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RegisterExternalAnalysisPort;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ValidateExternalAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ValidateExternalAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
@@ -34,10 +34,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ow
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
@@ -66,11 +66,11 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     private final ScanReportsUseCase scanReports;
     private final ScanRunHistoryUseCase scanHistory;
-    private final CheckReportDecisionUseCase checkReportDecisionUseCase;
-    private final ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase;
+    private final CheckReportDecisionPort checkReportDecision;
+    private final ValidateExternalAnalysesPort validateExternalAnalyses;
     private final RegisterExternalAnalysisPort registerExternal;
     private final UserDirectoryUseCase userDirectory;
-    private final WatchDataDirUseCase watchDataDir;
+    private final WatchDataDirPort watchDataDir;
     private final boolean importOnStartup;
     private final boolean watch;
     private final Duration settleTime;
@@ -85,19 +85,19 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     ImportExistingRunsUseCase(
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
-            CheckReportDecisionUseCase checkReportDecisionUseCase,
-            ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase,
+            CheckReportDecisionPort checkReportDecision,
+            ValidateExternalAnalysesPort validateExternalAnalyses,
             RegisterExternalAnalysisPort registerExternal,
             UserDirectoryUseCase userDirectory,
-            WatchDataDirUseCase watchDataDir,
+            WatchDataDirPort watchDataDir,
             @Value("${platform.import.on-startup:true}") boolean importOnStartup,
             @Value("${platform.import.watch.enabled:true}") boolean watch,
             @Value("${platform.import.settle-minutes:10}") long settleMinutes) {
         this(
                 scanReports,
                 scanHistory,
-                checkReportDecisionUseCase,
-                validateExternalAnalysesUseCase,
+                checkReportDecision,
+                validateExternalAnalyses,
                 registerExternal,
                 userDirectory,
                 watchDataDir,
@@ -111,19 +111,19 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     ImportExistingRunsUseCase(
             ScanReportsUseCase scanReports,
             ScanRunHistoryUseCase scanHistory,
-            CheckReportDecisionUseCase checkReportDecisionUseCase,
-            ValidateExternalAnalysesUseCase validateExternalAnalysesUseCase,
+            CheckReportDecisionPort checkReportDecision,
+            ValidateExternalAnalysesPort validateExternalAnalyses,
             RegisterExternalAnalysisPort registerExternal,
             UserDirectoryUseCase userDirectory,
-            WatchDataDirUseCase watchDataDir,
+            WatchDataDirPort watchDataDir,
             boolean importOnStartup,
             boolean watch,
             Duration settleTime,
             Clock clock) {
         this.scanReports = scanReports;
         this.scanHistory = scanHistory;
-        this.checkReportDecisionUseCase = checkReportDecisionUseCase;
-        this.validateExternalAnalysesUseCase = validateExternalAnalysesUseCase;
+        this.checkReportDecision = checkReportDecision;
+        this.validateExternalAnalyses = validateExternalAnalyses;
         this.registerExternal = registerExternal;
         this.userDirectory = userDirectory;
         this.watchDataDir = watchDataDir;
@@ -190,8 +190,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         Instant settledBefore = clock.instant().minus(settleTime);
         Instant lastUnsettled = null;
         for (Report report : scanReports.scan()) {
-            if (!checkReportDecisionUseCase.hasDecision(report)
-                    && report.modifiedAt().isAfter(settledBefore)) {
+            if (!checkReportDecision.hasDecision(report) && report.modifiedAt().isAfter(settledBefore)) {
                 // Likely a run still being written: importing it now would show it as failed.
                 lastUnsettled = max(lastUnsettled, report.modifiedAt());
                 continue;
@@ -207,7 +206,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 .filter(entry -> entry.status() != RunHistoryEntry.Status.COMPLETED)
                 .map(this::fromHistory)
                 .forEach(externals::add);
-        validateExternalAnalysesUseCase.validate(externals);
+        validateExternalAnalyses.validate(externals);
 
         Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
         // No platform user started these runs, so they belong to the first admin (none yet on a fresh install).

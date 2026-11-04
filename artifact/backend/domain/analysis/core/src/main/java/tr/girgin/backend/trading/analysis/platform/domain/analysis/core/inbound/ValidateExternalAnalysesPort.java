@@ -4,7 +4,7 @@ import java.util.List;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.ExternalAnalysis;
 
 /** Checks runs found in the data dir before any of them is registered. */
-public interface ValidateExternalAnalysesUseCase {
+public interface ValidateExternalAnalysesPort {
 
     /**
      * Throws {@link IllegalArgumentException} for the first invalid record: a run history record without its run,
