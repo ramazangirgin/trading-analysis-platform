@@ -161,7 +161,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP8: Rename the scan ports and GetEngineVersionUseCase
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP7
 - **Files**: `domain/report/core/inbound/ScanReportsUseCase.java`,
   `domain/report/core/inbound/ScanRunHistoryUseCase.java`,
@@ -172,7 +172,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/report/inbound/ImportExistingRunsUseCase.java`,
   `orchestration/health/inbound/SystemHealthUseCase.java`
 - **Steps**:
-  - [ ] Rename the three ports as in "Design".
+  - [x] Rename the three ports as in "Design".
 - **Tests**: the existing tests of the report and catalog cores and `:backend:orchestration` pass.
 
 ### WP9: Rename the report and price ports

@@ -3,12 +3,12 @@ package tr.girgin.backend.trading.analysis.platform.domain.report.core.service;
 import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.RunHistoryEntry;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.history.RunHistoryPort;
 
 @Service
-class RunHistoryService implements ScanRunHistoryUseCase {
+class RunHistoryService implements ScanRunHistoryPort {
 
     private final RunHistoryPort history;
     private final ReportKeyService reportKeyService;

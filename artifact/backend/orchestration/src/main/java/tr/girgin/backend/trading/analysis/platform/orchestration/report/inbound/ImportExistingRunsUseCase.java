@@ -35,8 +35,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Ra
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionPort;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsPort;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanRunHistoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
@@ -64,8 +64,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             "news", Analyst.NEWS,
             "fundamentals", Analyst.FUNDAMENTALS);
 
-    private final ScanReportsUseCase scanReports;
-    private final ScanRunHistoryUseCase scanHistory;
+    private final ScanReportsPort scanReports;
+    private final ScanRunHistoryPort scanHistory;
     private final CheckReportDecisionPort checkReportDecision;
     private final ValidateExternalAnalysesPort validateExternalAnalyses;
     private final RegisterExternalAnalysisPort registerExternal;
@@ -83,8 +83,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     @Autowired
     @SuppressWarnings("checkstyle:ParameterNumber") // the ports and the settings it is built from
     ImportExistingRunsUseCase(
-            ScanReportsUseCase scanReports,
-            ScanRunHistoryUseCase scanHistory,
+            ScanReportsPort scanReports,
+            ScanRunHistoryPort scanHistory,
             CheckReportDecisionPort checkReportDecision,
             ValidateExternalAnalysesPort validateExternalAnalyses,
             RegisterExternalAnalysisPort registerExternal,
@@ -109,8 +109,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // the settings above, with the settle time and clock given
     ImportExistingRunsUseCase(
-            ScanReportsUseCase scanReports,
-            ScanRunHistoryUseCase scanHistory,
+            ScanReportsPort scanReports,
+            ScanRunHistoryPort scanHistory,
             CheckReportDecisionPort checkReportDecision,
             ValidateExternalAnalysesPort validateExternalAnalyses,
             RegisterExternalAnalysisPort registerExternal,

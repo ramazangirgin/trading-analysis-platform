@@ -14,10 +14,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetEngineVersionUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetEngineVersionPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretStatus;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthCheck;
@@ -33,16 +33,16 @@ public class SystemHealthUseCase {
     // The queue is the platform's, not one user's: the counts cover every owner.
     private static final AnalysisAccess PLATFORM = new AnalysisAccess(new OwnerId("platform"), true, false);
 
-    private final GetEngineVersionUseCase engineVersion;
+    private final GetEngineVersionPort engineVersion;
     private final GetCatalogUseCase catalog;
-    private final ScanReportsUseCase scanReports;
+    private final ScanReportsPort scanReports;
     private final ManageSecretsUseCase secrets;
     private final ListAnalysesPort analyses;
 
     SystemHealthUseCase(
-            GetEngineVersionUseCase engineVersion,
+            GetEngineVersionPort engineVersion,
             GetCatalogUseCase catalog,
-            ScanReportsUseCase scanReports,
+            ScanReportsPort scanReports,
             ManageSecretsUseCase secrets,
             ListAnalysesPort analyses) {
         this.engineVersion = engineVersion;
