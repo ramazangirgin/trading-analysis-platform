@@ -315,6 +315,17 @@ class SessionUsageTest(unittest.TestCase):
         marker = agent_json.parse_marker(agent_json.usage_marker(total))
         self.assertEqual(marker["model"], "claude-opus-5-5,claude-sonnet-5-5")
 
+    def test_counts_the_subagents_of_the_session(self):
+        path = self.transcript([turn("a", "2026-10-01T10:01:00.000Z", model="claude-sonnet-5-5")])
+        os.makedirs(os.path.join(self.dir.name, "s", "subagents"))
+        self.transcript(
+            [turn("x", "2026-10-01T10:02:00.000Z"), turn("late", "2026-10-01T11:00:00.000Z")],
+            name=os.path.join("s", "subagents", "agent-1.jsonl"),
+        )
+        total = agent_json.session_usage(path, self.at(0), self.at(10))
+        self.assertEqual(total["turns"], 2)
+        self.assertEqual(total["models"], ["claude-sonnet-5-5", "claude-opus-5-5"])
+
     def test_unknown_model_has_tokens_and_no_cost(self):
         path = self.transcript([turn("a", "2026-10-01T10:01:00.000Z"), turn("b", "2026-10-01T10:02:00.000Z", model="mystery-1")])
         total = agent_json.session_usage(path, self.at(0), self.at(10))

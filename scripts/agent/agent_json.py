@@ -363,29 +363,34 @@ def session_usage(path, start, end, skip=()):
     """The usage of a session transcript's assistant messages between two epochs, each message ID
     once, as usage() returns it plus `turns`; None when the transcript is missing or has no message
     there. `skip` lists (from, to) windows left out. The cost comes from PRICES and is None when a
-    model is not in it. Subagents run in transcripts of their own and are not counted."""
+    model is not in it. Subagents run in transcripts of their own, <session>/subagents/*.jsonl next to
+    the session's; they are counted, so a step the session hands to an Opus subagent shows Opus."""
     messages = {}
-    try:
-        f = open(path, encoding="utf-8")
-    except OSError:
+    if not os.path.isfile(path):
         return None
-    with f:
-        for line in f:
-            try:
-                event = json.loads(line)
-            except ValueError:
-                continue
-            message = event.get("message") if event.get("type") == "assistant" else None
-            if not isinstance(message, dict) or not isinstance(message.get("usage"), dict):
-                continue
-            at = epoch_of(event.get("timestamp"))
-            model = message.get("model") or ""
-            if at is None or not start <= at < end or model.startswith("<") or any(a <= at < b for a, b in skip):
-                continue
-            seen = messages.setdefault(message.get("id") or event.get("uuid") or len(messages), {"model": model})
-            for field, value in message["usage"].items():
-                if isinstance(value, int):
-                    seen[field] = max(seen.get(field, 0), value)
+    for file in [path, *sorted(glob.glob(os.path.join(os.path.splitext(path)[0], "subagents", "*.jsonl")))]:
+        try:
+            f = open(file, encoding="utf-8")
+        except OSError:
+            continue
+        with f:
+            for line in f:
+                try:
+                    event = json.loads(line)
+                except ValueError:
+                    continue
+                message = event.get("message") if event.get("type") == "assistant" else None
+                if not isinstance(message, dict) or not isinstance(message.get("usage"), dict):
+                    continue
+                at = epoch_of(event.get("timestamp"))
+                model = message.get("model") or ""
+                if at is None or not start <= at < end or model.startswith("<") or any(a <= at < b for a, b in skip):
+                    continue
+                key = message.get("id") or event.get("uuid") or (file, len(messages))
+                seen = messages.setdefault(key, {"model": model})
+                for field, value in message["usage"].items():
+                    if isinstance(value, int):
+                        seen[field] = max(seen.get(field, 0), value)
     if not messages:
         return None
     total = {"in": 0, "cached": 0, "out": 0, "cost": 0.0, "partial": False, "models": [], "limits": {}, "turns": len(messages)}
