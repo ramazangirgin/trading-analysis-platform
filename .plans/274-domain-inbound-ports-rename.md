@@ -100,7 +100,7 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP4: Rename the partial analysis ports
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: `domain/analysis/core/inbound/GetPartialAnalysisUseCase.java`,
   `domain/analysis/core/inbound/ListPartialAnalysesUseCase.java`,
@@ -110,7 +110,7 @@ outside orchestration or a domain service implements an inbound interface not na
   `orchestration/preview/inbound/ListAnalysisPreviewsUseCase.java`,
   `orchestration/preview/inbound/ListAnalysisPreviewsUseCaseTest.java`
 - **Steps**:
-  - [ ] Rename the two ports as in "Design".
+  - [x] Rename the two ports as in "Design".
 - **Tests**: the existing tests of the analysis core and `:backend:orchestration` pass.
 
 ### WP5: Rename analysis ports: list, rights

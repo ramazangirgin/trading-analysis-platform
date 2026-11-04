@@ -4,7 +4,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 
 /** Reads one partial analysis for a caller without a session. */
-public interface GetPartialAnalysisUseCase {
+public interface GetPartialAnalysisPort {
 
     /**
      * Returns the analysis only when it is partial and completed.
