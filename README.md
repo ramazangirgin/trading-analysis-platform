@@ -1,6 +1,11 @@
 # TradingAgents Platform
 
 [![CI](https://github.com/ramazangirgin/trading-analysis-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ramazangirgin/trading-analysis-platform/actions/workflows/ci.yml)
+[![Live](https://img.shields.io/badge/live-analystock.app-blue)](https://analystock.app/)
+
+**Live instance: [analystock.app](https://analystock.app/)**. Every new release is deployed to it
+automatically once the developer approves the deployment in GitHub
+([CI and releases](docs/ci-and-releases.md)).
 
 A web platform for running and managing [TradingAgents](https://github.com/TauricResearch/TradingAgents)
 analyses without modifying its code: start an analysis from the browser, watch the agents work live,
