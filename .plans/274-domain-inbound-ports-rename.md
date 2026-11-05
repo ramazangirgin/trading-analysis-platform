@@ -298,9 +298,12 @@ outside orchestration or a domain service implements an inbound interface not na
 - **Status**: done
 - **Depends on**: WP15
 - **Files**: `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/ArchitectureTest.java`,
+  `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/MapperConditions.java`,
   `config/checkstyle/checkstyle.xml`
 - **Steps**:
-  - [x] Change and add the rules named in "Design".
+  - [x] Change and add the rules named in "Design". `ArchitectureTest` was exactly at the Checkstyle
+    `FileLength` limit (600 lines), so the mapper conditions `beUsedByAnotherMapper` and
+    `haveASimpleNameNoOtherMapperHas` moved to the new `MapperConditions` class.
   - [x] In the two comments of `checkstyle.xml` on the Javadoc scope, "use cases and ports" becomes
     "inbound and outbound ports".
 - **Tests**: `ArchitectureTest` passes; adding a `*UseCase` interface to a domain core's `inbound`
