@@ -27,8 +27,8 @@ class AnalysisAccessService implements GetAnalysisRightsPort {
         return access.allUsers() || isOwner(analysis, access);
     }
 
-    // Whether the status allows the change is for the use case to check. An admin only narrows what someone
-    // else shared, never widens it to the internet.
+    // Whether the status allows the change is for AnalysisVisibilityService to check.
+    // An admin only narrows what someone else shared, never widens it to the internet.
     boolean canChangeTo(Analysis analysis, AnalysisAccess access, Visibility target) {
         Visibility current = analysis.visibility();
         if (current == target) {
