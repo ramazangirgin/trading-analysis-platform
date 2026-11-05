@@ -59,7 +59,7 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisReportUseCase;
 
 @Service
-// ClassFanOutComplexity: the analyses API's delegate, with a use case and a mapper per endpoint.
+// ClassFanOutComplexity: the analyses API's delegate, with an inbound port or use case and a mapper per endpoint.
 @SuppressWarnings("checkstyle:ClassFanOutComplexity")
 class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
