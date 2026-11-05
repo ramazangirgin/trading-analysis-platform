@@ -295,13 +295,13 @@ outside orchestration or a domain service implements an inbound interface not na
 
 ### WP16: Rules for UseCase and Port names
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP15
 - **Files**: `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/ArchitectureTest.java`,
   `config/checkstyle/checkstyle.xml`
 - **Steps**:
-  - [ ] Change and add the rules named in "Design".
-  - [ ] In the two comments of `checkstyle.xml` on the Javadoc scope, "use cases and ports" becomes
+  - [x] Change and add the rules named in "Design".
+  - [x] In the two comments of `checkstyle.xml` on the Javadoc scope, "use cases and ports" becomes
     "inbound and outbound ports".
 - **Tests**: `ArchitectureTest` passes; adding a `*UseCase` interface to a domain core's `inbound`
   makes `use_cases_live_in_orchestration_inbound_packages` and `domain_services_implement_inbound_ports`

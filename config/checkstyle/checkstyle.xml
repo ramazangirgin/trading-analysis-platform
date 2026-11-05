@@ -29,7 +29,7 @@
     <module name="SuppressWarningsFilter"/>
 
     <!-- Scope of MissingJavadocType (not a suppression): public types in core/inbound and
-         core/outbound, the domain's contracts (use cases and ports), need Javadoc; other types do not. -->
+         core/outbound, the domain's contracts (inbound and outbound ports), need Javadoc; other types do not. -->
     <module name="SuppressionSingleFilter">
         <property name="id" value="MissingJavadocPortType"/>
         <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/].*[\\/]core[\\/](inbound|outbound)[\\/]).*$"/>
@@ -295,7 +295,7 @@
         </module>
 
         <!-- Javadoc: a small set ================================================================= -->
-        <!-- Port interfaces and use cases are the domain's contracts: public types in core/inbound and
+        <!-- Inbound and outbound ports are the domain's contracts: public types in core/inbound and
              core/outbound need Javadoc (suppressions.xml limits the check to those packages). -->
         <module name="MissingJavadocType">
             <property name="id" value="MissingJavadocPortType"/>

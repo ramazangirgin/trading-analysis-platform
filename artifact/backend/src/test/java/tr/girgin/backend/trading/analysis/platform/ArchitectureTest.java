@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
 import static com.tngtech.archunit.core.domain.properties.CanBeAnnotated.Predicates.annotatedWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
@@ -20,11 +21,6 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.elements.GivenClassesConjunction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.mapstruct.Mapper;
 import org.mapstruct.MapperConfig;
 import org.mapstruct.control.MappingControl;
@@ -70,7 +66,7 @@ class ArchitectureTest {
     private static final String LIBRARY_MAPPER = BASE + ".library.mapper..";
     private static final String DOMAIN_CORE_SUB = BASE + ".domain.*.core.*..";
     private static final String ORCHESTRATION_FEATURE_SUB = BASE + ".orchestration.*.*..";
-    private static final String INBOUND = "..inbound..";
+    private static final String DOMAIN_CORE_INBOUND = BASE + ".domain.*.core.inbound..";
     private static final String SERVICE = "..service..";
     private static final String CORE_EXCEPTION = BASE + ".domain.*.core.exception..";
     private static final String BFF_API_ERROR = BASE + ".bff.controller.api.error..";
@@ -425,8 +421,27 @@ class ArchitectureTest {
             .because("an orchestration use case has a single implementation, so it is the bean itself");
 
     @ArchTest
-    static final ArchRule use_cases_live_in_inbound_packages =
-            classes().that().haveSimpleNameEndingWith("UseCase").should().resideInAPackage(INBOUND);
+    static final ArchRule use_cases_live_in_orchestration_inbound_packages = classes()
+            .that()
+            .haveSimpleNameEndingWith("UseCase")
+            .should()
+            .resideInAPackage(ORCHESTRATION_INBOUND)
+            .because("UseCase names a concrete orchestration bean; a domain's inbound interface is a Port");
+
+    @ArchTest
+    static final ArchRule domain_services_implement_inbound_ports = topLevelClasses()
+            .and()
+            .resideInAPackage(DOMAIN_SERVICE)
+            .should(implementOnlyProjectInterfacesThat(
+                    resideInAPackage(DOMAIN_CORE_INBOUND).and(simpleNameEndingWith("Port"))))
+            .because("a domain service implements the inbound ports of its own core and nothing else");
+
+    @ArchTest
+    static final ArchRule ports_live_in_port_packages = classes()
+            .that()
+            .haveSimpleNameEndingWith("Port")
+            .should()
+            .resideInAnyPackage("..core.inbound..", "..core.outbound..");
 
     @ArchTest
     static final ArchRule services_live_in_service_packages =
@@ -512,13 +527,13 @@ class ArchitectureTest {
     static final ArchRule mappers_are_not_duplicated_across_modules = classes()
             .that()
             .areAnnotatedWith(Mapper.class)
-            .should(haveASimpleNameNoOtherMapperHas())
+            .should(MapperConditions.haveASimpleNameNoOtherMapperHas())
             .because("a converter two modules need lives once, in the shared mapper library, never as a copy");
 
     @ArchTest
     static final ArchRule hand_written_mappers_are_used_by_other_mappers = classes()
             .that(areHandWrittenMappers())
-            .should(beUsedByAnotherMapper())
+            .should(MapperConditions.beUsedByAnotherMapper())
             .because("a mapper with only default methods is a converter that another mapper uses;"
                     + " code that nobody maps with belongs in the caller, or in a MapStruct mapping");
 
@@ -535,52 +550,9 @@ class ArchitectureTest {
         };
     }
 
-    private static ArchCondition<JavaClass> beUsedByAnotherMapper() {
-        return new ArchCondition<>("be used by another mapper") {
-            @Override
-            public void check(JavaClass javaClass, ConditionEvents events) {
-                boolean used = javaClass.getDirectDependenciesToSelf().stream()
-                        .map(dependency -> dependency.getOriginClass())
-                        .filter(origin -> !origin.getName().matches(javaClass.getName() + "(Impl)?"))
-                        .anyMatch(origin -> origin.getPackageName().endsWith(".mapper")
-                                || origin.getPackageName().contains(".mapper."));
-                if (!used) {
-                    events.add(SimpleConditionEvent.violated(
-                            javaClass, javaClass.getName() + " is not used by any other mapper"));
-                }
-            }
-        };
-    }
-
     /** Top-level project classes, without {@code package-info} and generated nested types. */
     private static GivenClassesConjunction topLevelClasses() {
         return classes().that().areTopLevelClasses().and().doNotHaveSimpleName("package-info");
-    }
-
-    private static ArchCondition<JavaClass> haveASimpleNameNoOtherMapperHas() {
-        return new ArchCondition<>("have a simple name no other mapper has") {
-            private final Map<String, List<String>> namesBySimpleName = new HashMap<>();
-
-            @Override
-            public void init(Collection<JavaClass> allObjectsToTest) {
-                for (JavaClass mapper : allObjectsToTest) {
-                    namesBySimpleName
-                            .computeIfAbsent(mapper.getSimpleName(), _ -> new ArrayList<>())
-                            .add(mapper.getName());
-                }
-            }
-
-            @Override
-            public void check(JavaClass javaClass, ConditionEvents events) {
-                List<String> others = namesBySimpleName.get(javaClass.getSimpleName()).stream()
-                        .filter(name -> !name.equals(javaClass.getName()))
-                        .toList();
-                if (!others.isEmpty()) {
-                    events.add(SimpleConditionEvent.violated(
-                            javaClass, javaClass.getName() + " has the same name as " + String.join(", ", others)));
-                }
-            }
-        };
     }
 
     private static ArchCondition<JavaClass> implementOnlyProjectInterfacesThat(DescribedPredicate<JavaClass> allowed) {

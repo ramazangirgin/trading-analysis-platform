@@ -44,10 +44,10 @@ bff/delegate/impl/
 domain/<d>/core/
   model/                           value types, records, enums
   exception/                       *Exception and their error-code enums (*Error)
-  inbound/                         *UseCase interfaces (and the types they hand out)
+  inbound/                         *Port interfaces (and the types they hand out)
   outbound/<port>/                 *Port interfaces (and the types they exchange)
   service/                         @Service beans named *Service holding the domain's behaviour,
-                                   package-private
+                                   package-private; they implement the inbound ports
 domain/<d>/adapter/
   <port>/                          one package per outbound port, e.g. persistence, runner
     *Adapter                       the adapter(s) implementing the port: the package root only
@@ -121,7 +121,9 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Class implementing an outbound port | the root of its `adapter.<port>` package | `port_adapters_live_at_the_port_package_root` |
 | Root of an `adapter.<port>` package | port implementations only (shared packages aside); the one exception is `<Domain>PersistenceConfiguration` in `adapter.persistence` | `port_package_roots_hold_only_adapters` |
 | `@Configuration` in a domain adapter | `<Domain>PersistenceConfiguration`, in `domain.<d>.adapter.persistence`, nowhere else | `domain_adapter_configurations_are_persistence_configurations` (`adapter_components_implement_an_outbound_port` only exempts it) |
-| `*UseCase` | `…inbound` | `use_cases_live_in_inbound_packages` |
+| `*UseCase` | `orchestration.<f>.inbound` only: a domain's inbound interface is a `*Port` | `use_cases_live_in_orchestration_inbound_packages` |
+| `*Port` | `domain.<d>.core.inbound` or `domain.<d>.core.outbound` | `ports_live_in_port_packages` |
+| Interface a domain service implements | in `domain.<d>.core.inbound` and named `*Port` | `domain_services_implement_inbound_ports` |
 | Orchestration `*UseCase` | a concrete class annotated `@Service`, not an interface: it has a single implementation and no outbound port of its own, so an interface would add nothing | `orchestration_use_cases_are_concrete_beans` |
 | `*Service` | `…service` | `services_live_in_service_packages` |
 | Anything in a domain core's `service` package | a `@Service` bean named `*Service`: no static helper class, no model | `service_packages_hold_only_services` |
