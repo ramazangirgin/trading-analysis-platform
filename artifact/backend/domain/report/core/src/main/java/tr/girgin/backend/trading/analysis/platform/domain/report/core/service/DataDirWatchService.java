@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.WatchDataDirPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.datadir.DataDirWatchPort;
 
 /**
@@ -20,7 +20,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.d
  * files, and a third-party UI rewrites runs.json every few seconds while a run is going.
  */
 @Service
-class DataDirWatchService implements WatchDataDirUseCase {
+class DataDirWatchService implements WatchDataDirPort {
 
     private static final Logger log = LoggerFactory.getLogger(DataDirWatchService.class);
 

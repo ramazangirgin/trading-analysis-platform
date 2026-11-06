@@ -31,8 +31,8 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.config.User
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PermissionToPermissionEnumDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ChangePasswordUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticatePort;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ChangePasswordPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.AuthenticatedUser;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
@@ -49,8 +49,8 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     private static final String SESSION_COOKIE = "JSESSIONID";
 
-    private final AuthenticateUseCase authentication;
-    private final ChangePasswordUseCase changePassword;
+    private final AuthenticatePort authentication;
+    private final ChangePasswordPort changePassword;
     private final UserSessions userSessions;
     private final SessionAuthorities sessionAuthorities;
     private final PermissionToPermissionEnumDtoMapper permissionMapper;
@@ -63,8 +63,8 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AuthApiDelegateImpl(
-            AuthenticateUseCase authentication,
-            ChangePasswordUseCase changePassword,
+            AuthenticatePort authentication,
+            ChangePasswordPort changePassword,
             UserSessions userSessions,
             SessionAuthorities sessionAuthorities,
             PermissionToPermissionEnumDtoMapper permissionMapper,

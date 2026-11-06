@@ -20,12 +20,12 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PresetToPresetDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.PresetValuesDtoToJsonStringMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.SecretStatusToSecretStatusDtoMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManagePresetsPort;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.Preset;
@@ -36,27 +36,27 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefault
 @Service
 class SettingsApiDelegateImpl implements SettingsApiDelegate {
 
-    private final ManageSecretsUseCase secrets;
-    private final ManagePresetsUseCase presets;
+    private final ManageSecretsPort secrets;
+    private final ManagePresetsPort presets;
     private final ManageAnalysisDefaultsUseCase analysisDefaults;
     private final SecretStatusToSecretStatusDtoMapper secretMapper;
     private final PresetToPresetDtoMapper presetMapper;
     private final AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper;
     private final PresetValuesDtoToJsonStringMapper valuesMapper;
     private final CurrentUser currentUser;
-    private final UserDirectoryUseCase userDirectory;
+    private final UserDirectoryPort userDirectory;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     SettingsApiDelegateImpl(
-            ManageSecretsUseCase secrets,
-            ManagePresetsUseCase presets,
+            ManageSecretsPort secrets,
+            ManagePresetsPort presets,
             ManageAnalysisDefaultsUseCase analysisDefaults,
             SecretStatusToSecretStatusDtoMapper secretMapper,
             PresetToPresetDtoMapper presetMapper,
             AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper,
             PresetValuesDtoToJsonStringMapper valuesMapper,
             CurrentUser currentUser,
-            UserDirectoryUseCase userDirectory) {
+            UserDirectoryPort userDirectory) {
         this.currentUser = currentUser;
         this.userDirectory = userDirectory;
         this.secrets = secrets;

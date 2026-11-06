@@ -11,7 +11,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreateFirstAdminUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreateFirstAdminPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -23,7 +23,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
  * invalid configuration fails the start.
  */
 @Service
-class FirstAdminService implements CreateFirstAdminUseCase {
+class FirstAdminService implements CreateFirstAdminPort {
 
     private static final Logger log = LoggerFactory.getLogger(FirstAdminService.class);
 

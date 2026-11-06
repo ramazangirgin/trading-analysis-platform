@@ -19,7 +19,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.model.AnalysisView;
@@ -37,7 +37,7 @@ class ViewAnalysesUseCaseTest {
     private final ViewAnalysesUseCase useCase = new ViewAnalysesUseCase(
             (analysis, _) ->
                     analysis.owner() != null && analysis.owner().value().equals("u-1") ? MANAGER : READER,
-            new UserDirectoryUseCase() {
+            new UserDirectoryPort() {
                 @Override
                 public Optional<UserId> firstAdmin() {
                     return Optional.empty();

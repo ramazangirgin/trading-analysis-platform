@@ -10,9 +10,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.CheckReportDecisionPort;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportPort;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.DebateSpeaker;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportContent;
@@ -26,7 +26,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.outbound.d
  * it is written once, at the end, from the complete state, while report files may be partial.
  */
 @Service
-class ReportService implements ScanReportsUseCase, GetReportUseCase, CheckReportDecisionUseCase {
+class ReportService implements ScanReportsPort, GetReportPort, CheckReportDecisionPort {
 
     private static final Comparator<ReportContent> PRIORITY =
             Comparator.comparing((ReportContent c) -> c.source() == ReportSource.FULL_STATE ? 1 : 0);

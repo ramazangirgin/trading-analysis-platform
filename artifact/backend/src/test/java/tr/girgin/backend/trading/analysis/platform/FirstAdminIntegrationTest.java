@@ -19,7 +19,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreateFirstAdminUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreateFirstAdminPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
@@ -43,7 +43,7 @@ class FirstAdminIntegrationTest {
     private UserRepositoryPort users;
 
     @Autowired
-    private CreateFirstAdminUseCase createFirstAdmin;
+    private CreateFirstAdminPort createFirstAdmin;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {

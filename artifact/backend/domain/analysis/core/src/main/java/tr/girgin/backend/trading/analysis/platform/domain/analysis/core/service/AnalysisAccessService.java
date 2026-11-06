@@ -4,13 +4,13 @@ import java.util.Arrays;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AnalysisRights;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 @Service
-class AnalysisAccessService implements GetAnalysisRightsUseCase {
+class AnalysisAccessService implements GetAnalysisRightsPort {
 
     @Override
     public AnalysisRights rights(Analysis analysis, AnalysisAccess access) {
@@ -27,8 +27,8 @@ class AnalysisAccessService implements GetAnalysisRightsUseCase {
         return access.allUsers() || isOwner(analysis, access);
     }
 
-    // Whether the status allows the change is for the use case to check. An admin only narrows what someone
-    // else shared, never widens it to the internet.
+    // Whether the status allows the change is for AnalysisVisibilityService to check.
+    // An admin only narrows what someone else shared, never widens it to the internet.
     boolean canChangeTo(Analysis analysis, AnalysisAccess access, Visibility target) {
         Visibility current = analysis.visibility();
         if (current == target) {

@@ -2,7 +2,7 @@ package tr.girgin.backend.trading.analysis.platform.orchestration.preview.inboun
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetPartialAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetPartialAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.AnalysisPreview;
 
@@ -10,10 +10,10 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.A
 @EnableConfigurationProperties(PreviewSettings.class)
 public class GetAnalysisPreviewUseCase {
 
-    private final GetPartialAnalysisUseCase getPartialAnalysis;
+    private final GetPartialAnalysisPort getPartialAnalysis;
     private final PreviewCutter cutter;
 
-    GetAnalysisPreviewUseCase(GetPartialAnalysisUseCase getPartialAnalysis, PreviewCutter cutter) {
+    GetAnalysisPreviewUseCase(GetPartialAnalysisPort getPartialAnalysis, PreviewCutter cutter) {
         this.getPartialAnalysis = getPartialAnalysis;
         this.cutter = cutter;
     }

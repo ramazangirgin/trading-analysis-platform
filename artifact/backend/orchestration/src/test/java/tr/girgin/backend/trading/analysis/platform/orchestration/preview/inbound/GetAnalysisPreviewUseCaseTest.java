@@ -13,7 +13,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetPartialAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetPartialAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
@@ -21,7 +21,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetReportPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.DebateSpeaker;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
@@ -53,7 +53,7 @@ class GetAnalysisPreviewUseCaseTest {
                     Instant.parse("2026-09-25T10:00:00Z")),
             Rating.BUY,
             "Buy it");
-    private final GetPartialAnalysisUseCase getPartial = id -> {
+    private final GetPartialAnalysisPort getPartial = id -> {
         if (!id.equals(analysis.id())) {
             throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of());
         }
@@ -71,7 +71,7 @@ class GetAnalysisPreviewUseCaseTest {
             Instant.parse("2026-09-25T11:00:00Z")));
 
     private AnalysisPreview preview(PreviewSettings settings) {
-        GetReportUseCase getReport = key -> key.equals(KEY) ? report : Optional.empty();
+        GetReportPort getReport = key -> key.equals(KEY) ? report : Optional.empty();
         return new GetAnalysisPreviewUseCase(getPartial, new PreviewCutter(getReport, settings)).get(analysis.id());
     }
 

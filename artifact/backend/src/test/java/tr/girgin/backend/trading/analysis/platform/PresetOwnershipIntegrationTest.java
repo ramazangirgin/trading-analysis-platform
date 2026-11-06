@@ -16,7 +16,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
@@ -48,7 +48,7 @@ class PresetOwnershipIntegrationTest {
     private PresetRepositoryPort presets;
 
     @Autowired
-    private UserDirectoryUseCase userDirectory;
+    private UserDirectoryPort userDirectory;
 
     @Autowired
     private AssignPresetOwnersUseCase assignOwners;

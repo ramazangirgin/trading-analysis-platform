@@ -7,7 +7,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RegisterExternalAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RegisterExternalAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
@@ -23,7 +23,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
  * output, not a new run.
  */
 @Service
-class ExternalAnalysisService implements RegisterExternalAnalysisUseCase {
+class ExternalAnalysisService implements RegisterExternalAnalysisPort {
 
     private final AnalysisRepositoryPort repository;
 

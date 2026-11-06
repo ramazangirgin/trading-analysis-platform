@@ -104,7 +104,7 @@ the formatter.
 
 ### Javadoc
 The set is kept small:
-- Public types in `core/inbound` and `core/outbound` (use cases and ports, the domain's contracts)
+- Public types in `core/inbound` and `core/outbound` (inbound and outbound ports, the domain's contracts)
   need a Javadoc comment (`MissingJavadocType`). Adapters, mappers and services do not.
 - A Javadoc comment that is present has to be well formed: the first sentence ends with a period
   (`SummaryJavadoc`); the comment sits right before a declaration (`InvalidJavadocPosition`);
@@ -191,7 +191,7 @@ Suppressions in the code today:
 |---|---|---|
 | `IllegalCatch` | runner loops, background threads, event delivery, health checks, Docker probes in tests | fault isolation: one failure must not stop a run, a thread or other subscribers |
 | `ParameterNumber` | constructors of `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `SettingsApiDelegateImpl`, `DockerRunnerAdapter`, `ImportExistingRunsUseCase`, `AnalysisService`, `FirstAdminService`, `UserManagementService`; `SecurityConfig.securityFilterChain` | constructor injection of collaborators and `@Value` settings; the security chain's collaborators |
-| `ClassFanOutComplexity` | `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `SecurityConfig`, `AnalysisService` | an API delegate with a use case and a mapper per endpoint; the security chain's wiring and the filters' collaborators; the run lifecycle's ports and the services that hold the rules |
+| `ClassFanOutComplexity` | `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `SecurityConfig`, `AnalysisService` | an API delegate with an inbound port or use case and a mapper per endpoint; the security chain's wiring and the filters' collaborators; the run lifecycle's ports and the services that hold the rules |
 | `ConstantName`, `DeclarationOrder`, `HideUtilityClassConstructor` | `ArchitectureTest` | ArchUnit rule names, rules grouped by topic, JUnit instantiates the class |
 | `HideUtilityClassConstructor` | `TradingPlatformApplication` | Spring instantiates the `@SpringBootApplication` class |
 | `VisibilityModifier` | test doubles (`Fakes`, `RecordingSink`) | tests read and set their state directly |

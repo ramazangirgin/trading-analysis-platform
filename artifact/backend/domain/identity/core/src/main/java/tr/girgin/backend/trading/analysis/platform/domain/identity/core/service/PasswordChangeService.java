@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ChangePasswordUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ChangePasswordPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.AuthenticatedUser;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
@@ -14,7 +14,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
 @Service
-class PasswordChangeService implements ChangePasswordUseCase {
+class PasswordChangeService implements ChangePasswordPort {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordChangeService.class);
 

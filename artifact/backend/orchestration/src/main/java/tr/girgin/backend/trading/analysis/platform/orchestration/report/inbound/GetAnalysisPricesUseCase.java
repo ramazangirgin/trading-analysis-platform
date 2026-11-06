@@ -2,21 +2,21 @@ package tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound
 
 import java.util.Optional;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetPriceHistoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.GetPriceHistoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.PriceHistory;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 
 @Service
 public class GetAnalysisPricesUseCase {
 
-    private final GetAnalysisUseCase getAnalysis;
-    private final GetPriceHistoryUseCase getPrices;
+    private final GetAnalysisPort getAnalysis;
+    private final GetPriceHistoryPort getPrices;
 
-    GetAnalysisPricesUseCase(GetAnalysisUseCase getAnalysis, GetPriceHistoryUseCase getPrices) {
+    GetAnalysisPricesUseCase(GetAnalysisPort getAnalysis, GetPriceHistoryPort getPrices) {
         this.getAnalysis = getAnalysis;
         this.getPrices = getPrices;
     }

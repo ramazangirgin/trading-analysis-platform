@@ -7,7 +7,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -16,7 +16,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Vi
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 @Service
-class AnalysisVisibilityService implements ChangeAnalysisVisibilityUseCase {
+class AnalysisVisibilityService implements ChangeAnalysisVisibilityPort {
 
     private final AnalysisRepositoryPort repository;
     private final AnalysisAccessService analysisAccessService;

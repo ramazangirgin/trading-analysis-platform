@@ -12,7 +12,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
@@ -45,7 +45,7 @@ class GetAnalysisPricesUseCaseTest {
                     false),
             OWNER,
             Instant.parse("2026-09-25T10:00:00Z"));
-    private final GetAnalysisUseCase getAnalysis = (id, access) -> {
+    private final GetAnalysisPort getAnalysis = (id, access) -> {
         if (!id.equals(analysis.id()) || !(access.allUsers() || OWNER.equals(access.user()))) {
             throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of());
         }

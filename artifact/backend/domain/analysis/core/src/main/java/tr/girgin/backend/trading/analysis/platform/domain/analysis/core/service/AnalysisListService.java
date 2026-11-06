@@ -3,7 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
@@ -13,7 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Vi
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 @Service
-class AnalysisListService implements ListAnalysesUseCase {
+class AnalysisListService implements ListAnalysesPort {
 
     private final AnalysisRepositoryPort repository;
 

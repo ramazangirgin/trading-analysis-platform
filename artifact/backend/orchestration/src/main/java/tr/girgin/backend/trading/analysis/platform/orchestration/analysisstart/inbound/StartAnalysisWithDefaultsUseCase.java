@@ -6,12 +6,12 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StartAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.ModelOption;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.AnalysisDefaults;
@@ -23,11 +23,11 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.m
 public class StartAnalysisWithDefaultsUseCase {
 
     private final ManageAnalysisDefaultsUseCase defaults;
-    private final GetCatalogUseCase catalog;
-    private final StartAnalysisUseCase startAnalysis;
+    private final GetCatalogPort catalog;
+    private final StartAnalysisPort startAnalysis;
 
     StartAnalysisWithDefaultsUseCase(
-            ManageAnalysisDefaultsUseCase defaults, GetCatalogUseCase catalog, StartAnalysisUseCase startAnalysis) {
+            ManageAnalysisDefaultsUseCase defaults, GetCatalogPort catalog, StartAnalysisPort startAnalysis) {
         this.defaults = defaults;
         this.catalog = catalog;
         this.startAnalysis = startAnalysis;

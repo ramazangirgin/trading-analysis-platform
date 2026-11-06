@@ -29,7 +29,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AssetType;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.password.PasswordHasherPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
@@ -77,7 +77,7 @@ class AnalysisOwnershipIntegrationTest {
     private AnalysisRepositoryPort analyses;
 
     @Autowired
-    private UserDirectoryUseCase userDirectory;
+    private UserDirectoryPort userDirectory;
 
     @Autowired
     private AssignAnalysisOwnersUseCase assignOwners;

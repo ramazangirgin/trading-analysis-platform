@@ -5,8 +5,8 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetPartialAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListPartialAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetPartialAnalysisPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListPartialAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -16,7 +16,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Vi
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 
 @Service
-class PartialAnalysisService implements GetPartialAnalysisUseCase, ListPartialAnalysesUseCase {
+class PartialAnalysisService implements GetPartialAnalysisPort, ListPartialAnalysesPort {
 
     private final AnalysisRepositoryPort repository;
 

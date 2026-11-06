@@ -30,7 +30,7 @@ with `tr.girgin.backend.trading.analysis.platform`.
 - `bff:impl`: delegate implementations, DTO ↔ domain mappers (MapStruct), security.
 - `orchestration`: use cases that span several domains, one package per feature.
 - `domain:<d>:core` / `domain:<d>:adapter`: hexagonal domains `analysis`, `report`, `catalog`,
-  `settings`, `identity`. Core holds model, `inbound` use cases, `outbound` ports, package-private
+  `settings`, `identity`. Core holds model, `inbound` ports, `outbound` ports, package-private
   services; adapter holds one package per port (persistence, runner, eventstore, ...).
 - `library:mapper`, `library:persistence`: technical code only, no domain types.
 

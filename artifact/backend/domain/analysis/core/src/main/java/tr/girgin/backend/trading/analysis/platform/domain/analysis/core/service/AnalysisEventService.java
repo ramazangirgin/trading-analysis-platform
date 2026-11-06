@@ -12,7 +12,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -27,7 +27,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
  * {@code seq}, so nothing is lost or repeated across a reconnect.
  */
 @Service
-class AnalysisEventService implements SubscribeAnalysisEventsUseCase {
+class AnalysisEventService implements SubscribeAnalysisEventsPort {
 
     private static final Logger log = LoggerFactory.getLogger(AnalysisEventService.class);
 

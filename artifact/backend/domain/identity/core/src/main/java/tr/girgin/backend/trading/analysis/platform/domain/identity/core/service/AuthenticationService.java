@@ -13,7 +13,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticatePort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.AuthenticatedUser;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.PasswordHash;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.User;
@@ -23,7 +23,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
 @Service
-class AuthenticationService implements AuthenticateUseCase {
+class AuthenticationService implements AuthenticatePort {
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
     private static final int MAX_ATTEMPTS = 3;

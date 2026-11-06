@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListPartialAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListPartialAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analyst;
@@ -45,7 +45,7 @@ class ListAnalysisPreviewsUseCaseTest {
                     false),
             new OwnerId("user-a"),
             Instant.parse("2026-09-25T10:00:00Z"));
-    private final ListPartialAnalysesUseCase listPartial = (page, size) -> {
+    private final ListPartialAnalysesPort listPartial = (page, size) -> {
         requests.add(new int[] {page, size});
         return new PartialAnalysisPage(List.of(analysis), true);
     };

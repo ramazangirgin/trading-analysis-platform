@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.CreatedUserAccount;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageUsersUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageUsersPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserAccount;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
@@ -41,7 +41,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
  *
  */
 @Service
-class UserManagementService implements ManageUsersUseCase {
+class UserManagementService implements ManageUsersPort {
 
     private static final Logger log = LoggerFactory.getLogger(UserManagementService.class);
 

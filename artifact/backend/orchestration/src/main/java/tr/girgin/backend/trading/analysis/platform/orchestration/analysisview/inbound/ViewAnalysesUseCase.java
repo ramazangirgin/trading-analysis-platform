@@ -6,11 +6,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserDirectoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.model.AnalysisOwner;
@@ -20,10 +20,10 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.mo
 @Service
 public class ViewAnalysesUseCase {
 
-    private final GetAnalysisRightsUseCase getAnalysisRights;
-    private final UserDirectoryUseCase userDirectory;
+    private final GetAnalysisRightsPort getAnalysisRights;
+    private final UserDirectoryPort userDirectory;
 
-    ViewAnalysesUseCase(GetAnalysisRightsUseCase getAnalysisRights, UserDirectoryUseCase userDirectory) {
+    ViewAnalysesUseCase(GetAnalysisRightsPort getAnalysisRights, UserDirectoryPort userDirectory) {
         this.getAnalysisRights = getAnalysisRights;
         this.userDirectory = userDirectory;
     }

@@ -13,7 +13,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.filter.OncePerRequestFilter;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticateUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.AuthenticatePort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
 /**
@@ -26,12 +26,12 @@ public final class RoleAuthoritiesRefreshFilter extends OncePerRequestFilter {
     private static final String API_PREFIX = "/api/";
 
     private final SessionAuthorities sessionAuthorities;
-    private final AuthenticateUseCase authentication;
+    private final AuthenticatePort authentication;
     private final SecurityContextRepository contextRepository;
 
     RoleAuthoritiesRefreshFilter(
             SessionAuthorities sessionAuthorities,
-            AuthenticateUseCase authentication,
+            AuthenticatePort authentication,
             SecurityContextRepository contextRepository) {
         this.sessionAuthorities = sessionAuthorities;
         this.authentication = authentication;

@@ -6,19 +6,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisScope;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception.CatalogUnavailableException;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetEngineVersionUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetCatalogPort;
+import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.inbound.GetEngineVersionPort;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.EngineVersion;
 import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Provider;
-import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.ScanReportsPort;
+import tr.girgin.backend.trading.analysis.platform.domain.settings.core.inbound.ManageSecretsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.settings.core.model.SecretStatus;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthCheck;
 import tr.girgin.backend.trading.analysis.platform.orchestration.health.model.HealthStatus;
@@ -33,18 +33,18 @@ public class SystemHealthUseCase {
     // The queue is the platform's, not one user's: the counts cover every owner.
     private static final AnalysisAccess PLATFORM = new AnalysisAccess(new OwnerId("platform"), true, false);
 
-    private final GetEngineVersionUseCase engineVersion;
-    private final GetCatalogUseCase catalog;
-    private final ScanReportsUseCase scanReports;
-    private final ManageSecretsUseCase secrets;
-    private final ListAnalysesUseCase analyses;
+    private final GetEngineVersionPort engineVersion;
+    private final GetCatalogPort catalog;
+    private final ScanReportsPort scanReports;
+    private final ManageSecretsPort secrets;
+    private final ListAnalysesPort analyses;
 
     SystemHealthUseCase(
-            GetEngineVersionUseCase engineVersion,
-            GetCatalogUseCase catalog,
-            ScanReportsUseCase scanReports,
-            ManageSecretsUseCase secrets,
-            ListAnalysesUseCase analyses) {
+            GetEngineVersionPort engineVersion,
+            GetCatalogPort catalog,
+            ScanReportsPort scanReports,
+            ManageSecretsPort secrets,
+            ListAnalysesPort analyses) {
         this.engineVersion = engineVersion;
         this.catalog = catalog;
         this.scanReports = scanReports;

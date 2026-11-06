@@ -37,15 +37,15 @@ import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.Repo
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.RunEventToRunEventDtoMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.StartAnalysisRequestToRequestedAnalysisMapper;
 import tr.girgin.backend.trading.analysis.platform.bff.delegate.impl.mapper.VisibilityEnumDtoToVisibilityMapper;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ChangeAnalysisVisibilityPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.EventSubscription;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ListAnalysesPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RerunAnalysisPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.RunEventListener;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.StopAnalysisPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.SubscribeAnalysisEventsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisFilter;
@@ -59,7 +59,7 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.
 import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.GetAnalysisReportUseCase;
 
 @Service
-// ClassFanOutComplexity: the analyses API's delegate, with a use case and a mapper per endpoint.
+// ClassFanOutComplexity: the analyses API's delegate, with an inbound port or use case and a mapper per endpoint.
 @SuppressWarnings("checkstyle:ClassFanOutComplexity")
 class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
 
@@ -67,15 +67,15 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     static final String END_EVENT = "end";
 
     private final StartAnalysisWithDefaultsUseCase startAnalysis;
-    private final ListAnalysesUseCase listAnalyses;
-    private final GetAnalysisUseCase getAnalysis;
-    private final ChangeAnalysisVisibilityUseCase changeVisibility;
-    private final StopAnalysisUseCase stopAnalysis;
-    private final RerunAnalysisUseCase rerunAnalysis;
-    private final SubscribeAnalysisEventsUseCase subscribeEvents;
+    private final ListAnalysesPort listAnalyses;
+    private final GetAnalysisPort getAnalysis;
+    private final ChangeAnalysisVisibilityPort changeVisibility;
+    private final StopAnalysisPort stopAnalysis;
+    private final RerunAnalysisPort rerunAnalysis;
+    private final SubscribeAnalysisEventsPort subscribeEvents;
     private final GetAnalysisReportUseCase getReport;
     private final GetAnalysisPricesUseCase getPrices;
-    private final ReadAnalysisLogsUseCase readLogs;
+    private final ReadAnalysisLogsPort readLogs;
     private final ViewAnalysesUseCase viewAnalyses;
     private final StartAnalysisRequestToRequestedAnalysisMapper requestMapper;
     private final AnalysisViewToAnalysisDtoMapper analysisMapper;
@@ -91,15 +91,15 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
             StartAnalysisWithDefaultsUseCase startAnalysis,
-            ListAnalysesUseCase listAnalyses,
-            GetAnalysisUseCase getAnalysis,
-            ChangeAnalysisVisibilityUseCase changeVisibility,
-            StopAnalysisUseCase stopAnalysis,
-            RerunAnalysisUseCase rerunAnalysis,
-            SubscribeAnalysisEventsUseCase subscribeEvents,
+            ListAnalysesPort listAnalyses,
+            GetAnalysisPort getAnalysis,
+            ChangeAnalysisVisibilityPort changeVisibility,
+            StopAnalysisPort stopAnalysis,
+            RerunAnalysisPort rerunAnalysis,
+            SubscribeAnalysisEventsPort subscribeEvents,
             GetAnalysisReportUseCase getReport,
             GetAnalysisPricesUseCase getPrices,
-            ReadAnalysisLogsUseCase readLogs,
+            ReadAnalysisLogsPort readLogs,
             ViewAnalysesUseCase viewAnalyses,
             StartAnalysisRequestToRequestedAnalysisMapper requestMapper,
             AnalysisViewToAnalysisDtoMapper analysisMapper,

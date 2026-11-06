@@ -6,8 +6,8 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisError;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exception.AnalysisException;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisUseCase;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsUseCase;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisPort;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.ReadAnalysisLogsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
@@ -15,18 +15,18 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 
 /** Serves run logs with anything that looks like an API key masked. */
 @Service
-class AnalysisLogService implements ReadAnalysisLogsUseCase {
+class AnalysisLogService implements ReadAnalysisLogsPort {
 
     static final int MAX_LINES = 5_000;
     // sk-..., sk-ant-..., AIza... and long bearer-style tokens.
     private static final Pattern KEY =
             Pattern.compile("\\b(sk-[A-Za-z]*-?|AIza|xai-|gsk_)([A-Za-z0-9_\\-]{4})[A-Za-z0-9_\\-]{8,}");
 
-    private final GetAnalysisUseCase getAnalysis;
+    private final GetAnalysisPort getAnalysis;
     private final RunLogPort runLog;
     private final AnalysisAccessService analysisAccessService;
 
-    AnalysisLogService(GetAnalysisUseCase getAnalysis, RunLogPort runLog, AnalysisAccessService analysisAccessService) {
+    AnalysisLogService(GetAnalysisPort getAnalysis, RunLogPort runLog, AnalysisAccessService analysisAccessService) {
         this.getAnalysis = getAnalysis;
         this.runLog = runLog;
         this.analysisAccessService = analysisAccessService;

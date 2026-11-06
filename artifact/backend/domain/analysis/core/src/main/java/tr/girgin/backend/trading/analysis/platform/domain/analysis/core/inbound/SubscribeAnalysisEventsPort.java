@@ -1,0 +1,15 @@
+package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound;
+
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
+
+/** Streams a run's events: the stored ones first, then live ones. */
+public interface SubscribeAnalysisEventsPort {
+
+    /**
+     * Replays the stored events with {@code seq > afterSeq}, then delivers live ones in order and
+     * without duplicates. The listener completes once the run has finished. An analysis the caller may not
+     * see is reported as not found, before any event is delivered.
+     */
+    EventSubscription subscribe(AnalysisId id, long afterSeq, AnalysisAccess access, RunEventListener listener);
+}
