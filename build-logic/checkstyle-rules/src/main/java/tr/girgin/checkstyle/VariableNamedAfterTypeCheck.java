@@ -134,7 +134,6 @@ public class VariableNamedAfterTypeCheck extends AbstractCheck {
         return typeName.substring(0, capitals).toLowerCase(java.util.Locale.ROOT) + typeName.substring(capitals);
     }
 
-    /** {@code TAP-D9: } for a module with an {@code id}, nothing without. */
     private String idPrefix() {
         return getId() == null ? "" : getId() + ": ";
     }
