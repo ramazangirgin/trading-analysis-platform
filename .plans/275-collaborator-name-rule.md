@@ -86,8 +86,9 @@ Packages without a dependency between them can be implemented in parallel.
   `build-logic/checkstyle-rules/docs/VariableNamedAfterTypeCheck.md`,
   `build-logic/checkstyle-rules/README.md`
 - **Steps**:
-  - [x] Reuse `SimpleNamePattern` and `SourceNames` from `support/` for the type patterns and the
-    type's last segment.
+  - [x] Reuse `SimpleNamePattern` from `support/` for the name patterns. `SourceNames` is not
+    reused: `SourceNames.of` returns null for a DOT that ends in TYPE_ARGUMENTS, such as
+    `Map.Entry<K, V>`, so the check reads the type's last identifier from the tree.
 - **Tests**: `VariableNamedAfterTypeCheckTest`: every declaration kind reported with a wrong name
   (field, constructor, method and lambda parameter, local, for-each, resource, record component),
   with a qualified and a generic type; not reported: the exact name, a qualifier with and without
