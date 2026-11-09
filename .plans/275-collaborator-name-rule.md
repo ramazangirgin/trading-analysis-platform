@@ -75,7 +75,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: The check
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `build-logic/checkstyle-rules/src/main/java/tr/girgin/checkstyle/VariableNamedAfterTypeCheck.java`,
   `build-logic/checkstyle-rules/src/main/resources/tr/girgin/checkstyle/messages.properties`,
@@ -86,7 +86,7 @@ Packages without a dependency between them can be implemented in parallel.
   `build-logic/checkstyle-rules/docs/VariableNamedAfterTypeCheck.md`,
   `build-logic/checkstyle-rules/README.md`
 - **Steps**:
-  - [ ] Reuse `SimpleNamePattern` and `SourceNames` from `support/` for the type patterns and the
+  - [x] Reuse `SimpleNamePattern` and `SourceNames` from `support/` for the type patterns and the
     type's last segment.
 - **Tests**: `VariableNamedAfterTypeCheckTest`: every declaration kind reported with a wrong name
   (field, constructor, method and lambda parameter, local, for-each, resource, record component),
