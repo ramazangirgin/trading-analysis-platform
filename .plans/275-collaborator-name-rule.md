@@ -98,7 +98,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Rule TAP-D9 and the agents' guidance
 
-- **Status**: done
+- **Status**: not done: `.claude/skills/plan-from-issue/SKILL.md` section 3 "Conventions" must be edited by hand before merging (agents cannot edit `.claude/`); the rest is done
 - **Depends on**: WP1
 - **Files**: `config/checkstyle/checkstyle.xml`,
   `build-logic/checkstyle-rules/src/test/resources/rules/TAP-D9/Violation.java`,
