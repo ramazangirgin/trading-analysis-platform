@@ -139,6 +139,4 @@ Each work package's tests.
 
 ## Open questions
 
-- The temporary filter goes against "a project rule goes in at `error` with its existing findings
-  fixed in the same pull request". The alternative is one pull request with the check and all
-  ~150 renamed files (about 25 work packages). Is the three-plan split with the filter acceptable?
+None. The developer approved the three-plan split with the temporary `TAP-D9` filter.
