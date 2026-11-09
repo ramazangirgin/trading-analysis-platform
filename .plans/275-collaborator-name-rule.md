@@ -98,7 +98,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: Rule TAP-D9 and the agents' guidance
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `config/checkstyle/checkstyle.xml`,
   `build-logic/checkstyle-rules/src/test/resources/rules/TAP-D9/Violation.java`,
@@ -106,9 +106,9 @@ Packages without a dependency between them can be implemented in parallel.
   `docs/coding-convention/backend-java-checkstyle.md`, `docs/coding-convention/README.md`,
   `CLAUDE.md`, `scripts/agent/prompts/implement.md`
 - **Steps**:
-  - [ ] The `TAP-D9` module at the end of `TreeWalker`, with a `suggestion` that gives the rule and
+  - [x] The `TAP-D9` module at the end of `TreeWalker`, with a `suggestion` that gives the rule and
     an example (`userRepositoryPort`, `strictUserManagementService`).
-  - [ ] The temporary filter from "Design".
+  - [x] The temporary filter from "Design".
 - **Tests**: `ProjectRulesTest` proves `TAP-D9` in main and test sources (`Violation.java` covers a
   field, a constructor parameter and a local; `Compliant.java` the exact names and a qualified one).
   `mise run check` passes, so nothing outside the filter is reported.

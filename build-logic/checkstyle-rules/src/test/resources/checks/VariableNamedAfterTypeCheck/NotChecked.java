@@ -36,4 +36,9 @@ public class NotChecked {
         try (var resource = open()) {
         }
     }
+
+    void existingResource(java.io.InputStream in) throws Exception {
+        try (in) {
+        }
+    }
 }

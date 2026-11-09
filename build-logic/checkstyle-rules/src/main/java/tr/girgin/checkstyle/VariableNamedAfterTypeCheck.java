@@ -91,7 +91,8 @@ public class VariableNamedAfterTypeCheck extends AbstractCheck {
     /** The last segment of the type's name; {@code null} for {@code var}, arrays, primitives and implicit lambda parameters. */
     private static String declaredTypeName(DetailAST variable) {
         DetailAST type = variable.findFirstToken(TokenTypes.TYPE);
-        if (type.findFirstToken(TokenTypes.ARRAY_DECLARATOR) != null
+        if (type == null
+                || type.findFirstToken(TokenTypes.ARRAY_DECLARATOR) != null
                 || variable.findFirstToken(TokenTypes.ELLIPSIS) != null) {
             return null;
         }
