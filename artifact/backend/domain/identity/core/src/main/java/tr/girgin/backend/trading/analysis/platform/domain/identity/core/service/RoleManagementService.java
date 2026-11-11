@@ -16,10 +16,10 @@ import org.springframework.stereotype.Service;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityError;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exception.IdentityException;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.ManageRolesPort;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.RoleRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 

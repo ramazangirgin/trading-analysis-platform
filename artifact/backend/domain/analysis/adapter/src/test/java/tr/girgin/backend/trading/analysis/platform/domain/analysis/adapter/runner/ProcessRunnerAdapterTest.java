@@ -21,10 +21,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunEventSink;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 
 class ProcessRunnerAdapterTest extends AdapterTestSupport {
 

@@ -73,11 +73,7 @@ class ArchitectureTest {
     private static final String BFF_IMPL_ERROR = BASE + ".bff.delegate.impl.error..";
     private static final String ORCHESTRATION_INBOUND = BASE + ".orchestration.*.inbound..";
     private static final String[] MODEL_PACKAGES = {
-        BASE + ".domain.*.core.model..",
-        BASE + ".domain.*.core.inbound..",
-        BASE + ".domain.*.core.outbound..",
-        BASE + ".orchestration.*.model..",
-        BASE + ".bff.controller.api.model.."
+        BASE + ".domain.*.core.model..", BASE + ".orchestration.*.model..", BASE + ".bff.controller.api.model.."
     };
 
     /** Shared helper packages under {@code adapter} that serve several ports and implement none. */
@@ -458,9 +454,23 @@ class ArchitectureTest {
             .because("behaviour of a domain lives in its services, and a service package holds nothing else");
 
     @ArchTest
-    static final ArchRule models_are_data = topLevelClasses()
+    static final ArchRule port_packages_hold_only_interfaces = topLevelClasses()
             .and()
-            .areNotInterfaces()
+            .resideInAnyPackage(BASE + ".domain.*.core.inbound..", BASE + ".domain.*.core.outbound..")
+            .should()
+            .beInterfaces()
+            .because("the types a port takes or returns are models, in the model package of the domain");
+
+    @ArchTest
+    static final ArchRule model_packages_hold_no_interfaces = topLevelClasses()
+            .and()
+            .resideInAnyPackage(MODEL_PACKAGES)
+            .should()
+            .notBeInterfaces()
+            .because("a model is data; behaviour contracts are ports");
+
+    @ArchTest
+    static final ArchRule models_are_data = topLevelClasses()
             .and()
             .resideInAnyPackage(MODEL_PACKAGES)
             .should(DataOnlyCondition.declareOnlyWhatTheCompilerGenerates())

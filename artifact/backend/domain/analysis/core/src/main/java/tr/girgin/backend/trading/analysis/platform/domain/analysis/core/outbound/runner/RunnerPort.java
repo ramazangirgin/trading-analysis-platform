@@ -3,6 +3,7 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outboun
 import java.util.Map;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunHandle;
 
 /** Runs ta-runner somewhere (local process, Docker container) and streams its events back. */
 public interface RunnerPort {

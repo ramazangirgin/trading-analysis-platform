@@ -4,8 +4,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.UserDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.UserRoleDto;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.UserAccount;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserAccount;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.OptionalInstantToInstantMapper;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 

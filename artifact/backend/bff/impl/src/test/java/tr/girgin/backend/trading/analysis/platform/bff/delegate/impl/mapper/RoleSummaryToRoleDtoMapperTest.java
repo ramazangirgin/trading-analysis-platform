@@ -6,10 +6,10 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PermissionEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RoleDto;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleSummary;
 
 class RoleSummaryToRoleDtoMapperTest {
 

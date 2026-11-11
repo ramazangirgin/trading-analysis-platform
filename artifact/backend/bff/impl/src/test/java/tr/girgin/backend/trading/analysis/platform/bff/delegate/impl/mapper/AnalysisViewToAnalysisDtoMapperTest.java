@@ -15,9 +15,9 @@ import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.Anal
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.AssetTypeEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RatingEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.VisibilityEnumDto;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AnalysisRights;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisRights;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSource;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisSpec;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisStatus;

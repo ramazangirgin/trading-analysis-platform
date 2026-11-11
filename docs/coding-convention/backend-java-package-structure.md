@@ -44,8 +44,8 @@ bff/delegate/impl/
 domain/<d>/core/
   model/                           value types, records, enums
   exception/                       *Exception and their error-code enums (*Error)
-  inbound/                         *Port interfaces (and the types they hand out)
-  outbound/<port>/                 *Port interfaces (and the types they exchange)
+  inbound/                         *Port interfaces only; the types they take and return are in model/
+  outbound/<port>/                 *Port interfaces and the interfaces they exchange; their data types are in model/
   service/                         @Service beans named *Service holding the domain's behaviour,
                                    package-private; they implement the inbound ports
 domain/<d>/adapter/
@@ -127,7 +127,9 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Orchestration `*UseCase` | a concrete class annotated `@Service`, not an interface: it has a single implementation and no outbound port of its own, so an interface would add nothing | `orchestration_use_cases_are_concrete_beans` |
 | `*Service` | `…service` | `services_live_in_service_packages` |
 | Anything in a domain core's `service` package | a `@Service` bean named `*Service`: no static helper class, no model | `service_packages_hold_only_services` |
-| Model types: classes (not interfaces) in `domain.<d>.core.model`, `core.inbound`, `core.outbound`, `orchestration.<f>.model` and `bff.controller.api.model` | pure data: only record accessors, `equals`, `hashCode`, `toString`, `values`, `valueOf` and an enum's field accessor, all generated or trivial; constructors call nothing but the super constructor. `PasswordHash` is the one class named by the rule, since its hand-written `toString` masks the hash | `models_are_data` |
+| Anything in a domain core's `inbound` or `outbound` package | an interface: the types a port takes or returns are models | `port_packages_hold_only_interfaces` |
+| Anything in `domain.<d>.core.model`, `orchestration.<f>.model` or `bff.controller.api.model` | not an interface (a sealed interface is one too) | `model_packages_hold_no_interfaces` |
+| Model types: classes in `domain.<d>.core.model`, `orchestration.<f>.model` and `bff.controller.api.model` | pure data: only record accessors, `equals`, `hashCode`, `toString`, `values`, `valueOf` and an enum's field accessor, all generated or trivial; constructors call nothing but the super constructor. `PasswordHash` is the one class named by the rule, since its hand-written `toString` masks the hash | `models_are_data` |
 | Exception (anything `Throwable`) | `domain.<d>.core.exception` or `bff.controller.api.error` | `exceptions_live_in_exception_packages` |
 | Error-code enum `*Error` | `domain.<d>.core.exception`, next to its exception | `error_codes_live_next_to_their_exception` |
 | Domain core sub-packages | only `inbound`, `outbound`, `service`, `model`, `exception` | `domain_core_sub_packages_are_known_kinds` |
