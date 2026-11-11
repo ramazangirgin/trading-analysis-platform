@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound;
+package tr.girgin.backend.trading.analysis.platform.domain.identity.core.model;
 
 import java.util.Optional;
 

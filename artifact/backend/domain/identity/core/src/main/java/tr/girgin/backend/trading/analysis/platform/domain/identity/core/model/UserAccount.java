@@ -1,11 +1,8 @@
-package tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound;
+package tr.girgin.backend.trading.analysis.platform.domain.identity.core.model;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Role;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 
 /**
  * A user as an admin sees them: no password hash, the roles by name, and the lock as of now.

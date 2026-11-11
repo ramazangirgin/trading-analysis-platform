@@ -60,11 +60,11 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP2: Identity core, users
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `.../identity/core/inbound/UserAccount.java` and `.../identity/core/inbound/CreatedUserAccount.java` (moved to `core/model/`), `.../identity/core/inbound/ManageUsersPort.java`, `.../identity/core/service/UserManagementService.java`, `artifact/backend/domain/identity/core/src/test/java/.../identity/core/service/UserManagementServiceTest.java`
 - **Steps**:
-  - [ ] In `model`, `CreatedUserAccount` refers to `UserAccount` in its own package; `UserAccount` drops its imports of `Role`, `UserId`, `Username`.
+  - [x] In `model`, `CreatedUserAccount` refers to `UserAccount` in its own package; `UserAccount` drops its imports of `Role`, `UserId`, `Username`.
 - **Tests**: `UserManagementServiceTest` unchanged apart from the imports; `mise run gradle :backend:domain:identity:core:test`.
 
 ### WP3: Analysis core, rights
