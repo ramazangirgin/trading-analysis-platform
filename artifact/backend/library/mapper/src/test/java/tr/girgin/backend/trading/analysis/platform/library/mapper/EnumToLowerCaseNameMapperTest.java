@@ -6,16 +6,16 @@ import org.junit.jupiter.api.Test;
 
 class EnumToLowerCaseNameMapperTest {
 
-    private final EnumToLowerCaseNameMapper mapper = new EnumToLowerCaseNameMapperImpl();
+    private final EnumToLowerCaseNameMapper enumToLowerCaseNameMapper = new EnumToLowerCaseNameMapperImpl();
 
     @Test
     void mapsAConstantToItsLowerCaseName() {
-        assertThat(mapper.map(Sample.STATUS)).isEqualTo("status");
+        assertThat(enumToLowerCaseNameMapper.map(Sample.STATUS)).isEqualTo("status");
     }
 
     @Test
     void keepsTheUnderscoresOfAMultiWordConstant() {
-        assertThat(mapper.map(Sample.SAMPLE_VALUE)).isEqualTo("sample_value");
+        assertThat(enumToLowerCaseNameMapper.map(Sample.SAMPLE_VALUE)).isEqualTo("sample_value");
     }
 
     private enum Sample {

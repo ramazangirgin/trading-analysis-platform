@@ -26,11 +26,11 @@ class PriceHistoryService implements GetPriceHistoryPort {
     private static final int SMA_MEDIUM = 50;
     private static final int SMA_LONG = 200;
 
-    private final PriceCachePort cache;
+    private final PriceCachePort priceCachePort;
     private final ReportKeyService reportKeyService;
 
-    PriceHistoryService(PriceCachePort cache, ReportKeyService reportKeyService) {
-        this.cache = cache;
+    PriceHistoryService(PriceCachePort priceCachePort, ReportKeyService reportKeyService) {
+        this.priceCachePort = priceCachePort;
         this.reportKeyService = reportKeyService;
     }
 
@@ -39,7 +39,7 @@ class PriceHistoryService implements GetPriceHistoryPort {
         if (!reportKeyService.isValid(key)) {
             return Optional.empty();
         }
-        List<PriceBar> bars = cache.read(key.ticker(), key.tradeDate()).stream()
+        List<PriceBar> bars = priceCachePort.read(key.ticker(), key.tradeDate()).stream()
                 .filter(bar -> !bar.date().isAfter(key.tradeDate()))
                 .sorted(Comparator.comparing(PriceBar::date))
                 .toList();

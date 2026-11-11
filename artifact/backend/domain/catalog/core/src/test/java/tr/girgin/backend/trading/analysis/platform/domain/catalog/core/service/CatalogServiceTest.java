@@ -17,7 +17,7 @@ class CatalogServiceTest {
     private final AtomicInteger calls = new AtomicInteger();
     private boolean failing;
 
-    private final EngineInfoPort engine = new EngineInfoPort() {
+    private final EngineInfoPort engineInfoPort = new EngineInfoPort() {
         @Override
         public Catalog fetchCatalog() {
             calls.incrementAndGet();
@@ -36,32 +36,32 @@ class CatalogServiceTest {
 
     @Test
     void asksTheRunnerOnceWithinTheCacheTime() {
-        CatalogService service = new CatalogService(engine, 10);
+        CatalogService catalogService = new CatalogService(engineInfoPort, 10);
 
-        service.getCatalog();
-        service.getCatalog();
+        catalogService.getCatalog();
+        catalogService.getCatalog();
 
         assertThat(calls).hasValue(1);
     }
 
     @Test
     void doesNotCacheFailures() {
-        CatalogService service = new CatalogService(engine, 10);
+        CatalogService catalogService = new CatalogService(engineInfoPort, 10);
         failing = true;
-        assertThatThrownBy(service::getCatalog).isInstanceOf(CatalogUnavailableException.class);
+        assertThatThrownBy(catalogService::getCatalog).isInstanceOf(CatalogUnavailableException.class);
 
         failing = false;
 
-        assertThat(service.getCatalog().upstreamVersion()).isEqualTo("0.5.1");
+        assertThat(catalogService.getCatalog().upstreamVersion()).isEqualTo("0.5.1");
         assertThat(calls).hasValue(2);
     }
 
     @Test
     void cachesTheVersionSeparately() {
-        CatalogService service = new CatalogService(engine, 0);
+        CatalogService catalogService = new CatalogService(engineInfoPort, 0);
 
-        assertThat(service.getEngineVersion().protocolVersion()).isEqualTo(1);
-        service.getEngineVersion();
+        assertThat(catalogService.getEngineVersion().protocolVersion()).isEqualTo(1);
+        catalogService.getEngineVersion();
 
         assertThat(calls).hasValue(2);
     }

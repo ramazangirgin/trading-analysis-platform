@@ -42,7 +42,7 @@ class V2AnalysisVersionMigrationTest {
             + AnalysisPersistenceConfiguration.class.getPackageName().replace('.', '/');
 
     @Autowired
-    private JpaAnalysisRepositoryAdapter repository;
+    private JpaAnalysisRepositoryAdapter jpaAnalysisRepositoryAdapter;
 
     @Test
     void aFinishedRunKeepsEveryValueAndStartsAtVersionZero() {
@@ -77,14 +77,18 @@ class V2AnalysisVersionMigrationTest {
                 null,
                 0L);
 
-        assertThat(repository.findById(new AnalysisId("r_seed_a"))).contains(expected);
+        assertThat(jpaAnalysisRepositoryAdapter.findById(new AnalysisId("r_seed_a")))
+                .contains(expected);
     }
 
     @Test
     void aMigratedImportCanBeReplacedAtItsVersion() {
-        Analysis seeded = repository.findByExternalRef("report:AAPL/2026-09-27").orElseThrow();
+        Analysis seeded = jpaAnalysisRepositoryAdapter
+                .findByExternalRef("report:AAPL/2026-09-27")
+                .orElseThrow();
 
-        Analysis replaced = repository.replaceImported(TestAnalyses.withDecision(seeded, Rating.HOLD, "Rating: Hold"));
+        Analysis replaced = jpaAnalysisRepositoryAdapter.replaceImported(
+                TestAnalyses.withDecision(seeded, Rating.HOLD, "Rating: Hold"));
 
         assertThat(seeded.version()).isZero();
         assertThat(replaced.version()).isEqualTo(1);

@@ -30,21 +30,32 @@ class V3AnalysisOwnerMigrationTest {
             + AnalysisPersistenceConfiguration.class.getPackageName().replace('.', '/');
 
     @Autowired
-    private JpaAnalysisRepositoryAdapter repository;
+    private JpaAnalysisRepositoryAdapter jpaAnalysisRepositoryAdapter;
 
     @Test
     void rowsFromBeforeV3SurviveWithoutAnOwnerAndCanBeGivenOne() {
-        Analysis platformRun = repository.findById(new AnalysisId("r_seed_a")).orElseThrow();
-        Analysis imported =
-                repository.findByExternalRef("report:AAPL/2026-09-27").orElseThrow();
+        Analysis platformRun = jpaAnalysisRepositoryAdapter
+                .findById(new AnalysisId("r_seed_a"))
+                .orElseThrow();
+        Analysis imported = jpaAnalysisRepositoryAdapter
+                .findByExternalRef("report:AAPL/2026-09-27")
+                .orElseThrow();
         assertThat(platformRun.owner()).isNull();
         assertThat(imported.owner()).isNull();
         OwnerId admin = new OwnerId("admin-id");
 
-        assertThat(repository.assignOwnerWhereMissing(admin)).isEqualTo(2);
+        assertThat(jpaAnalysisRepositoryAdapter.assignOwnerWhereMissing(admin)).isEqualTo(2);
 
-        assertThat(repository.findById(platformRun.id()).orElseThrow().owner()).isEqualTo(admin);
-        assertThat(repository.findById(imported.id()).orElseThrow().owner()).isEqualTo(admin);
+        assertThat(jpaAnalysisRepositoryAdapter
+                        .findById(platformRun.id())
+                        .orElseThrow()
+                        .owner())
+                .isEqualTo(admin);
+        assertThat(jpaAnalysisRepositoryAdapter
+                        .findById(imported.id())
+                        .orElseThrow()
+                        .owner())
+                .isEqualTo(admin);
     }
 
     // Not a @Configuration, as in V2AnalysisVersionMigrationTest: this test's Flyway runs the real migrations

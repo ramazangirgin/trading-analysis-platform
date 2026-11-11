@@ -17,38 +17,42 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 @Component
 class JpaRoleRepositoryAdapter implements RoleRepositoryPort {
 
-    private final RoleJpaRepository repository;
-    private final RoleToRoleEntityMapper toEntity;
-    private final RoleEntityToRoleMapper toRole;
-    private final RoleIdToRoleIdEmbeddableMapper toEntityId;
+    private final RoleJpaRepository roleJpaRepository;
+    private final RoleToRoleEntityMapper roleToRoleEntityMapper;
+    private final RoleEntityToRoleMapper roleEntityToRoleMapper;
+    private final RoleIdToRoleIdEmbeddableMapper roleIdToRoleIdEmbeddableMapper;
 
     JpaRoleRepositoryAdapter(
-            RoleJpaRepository repository,
-            RoleToRoleEntityMapper toEntity,
-            RoleEntityToRoleMapper toRole,
-            RoleIdToRoleIdEmbeddableMapper toEntityId) {
-        this.repository = repository;
-        this.toEntity = toEntity;
-        this.toRole = toRole;
-        this.toEntityId = toEntityId;
+            RoleJpaRepository roleJpaRepository,
+            RoleToRoleEntityMapper roleToRoleEntityMapper,
+            RoleEntityToRoleMapper roleEntityToRoleMapper,
+            RoleIdToRoleIdEmbeddableMapper roleIdToRoleIdEmbeddableMapper) {
+        this.roleJpaRepository = roleJpaRepository;
+        this.roleToRoleEntityMapper = roleToRoleEntityMapper;
+        this.roleEntityToRoleMapper = roleEntityToRoleMapper;
+        this.roleIdToRoleIdEmbeddableMapper = roleIdToRoleIdEmbeddableMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Role> findById(RoleId id) {
-        return repository.findById(toEntityId.map(id)).map(toRole::map);
+        return roleJpaRepository
+                .findById(roleIdToRoleIdEmbeddableMapper.map(id))
+                .map(roleEntityToRoleMapper::map);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Role> findByName(String name) {
-        return repository.findByName(name).map(toRole::map);
+        return roleJpaRepository.findByName(name).map(roleEntityToRoleMapper::map);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Role> findAll() {
-        return repository.findAllByOrderByNameAsc().stream().map(toRole::map).toList();
+        return roleJpaRepository.findAllByOrderByNameAsc().stream()
+                .map(roleEntityToRoleMapper::map)
+                .toList();
     }
 
     /**
@@ -60,7 +64,7 @@ class JpaRoleRepositoryAdapter implements RoleRepositoryPort {
     @Transactional
     public Role save(Role role) {
         try {
-            return toRole.map(repository.saveAndFlush(toEntity.map(role)));
+            return roleEntityToRoleMapper.map(roleJpaRepository.saveAndFlush(roleToRoleEntityMapper.map(role)));
         } catch (DataIntegrityViolationException e) {
             if (isUniqueViolation(e)) {
                 throw new DuplicateKeyException("The role name is taken by another role", e);
@@ -72,7 +76,7 @@ class JpaRoleRepositoryAdapter implements RoleRepositoryPort {
     @Override
     @Transactional
     public void deleteById(RoleId id) {
-        repository.deleteByIdValue(id.value());
+        roleJpaRepository.deleteByIdValue(id.value());
     }
 
     private boolean isUniqueViolation(Throwable failure) {

@@ -28,7 +28,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 
 class FirstAdminServiceTest {
 
-    private final FakeUserRepository users = new FakeUserRepository();
+    private final FakeUserRepository fakeUserRepository = new FakeUserRepository();
     private final FakeHasher hasher = new FakeHasher();
     private final CountingGenerator generator = new CountingGenerator();
 
@@ -38,7 +38,7 @@ class FirstAdminServiceTest {
 
     private FirstAdminService service(int minLength, String username, String password) {
         return new FirstAdminService(
-                users,
+                fakeUserRepository,
                 hasher,
                 generator,
                 new PasswordPolicyService(minLength, "password1234567\n"),
@@ -70,8 +70,8 @@ class FirstAdminServiceTest {
             logger.detachAppender(appender);
         }
 
-        assertThat(users.users).isEmpty();
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.users).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
         assertThat(appender.list)
                 .extracting(ILoggingEvent::getFormattedMessage)
                 .noneMatch(message -> message.contains("Xy7-weak") || message.contains("Password1234567"));
@@ -79,12 +79,12 @@ class FirstAdminServiceTest {
 
     @Test
     void aWeakConfiguredPasswordIsIgnoredWhenUsersExist() {
-        users.users.add(existing());
+        fakeUserRepository.users.add(existing());
 
         assertThatCode(() -> service("admin", "Xy7-weak").createFirstAdminIfNoUser())
                 .doesNotThrowAnyException();
 
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
@@ -92,7 +92,7 @@ class FirstAdminServiceTest {
         service("admin", null).createFirstAdminIfNoUser();
         assertThat(generator.lastLength).isEqualTo(24);
 
-        users.users.clear();
+        fakeUserRepository.users.clear();
         service(40, "admin", null).createFirstAdminIfNoUser();
         assertThat(generator.lastLength).isEqualTo(40);
     }
@@ -101,7 +101,7 @@ class FirstAdminServiceTest {
     void configuredPasswordCreatesTheAdminWithoutTheChangeFlag() {
         service("admin", "configured-secret").createFirstAdminIfNoUser();
 
-        assertThat(users.users).singleElement().satisfies(user -> {
+        assertThat(fakeUserRepository.users).singleElement().satisfies(user -> {
             assertThat(user.username()).isEqualTo(new Username("admin"));
             assertThat(user.enabled()).isTrue();
             assertThat(user.mustChangePassword()).isFalse();
@@ -127,7 +127,7 @@ class FirstAdminServiceTest {
     }
 
     private void assertGenerated() {
-        assertThat(users.users).singleElement().satisfies(user -> {
+        assertThat(fakeUserRepository.users).singleElement().satisfies(user -> {
             assertThat(user.mustChangePassword()).isTrue();
             assertThat(user.roleIds()).containsExactly(RoleId.ADMIN);
             assertThat(hasher.matches(generator.last, user.passwordHash())).isTrue();
@@ -140,7 +140,7 @@ class FirstAdminServiceTest {
     void aCustomUsernameIsUsed() {
         service("root", "configured-secret").createFirstAdminIfNoUser();
 
-        assertThat(users.users)
+        assertThat(fakeUserRepository.users)
                 .singleElement()
                 .satisfies(user -> assertThat(user.username()).isEqualTo(new Username("root")));
     }
@@ -150,35 +150,35 @@ class FirstAdminServiceTest {
         assertThatThrownBy(() -> service("not valid!", "configured-secret").createFirstAdminIfNoUser())
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.INVALID_USERNAME));
-        assertThat(users.users).isEmpty();
+        assertThat(fakeUserRepository.users).isEmpty();
     }
 
     @Test
     void anExistingUserMeansNothingIsDone() {
-        users.users.add(existing());
+        fakeUserRepository.users.add(existing());
 
         service("admin", "configured-secret").createFirstAdminIfNoUser();
         service("admin", null).createFirstAdminIfNoUser();
 
-        assertThat(users.saved).isEmpty();
-        assertThat(users.users).hasSize(1);
+        assertThat(fakeUserRepository.saved).isEmpty();
+        assertThat(fakeUserRepository.users).hasSize(1);
         assertThat(generator.calls).isZero();
     }
 
     @Test
     void callingTwiceOnAnEmptyStoreCreatesOneUser() {
-        FirstAdminService service = service("admin", null);
+        FirstAdminService firstAdminService = service("admin", null);
 
-        service.createFirstAdminIfNoUser();
-        service.createFirstAdminIfNoUser();
+        firstAdminService.createFirstAdminIfNoUser();
+        firstAdminService.createFirstAdminIfNoUser();
 
-        assertThat(users.users).hasSize(1);
+        assertThat(fakeUserRepository.users).hasSize(1);
         assertThat(generator.calls).isEqualTo(1);
     }
 
     @Test
     void aDuplicateKeyOnSaveIsNotAnError() {
-        users.failWithDuplicate = true;
+        fakeUserRepository.failWithDuplicate = true;
 
         Logger logger = (Logger) LoggerFactory.getLogger(FirstAdminService.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
@@ -191,7 +191,7 @@ class FirstAdminServiceTest {
             logger.detachAppender(appender);
         }
 
-        assertThat(users.users).isEmpty();
+        assertThat(fakeUserRepository.users).isEmpty();
         assertThat(generator.last).isNotNull();
         assertThat(appender.list)
                 .extracting(ILoggingEvent::getFormattedMessage)
@@ -202,7 +202,7 @@ class FirstAdminServiceTest {
     void theStartHookCreatesTheAdmin() {
         service("admin", "configured-secret").onStart();
 
-        assertThat(users.users).hasSize(1);
+        assertThat(fakeUserRepository.users).hasSize(1);
     }
 
     private static User existing() {

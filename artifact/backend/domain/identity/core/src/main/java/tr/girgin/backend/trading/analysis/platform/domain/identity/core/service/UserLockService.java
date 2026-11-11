@@ -18,19 +18,20 @@ class UserLockService implements UnlockUserPort {
     private static final Logger log = LoggerFactory.getLogger(UserLockService.class);
     private static final int MAX_ATTEMPTS = 3;
 
-    private final UserRepositoryPort users;
+    private final UserRepositoryPort userRepositoryPort;
 
     private final LoginLockoutService loginLockoutService;
 
-    UserLockService(UserRepositoryPort users, LoginLockoutService loginLockoutService) {
-        this.users = users;
+    UserLockService(UserRepositoryPort userRepositoryPort, LoginLockoutService loginLockoutService) {
+        this.userRepositoryPort = userRepositoryPort;
         this.loginLockoutService = loginLockoutService;
     }
 
     @Override
     public void unlock(UserId id) {
         for (int attempt = 1; ; attempt++) {
-            User user = users.findById(id)
+            User user = userRepositoryPort
+                    .findById(id)
                     .orElseThrow(() -> new IdentityException(
                             IdentityError.USER_NOT_FOUND,
                             "User " + id.value() + " not found",
@@ -39,7 +40,7 @@ class UserLockService implements UnlockUserPort {
                 return;
             }
             try {
-                users.save(loginLockoutService.unlocked(user));
+                userRepositoryPort.save(loginLockoutService.unlocked(user));
                 log.info("User {} unlocked", id.value());
                 return;
             } catch (OptimisticLockingFailureException e) {

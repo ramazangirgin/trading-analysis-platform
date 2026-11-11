@@ -18,19 +18,19 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 @Service
 class PartialAnalysisService implements GetPartialAnalysisPort, ListPartialAnalysesPort {
 
-    private final AnalysisRepositoryPort repository;
+    private final AnalysisRepositoryPort analysisRepositoryPort;
 
     private final AnalysisIdService analysisIdService;
 
-    PartialAnalysisService(AnalysisRepositoryPort repository, AnalysisIdService analysisIdService) {
-        this.repository = repository;
+    PartialAnalysisService(AnalysisRepositoryPort analysisRepositoryPort, AnalysisIdService analysisIdService) {
+        this.analysisRepositoryPort = analysisRepositoryPort;
         this.analysisIdService = analysisIdService;
     }
 
     @Override
     public Analysis get(AnalysisId id) {
         analysisIdService.requireValid(id);
-        return repository
+        return analysisRepositoryPort
                 .findById(id)
                 .filter(analysis ->
                         analysis.visibility() == Visibility.PARTIAL && analysis.status() == AnalysisStatus.COMPLETED)
@@ -42,6 +42,6 @@ class PartialAnalysisService implements GetPartialAnalysisPort, ListPartialAnaly
     public PartialAnalysisPage list(int page, int size) {
         AnalysisFilter partial =
                 new AnalysisFilter(AnalysisStatus.COMPLETED, null, null, Set.of(Visibility.PARTIAL), null);
-        return repository.findPage(partial, page, size);
+        return analysisRepositoryPort.findPage(partial, page, size);
     }
 }

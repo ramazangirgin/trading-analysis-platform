@@ -28,11 +28,11 @@ class V2SettingsVersionMigrationTest {
             + SettingsPersistenceConfiguration.class.getPackageName().replace('.', '/');
 
     @Autowired
-    private JpaPresetRepositoryAdapter repository;
+    private JpaPresetRepositoryAdapter jpaPresetRepositoryAdapter;
 
     @Test
     void existingPresetsKeepEveryValueAndStartAtVersionZero() {
-        assertThat(repository.findById(new PresetId("p_seed_a")))
+        assertThat(jpaPresetRepositoryAdapter.findById(new PresetId("p_seed_a")))
                 .contains(new Preset(
                         new PresetId("p_seed_a"),
                         "Cheap DeepSeek",
@@ -40,17 +40,18 @@ class V2SettingsVersionMigrationTest {
                         null,
                         Instant.parse("2026-10-01T10:00:00.5Z"),
                         0L));
-        assertThat(repository.findById(new PresetId("p_seed_b")))
+        assertThat(jpaPresetRepositoryAdapter.findById(new PresetId("p_seed_b")))
                 .contains(new Preset(
                         new PresetId("p_seed_b"), "Second", "{}", null, Instant.parse("2026-10-02T11:30:15.25Z"), 0L));
     }
 
     @Test
     void aMigratedPresetCanBeSavedAtItsVersion() {
-        Preset seeded = repository.findById(new PresetId("p_seed_b")).orElseThrow();
+        Preset seeded =
+                jpaPresetRepositoryAdapter.findById(new PresetId("p_seed_b")).orElseThrow();
 
-        Preset saved =
-                repository.save(new Preset(seeded.id(), "Renamed", seeded.payload(), null, null, seeded.version()));
+        Preset saved = jpaPresetRepositoryAdapter.save(
+                new Preset(seeded.id(), "Renamed", seeded.payload(), null, null, seeded.version()));
 
         assertThat(saved.version()).isEqualTo(1);
     }

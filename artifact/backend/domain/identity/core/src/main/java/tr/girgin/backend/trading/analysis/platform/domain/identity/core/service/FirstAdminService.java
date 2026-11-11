@@ -27,8 +27,8 @@ class FirstAdminService implements CreateFirstAdminPort {
 
     private static final Logger log = LoggerFactory.getLogger(FirstAdminService.class);
 
-    private final UserRepositoryPort users;
-    private final PasswordHasherPort hasher;
+    private final UserRepositoryPort userRepositoryPort;
+    private final PasswordHasherPort passwordHasherPort;
     private final OneTimePasswordService oneTimePasswordService;
     private final PasswordPolicyService passwordPolicyService;
     private final UserChangeService userChangeService;
@@ -39,16 +39,16 @@ class FirstAdminService implements CreateFirstAdminPort {
     @Autowired
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     FirstAdminService(
-            UserRepositoryPort users,
-            PasswordHasherPort hasher,
+            UserRepositoryPort userRepositoryPort,
+            PasswordHasherPort passwordHasherPort,
             OneTimePasswordService oneTimePasswordService,
             PasswordPolicyService passwordPolicyService,
             UserChangeService userChangeService,
             UsernameService usernameService,
             @Value("${platform.admin.username:admin}") String username,
             @Value("${platform.admin.password:}") String password) {
-        this.users = users;
-        this.hasher = hasher;
+        this.userRepositoryPort = userRepositoryPort;
+        this.passwordHasherPort = passwordHasherPort;
         this.oneTimePasswordService = oneTimePasswordService;
         this.passwordPolicyService = passwordPolicyService;
         this.userChangeService = userChangeService;
@@ -65,7 +65,7 @@ class FirstAdminService implements CreateFirstAdminPort {
     @Override
     public void createFirstAdminIfNoUser() {
         boolean configured = password != null && !password.isBlank();
-        if (users.count() > 0) {
+        if (userRepositoryPort.count() > 0) {
             if (configured) {
                 log.info("Users exist: PLATFORM_ADMIN_USERNAME and PLATFORM_ADMIN_PASSWORD are ignored");
             }
@@ -82,7 +82,7 @@ class FirstAdminService implements CreateFirstAdminPort {
         User admin = new User(
                 userChangeService.newId(),
                 name,
-                hasher.hash(plain),
+                passwordHasherPort.hash(plain),
                 true,
                 !configured,
                 0,
@@ -93,7 +93,7 @@ class FirstAdminService implements CreateFirstAdminPort {
                 Set.of(RoleId.ADMIN),
                 null);
         try {
-            users.save(admin);
+            userRepositoryPort.save(admin);
         } catch (DuplicateKeyException e) {
             log.info("Another instance created the first admin at the same time", e);
             return;

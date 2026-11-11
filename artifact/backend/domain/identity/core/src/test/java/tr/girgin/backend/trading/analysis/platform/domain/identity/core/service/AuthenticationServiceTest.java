@@ -36,13 +36,13 @@ class AuthenticationServiceTest {
 
     private static final UserChangeService CHANGES = new UserChangeService();
 
-    private final FakeUserRepository users = new FakeUserRepository();
-    private final FakeRoleRepository roles = new FakeRoleRepository();
+    private final FakeUserRepository fakeUserRepository = new FakeUserRepository();
+    private final FakeRoleRepository fakeRoleRepository = new FakeRoleRepository();
     private final FakeHasher hasher = new FakeHasher();
     private final MutableClock clock = new MutableClock(Instant.parse("2026-10-01T10:00:00Z"));
-    private final AuthenticationService service = new AuthenticationService(
-            users,
-            new AuthenticatedUserService(roles),
+    private final AuthenticationService authenticationService = new AuthenticationService(
+            fakeUserRepository,
+            new AuthenticatedUserService(fakeRoleRepository),
             hasher,
             clock,
             new LoginLockoutService(5, Duration.ofMinutes(15)),
@@ -54,11 +54,11 @@ class AuthenticationServiceTest {
         Role reader = role("reader", Permission.ANALYSIS_READ, Permission.PRESET_READ);
         Role runner = role("runner", Permission.ANALYSIS_READ, Permission.ANALYSIS_RUN);
         User user = user("alice", "secret", true, reader.id(), runner.id());
-        roles.roles.put(reader.id(), reader);
-        roles.roles.put(runner.id(), runner);
-        users.users.add(user);
+        fakeRoleRepository.roles.put(reader.id(), reader);
+        fakeRoleRepository.roles.put(runner.id(), runner);
+        fakeUserRepository.users.add(user);
 
-        AuthenticatedUser result = service.authenticate("alice", "secret");
+        AuthenticatedUser result = authenticationService.authenticate("alice", "secret");
 
         assertThat(result.id()).isEqualTo(user.id());
         assertThat(result.username()).isEqualTo(user.username());
@@ -71,7 +71,7 @@ class AuthenticationServiceTest {
     @Test
     void mustChangePasswordIsCopiedIntoTheResult() {
         User user = user("alice", "secret", true);
-        users.users.add(new User(
+        fakeUserRepository.users.add(new User(
                 user.id(),
                 user.username(),
                 user.passwordHash(),
@@ -85,13 +85,14 @@ class AuthenticationServiceTest {
                 Set.of(),
                 1L));
 
-        assertThat(service.authenticate("alice", "secret").mustChangePassword()).isTrue();
+        assertThat(authenticationService.authenticate("alice", "secret").mustChangePassword())
+                .isTrue();
     }
 
     @Test
     void everyFailureIsTheSameBadCredentialsError() {
-        users.users.add(user("alice", "secret", true));
-        users.users.add(user("bob", "secret", false));
+        fakeUserRepository.users.add(user("alice", "secret", true));
+        fakeUserRepository.users.add(user("bob", "secret", false));
 
         List<IdentityException> errors = List.of(
                 failure("alice", "wrong"),
@@ -119,38 +120,47 @@ class AuthenticationServiceTest {
 
     @Test
     void anOutdatedHashIsReplacedOnceOnLogin() {
-        users.users.add(user("alice", "secret", true));
+        fakeUserRepository.users.add(user("alice", "secret", true));
         hasher.rehashNeeded = true;
 
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
 
-        assertThat(users.saved).hasSize(1);
-        assertThat(users.saved.getFirst().passwordHash()).isEqualTo(new PasswordHash("new:secret"));
-        assertThat(service.authenticate("alice", "secret").username().value()).isEqualTo("alice");
+        assertThat(fakeUserRepository.saved).hasSize(1);
+        assertThat(fakeUserRepository.saved.getFirst().passwordHash()).isEqualTo(new PasswordHash("new:secret"));
+        assertThat(authenticationService
+                        .authenticate("alice", "secret")
+                        .username()
+                        .value())
+                .isEqualTo("alice");
     }
 
     @Test
     void aCurrentHashIsNotSavedAgain() {
-        users.users.add(user("alice", "secret", true));
+        fakeUserRepository.users.add(user("alice", "secret", true));
 
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
 
-        assertThat(users.saved).allSatisfy(u -> assertThat(u.passwordHash()).isEqualTo(new PasswordHash("old:secret")));
+        assertThat(fakeUserRepository.saved)
+                .allSatisfy(u -> assertThat(u.passwordHash()).isEqualTo(new PasswordHash("old:secret")));
     }
 
     @Test
     void aConcurrentUpdateDuringRehashStillLogsTheUserIn() {
-        users.users.add(user("alice", "secret", true));
+        fakeUserRepository.users.add(user("alice", "secret", true));
         hasher.rehashNeeded = true;
-        users.failSaves = Integer.MAX_VALUE;
+        fakeUserRepository.failSaves = Integer.MAX_VALUE;
 
-        assertThat(service.authenticate("alice", "secret").username().value()).isEqualTo("alice");
+        assertThat(authenticationService
+                        .authenticate("alice", "secret")
+                        .username()
+                        .value())
+                .isEqualTo("alice");
     }
 
     @Test
     void theCountRisesWithEachWrongPassword() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
 
         failure("alice", "wrong");
         assertThat(stored(alice).failedLoginCount()).isEqualTo(1);
@@ -164,7 +174,7 @@ class AuthenticationServiceTest {
     @Test
     void theFifthWrongPasswordLocksForFifteenMinutesAndResetsTheCount() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
 
         for (int i = 0; i < 5; i++) {
             failure("alice", "wrong");
@@ -177,13 +187,13 @@ class AuthenticationServiceTest {
     @Test
     void aLockedAccountFailsLikeAWrongPasswordEvenWithTheRightOneAndIsNotCounted() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
         IdentityException wrong = failure("alice", "wrong");
         for (int i = 0; i < 4; i++) {
             failure("alice", "wrong");
         }
         User locked = stored(alice);
-        users.saved.clear();
+        fakeUserRepository.saved.clear();
 
         IdentityException right = failure("alice", "secret");
         failure("alice", "wrong");
@@ -191,20 +201,20 @@ class AuthenticationServiceTest {
         assertThat(right.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
         assertThat(right.params()).isEmpty();
         assertThat(right.getMessage()).isEqualTo(wrong.getMessage());
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
         assertThat(stored(alice)).isEqualTo(locked);
     }
 
     @Test
     void afterTheLockExpiresTheRightPasswordSucceedsAndClearsCountAndLock() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
         for (int i = 0; i < 5; i++) {
             failure("alice", "wrong");
         }
 
         clock.advance(Duration.ofMinutes(15));
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
 
         assertThat(stored(alice).failedLoginCount()).isZero();
         assertThat(stored(alice).lockedUntil()).isEmpty();
@@ -213,7 +223,7 @@ class AuthenticationServiceTest {
     @Test
     void aWrongPasswordAfterTheLockExpiredStartsANewCount() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
         for (int i = 0; i < 5; i++) {
             failure("alice", "wrong");
         }
@@ -228,12 +238,12 @@ class AuthenticationServiceTest {
     @Test
     void aSuccessAfterThreeFailuresResetsTheCount() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
         for (int i = 0; i < 3; i++) {
             failure("alice", "wrong");
         }
 
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
 
         assertThat(stored(alice).failedLoginCount()).isZero();
     }
@@ -241,39 +251,39 @@ class AuthenticationServiceTest {
     @Test
     void aNormalLoginOnlyRecordsTheTimeOfTheLogin() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
 
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
 
-        assertThat(users.saved).hasSize(1);
-        assertThat(users.saved.getFirst()).isEqualTo(CHANGES.withLastLogin(alice, clock.instant()));
+        assertThat(fakeUserRepository.saved).hasSize(1);
+        assertThat(fakeUserRepository.saved.getFirst()).isEqualTo(CHANGES.withLastLogin(alice, clock.instant()));
     }
 
     @Test
     void aSuccessfulLoginSetsTheLastLoginToTheTimeOfTheClock() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
         assertThat(alice.lastLoginAt()).isEmpty();
 
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
         assertThat(stored(alice).lastLoginAt()).contains(Instant.parse("2026-10-01T10:00:00Z"));
 
         clock.advance(Duration.ofHours(2));
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
         assertThat(stored(alice).lastLoginAt()).contains(Instant.parse("2026-10-01T12:00:00Z"));
     }
 
     @Test
     void aFailedLoginDoesNotSetTheLastLogin() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
 
         failure("alice", "wrong");
-        users.users.add(user("bob", "secret", false));
+        fakeUserRepository.users.add(user("bob", "secret", false));
         failure("bob", "secret");
 
         assertThat(stored(alice).lastLoginAt()).isEmpty();
-        assertThat(users.users)
+        assertThat(fakeUserRepository.users)
                 .filteredOn(u -> u.username().value().equals("bob"))
                 .allSatisfy(u -> assertThat(u.lastLoginAt()).isEmpty());
     }
@@ -281,39 +291,39 @@ class AuthenticationServiceTest {
     @Test
     void rehashAndResetGoIntoOneSave() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
         failure("alice", "wrong");
-        users.saved.clear();
+        fakeUserRepository.saved.clear();
         hasher.rehashNeeded = true;
 
-        service.authenticate("alice", "secret");
+        authenticationService.authenticate("alice", "secret");
 
-        assertThat(users.saved).hasSize(1);
-        assertThat(users.saved.getFirst().passwordHash()).isEqualTo(new PasswordHash("new:secret"));
-        assertThat(users.saved.getFirst().failedLoginCount()).isZero();
+        assertThat(fakeUserRepository.saved).hasSize(1);
+        assertThat(fakeUserRepository.saved.getFirst().passwordHash()).isEqualTo(new PasswordHash("new:secret"));
+        assertThat(fakeUserRepository.saved.getFirst().failedLoginCount()).isZero();
     }
 
     @Test
     void anUnknownUserIsNotCounted() {
         failure("nobody", "secret");
 
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void aDisabledUserWithTheRightPasswordIsNotCounted() {
-        users.users.add(user("bob", "secret", false));
+        fakeUserRepository.users.add(user("bob", "secret", false));
 
         failure("bob", "secret");
 
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void anOptimisticLockConflictIsRetried() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
-        users.failSaves = 2;
+        fakeUserRepository.users.add(alice);
+        fakeUserRepository.failSaves = 2;
 
         IdentityException e = failure("alice", "wrong");
 
@@ -324,8 +334,8 @@ class AuthenticationServiceTest {
     @Test
     void afterThreeConflictsTheAnswerIsStillBadCredentialsAndNothingIsCounted() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
-        users.failSaves = 3;
+        fakeUserRepository.users.add(alice);
+        fakeUserRepository.failSaves = 3;
 
         IdentityException e = failure("alice", "wrong");
 
@@ -337,45 +347,46 @@ class AuthenticationServiceTest {
     @Test
     void aConflictOnTheResetStillLogsTheUserIn() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
+        fakeUserRepository.users.add(alice);
         failure("alice", "wrong");
-        users.failSaves = 3;
+        fakeUserRepository.failSaves = 3;
 
-        assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
+        assertThat(authenticationService.authenticate("alice", "secret").id()).isEqualTo(alice.id());
     }
 
     @Test
     void aLoginFailsWhenTheUserIsDisabledDuringTheLogin() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
-        users.failSaves = 1;
-        users.concurrentChange = current -> CHANGES.withEnabled(current, false);
+        fakeUserRepository.users.add(alice);
+        fakeUserRepository.failSaves = 1;
+        fakeUserRepository.concurrentChange = current -> CHANGES.withEnabled(current, false);
 
         IdentityException e = failure("alice", "secret");
 
         assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void aLoginFailsWhenThePasswordIsResetDuringTheLogin() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
-        users.failSaves = 1;
-        users.concurrentChange = current -> CHANGES.withPassword(current, new PasswordHash("new:other"), true);
+        fakeUserRepository.users.add(alice);
+        fakeUserRepository.failSaves = 1;
+        fakeUserRepository.concurrentChange =
+                current -> CHANGES.withPassword(current, new PasswordHash("new:other"), true);
 
         IdentityException e = failure("alice", "secret");
 
         assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS);
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void aLoginFailsWhenEverySaveConflictsAndTheUserWasDisabled() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
-        users.failSaves = 3;
-        users.concurrentChange = current -> CHANGES.withEnabled(current, false);
+        fakeUserRepository.users.add(alice);
+        fakeUserRepository.failSaves = 3;
+        fakeUserRepository.concurrentChange = current -> CHANGES.withEnabled(current, false);
 
         IdentityException e = failure("alice", "secret");
 
@@ -385,39 +396,41 @@ class AuthenticationServiceTest {
     @Test
     void aLoginSucceedsWhenAConcurrentLoginOnlyRehashedThePassword() {
         User alice = user("alice", "secret", true);
-        users.users.add(alice);
-        users.failSaves = 1;
-        users.concurrentChange = current -> CHANGES.withPassword(current, new PasswordHash("new:secret"), false);
+        fakeUserRepository.users.add(alice);
+        fakeUserRepository.failSaves = 1;
+        fakeUserRepository.concurrentChange =
+                current -> CHANGES.withPassword(current, new PasswordHash("new:secret"), false);
 
-        assertThat(service.authenticate("alice", "secret").id()).isEqualTo(alice.id());
+        assertThat(authenticationService.authenticate("alice", "secret").id()).isEqualTo(alice.id());
     }
 
     private User stored(User user) {
-        return users.findById(user.id()).orElseThrow();
+        return fakeUserRepository.findById(user.id()).orElseThrow();
     }
 
     @Test
     void findActiveUserIsEmptyForAMissingOrDisabledUser() {
         User disabled = user("bob", "secret", false);
-        users.users.add(disabled);
+        fakeUserRepository.users.add(disabled);
 
-        assertThat(service.findActiveUser(new UserId(UUID.randomUUID().toString())))
+        assertThat(authenticationService.findActiveUser(
+                        new UserId(UUID.randomUUID().toString())))
                 .isEmpty();
-        assertThat(service.findActiveUser(disabled.id())).isEmpty();
+        assertThat(authenticationService.findActiveUser(disabled.id())).isEmpty();
     }
 
     @Test
     void findActiveUserReturnsAnEnabledUser() {
         User user = user("alice", "secret", true);
-        users.users.add(user);
+        fakeUserRepository.users.add(user);
 
-        assertThat(service.findActiveUser(user.id()))
+        assertThat(authenticationService.findActiveUser(user.id()))
                 .hasValueSatisfying(u -> assertThat(u.id()).isEqualTo(user.id()));
     }
 
     private IdentityException failure(String username, String password) {
         IdentityException[] caught = new IdentityException[1];
-        assertThatThrownBy(() -> service.authenticate(username, password))
+        assertThatThrownBy(() -> authenticationService.authenticate(username, password))
                 .isInstanceOfSatisfying(IdentityException.class, e -> caught[0] = e);
         return caught[0];
     }

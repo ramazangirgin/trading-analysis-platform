@@ -30,18 +30,18 @@ class JsonlEventStoreAdapter implements EventStorePort {
 
     private static final int PROTOCOL_VERSION = 1;
 
-    private final RunnerOutputLineToRunEventMapper eventMapper;
-    private final EnumToLowerCaseNameMapper typeMapper;
+    private final RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper;
+    private final EnumToLowerCaseNameMapper enumToLowerCaseNameMapper;
     private final RunnerOutputLineParser parser = new RunnerOutputLineParser();
-    private final JsonMapper json = JsonMapper.builder().build();
+    private final JsonMapper jsonMapper = JsonMapper.builder().build();
     private final Path runsDir;
 
     JsonlEventStoreAdapter(
-            RunnerOutputLineToRunEventMapper eventMapper,
-            EnumToLowerCaseNameMapper typeMapper,
+            RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper,
+            EnumToLowerCaseNameMapper enumToLowerCaseNameMapper,
             @Value("${platform.home}") Path platformHome) {
-        this.eventMapper = eventMapper;
-        this.typeMapper = typeMapper;
+        this.runnerOutputLineToRunEventMapper = runnerOutputLineToRunEventMapper;
+        this.enumToLowerCaseNameMapper = enumToLowerCaseNameMapper;
         this.runsDir = platformHome.resolve("runs");
     }
 
@@ -54,7 +54,7 @@ class JsonlEventStoreAdapter implements EventStorePort {
         try (Stream<String> lines = Files.lines(file, StandardCharsets.UTF_8)) {
             return lines.map(parser::parse)
                     .flatMap(Optional::stream)
-                    .map(eventMapper::map)
+                    .map(runnerOutputLineToRunEventMapper::map)
                     .filter(event -> event.seq() > afterSeq)
                     .toList();
         } catch (IOException e) {
@@ -69,14 +69,14 @@ class JsonlEventStoreAdapter implements EventStorePort {
         line.put("ts", event.timestamp().toString());
         line.put("run_id", id.value());
         line.put("seq", event.seq());
-        line.put("type", typeMapper.map(event.type()));
+        line.put("type", enumToLowerCaseNameMapper.map(event.type()));
         line.putAll(event.payload());
         Path file = eventsFile(id);
         try {
             Files.createDirectories(file.getParent());
             Files.writeString(
                     file,
-                    json.writeValueAsString(line) + "\n",
+                    jsonMapper.writeValueAsString(line) + "\n",
                     StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.APPEND);

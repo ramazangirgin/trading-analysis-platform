@@ -22,23 +22,24 @@ class PresetService implements ManagePresetsPort, AssignUnownedPresetsPort {
     private static final int MAX_NAME = 80;
     private static final int MAX_PAYLOAD = 20_000;
 
-    private final PresetRepositoryPort repository;
+    private final PresetRepositoryPort presetRepositoryPort;
 
-    PresetService(PresetRepositoryPort repository) {
-        this.repository = repository;
+    PresetService(PresetRepositoryPort presetRepositoryPort) {
+        this.presetRepositoryPort = presetRepositoryPort;
     }
 
     @Override
     public List<Preset> listPresets(PresetAccess access, boolean allUsers) {
         OwnerId owner = allUsers && access.allUsers() ? null : access.user();
-        return repository.findAll(owner).stream()
+        return presetRepositoryPort.findAll(owner).stream()
                 .sorted(Comparator.comparing(p -> p.name().toLowerCase()))
                 .toList();
     }
 
     @Override
     public Preset createPreset(String name, String payload, OwnerId owner) {
-        return repository.save(new Preset(newId(), validName(name), validPayload(payload), owner, null, null));
+        return presetRepositoryPort.save(
+                new Preset(newId(), validName(name), validPayload(payload), owner, null, null));
     }
 
     @Override
@@ -46,7 +47,7 @@ class PresetService implements ManagePresetsPort, AssignUnownedPresetsPort {
         Preset stored = visible(id, access);
         Long version = expectedVersion == null ? stored.version() : expectedVersion;
         try {
-            return repository.save(
+            return presetRepositoryPort.save(
                     new Preset(id, validName(name), validPayload(payload), stored.owner(), null, version));
         } catch (OptimisticLockingFailureException _) {
             throw new SettingsException(
@@ -59,18 +60,21 @@ class PresetService implements ManagePresetsPort, AssignUnownedPresetsPort {
     @Override
     public void deletePreset(PresetId id, PresetAccess access) {
         visible(id, access);
-        if (!repository.delete(id)) {
+        if (!presetRepositoryPort.delete(id)) {
             throw notFound(id);
         }
     }
 
     @Override
     public int assignUnowned(OwnerId owner) {
-        return repository.assignOwnerWhereMissing(owner);
+        return presetRepositoryPort.assignOwnerWhereMissing(owner);
     }
 
     private Preset visible(PresetId id, PresetAccess access) {
-        return repository.findById(id).filter(preset -> canSee(access, preset)).orElseThrow(() -> notFound(id));
+        return presetRepositoryPort
+                .findById(id)
+                .filter(preset -> canSee(access, preset))
+                .orElseThrow(() -> notFound(id));
     }
 
     // A preset without an owner is seen by allUsers only.

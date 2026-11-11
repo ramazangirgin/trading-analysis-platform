@@ -38,13 +38,13 @@ class DockerEngineInfoAdapterTest {
 
     @Test
     void readsTheCatalogAndVersionFromTheImage() {
-        DockerEngineInfoAdapter adapter = adapter(IMAGE);
+        DockerEngineInfoAdapter dockerEngineInfoAdapter = adapter(IMAGE);
 
-        Catalog catalog = adapter.fetchCatalog();
+        Catalog catalog = dockerEngineInfoAdapter.fetchCatalog();
 
         assertThat(catalog.upstreamVersion()).isEqualTo("0.5.1");
         assertThat(catalog.providers()).extracting(p -> p.id()).contains("deepseek", "openai", "anthropic");
-        assertThat(adapter.fetchVersion().protocolVersion()).isEqualTo(1);
+        assertThat(dockerEngineInfoAdapter.fetchVersion().protocolVersion()).isEqualTo(1);
     }
 
     @Test

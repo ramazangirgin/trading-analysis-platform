@@ -51,7 +51,7 @@
          plans 2 and 3 of the issue shrink this pattern and then delete the filter. -->
     <module name="SuppressionSingleFilter">
         <property name="id" value="TAP-D9"/>
-        <property name="files" value="[\\/]artifact[\\/]backend[\\/](domain|library[\\/]mapper|bff[\\/]impl|orchestration|src[\\/]test)[\\/]"/>
+        <property name="files" value="[\\/]artifact[\\/]backend[\\/](bff[\\/]impl|orchestration|src[\\/]test)[\\/]"/>
     </module>
 
     <!-- TAP-M2 applies to main code only (not a suppression of a finding). -->

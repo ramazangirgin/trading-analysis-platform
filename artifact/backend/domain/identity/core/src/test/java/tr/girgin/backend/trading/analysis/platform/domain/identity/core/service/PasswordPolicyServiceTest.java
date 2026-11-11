@@ -64,9 +64,9 @@ class PasswordPolicyServiceTest {
     @Test
     void severalBrokenRulesComeInTheFixedOrderWithTheLengths() {
         Username name = new Username("password");
-        PasswordPolicyService withShortCommon = new PasswordPolicyService(12, "password\n");
+        PasswordPolicyService shortCommonPasswordPolicyService = new PasswordPolicyService(12, "password\n");
 
-        assertThatThrownBy(() -> withShortCommon.check("Password", name))
+        assertThatThrownBy(() -> shortCommonPasswordPolicyService.check("Password", name))
                 .isInstanceOfSatisfying(IdentityException.class, e -> {
                     assertThat(e.error()).isEqualTo(IdentityError.WEAK_PASSWORD);
                     assertThat(e.params())
@@ -99,22 +99,24 @@ class PasswordPolicyServiceTest {
 
     @Test
     void aLoweredMinimumLetsAnEightCharacterPasswordThrough() {
-        PasswordPolicyService lowered = new PasswordPolicyService(8, LIST);
+        PasswordPolicyService loweredPasswordPolicyService = new PasswordPolicyService(8, LIST);
 
-        assertThatCode(() -> lowered.check("x7Kq-m2R", ALICE)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> lowered.check("x7Kq-m2", ALICE)).isInstanceOf(IdentityException.class);
+        assertThatCode(() -> loweredPasswordPolicyService.check("x7Kq-m2R", ALICE))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> loweredPasswordPolicyService.check("x7Kq-m2", ALICE))
+                .isInstanceOf(IdentityException.class);
     }
 
     @Test
     void theBundledListLoadsAndHoldsTheUsualSuspects() {
-        PasswordPolicyService bundled = new PasswordPolicyService(8);
+        PasswordPolicyService bundledPasswordPolicyService = new PasswordPolicyService(8);
 
-        assertThat(bundled.minLength()).isEqualTo(8);
-        assertThatThrownBy(() -> bundled.check("password", ALICE))
+        assertThat(bundledPasswordPolicyService.minLength()).isEqualTo(8);
+        assertThatThrownBy(() -> bundledPasswordPolicyService.check("password", ALICE))
                 .isInstanceOfSatisfying(
                         IdentityException.class,
                         e -> assertThat(e.params().get("reasons")).asList().contains("common"));
-        assertThatThrownBy(() -> bundled.check("123456", ALICE))
+        assertThatThrownBy(() -> bundledPasswordPolicyService.check("123456", ALICE))
                 .isInstanceOfSatisfying(
                         IdentityException.class,
                         e -> assertThat(e.params().get("reasons")).asList().contains("common"));

@@ -17,27 +17,29 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound
 @Component
 class JpaPresetRepositoryAdapter implements PresetRepositoryPort {
 
-    private final PresetJpaRepository repository;
-    private final PresetToPresetEntityMapper toEntity;
-    private final PresetEntityToPresetMapper toPreset;
-    private final PresetIdToPresetIdEmbeddableMapper toEntityId;
+    private final PresetJpaRepository presetJpaRepository;
+    private final PresetToPresetEntityMapper presetToPresetEntityMapper;
+    private final PresetEntityToPresetMapper presetEntityToPresetMapper;
+    private final PresetIdToPresetIdEmbeddableMapper presetIdToPresetIdEmbeddableMapper;
 
     JpaPresetRepositoryAdapter(
-            PresetJpaRepository repository,
-            PresetToPresetEntityMapper toEntity,
-            PresetEntityToPresetMapper toPreset,
-            PresetIdToPresetIdEmbeddableMapper toEntityId) {
-        this.repository = repository;
-        this.toEntity = toEntity;
-        this.toPreset = toPreset;
-        this.toEntityId = toEntityId;
+            PresetJpaRepository presetJpaRepository,
+            PresetToPresetEntityMapper presetToPresetEntityMapper,
+            PresetEntityToPresetMapper presetEntityToPresetMapper,
+            PresetIdToPresetIdEmbeddableMapper presetIdToPresetIdEmbeddableMapper) {
+        this.presetJpaRepository = presetJpaRepository;
+        this.presetToPresetEntityMapper = presetToPresetEntityMapper;
+        this.presetEntityToPresetMapper = presetEntityToPresetMapper;
+        this.presetIdToPresetIdEmbeddableMapper = presetIdToPresetIdEmbeddableMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Preset> findAll(OwnerId owner) {
         Specification<PresetEntity> matching = owner == null ? Specification.unrestricted() : hasOwner(owner);
-        return repository.findAll(matching).stream().map(toPreset::map).toList();
+        return presetJpaRepository.findAll(matching).stream()
+                .map(presetEntityToPresetMapper::map)
+                .toList();
     }
 
     private Specification<PresetEntity> hasOwner(OwnerId owner) {
@@ -47,7 +49,9 @@ class JpaPresetRepositoryAdapter implements PresetRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public Optional<Preset> findById(PresetId id) {
-        return repository.findById(toEntityId.map(id)).map(toPreset::map);
+        return presetJpaRepository
+                .findById(presetIdToPresetIdEmbeddableMapper.map(id))
+                .map(presetEntityToPresetMapper::map);
     }
 
     /**
@@ -61,22 +65,22 @@ class JpaPresetRepositoryAdapter implements PresetRepositoryPort {
     @Override
     @Transactional
     public Preset save(Preset preset) {
-        return toPreset.map(repository.saveAndFlush(toEntity.map(preset)));
+        return presetEntityToPresetMapper.map(presetJpaRepository.saveAndFlush(presetToPresetEntityMapper.map(preset)));
     }
 
     @Override
     @Transactional
     public boolean delete(PresetId id) {
-        return repository.deleteByIdCounting(toEntityId.map(id)) == 1;
+        return presetJpaRepository.deleteByIdCounting(presetIdToPresetIdEmbeddableMapper.map(id)) == 1;
     }
 
     @Override
     @Transactional
     public int assignOwnerWhereMissing(OwnerId owner) {
-        List<PresetEntity> unowned = repository.findByOwnerIsNull();
+        List<PresetEntity> unowned = presetJpaRepository.findByOwnerIsNull();
         unowned.forEach(entity -> {
             entity.setOwner(owner);
-            repository.saveAndFlush(entity);
+            presetJpaRepository.saveAndFlush(entity);
         });
         return unowned.size();
     }

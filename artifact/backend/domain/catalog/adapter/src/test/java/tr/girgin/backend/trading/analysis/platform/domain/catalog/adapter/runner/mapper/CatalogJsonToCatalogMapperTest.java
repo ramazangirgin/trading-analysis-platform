@@ -12,11 +12,11 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.model.Pro
 
 class CatalogJsonToCatalogMapperTest {
 
-    private final CatalogJsonToCatalogMapper mapper = new CatalogJsonToCatalogMapperImpl();
+    private final CatalogJsonToCatalogMapper catalogJsonToCatalogMapper = new CatalogJsonToCatalogMapperImpl();
 
     @Test
     void missingListsMapToEmptyLists() {
-        Catalog catalog = mapper.map(new CatalogJson("1.0", null, null, null, null));
+        Catalog catalog = catalogJsonToCatalogMapper.map(new CatalogJson("1.0", null, null, null, null));
 
         assertThat(catalog.upstreamVersion()).isEqualTo("1.0");
         assertThat(catalog.providers()).isEmpty();
@@ -28,7 +28,7 @@ class CatalogJsonToCatalogMapperTest {
     void aProviderWithoutModelsHasEmptyModelLists() {
         CatalogJson.ProviderJson provider = new CatalogJson.ProviderJson("openai", "OPENAI_API_KEY", null, null, null);
 
-        Provider mapped = mapper.map(provider);
+        Provider mapped = catalogJsonToCatalogMapper.map(provider);
 
         assertThat(mapped.customModelAllowed()).isFalse();
         assertThat(mapped.quickModels()).isEmpty();
@@ -49,7 +49,7 @@ class CatalogJsonToCatalogMapperTest {
                 List.of(new CatalogJson.AnalystJson("market", "Market Analyst")),
                 List.of("stock", "crypto"));
 
-        Catalog catalog = mapper.map(json);
+        Catalog catalog = catalogJsonToCatalogMapper.map(json);
 
         assertThat(catalog.providers()).hasSize(1);
         Provider provider = catalog.providers().get(0);

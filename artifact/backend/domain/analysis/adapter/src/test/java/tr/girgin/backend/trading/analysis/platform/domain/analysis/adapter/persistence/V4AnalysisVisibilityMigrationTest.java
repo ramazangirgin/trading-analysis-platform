@@ -29,13 +29,16 @@ class V4AnalysisVisibilityMigrationTest {
             + AnalysisPersistenceConfiguration.class.getPackageName().replace('.', '/');
 
     @Autowired
-    private JpaAnalysisRepositoryAdapter repository;
+    private JpaAnalysisRepositoryAdapter jpaAnalysisRepositoryAdapter;
 
     @Test
     void rowsFromBeforeV4ArePrivateWithNoChangeTime() {
-        Analysis platformRun = repository.findById(new AnalysisId("r_seed_a")).orElseThrow();
-        Analysis imported =
-                repository.findByExternalRef("report:AAPL/2026-09-27").orElseThrow();
+        Analysis platformRun = jpaAnalysisRepositoryAdapter
+                .findById(new AnalysisId("r_seed_a"))
+                .orElseThrow();
+        Analysis imported = jpaAnalysisRepositoryAdapter
+                .findByExternalRef("report:AAPL/2026-09-27")
+                .orElseThrow();
 
         assertThat(platformRun.visibility()).isEqualTo(Visibility.PRIVATE);
         assertThat(platformRun.visibilityChangedAt()).isNull();

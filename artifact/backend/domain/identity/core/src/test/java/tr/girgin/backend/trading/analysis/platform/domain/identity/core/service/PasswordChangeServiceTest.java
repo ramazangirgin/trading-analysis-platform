@@ -36,12 +36,12 @@ class PasswordChangeServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
-    private final FakeUserRepository users = new FakeUserRepository();
-    private final FakeRoleRepository roles = new FakeRoleRepository();
-    private final PasswordChangeService service = new PasswordChangeService(
-            users,
+    private final FakeUserRepository fakeUserRepository = new FakeUserRepository();
+    private final FakeRoleRepository fakeRoleRepository = new FakeRoleRepository();
+    private final PasswordChangeService passwordChangeService = new PasswordChangeService(
+            fakeUserRepository,
             new FakeHasher(),
-            new AuthenticatedUserService(roles),
+            new AuthenticatedUserService(fakeRoleRepository),
             new PasswordPolicyService(8, "password\n"),
             new UserChangeService());
 
@@ -54,16 +54,16 @@ class PasswordChangeServiceTest {
                 "reader",
                 Set.of(Permission.ANALYSIS_READ),
                 1L);
-        roles.roles.put(reader.id(), reader);
+        fakeRoleRepository.roles.put(reader.id(), reader);
         User user = user("alice", true, true, reader.id());
-        users.users.add(user);
+        fakeUserRepository.users.add(user);
 
-        AuthenticatedUser result = service.changePassword(user.id(), "old-secret", "new-secret");
+        AuthenticatedUser result = passwordChangeService.changePassword(user.id(), "old-secret", "new-secret");
 
-        assertThat(users.saved)
+        assertThat(fakeUserRepository.saved)
                 .singleElement()
                 .isEqualTo(CHANGES.withPassword(user, new PasswordHash("hash:new-secret"), false));
-        assertThat(users.saved.getFirst().version()).isEqualTo(7L);
+        assertThat(fakeUserRepository.saved.getFirst().version()).isEqualTo(7L);
         assertThat(result.id()).isEqualTo(user.id());
         assertThat(result.roleNames()).containsExactly("reader");
         assertThat(result.permissions()).containsExactly(Permission.ANALYSIS_READ);
@@ -73,34 +73,34 @@ class PasswordChangeServiceTest {
     @Test
     void aWrongCurrentPasswordSavesNothing() {
         User user = user("alice", true, true);
-        users.users.add(user);
+        fakeUserRepository.users.add(user);
 
-        assertThatThrownBy(() -> service.changePassword(user.id(), "wrong", "new-secret"))
+        assertThatThrownBy(() -> passwordChangeService.changePassword(user.id(), "wrong", "new-secret"))
                 .isInstanceOfSatisfying(
                         IdentityException.class,
                         e -> assertThat(e.error()).isEqualTo(IdentityError.WRONG_CURRENT_PASSWORD));
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void aWeakNewPasswordIsRejectedAndSavesNothing() {
         User user = user("alice", true, true);
-        users.users.add(user);
+        fakeUserRepository.users.add(user);
 
         for (String weak : List.of("short", "password", "alice")) {
-            assertThatThrownBy(() -> service.changePassword(user.id(), "old-secret", weak))
+            assertThatThrownBy(() -> passwordChangeService.changePassword(user.id(), "old-secret", weak))
                     .isInstanceOfSatisfying(
                             IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.WEAK_PASSWORD));
         }
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void aWrongCurrentPasswordIsReportedBeforeAWeakNewOne() {
         User user = user("alice", true, true);
-        users.users.add(user);
+        fakeUserRepository.users.add(user);
 
-        assertThatThrownBy(() -> service.changePassword(user.id(), "wrong", "short"))
+        assertThatThrownBy(() -> passwordChangeService.changePassword(user.id(), "wrong", "short"))
                 .isInstanceOfSatisfying(
                         IdentityException.class,
                         e -> assertThat(e.error()).isEqualTo(IdentityError.WRONG_CURRENT_PASSWORD));
@@ -109,40 +109,40 @@ class PasswordChangeServiceTest {
     @Test
     void theSamePasswordIsRejected() {
         User user = user("alice", true, true);
-        users.users.add(user);
+        fakeUserRepository.users.add(user);
 
-        assertThatThrownBy(() -> service.changePassword(user.id(), "old-secret", "old-secret"))
+        assertThatThrownBy(() -> passwordChangeService.changePassword(user.id(), "old-secret", "old-secret"))
                 .isInstanceOfSatisfying(
                         IdentityException.class,
                         e -> assertThat(e.error()).isEqualTo(IdentityError.PASSWORD_UNCHANGED));
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void anUnknownOrDisabledUserFailsWithBadCredentials() {
         User disabled = user("bob", false, false);
-        users.users.add(disabled);
+        fakeUserRepository.users.add(disabled);
 
         for (UserId id : List.of(new UserId(UUID.randomUUID().toString()), disabled.id())) {
-            assertThatThrownBy(() -> service.changePassword(id, "old-secret", "new-secret"))
+            assertThatThrownBy(() -> passwordChangeService.changePassword(id, "old-secret", "new-secret"))
                     .isInstanceOfSatisfying(
                             IdentityException.class,
                             e -> assertThat(e.error()).isEqualTo(IdentityError.BAD_CREDENTIALS));
         }
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
     void thePasswordsNeverAppearInALogLine() {
         User user = user("alice", true, false);
-        users.users.add(user);
+        fakeUserRepository.users.add(user);
         Logger logger = (Logger) LoggerFactory.getLogger(PasswordChangeService.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
         try {
-            service.changePassword(user.id(), "old-secret", "new-secret");
-            assertThatThrownBy(() -> service.changePassword(user.id(), "wrong-secret", "other-secret"))
+            passwordChangeService.changePassword(user.id(), "old-secret", "new-secret");
+            assertThatThrownBy(() -> passwordChangeService.changePassword(user.id(), "wrong-secret", "other-secret"))
                     .isInstanceOf(IdentityException.class);
         } finally {
             logger.detachAppender(appender);
