@@ -98,7 +98,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP5: Catalog
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/catalog/adapter/runner/DockerEngineInfoAdapter.java`,
   `domain/catalog/adapter/runner/TaRunnerEngineInfoAdapter.java`,

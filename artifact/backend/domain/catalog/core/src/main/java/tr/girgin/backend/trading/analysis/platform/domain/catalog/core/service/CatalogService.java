@@ -18,24 +18,24 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.outbound.
 @Service
 class CatalogService implements GetCatalogPort, GetEngineVersionPort {
 
-    private final EngineInfoPort engine;
+    private final EngineInfoPort engineInfoPort;
     private final Duration ttl;
     private final Cached<Catalog> catalog = new Cached<>();
     private final Cached<EngineVersion> version = new Cached<>();
 
-    CatalogService(EngineInfoPort engine, @Value("${platform.catalog.cache-minutes:10}") long cacheMinutes) {
-        this.engine = engine;
+    CatalogService(EngineInfoPort engineInfoPort, @Value("${platform.catalog.cache-minutes:10}") long cacheMinutes) {
+        this.engineInfoPort = engineInfoPort;
         this.ttl = Duration.ofMinutes(cacheMinutes);
     }
 
     @Override
     public Catalog getCatalog() {
-        return catalog.get(engine::fetchCatalog, ttl);
+        return catalog.get(engineInfoPort::fetchCatalog, ttl);
     }
 
     @Override
     public EngineVersion getEngineVersion() {
-        return version.get(engine::fetchVersion, ttl);
+        return version.get(engineInfoPort::fetchVersion, ttl);
     }
 
     private static final class Cached<T> {
