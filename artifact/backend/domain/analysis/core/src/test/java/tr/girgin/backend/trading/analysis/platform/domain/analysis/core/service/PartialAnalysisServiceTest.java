@@ -20,13 +20,13 @@ class PartialAnalysisServiceTest {
     private static final Instant BASE = Instant.parse("2026-10-01T05:06:07Z");
 
     private Fakes.Repository repository;
-    private PartialAnalysisService service;
+    private PartialAnalysisService partialAnalysisService;
     private int created;
 
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
-        service = new PartialAnalysisService(repository, new AnalysisIdService());
+        partialAnalysisService = new PartialAnalysisService(repository, new AnalysisIdService());
     }
 
     private Analysis store(Visibility visibility, AnalysisStatus status) {
@@ -41,7 +41,7 @@ class PartialAnalysisServiceTest {
     void getAnswersAPartialAnalysis() {
         Analysis partial = store(Visibility.PARTIAL, AnalysisStatus.COMPLETED);
 
-        assertThat(service.get(partial.id())).isEqualTo(partial);
+        assertThat(partialAnalysisService.get(partial.id())).isEqualTo(partial);
     }
 
     @Test
@@ -56,10 +56,10 @@ class PartialAnalysisServiceTest {
 
     @Test
     void getAnswersAnInvalidIdAsNotFoundWithoutAPortCall() {
-        PartialAnalysisService untouched =
+        PartialAnalysisService untouchedPartialAnalysisService =
                 new PartialAnalysisService(Fakes.untouched(AnalysisRepositoryPort.class), new AnalysisIdService());
 
-        assertThatThrownBy(() -> untouched.get(new AnalysisId("../x")))
+        assertThatThrownBy(() -> untouchedPartialAnalysisService.get(new AnalysisId("../x")))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }
@@ -75,14 +75,14 @@ class PartialAnalysisServiceTest {
         Analysis middle = store(Visibility.PARTIAL, AnalysisStatus.COMPLETED);
         Analysis newest = store(Visibility.PARTIAL, AnalysisStatus.COMPLETED);
 
-        PartialAnalysisPage first = service.list(0, 2);
-        PartialAnalysisPage second = service.list(1, 2);
+        PartialAnalysisPage first = partialAnalysisService.list(0, 2);
+        PartialAnalysisPage second = partialAnalysisService.list(1, 2);
 
         assertThat(first.items()).containsExactly(newest, middle);
         assertThat(first.hasMore()).isTrue();
         assertThat(second.items()).containsExactly(oldest);
         assertThat(second.hasMore()).isFalse();
-        assertThat(service.list(0, 3).hasMore()).isFalse();
+        assertThat(partialAnalysisService.list(0, 3).hasMore()).isFalse();
     }
 
     @Test
@@ -91,7 +91,7 @@ class PartialAnalysisServiceTest {
         store(Visibility.PRIVATE, AnalysisStatus.COMPLETED);
         store(Visibility.PUBLIC, AnalysisStatus.COMPLETED);
 
-        assertThat(service.list(0, 10).items()).containsExactly(partial);
+        assertThat(partialAnalysisService.list(0, 10).items()).containsExactly(partial);
     }
 
     @Test
@@ -99,11 +99,11 @@ class PartialAnalysisServiceTest {
         Analysis partial = store(Visibility.PARTIAL, AnalysisStatus.COMPLETED);
         store(Visibility.PARTIAL, AnalysisStatus.QUEUED);
 
-        assertThat(service.list(0, 10).items()).containsExactly(partial);
+        assertThat(partialAnalysisService.list(0, 10).items()).containsExactly(partial);
     }
 
     private void assertNotFound(AnalysisId id) {
-        assertThatThrownBy(() -> service.get(id))
+        assertThatThrownBy(() -> partialAnalysisService.get(id))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }

@@ -18,13 +18,13 @@ class AnalysisServiceInvalidIdTest {
 
     @Test
     void anInvalidIdIsNotFoundWithoutAPortCall() {
-        AnalysisRepositoryPort repository = Fakes.untouched(AnalysisRepositoryPort.class);
-        EventStorePort eventStore = Fakes.untouched(EventStorePort.class);
+        AnalysisRepositoryPort analysisRepositoryPort = Fakes.untouched(AnalysisRepositoryPort.class);
+        EventStorePort eventStorePort = Fakes.untouched(EventStorePort.class);
         AnalysisService analysisService = Fakes.analysisService(
-                repository,
+                analysisRepositoryPort,
                 Fakes.untouched(RunnerPort.class),
-                eventStore,
-                Fakes.events(repository, eventStore),
+                eventStorePort,
+                Fakes.events(analysisRepositoryPort, eventStorePort),
                 Clock.fixed(Instant.parse("2026-10-01T05:06:07Z"), ZoneOffset.UTC),
                 2);
         AnalysisId id = new AnalysisId("../x");
