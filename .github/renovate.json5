@@ -9,6 +9,10 @@
   // dockerfile, docker-compose, github-actions and mise (mise.toml).
   extends: ["config:recommended"],
 
+  // renovate-bump.yml pushes a version bump to every update branch as github-actions[bot]; without
+  // this Renovate would see the commit as someone else's edit and stop rebasing the branch.
+  gitIgnoredAuthors: ["41898282+github-actions[bot]@users.noreply.github.com"],
+
   // One batch a week, not a stream of pull requests; the Monday morning's review picks it up.
   schedule: ["before 6am on monday"],
   timezone: "Europe/Berlin",
