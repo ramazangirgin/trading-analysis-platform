@@ -37,10 +37,10 @@ class PasswordChangeIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
     private SessionRegistry sessionRegistry;
@@ -62,7 +62,8 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aFlaggedUserReachesNothingButMePasswordAndLogout() throws Exception {
-        String username = TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN);
+        String username =
+                TestSession.createUserWhoMustChangePassword(userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
 
         for (String path : new String[] {"/api/analyses", "/api/presets"}) {
@@ -81,13 +82,14 @@ class PasswordChangeIntegrationTest {
         assertThat(client.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
                 .isEqualTo(200);
 
-        TestSession other = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN));
+        TestSession other = loggedInAs(
+                TestSession.createUserWhoMustChangePassword(userRepositoryPort, passwordHasherPort, RoleId.ADMIN));
         assertThat(other.send("POST", "/api/auth/logout", null).statusCode()).isEqualTo(204);
     }
 
     @Test
     void anUnflaggedUserIsNotGated() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession client = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
 
         assertThat(client.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
         assertThat(client.send("POST", "/api/presets", PRESET).statusCode()).isEqualTo(201);
@@ -95,7 +97,8 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aWrongCurrentPasswordIs400AndChangesNothing() throws Exception {
-        String username = TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN);
+        String username =
+                TestSession.createUserWhoMustChangePassword(userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
 
         HttpResponse<String> response = client.changePassword("not the password", NEW_PASSWORD);
@@ -106,7 +109,10 @@ class PasswordChangeIntegrationTest {
                         .get("mustChangePassword")
                         .asBoolean())
                 .isTrue();
-        assertThat(users.findByUsername(new Username(username)).orElseThrow().mustChangePassword())
+        assertThat(userRepositoryPort
+                        .findByUsername(new Username(username))
+                        .orElseThrow()
+                        .mustChangePassword())
                 .isTrue();
         assertThat(TestSession.anonymous(port)
                         .login(username, TestSession.PASSWORD)
@@ -116,7 +122,8 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void theSamePasswordIs400() throws Exception {
-        TestSession client = loggedInAs(TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN));
+        TestSession client = loggedInAs(
+                TestSession.createUserWhoMustChangePassword(userRepositoryPort, passwordHasherPort, RoleId.ADMIN));
 
         HttpResponse<String> response = client.changePassword(TestSession.PASSWORD, TestSession.PASSWORD);
 
@@ -126,7 +133,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aWeakNewPasswordIs400WithItsReasonsAndChangesNothing() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
 
         HttpResponse<String> tooShort = client.changePassword(TestSession.PASSWORD, "Xq7-tiny");
@@ -162,7 +169,7 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void anEmptyFieldIs400() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession client = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
 
         for (HttpResponse<String> response :
                 List.of(client.changePassword("", NEW_PASSWORD), client.changePassword(TestSession.PASSWORD, ""))) {
@@ -178,7 +185,7 @@ class PasswordChangeIntegrationTest {
         assertThat(unauthorized.statusCode()).isEqualTo(401);
         assertThat(errorCode(unauthorized)).isEqualTo("unauthorized");
 
-        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession client = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         HttpResponse<String> noCsrf = client.sendWithoutCsrfHeader(
                 "POST",
                 "/api/auth/password",
@@ -189,7 +196,8 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aChangeClearsTheFlagAndKeepsTheSessionWorkingUnderNewIds() throws Exception {
-        String username = TestSession.createUserWhoMustChangePassword(users, hasher, RoleId.ADMIN);
+        String username =
+                TestSession.createUserWhoMustChangePassword(userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         TestSession client = loggedInAs(username);
         String sessionBefore = client.cookie(TestSession.SESSION_COOKIE);
         String csrfBefore = client.cookie(TestSession.CSRF_COOKIE);
@@ -204,7 +212,10 @@ class PasswordChangeIntegrationTest {
         assertThat(client.cookie(TestSession.CSRF_COOKIE)).isNotNull().isNotEqualTo(csrfBefore);
         JsonNode me = JSON.readTree(client.send("GET", "/api/auth/me", null).body());
         assertThat(me.get("mustChangePassword").asBoolean()).isFalse();
-        assertThat(users.findByUsername(new Username(username)).orElseThrow().mustChangePassword())
+        assertThat(userRepositoryPort
+                        .findByUsername(new Username(username))
+                        .orElseThrow()
+                        .mustChangePassword())
                 .isFalse();
         assertThat(client.send("POST", "/api/presets", PRESET).statusCode()).isEqualTo(201);
 
@@ -215,10 +226,10 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void aChangeEndsTheOtherSessionsOfTheUserOnly() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ADMIN);
         TestSession first = loggedInAs(username);
         TestSession second = loggedInAs(username);
-        TestSession stranger = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession stranger = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         assertThat(second.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
 
         assertThat(first.changePassword(TestSession.PASSWORD, NEW_PASSWORD).statusCode())
@@ -233,8 +244,8 @@ class PasswordChangeIntegrationTest {
 
     @Test
     void theRegistryFollowsTheSessionIdOfALoginAndOfAChange() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
-        User stored = users.findByUsername(new Username(username)).orElseThrow();
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ADMIN);
+        User stored = userRepositoryPort.findByUsername(new Username(username)).orElseThrow();
         TestSession client = loggedInAs(username);
         // A second login in the same session changes its ID again.
         assertThat(client.login(username, TestSession.PASSWORD).statusCode()).isEqualTo(200);

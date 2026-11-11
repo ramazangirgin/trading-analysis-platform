@@ -152,7 +152,7 @@ lifted.
 
 ### WP10: Application integration tests, part 2
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `FirstAdminIntegrationTest.java`, `LoginLockoutIntegrationTest.java`,
   `PartialPreviewConfigurationIntegrationTest.java`, `PartialPreviewIntegrationTest.java`,

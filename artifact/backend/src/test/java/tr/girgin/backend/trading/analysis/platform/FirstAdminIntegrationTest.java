@@ -40,10 +40,10 @@ class FirstAdminIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private CreateFirstAdminPort createFirstAdmin;
+    private CreateFirstAdminPort createFirstAdminPort;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -70,13 +70,13 @@ class FirstAdminIntegrationTest {
                         Arrays.stream(Permission.values()).map(Permission::key).toList());
         assertThat(me.get("mustChangePassword").asBoolean()).isTrue();
 
-        User before = users.findByUsername(new Username("admin")).orElseThrow();
+        User before = userRepositoryPort.findByUsername(new Username("admin")).orElseThrow();
         assertThat(before.passwordHash().value()).doesNotContain(generated);
 
-        createFirstAdmin.createFirstAdminIfNoUser();
+        createFirstAdminPort.createFirstAdminIfNoUser();
 
-        assertThat(users.findByUsername(new Username("admin"))).contains(before);
-        assertThat(users.count()).isEqualTo(1);
+        assertThat(userRepositoryPort.findByUsername(new Username("admin"))).contains(before);
+        assertThat(userRepositoryPort.count()).isEqualTo(1);
         assertThat(countLines(output)).isEqualTo(1);
     }
 
