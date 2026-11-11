@@ -42,6 +42,8 @@ when a type lands in the wrong one, and the package-structure document says wher
     elsewhere settings are read with `@Value`).
   - `orchestration_features_follow_the_domain_core_shape` allows `config` next to `inbound` and
     `model`, and its `because` names it.
+- **Decided**: the new sub-package is named `config`.
+- **Decided**: `configuration_properties_live_in_config_packages` holds for the whole backend.
 
 ## Work packages
 
@@ -96,9 +98,4 @@ Each work package's tests; `mise run check` and `mise run build` green.
 
 ## Open questions
 
-- The plan adds a new orchestration sub-package kind, `config`. The alternative is to keep
-  `PreviewSettings` in `inbound` and have the rule allow "beans and the `@ConfigurationProperties`
-  they read" there; that adds no package but leaves a non-bean type in `inbound`, which is what the
-  issue asks to remove. Is `config` the name you want?
-- Should `configuration_properties_live_in_config_packages` hold for the whole backend (as planned),
-  or only for orchestration?
+None.
