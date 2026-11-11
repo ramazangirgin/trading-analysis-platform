@@ -97,7 +97,7 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP7: BFF impl
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1, WP2, WP3
 - **Files**: `artifact/backend/bff/impl/src/main/java/.../bff/delegate/impl/UsersApiDelegateImpl.java`, `.../bff/delegate/impl/mapper/RoleSummaryToRoleDtoMapper.java`, `.../bff/delegate/impl/mapper/UserAccountToUserDtoMapper.java`, `artifact/backend/bff/impl/src/test/java/.../bff/delegate/impl/mapper/RoleSummaryToRoleDtoMapperTest.java`, `.../mapper/UserAccountToUserDtoMapperTest.java`, `.../mapper/AnalysisViewToAnalysisDtoMapperTest.java`
 - **Tests**: the three mapper tests, imports only; `mise run gradle :backend:bff:impl:test`.
