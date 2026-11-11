@@ -22,7 +22,7 @@ public final class RunnerOutputLineParser {
     private static final int MAX_LINE = 2_000_000;
     private static final int MAX_TEXT = 200_000;
 
-    private final JsonMapper json = JsonMapper.builder().build();
+    private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     public Optional<RunnerOutputLine> parse(String line) {
         return envelope(line).map(this::toLine);
@@ -35,7 +35,7 @@ public final class RunnerOutputLineParser {
         }
         JsonNode node;
         try {
-            node = json.readTree(line);
+            node = jsonMapper.readTree(line);
         } catch (JacksonException _) {
             return Optional.empty();
         }
@@ -71,7 +71,7 @@ public final class RunnerOutputLineParser {
         Map<String, Object> payload = new LinkedHashMap<>();
         for (Map.Entry<String, JsonNode> field : node.properties()) {
             if (!ENVELOPE.contains(field.getKey())) {
-                payload.put(field.getKey(), limit(json.treeToValue(field.getValue(), Object.class)));
+                payload.put(field.getKey(), limit(jsonMapper.treeToValue(field.getValue(), Object.class)));
             }
         }
         return payload;

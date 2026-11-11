@@ -44,7 +44,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP1: Analysis adapter, main and runner tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/analysis/adapter/eventline/RunnerOutputLineParser.java`,
   `domain/analysis/adapter/eventstore/JsonlEventStoreAdapter.java`,

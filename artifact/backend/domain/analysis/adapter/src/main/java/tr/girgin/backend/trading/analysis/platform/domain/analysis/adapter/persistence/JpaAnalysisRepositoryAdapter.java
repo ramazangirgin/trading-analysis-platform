@@ -31,26 +31,26 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
 
     private static final int LIST_LIMIT = 500;
 
-    private final AnalysisJpaRepository repository;
-    private final AnalysisToAnalysisEntityMapper toEntity;
-    private final AnalysisEntityToAnalysisMapper toAnalysis;
-    private final AnalysisIdToAnalysisIdEmbeddableMapper toEntityId;
+    private final AnalysisJpaRepository analysisJpaRepository;
+    private final AnalysisToAnalysisEntityMapper analysisToAnalysisEntityMapper;
+    private final AnalysisEntityToAnalysisMapper analysisEntityToAnalysisMapper;
+    private final AnalysisIdToAnalysisIdEmbeddableMapper analysisIdToAnalysisIdEmbeddableMapper;
 
     JpaAnalysisRepositoryAdapter(
-            AnalysisJpaRepository repository,
-            AnalysisToAnalysisEntityMapper toEntity,
-            AnalysisEntityToAnalysisMapper toAnalysis,
-            AnalysisIdToAnalysisIdEmbeddableMapper toEntityId) {
-        this.repository = repository;
-        this.toEntity = toEntity;
-        this.toAnalysis = toAnalysis;
-        this.toEntityId = toEntityId;
+            AnalysisJpaRepository analysisJpaRepository,
+            AnalysisToAnalysisEntityMapper analysisToAnalysisEntityMapper,
+            AnalysisEntityToAnalysisMapper analysisEntityToAnalysisMapper,
+            AnalysisIdToAnalysisIdEmbeddableMapper analysisIdToAnalysisIdEmbeddableMapper) {
+        this.analysisJpaRepository = analysisJpaRepository;
+        this.analysisToAnalysisEntityMapper = analysisToAnalysisEntityMapper;
+        this.analysisEntityToAnalysisMapper = analysisEntityToAnalysisMapper;
+        this.analysisIdToAnalysisIdEmbeddableMapper = analysisIdToAnalysisIdEmbeddableMapper;
     }
 
     /** A plain persist: an ID that exists already fails, as the INSERT did. */
     @Override
     public void insert(Analysis analysis) {
-        repository.save(toEntity.map(analysis));
+        analysisJpaRepository.save(analysisToAnalysisEntityMapper.map(analysis));
     }
 
     /**
@@ -60,24 +60,24 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
     @Override
     @Transactional
     public Analysis update(Analysis analysis) {
-        AnalysisEntity stored = repository
-                .findById(toEntityId.map(analysis.id()))
+        AnalysisEntity stored = analysisJpaRepository
+                .findById(analysisIdToAnalysisIdEmbeddableMapper.map(analysis.id()))
                 .orElseThrow(() -> new IllegalStateException("No analysis " + analysis.id() + " to update"));
         requireVersion(stored, analysis);
-        stored.applyState(toEntity.map(analysis));
-        return toAnalysis.map(repository.saveAndFlush(stored));
+        stored.applyState(analysisToAnalysisEntityMapper.map(analysis));
+        return analysisEntityToAnalysisMapper.map(analysisJpaRepository.saveAndFlush(stored));
     }
 
     /** An imported record follows its files, spec and creation time included. */
     @Override
     @Transactional
     public Analysis replaceImported(Analysis analysis) {
-        AnalysisEntity stored = repository
-                .findByIdAndSource(toEntityId.map(analysis.id()), AnalysisSource.EXTERNAL)
+        AnalysisEntity stored = analysisJpaRepository
+                .findByIdAndSource(analysisIdToAnalysisIdEmbeddableMapper.map(analysis.id()), AnalysisSource.EXTERNAL)
                 .orElseThrow(() -> new IllegalStateException("No imported analysis " + analysis.id() + " to replace"));
         requireVersion(stored, analysis);
-        stored.replaceImported(toEntity.map(analysis));
-        return toAnalysis.map(repository.saveAndFlush(stored));
+        stored.replaceImported(analysisToAnalysisEntityMapper.map(analysis));
+        return analysisEntityToAnalysisMapper.map(analysisJpaRepository.saveAndFlush(stored));
     }
 
     /**
@@ -95,27 +95,29 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public Optional<Analysis> findByExternalRef(String externalRef) {
-        return repository.findByExternalRef(externalRef).map(toAnalysis::map);
+        return analysisJpaRepository.findByExternalRef(externalRef).map(analysisEntityToAnalysisMapper::map);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Analysis> findById(AnalysisId id) {
-        return repository.findById(toEntityId.map(id)).map(toAnalysis::map);
+        return analysisJpaRepository
+                .findById(analysisIdToAnalysisIdEmbeddableMapper.map(id))
+                .map(analysisEntityToAnalysisMapper::map);
     }
 
     /** One SELECT with ORDER BY and LIMIT and no COUNT query, which a Page would add. */
     @Override
     @Transactional(readOnly = true)
     public List<Analysis> findAll(AnalysisFilter filter) {
-        return repository
+        return analysisJpaRepository
                 .findBy(
                         matching(filter),
                         query -> query.sortBy(Sort.by(Sort.Direction.DESC, "createdAt"))
                                 .limit(LIST_LIMIT)
                                 .all())
                 .stream()
-                .map(toAnalysis::map)
+                .map(analysisEntityToAnalysisMapper::map)
                 .toList();
     }
 
@@ -124,9 +126,12 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
     @Transactional(readOnly = true)
     public PartialAnalysisPage findPage(AnalysisFilter filter, int page, int size) {
         PageRequest request = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Slice<AnalysisEntity> slice = repository.findBy(matching(filter), query -> query.slice(request));
+        Slice<AnalysisEntity> slice = analysisJpaRepository.findBy(matching(filter), query -> query.slice(request));
         return new PartialAnalysisPage(
-                slice.getContent().stream().map(toAnalysis::map).toList(), slice.hasNext());
+                slice.getContent().stream()
+                        .map(analysisEntityToAnalysisMapper::map)
+                        .toList(),
+                slice.hasNext());
     }
 
     @Override
@@ -135,16 +140,18 @@ class JpaAnalysisRepositoryAdapter implements AnalysisRepositoryPort {
         if (statuses.isEmpty()) {
             return List.of();
         }
-        return repository.findByStatusIn(statuses).stream().map(toAnalysis::map).toList();
+        return analysisJpaRepository.findByStatusIn(statuses).stream()
+                .map(analysisEntityToAnalysisMapper::map)
+                .toList();
     }
 
     @Override
     @Transactional
     public int assignOwnerWhereMissing(OwnerId owner) {
-        List<AnalysisEntity> unowned = repository.findByOwnerIsNull();
+        List<AnalysisEntity> unowned = analysisJpaRepository.findByOwnerIsNull();
         unowned.forEach(entity -> {
             entity.setOwner(owner);
-            repository.saveAndFlush(entity);
+            analysisJpaRepository.saveAndFlush(entity);
         });
         return unowned.size();
     }
