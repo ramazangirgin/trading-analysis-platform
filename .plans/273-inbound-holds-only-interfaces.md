@@ -104,11 +104,11 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP8: ArchUnit rules
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1-WP7
 - **Files**: `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/ArchitectureTest.java`
 - **Steps**:
-  - [ ] Add `port_packages_hold_only_interfaces` and `model_packages_hold_no_interfaces`; trim `MODEL_PACKAGES` and `models_are_data` as in "Design".
+  - [x] Add `port_packages_hold_only_interfaces` and `model_packages_hold_no_interfaces`; trim `MODEL_PACKAGES` and `models_are_data` as in "Design".
 - **Tests**: `ArchitectureTest` passes. Before the moves (or with one record moved back temporarily) `port_packages_hold_only_interfaces` fails naming it, which proves the rule bites; not committed.
 
 ## Tests
