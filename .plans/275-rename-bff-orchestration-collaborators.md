@@ -70,7 +70,7 @@ lifted.
 
 ### WP3: BFF tests, part 1
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `bff/delegate/impl/config/LoginAttemptLimiterTest.java`,
   `bff/delegate/impl/config/RoleAuthoritiesRefreshFilterTest.java`,

@@ -36,10 +36,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 class RoleAuthoritiesRefreshFilterTest {
 
     private final SessionAuthorities sessionAuthorities = new SessionAuthorities();
-    private final AuthenticatePort authentication = mock(AuthenticatePort.class);
-    private final SecurityContextRepository repository = mock(SecurityContextRepository.class);
+    private final AuthenticatePort authenticatePort = mock(AuthenticatePort.class);
+    private final SecurityContextRepository securityContextRepository = mock(SecurityContextRepository.class);
     private final RoleAuthoritiesRefreshFilter filter =
-            new RoleAuthoritiesRefreshFilter(sessionAuthorities, authentication, repository);
+            new RoleAuthoritiesRefreshFilter(sessionAuthorities, authenticatePort, securityContextRepository);
     private final UserId id = new UserId(UUID.randomUUID().toString());
     private final AtomicInteger chainCalls = new AtomicInteger();
     private final MockHttpSession session = new MockHttpSession();
@@ -78,7 +78,7 @@ class RoleAuthoritiesRefreshFilterTest {
 
     @Test
     void aStaleSessionGetsTheCurrentAuthoritiesAndANewStampAndTheContextIsSaved() throws Exception {
-        when(authentication.findActiveUser(id))
+        when(authenticatePort.findActiveUser(id))
                 .thenReturn(Optional.of(new AuthenticatedUser(
                         id, new Username("ada"), Set.of("CUSTOM"), Set.of(Permission.ANALYSIS_READ), false)));
         sessionAuthorities.rolesChanged();
@@ -89,7 +89,7 @@ class RoleAuthoritiesRefreshFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
                 .isEqualTo(id.value());
         assertThat(sessionAuthorities.isStale(session)).isFalse();
-        verify(repository).saveContext(any(), any(), any());
+        verify(securityContextRepository).saveContext(any(), any(), any());
         assertThat(chainCalls).hasValue(1);
     }
 
@@ -97,20 +97,20 @@ class RoleAuthoritiesRefreshFilterTest {
     void aFreshSessionIsNotLookedUp() throws Exception {
         run("/api/presets");
 
-        verifyNoInteractions(authentication, repository);
+        verifyNoInteractions(authenticatePort, securityContextRepository);
         assertThat(currentAuthorities()).containsExactly("ROLE_OLD");
         assertThat(chainCalls).hasValue(1);
     }
 
     @Test
     void anInactiveUserKeepsTheOldAuthentication() throws Exception {
-        when(authentication.findActiveUser(id)).thenReturn(Optional.empty());
+        when(authenticatePort.findActiveUser(id)).thenReturn(Optional.empty());
         sessionAuthorities.rolesChanged();
 
         run("/api/presets");
 
         assertThat(currentAuthorities()).containsExactly("ROLE_OLD");
-        verify(repository, never()).saveContext(any(), any(), any());
+        verify(securityContextRepository, never()).saveContext(any(), any(), any());
         assertThat(chainCalls).hasValue(1);
     }
 
@@ -121,7 +121,7 @@ class RoleAuthoritiesRefreshFilterTest {
 
         run("/api/presets");
 
-        verifyNoInteractions(authentication, repository);
+        verifyNoInteractions(authenticatePort, securityContextRepository);
         assertThat(chainCalls).hasValue(1);
     }
 
@@ -131,7 +131,7 @@ class RoleAuthoritiesRefreshFilterTest {
 
         run("/actuator/health");
 
-        verifyNoInteractions(authentication, repository);
+        verifyNoInteractions(authenticatePort, securityContextRepository);
         assertThat(currentAuthorities()).containsExactly("ROLE_OLD");
         assertThat(chainCalls).hasValue(1);
     }
