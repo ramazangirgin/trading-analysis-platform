@@ -69,7 +69,7 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP3: Analysis core, rights
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/backend/domain/analysis/core/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/analysis/core/inbound/AnalysisRights.java` (moved to `core/model/AnalysisRights.java`), `.../analysis/core/inbound/GetAnalysisRightsPort.java`, `.../analysis/core/service/AnalysisAccessService.java`, `artifact/backend/domain/analysis/core/src/test/java/.../analysis/core/service/AnalysisAccessServiceTest.java`
 - **Tests**: `AnalysisAccessServiceTest` unchanged apart from the import.

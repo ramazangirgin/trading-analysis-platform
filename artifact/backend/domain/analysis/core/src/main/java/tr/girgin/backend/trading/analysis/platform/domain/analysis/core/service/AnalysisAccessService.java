@@ -3,10 +3,10 @@ package tr.girgin.backend.trading.analysis.platform.domain.analysis.core.service
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.stereotype.Service;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.AnalysisRights;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.inbound.GetAnalysisRightsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Analysis;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisAccess;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisRights;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
 
 @Service
