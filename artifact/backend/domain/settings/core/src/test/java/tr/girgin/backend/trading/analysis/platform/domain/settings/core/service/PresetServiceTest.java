@@ -26,36 +26,36 @@ class PresetServiceTest {
     private static final PresetAccess ALICE_ACCESS = new PresetAccess(ALICE, false);
     private static final PresetAccess ADMIN_ACCESS = new PresetAccess(new OwnerId("u_admin"), true);
 
-    private final FakePresetRepository repository = new FakePresetRepository();
-    private final PresetService service = new PresetService(repository);
+    private final FakePresetRepository fakePresetRepository = new FakePresetRepository();
+    private final PresetService presetService = new PresetService(fakePresetRepository);
 
     @Test
     void createReturnsThePresetAsStoredAndHandsItOverWithoutATime() {
-        Preset created = service.createPreset(" Cheap ", "{}", ALICE);
+        Preset created = presetService.createPreset(" Cheap ", "{}", ALICE);
 
-        assertThat(repository.saved).hasSize(1);
-        assertThat(repository.saved.getFirst().updatedAt()).isNull();
-        assertThat(repository.saved.getFirst().name()).isEqualTo("Cheap");
-        assertThat(created.id()).isEqualTo(repository.saved.getFirst().id());
+        assertThat(fakePresetRepository.saved).hasSize(1);
+        assertThat(fakePresetRepository.saved.getFirst().updatedAt()).isNull();
+        assertThat(fakePresetRepository.saved.getFirst().name()).isEqualTo("Cheap");
+        assertThat(created.id()).isEqualTo(fakePresetRepository.saved.getFirst().id());
         assertThat(created.updatedAt()).isEqualTo(STORED_AT);
     }
 
     @Test
     void aPresetBelongsToItsCreator() {
-        Preset created = service.createPreset("Cheap", "{}", ALICE);
+        Preset created = presetService.createPreset("Cheap", "{}", ALICE);
 
         assertThat(created.owner()).isEqualTo(ALICE);
     }
 
     @Test
     void updateReturnsThePresetAsStoredAndHandsItOverWithoutATime() {
-        Preset existing = service.createPreset("Cheap", "{}", ALICE);
-        repository.saved.clear();
+        Preset existing = presetService.createPreset("Cheap", "{}", ALICE);
+        fakePresetRepository.saved.clear();
 
-        Preset updated = service.updatePreset(existing.id(), "Renamed", "{\"a\":1}", null, ALICE_ACCESS);
+        Preset updated = presetService.updatePreset(existing.id(), "Renamed", "{\"a\":1}", null, ALICE_ACCESS);
 
-        assertThat(repository.saved).hasSize(1);
-        assertThat(repository.saved.getFirst().updatedAt()).isNull();
+        assertThat(fakePresetRepository.saved).hasSize(1);
+        assertThat(fakePresetRepository.saved.getFirst().updatedAt()).isNull();
         assertThat(updated.id()).isEqualTo(existing.id());
         assertThat(updated.name()).isEqualTo("Renamed");
         assertThat(updated.updatedAt()).isEqualTo(STORED_AT);
@@ -63,26 +63,26 @@ class PresetServiceTest {
 
     @Test
     void updateSavesWithTheLoadedVersionWhenNoneIsGiven() {
-        Preset existing = service.createPreset("Cheap", "{}", ALICE);
+        Preset existing = presetService.createPreset("Cheap", "{}", ALICE);
 
-        service.updatePreset(existing.id(), "Renamed", "{}", null, ALICE_ACCESS);
+        presetService.updatePreset(existing.id(), "Renamed", "{}", null, ALICE_ACCESS);
 
-        assertThat(repository.saved.getLast().version()).isEqualTo(existing.version());
+        assertThat(fakePresetRepository.saved.getLast().version()).isEqualTo(existing.version());
     }
 
     @Test
     void updateSavesWithTheExpectedVersionWhenGiven() {
-        Preset existing = service.createPreset("Cheap", "{}", ALICE);
+        Preset existing = presetService.createPreset("Cheap", "{}", ALICE);
 
-        assertThatThrownBy(() -> service.updatePreset(existing.id(), "Renamed", "{}", 7L, ALICE_ACCESS))
+        assertThatThrownBy(() -> presetService.updatePreset(existing.id(), "Renamed", "{}", 7L, ALICE_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.CONCURRENT_UPDATE));
-        assertThat(repository.saved.getLast().version()).isEqualTo(7L);
+        assertThat(fakePresetRepository.saved.getLast().version()).isEqualTo(7L);
     }
 
     @Test
     void updateOfAnUnknownPresetIsNotFound() {
-        assertThatThrownBy(() -> service.updatePreset(
+        assertThatThrownBy(() -> presetService.updatePreset(
                         new PresetId(UUID.randomUUID().toString()), "Renamed", "{}", 0L, ALICE_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.PRESET_NOT_FOUND));
@@ -90,108 +90,110 @@ class PresetServiceTest {
 
     @Test
     void anUpdateKeepsTheOwnerAlsoWhenAnAdminMakesIt() {
-        Preset existing = service.createPreset("Cheap", "{}", ALICE);
+        Preset existing = presetService.createPreset("Cheap", "{}", ALICE);
 
-        Preset updated = service.updatePreset(existing.id(), "Renamed", "{}", null, ADMIN_ACCESS);
+        Preset updated = presetService.updatePreset(existing.id(), "Renamed", "{}", null, ADMIN_ACCESS);
 
         assertThat(updated.owner()).isEqualTo(ALICE);
     }
 
     @Test
     void listReturnsOnlyTheCallersOwnPresetsByName() {
-        service.createPreset("b", "{}", ALICE);
-        service.createPreset("A", "{}", ALICE);
-        service.createPreset("Other", "{}", BOB);
+        presetService.createPreset("b", "{}", ALICE);
+        presetService.createPreset("A", "{}", ALICE);
+        presetService.createPreset("Other", "{}", BOB);
 
-        assertThat(service.listPresets(ALICE_ACCESS, false))
+        assertThat(presetService.listPresets(ALICE_ACCESS, false))
                 .extracting(Preset::name)
                 .containsExactly("A", "b");
     }
 
     @Test
     void listWithAllUsersWithoutThePermissionIsIgnored() {
-        service.createPreset("Mine", "{}", ALICE);
-        service.createPreset("Other", "{}", BOB);
+        presetService.createPreset("Mine", "{}", ALICE);
+        presetService.createPreset("Other", "{}", BOB);
 
-        assertThat(service.listPresets(ALICE_ACCESS, true))
+        assertThat(presetService.listPresets(ALICE_ACCESS, true))
                 .extracting(Preset::name)
                 .containsExactly("Mine");
     }
 
     @Test
     void listWithAllUsersAndThePermissionReturnsEveryonesPresets() {
-        service.createPreset("Mine", "{}", ALICE);
-        service.createPreset("Other", "{}", BOB);
+        presetService.createPreset("Mine", "{}", ALICE);
+        presetService.createPreset("Other", "{}", BOB);
 
-        assertThat(service.listPresets(ADMIN_ACCESS, true))
+        assertThat(presetService.listPresets(ADMIN_ACCESS, true))
                 .extracting(Preset::name)
                 .containsExactly("Mine", "Other");
     }
 
     @Test
     void listWithThePermissionButWithoutAllUsersReturnsTheCallersOwnPresets() {
-        service.createPreset("Other", "{}", BOB);
+        presetService.createPreset("Other", "{}", BOB);
 
-        assertThat(service.listPresets(ADMIN_ACCESS, false)).isEmpty();
+        assertThat(presetService.listPresets(ADMIN_ACCESS, false)).isEmpty();
     }
 
     @Test
     void updateOfAnotherUsersPresetIsNotFoundAndLeavesItUnchanged() {
-        Preset others = service.createPreset("Other", "{}", BOB);
-        repository.saved.clear();
+        Preset others = presetService.createPreset("Other", "{}", BOB);
+        fakePresetRepository.saved.clear();
 
-        assertThatThrownBy(() -> service.updatePreset(others.id(), "Renamed", "{}", null, ALICE_ACCESS))
+        assertThatThrownBy(() -> presetService.updatePreset(others.id(), "Renamed", "{}", null, ALICE_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.PRESET_NOT_FOUND));
-        assertThat(repository.saved).isEmpty();
+        assertThat(fakePresetRepository.saved).isEmpty();
     }
 
     @Test
     void updateOfAPresetWithoutOwnerIsNotFoundForAnOrdinaryUser() {
-        Preset unowned = repository.seed(null);
+        Preset unowned = fakePresetRepository.seed(null);
 
-        assertThatThrownBy(() -> service.updatePreset(unowned.id(), "Renamed", "{}", null, ALICE_ACCESS))
+        assertThatThrownBy(() -> presetService.updatePreset(unowned.id(), "Renamed", "{}", null, ALICE_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.PRESET_NOT_FOUND));
     }
 
     @Test
     void deleteOfAnotherUsersPresetIsNotFoundAndKeepsIt() {
-        Preset others = service.createPreset("Other", "{}", BOB);
+        Preset others = presetService.createPreset("Other", "{}", BOB);
 
-        assertThatThrownBy(() -> service.deletePreset(others.id(), ALICE_ACCESS))
+        assertThatThrownBy(() -> presetService.deletePreset(others.id(), ALICE_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.PRESET_NOT_FOUND));
-        assertThat(repository.findById(others.id())).isPresent();
+        assertThat(fakePresetRepository.findById(others.id())).isPresent();
     }
 
     @Test
     void anAdminDeletesAnotherUsersPreset() {
-        Preset others = service.createPreset("Other", "{}", BOB);
+        Preset others = presetService.createPreset("Other", "{}", BOB);
 
-        service.deletePreset(others.id(), ADMIN_ACCESS);
+        presetService.deletePreset(others.id(), ADMIN_ACCESS);
 
-        assertThat(repository.findById(others.id())).isEmpty();
+        assertThat(fakePresetRepository.findById(others.id())).isEmpty();
     }
 
     @Test
     void deleteOfAnUnknownPresetIsNotFound() {
-        assertThatThrownBy(() ->
-                        service.deletePreset(new PresetId(UUID.randomUUID().toString()), ADMIN_ACCESS))
+        assertThatThrownBy(() -> presetService.deletePreset(
+                        new PresetId(UUID.randomUUID().toString()), ADMIN_ACCESS))
                 .isInstanceOfSatisfying(
                         SettingsException.class, e -> assertThat(e.error()).isEqualTo(SettingsError.PRESET_NOT_FOUND));
     }
 
     @Test
     void assignUnownedTouchesOnlyPresetsWithoutAnOwner() {
-        Preset owned = service.createPreset("Owned", "{}", BOB);
-        Preset unowned = repository.seed(null);
+        Preset owned = presetService.createPreset("Owned", "{}", BOB);
+        Preset unowned = fakePresetRepository.seed(null);
 
-        int assigned = service.assignUnowned(ALICE);
+        int assigned = presetService.assignUnowned(ALICE);
 
         assertThat(assigned).isEqualTo(1);
-        assertThat(repository.findById(unowned.id()).orElseThrow().owner()).isEqualTo(ALICE);
-        assertThat(repository.findById(owned.id()).orElseThrow().owner()).isEqualTo(BOB);
+        assertThat(fakePresetRepository.findById(unowned.id()).orElseThrow().owner())
+                .isEqualTo(ALICE);
+        assertThat(fakePresetRepository.findById(owned.id()).orElseThrow().owner())
+                .isEqualTo(BOB);
     }
 
     /** A port that stamps {@link #STORED_AT}, as auditing does, and rejects a version that is not the stored one. */

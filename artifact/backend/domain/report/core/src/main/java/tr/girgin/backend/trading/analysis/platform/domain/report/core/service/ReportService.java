@@ -31,19 +31,20 @@ class ReportService implements ScanReportsPort, GetReportPort, CheckReportDecisi
     private static final Comparator<ReportContent> PRIORITY =
             Comparator.comparing((ReportContent c) -> c.source() == ReportSource.FULL_STATE ? 1 : 0);
 
-    private final DataDirPort dataDir;
+    private final DataDirPort dataDirPort;
     private final ReportKeyService reportKeyService;
     private final DecisionRatingService decisionRatingService;
 
-    ReportService(DataDirPort dataDir, ReportKeyService reportKeyService, DecisionRatingService decisionRatingService) {
-        this.dataDir = dataDir;
+    ReportService(
+            DataDirPort dataDirPort, ReportKeyService reportKeyService, DecisionRatingService decisionRatingService) {
+        this.dataDirPort = dataDirPort;
         this.reportKeyService = reportKeyService;
         this.decisionRatingService = decisionRatingService;
     }
 
     @Override
     public List<Report> scan() {
-        Map<ReportKey, List<ReportContent>> byKey = dataDir.readAll().stream()
+        Map<ReportKey, List<ReportContent>> byKey = dataDirPort.readAll().stream()
                 .filter(content -> reportKeyService.isValid(content.key()))
                 .collect(Collectors.groupingBy(ReportContent::key, LinkedHashMap::new, Collectors.toList()));
         return byKey.values().stream()
@@ -59,7 +60,7 @@ class ReportService implements ScanReportsPort, GetReportPort, CheckReportDecisi
         if (!reportKeyService.isValid(key)) {
             return Optional.empty();
         }
-        List<ReportContent> contents = dataDir.read(key);
+        List<ReportContent> contents = dataDirPort.read(key);
         return contents.isEmpty() ? Optional.empty() : Optional.of(merge(contents));
     }
 

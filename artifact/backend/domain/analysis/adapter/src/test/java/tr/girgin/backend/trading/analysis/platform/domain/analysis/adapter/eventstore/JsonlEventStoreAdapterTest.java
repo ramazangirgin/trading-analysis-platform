@@ -18,7 +18,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Te
 class JsonlEventStoreAdapterTest extends AdapterTestSupport {
 
     @Autowired
-    private JsonlEventStoreAdapter store;
+    private JsonlEventStoreAdapter jsonlEventStoreAdapter;
 
     @Test
     void readsTheRunnersEventsAfterACursor() throws Exception {
@@ -32,12 +32,12 @@ class JsonlEventStoreAdapterTest extends AdapterTestSupport {
                 {"v":1,"ts":"2026-09-29T10:00:02Z","run_id":"x","seq":3,"type":"log","message":"x"}
                 """);
 
-        assertThat(store.read(id, 1)).extracting(RunEvent::seq).containsExactly(2L, 3L);
+        assertThat(jsonlEventStoreAdapter.read(id, 1)).extracting(RunEvent::seq).containsExactly(2L, 3L);
     }
 
     @Test
     void aRunWithoutEventsHasNone() {
-        assertThat(store.read(TestAnalyses.newId(), 0)).isEmpty();
+        assertThat(jsonlEventStoreAdapter.read(TestAnalyses.newId(), 0)).isEmpty();
     }
 
     @Test
@@ -53,9 +53,9 @@ class JsonlEventStoreAdapterTest extends AdapterTestSupport {
                 "Runner exited with code 137",
                 Map.of("status", "error", "error_code", "runner_died", "error", "Runner exited with code 137"));
 
-        store.append(id, died);
+        jsonlEventStoreAdapter.append(id, died);
 
-        assertThat(store.read(id, 0)).singleElement().satisfies(event -> {
+        assertThat(jsonlEventStoreAdapter.read(id, 0)).singleElement().satisfies(event -> {
             assertThat(event.seq()).isEqualTo(1);
             assertThat(event.type()).isEqualTo(RunEventType.RUN_FINISHED);
             assertThat(event.outcome()).isEqualTo(RunOutcome.FAILED);

@@ -24,61 +24,65 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 @Component
 class JpaUserRepositoryAdapter implements UserRepositoryPort {
 
-    private final UserJpaRepository repository;
-    private final UserToUserEntityMapper toEntity;
-    private final UserEntityToUserMapper toUser;
-    private final UserIdToUserIdEmbeddableMapper toEntityId;
+    private final UserJpaRepository userJpaRepository;
+    private final UserToUserEntityMapper userToUserEntityMapper;
+    private final UserEntityToUserMapper userEntityToUserMapper;
+    private final UserIdToUserIdEmbeddableMapper userIdToUserIdEmbeddableMapper;
 
     JpaUserRepositoryAdapter(
-            UserJpaRepository repository,
-            UserToUserEntityMapper toEntity,
-            UserEntityToUserMapper toUser,
-            UserIdToUserIdEmbeddableMapper toEntityId) {
-        this.repository = repository;
-        this.toEntity = toEntity;
-        this.toUser = toUser;
-        this.toEntityId = toEntityId;
+            UserJpaRepository userJpaRepository,
+            UserToUserEntityMapper userToUserEntityMapper,
+            UserEntityToUserMapper userEntityToUserMapper,
+            UserIdToUserIdEmbeddableMapper userIdToUserIdEmbeddableMapper) {
+        this.userJpaRepository = userJpaRepository;
+        this.userToUserEntityMapper = userToUserEntityMapper;
+        this.userEntityToUserMapper = userEntityToUserMapper;
+        this.userIdToUserIdEmbeddableMapper = userIdToUserIdEmbeddableMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findById(UserId id) {
-        return repository.findById(toEntityId.map(id)).map(toUser::map);
+        return userJpaRepository
+                .findById(userIdToUserIdEmbeddableMapper.map(id))
+                .map(userEntityToUserMapper::map);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByUsername(Username username) {
-        return repository.findByUsernameIgnoringCase(username.value()).map(toUser::map);
+        return userJpaRepository.findByUsernameIgnoringCase(username.value()).map(userEntityToUserMapper::map);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<User> findAll() {
-        return repository.findAllOrderedByUsername().stream().map(toUser::map).toList();
+        return userJpaRepository.findAllOrderedByUsername().stream()
+                .map(userEntityToUserMapper::map)
+                .toList();
     }
 
     @Override
     public long count() {
-        return repository.count();
+        return userJpaRepository.count();
     }
 
     @Override
     @Transactional(readOnly = true)
     public long countEnabledWithRole(RoleId role) {
-        return repository.countEnabledWithRole(role);
+        return userJpaRepository.countEnabledWithRole(role);
     }
 
     @Override
     @Transactional(readOnly = true)
     public long countWithRole(RoleId role) {
-        return repository.countWithRole(role);
+        return userJpaRepository.countWithRole(role);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Map<RoleId, Long> countUsersByRole() {
-        return repository.countUsersByRole().stream()
+        return userJpaRepository.countUsersByRole().stream()
                 .collect(Collectors.toMap(row -> (RoleId) row[0], row -> (Long) row[1]));
     }
 
@@ -102,12 +106,12 @@ class JpaUserRepositoryAdapter implements UserRepositoryPort {
     @Transactional
     public User save(User user) {
         try {
-            UserEntity incoming = toEntity.map(user);
-            UserEntity entity = repository
+            UserEntity incoming = userToUserEntityMapper.map(user);
+            UserEntity entity = userJpaRepository
                     .findById(incoming.getId())
                     .map(existing -> copyOnto(existing, incoming))
                     .orElseGet(() -> requireNew(incoming));
-            return toUser.map(repository.saveAndFlush(entity));
+            return userEntityToUserMapper.map(userJpaRepository.saveAndFlush(entity));
         } catch (DataIntegrityViolationException e) {
             if (isUniqueViolation(e)) {
                 throw new DuplicateKeyException("The username is taken by another user", e);

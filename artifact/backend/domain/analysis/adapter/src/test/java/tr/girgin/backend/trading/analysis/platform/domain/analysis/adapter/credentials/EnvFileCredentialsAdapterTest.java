@@ -43,8 +43,9 @@ class EnvFileCredentialsAdapterTest {
         Files.writeString(
                 platform, "DEEPSEEK_API_KEY=\"sk-platform\"\nDYLD_INSERT_LIBRARIES=/evil.dylib\nPYTHONPATH=/evil\n");
 
-        EnvFileCredentialsAdapter adapter = new EnvFileCredentialsAdapter(platform, new String[] {external.toString()});
-        assertThat(adapter.environment())
+        EnvFileCredentialsAdapter envFileCredentialsAdapter =
+                new EnvFileCredentialsAdapter(platform, new String[] {external.toString()});
+        assertThat(envFileCredentialsAdapter.environment())
                 .containsExactly(
                         org.assertj.core.api.Assertions.entry("DEEPSEEK_API_KEY", "sk-platform"),
                         org.assertj.core.api.Assertions.entry("OPENAI_API_KEY", "sk-openai"));

@@ -24,7 +24,7 @@ class FileSystemDataDirAdapterTest {
 
     private Path logs;
 
-    private FileSystemDataDirAdapter adapter;
+    private FileSystemDataDirAdapter fileSystemDataDirAdapter;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -49,12 +49,12 @@ class FileSystemDataDirAdapterTest {
         write("NVDA/notes.txt", "ignored");
         write("../reports/MU_deep_2026-09-27.md", "# MU Derin Analiz");
         write("../reports/DELL_deep_latest.md", "ignored: no date");
-        adapter = new FileSystemDataDirAdapter(logs, dataDir.resolve("reports"));
+        fileSystemDataDirAdapter = new FileSystemDataDirAdapter(logs, dataDir.resolve("reports"));
     }
 
     @Test
     void readsTheReportTree() {
-        ReportContent goog = single(adapter.read(key("GOOG", "2026-09-28")));
+        ReportContent goog = single(fileSystemDataDirAdapter.read(key("GOOG", "2026-09-28")));
 
         assertThat(goog.source()).isEqualTo(ReportSource.REPORT_TREE);
         assertThat(goog.sections())
@@ -71,7 +71,7 @@ class FileSystemDataDirAdapterTest {
 
     @Test
     void readsTheFullStateLog() {
-        ReportContent be = single(adapter.read(key("BE", "2026-09-28")));
+        ReportContent be = single(fileSystemDataDirAdapter.read(key("BE", "2026-09-28")));
 
         assertThat(be.source()).isEqualTo(ReportSource.FULL_STATE);
         assertThat(be.sections())
@@ -85,7 +85,7 @@ class FileSystemDataDirAdapterTest {
 
     @Test
     void readsADeepAnalysisBesideTheRun() {
-        assertThat(adapter.read(key("MU", "2026-09-27")))
+        assertThat(fileSystemDataDirAdapter.read(key("MU", "2026-09-27")))
                 .filteredOn(c -> c.source() == ReportSource.DEEP_REPORT)
                 .singleElement()
                 .satisfies(c -> assertThat(c.sections())
@@ -94,14 +94,14 @@ class FileSystemDataDirAdapterTest {
 
     @Test
     void aCorruptFileDropsOnlyThatFile() {
-        assertThat(adapter.read(key("MU", "2026-09-27")))
+        assertThat(fileSystemDataDirAdapter.read(key("MU", "2026-09-27")))
                 .extracting(ReportContent::source)
                 .containsExactlyInAnyOrder(ReportSource.REPORT_TREE, ReportSource.DEEP_REPORT);
     }
 
     @Test
     void scansValidTickersOnly() {
-        assertThat(adapter.readAll())
+        assertThat(fileSystemDataDirAdapter.readAll())
                 .extracting(c -> c.key().ticker() + "/" + c.source())
                 .containsExactlyInAnyOrder("BE/FULL_STATE", "GOOG/REPORT_TREE", "MU/REPORT_TREE", "MU/DEEP_REPORT");
     }

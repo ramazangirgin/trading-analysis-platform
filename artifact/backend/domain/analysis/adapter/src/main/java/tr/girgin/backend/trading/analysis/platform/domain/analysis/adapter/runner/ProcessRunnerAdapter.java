@@ -49,10 +49,10 @@ class ProcessRunnerAdapter implements RunnerPort {
 
     private static final Logger log = LoggerFactory.getLogger(ProcessRunnerAdapter.class);
 
-    private final AnalysisSpecToRunnerSpecMapper specMapper;
-    private final RunnerOutputLineToRunEventMapper eventMapper;
+    private final AnalysisSpecToRunnerSpecMapper analysisSpecToRunnerSpecMapper;
+    private final RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper;
     private final RunnerOutputLineParser parser = new RunnerOutputLineParser();
-    private final JsonMapper specWriter = JsonMapper.builder()
+    private final JsonMapper specJsonMapper = JsonMapper.builder()
             .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .build();
     private final List<String> command;
@@ -64,15 +64,15 @@ class ProcessRunnerAdapter implements RunnerPort {
     private final Map<String, ProcessHandle> processes = new ConcurrentHashMap<>();
 
     ProcessRunnerAdapter(
-            AnalysisSpecToRunnerSpecMapper specMapper,
-            RunnerOutputLineToRunEventMapper eventMapper,
+            AnalysisSpecToRunnerSpecMapper analysisSpecToRunnerSpecMapper,
+            RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper,
             @Value("${platform.runner.process.command}") String[] command,
             @Value("${platform.runner.process.working-dir}") Path workingDir,
             @Value("${platform.home}") Path platformHome,
             @Value("${platform.runner.stop-grace-seconds:15}") long stopGraceSeconds,
             @Value("${platform.runner.follow-interval-ms:500}") long followIntervalMs) {
-        this.specMapper = specMapper;
-        this.eventMapper = eventMapper;
+        this.analysisSpecToRunnerSpecMapper = analysisSpecToRunnerSpecMapper;
+        this.runnerOutputLineToRunEventMapper = runnerOutputLineToRunEventMapper;
         this.command = absoluteExecutable(List.of(command));
         this.workingDir = workingDir.toAbsolutePath();
         this.runsDir = platformHome.resolve("runs").toAbsolutePath();
@@ -88,7 +88,7 @@ class ProcessRunnerAdapter implements RunnerPort {
         Process process;
         try {
             Files.createDirectories(runDir);
-            specWriter.writeValue(specFile.toFile(), specMapper.map(id, spec));
+            specJsonMapper.writeValue(specFile.toFile(), analysisSpecToRunnerSpecMapper.map(id, spec));
             List<String> args = new ArrayList<>(command);
             args.addAll(List.of("run", "--spec", specFile.toString(), "--out", runDir.toString()));
             ProcessBuilder builder = new ProcessBuilder(args)
@@ -180,7 +180,7 @@ class ProcessRunnerAdapter implements RunnerPort {
                 // Read once more after the exit: the last lines may have come just before it.
                 for (String line : tail.readNewLines()) {
                     try {
-                        Optional<RunEvent> event = parser.parse(line).map(eventMapper::map);
+                        Optional<RunEvent> event = parser.parse(line).map(runnerOutputLineToRunEventMapper::map);
                         if (event.isPresent() && event.get().seq() > lastSeq) {
                             lastSeq = event.get().seq();
                             sink.onEvent(event.get());
@@ -210,7 +210,7 @@ class ProcessRunnerAdapter implements RunnerPort {
             while ((line = reader.readLine()) != null) {
                 try {
                     parser.parse(line)
-                            .map(eventMapper::map)
+                            .map(runnerOutputLineToRunEventMapper::map)
                             .ifPresentOrElse(
                                     sink::onEvent,
                                     () -> log.warn(

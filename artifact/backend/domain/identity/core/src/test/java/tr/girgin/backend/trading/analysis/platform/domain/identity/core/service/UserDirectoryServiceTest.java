@@ -25,18 +25,18 @@ class UserDirectoryServiceTest {
         User analyst = user("analyst", "2026-10-01T10:00:00Z", true, RoleId.ANALYST);
         User disabled = user("disabled", "2026-10-01T09:00:00Z", false, RoleId.ADMIN);
 
-        UserDirectoryService service = service(later, earliest, analyst, disabled);
+        UserDirectoryService userDirectoryService = service(later, earliest, analyst, disabled);
 
-        assertThat(service.firstAdmin()).contains(earliest.id());
+        assertThat(userDirectoryService.firstAdmin()).contains(earliest.id());
     }
 
     @Test
     void theFirstAdminIsEmptyWithoutAnEnabledAdmin() {
-        UserDirectoryService service = service(
+        UserDirectoryService userDirectoryService = service(
                 user("analyst", "2026-10-01T10:00:00Z", true, RoleId.ANALYST),
                 user("disabled", "2026-10-01T10:00:00Z", false, RoleId.ADMIN));
 
-        assertThat(service.firstAdmin()).isEmpty();
+        assertThat(userDirectoryService.firstAdmin()).isEmpty();
         assertThat(service().firstAdmin()).isEmpty();
     }
 
@@ -44,12 +44,12 @@ class UserDirectoryServiceTest {
     void usernamesLeaveOutUnknownIds() {
         User alice = user("alice", "2026-10-01T10:00:00Z", true, RoleId.ANALYST);
         User bob = user("bob", "2026-10-01T10:00:00Z", true, RoleId.ANALYST);
-        UserDirectoryService service = service(alice, bob);
+        UserDirectoryService userDirectoryService = service(alice, bob);
 
-        assertThat(service.usernames(
+        assertThat(userDirectoryService.usernames(
                         List.of(alice.id(), new UserId(UUID.randomUUID().toString()))))
                 .containsExactly(Map.entry(alice.id(), new Username("alice")));
-        assertThat(service.usernames(List.of())).isEmpty();
+        assertThat(userDirectoryService.usernames(List.of())).isEmpty();
     }
 
     private static UserDirectoryService service(User... users) {

@@ -26,13 +26,13 @@ class AnalysisVisibilityServiceTest {
     private static final Instant NOW = Instant.parse("2026-10-01T05:06:07Z");
 
     private Fakes.Repository repository;
-    private AnalysisVisibilityService service;
+    private AnalysisVisibilityService analysisVisibilityService;
     private AnalysisId id;
 
     @BeforeEach
     void setUp() {
         repository = new Fakes.Repository();
-        service = new AnalysisVisibilityService(
+        analysisVisibilityService = new AnalysisVisibilityService(
                 repository,
                 new AnalysisAccessService(),
                 new AnalysisTransitionService(new AnalysisSpecService()),
@@ -53,7 +53,7 @@ class AnalysisVisibilityServiceTest {
     }
 
     private Analysis change(AnalysisId target, Visibility visibility, AnalysisAccess access) {
-        return service.change(target, visibility, access, null);
+        return analysisVisibilityService.change(target, visibility, access, null);
     }
 
     @Test
@@ -203,11 +203,13 @@ class AnalysisVisibilityServiceTest {
                         stored.visibilityChangedAt(),
                         3L));
 
-        assertThatThrownBy(() -> service.change(id, Visibility.PUBLIC, Fakes.OWN_SHARER, 2L))
+        assertThatThrownBy(() -> analysisVisibilityService.change(id, Visibility.PUBLIC, Fakes.OWN_SHARER, 2L))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.CONCURRENT_UPDATE));
         assertThat(repository.updates).isZero();
-        assertThat(service.change(id, Visibility.PUBLIC, Fakes.OWN_SHARER, 3L).visibility())
+        assertThat(analysisVisibilityService
+                        .change(id, Visibility.PUBLIC, Fakes.OWN_SHARER, 3L)
+                        .visibility())
                 .isEqualTo(Visibility.PUBLIC);
     }
 
@@ -236,14 +238,15 @@ class AnalysisVisibilityServiceTest {
 
     @Test
     void anInvalidIdIsNotFoundWithoutAPortCall() {
-        AnalysisVisibilityService untouched = new AnalysisVisibilityService(
+        AnalysisVisibilityService untouchedAnalysisVisibilityService = new AnalysisVisibilityService(
                 Fakes.untouched(AnalysisRepositoryPort.class),
                 new AnalysisAccessService(),
                 new AnalysisTransitionService(new AnalysisSpecService()),
                 new AnalysisIdService(),
                 Clock.fixed(NOW, ZoneOffset.UTC));
 
-        assertThatThrownBy(() -> untouched.change(new AnalysisId("../x"), Visibility.PUBLIC, Fakes.OWN_SHARER, null))
+        assertThatThrownBy(() -> untouchedAnalysisVisibilityService.change(
+                        new AnalysisId("../x"), Visibility.PUBLIC, Fakes.OWN_SHARER, null))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }

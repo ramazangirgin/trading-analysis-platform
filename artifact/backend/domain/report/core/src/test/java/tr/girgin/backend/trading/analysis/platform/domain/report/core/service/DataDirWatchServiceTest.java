@@ -14,7 +14,7 @@ class DataDirWatchServiceTest {
     private boolean closed;
     private final AtomicInteger settled = new AtomicInteger();
 
-    private final DataDirWatchService service = new DataDirWatchService(
+    private final DataDirWatchService dataDirWatchService = new DataDirWatchService(
             onChange -> {
                 change = onChange;
                 return () -> closed = true;
@@ -25,7 +25,7 @@ class DataDirWatchServiceTest {
 
     @Test
     void aBurstOfChangesSettlesOnce() throws Exception {
-        try (AutoCloseable _ = service.watch(settled::incrementAndGet)) {
+        try (AutoCloseable _ = dataDirWatchService.watch(settled::incrementAndGet)) {
             for (int i = 0; i < 5; i++) {
                 change.run();
             }
@@ -43,7 +43,7 @@ class DataDirWatchServiceTest {
 
     @Test
     void changesThatNeverStopStillSettleAfterTheMaximumDelay() throws Exception {
-        DataDirWatchService impatient = new DataDirWatchService(
+        DataDirWatchService impatientDataDirWatchService = new DataDirWatchService(
                 onChange -> {
                     change = onChange;
                     return () -> {};
@@ -52,7 +52,7 @@ class DataDirWatchServiceTest {
                 Duration.ofMillis(500),
                 System::nanoTime);
 
-        try (AutoCloseable _ = impatient.watch(settled::incrementAndGet)) {
+        try (AutoCloseable _ = impatientDataDirWatchService.watch(settled::incrementAndGet)) {
             // A change every 50 ms never leaves the quiet period, like runs.json during a run.
             long end = System.nanoTime() + Duration.ofMillis(1_500).toNanos();
             while (System.nanoTime() < end) {
@@ -66,7 +66,7 @@ class DataDirWatchServiceTest {
 
     @Test
     void nothingSettlesAfterClosing() throws Exception {
-        service.watch(settled::incrementAndGet).close();
+        dataDirWatchService.watch(settled::incrementAndGet).close();
 
         change.run();
         Thread.sleep(QUIET.multipliedBy(2));

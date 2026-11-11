@@ -85,11 +85,11 @@ final class Fakes {
                 }));
     }
 
-    static AnalysisEventService events(AnalysisRepositoryPort repository, EventStorePort eventStore) {
+    static AnalysisEventService events(AnalysisRepositoryPort analysisRepositoryPort, EventStorePort eventStorePort) {
         AnalysisTransitionService analysisTransitionService = new AnalysisTransitionService(new AnalysisSpecService());
         return new AnalysisEventService(
-                repository,
-                eventStore,
+                analysisRepositoryPort,
+                eventStorePort,
                 new AnalysisAccessService(),
                 new AnalysisIdService(),
                 analysisTransitionService);
@@ -97,18 +97,18 @@ final class Fakes {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // one argument per collaborator the tests vary
     static AnalysisService analysisService(
-            AnalysisRepositoryPort repository,
-            RunnerPort runner,
-            EventStorePort eventStore,
+            AnalysisRepositoryPort analysisRepositoryPort,
+            RunnerPort runnerPort,
+            EventStorePort eventStorePort,
             AnalysisEventService analysisEventService,
             Clock clock,
             int maxConcurrentRuns) {
         AnalysisSpecService analysisSpecService = new AnalysisSpecService();
         return new AnalysisService(
-                repository,
-                runner,
+                analysisRepositoryPort,
+                runnerPort,
                 new Credentials(),
-                eventStore,
+                eventStorePort,
                 analysisEventService,
                 analysisSpecService,
                 new AnalysisTransitionService(analysisSpecService),

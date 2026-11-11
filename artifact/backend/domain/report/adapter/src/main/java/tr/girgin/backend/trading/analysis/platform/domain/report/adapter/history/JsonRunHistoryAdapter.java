@@ -39,7 +39,7 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
     private static final long MAX_FILE_BYTES = 50L * 1024 * 1024;
 
     private final Path file;
-    private final JsonMapper json = JsonMapper.builder().build();
+    private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
     JsonRunHistoryAdapter(@Value("${platform.data-dir}") Path dataDir) {
         this.file = dataDir.resolve("runs.json");
@@ -52,7 +52,7 @@ class JsonRunHistoryAdapter implements RunHistoryPort {
         }
         JsonNode root;
         try {
-            root = json.readTree(file.toFile());
+            root = jsonMapper.readTree(file.toFile());
         } catch (JacksonException e) {
             log.warn("Skipping unreadable {}: {}", file, e.getOriginalMessage());
             return List.of();

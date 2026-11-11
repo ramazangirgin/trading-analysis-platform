@@ -20,61 +20,62 @@ import tr.girgin.backend.trading.analysis.platform.library.persistence.JpaAdapte
 class JpaAnalysisDefaultsRepositoryAdapterTest {
 
     @Autowired
-    private JpaAnalysisDefaultsRepositoryAdapter repository;
+    private JpaAnalysisDefaultsRepositoryAdapter jpaAnalysisDefaultsRepositoryAdapter;
 
     @Autowired
-    private AnalysisDefaultsJpaRepository jpaRepository;
+    private AnalysisDefaultsJpaRepository analysisDefaultsJpaRepository;
 
     @BeforeEach
     void emptyTheTable() {
-        jpaRepository.deleteAll();
+        analysisDefaultsJpaRepository.deleteAll();
     }
 
     @Test
     void findOnAnEmptyTableIsEmpty() {
-        assertThat(repository.find()).isEmpty();
+        assertThat(jpaAnalysisDefaultsRepositoryAdapter.find()).isEmpty();
     }
 
     @Test
     void aSaveWithoutAVersionInsertsTheRowAtVersionZero() {
-        AnalysisDefaults saved = repository.save(defaults("openai", 1, null));
+        AnalysisDefaults saved = jpaAnalysisDefaultsRepositoryAdapter.save(defaults("openai", 1, null));
 
         assertThat(saved).isEqualTo(defaults("openai", 1, 0L));
-        assertThat(repository.find()).contains(saved);
+        assertThat(jpaAnalysisDefaultsRepositoryAdapter.find()).contains(saved);
     }
 
     @Test
     void aSaveAtTheStoredVersionUpdatesTheRowAndRaisesTheVersion() {
-        AnalysisDefaults saved = repository.save(defaults("openai", 1, null));
+        AnalysisDefaults saved = jpaAnalysisDefaultsRepositoryAdapter.save(defaults("openai", 1, null));
 
-        AnalysisDefaults updated = repository.save(defaults("deepseek", 3, saved.version()));
+        AnalysisDefaults updated = jpaAnalysisDefaultsRepositoryAdapter.save(defaults("deepseek", 3, saved.version()));
 
         assertThat(updated).isEqualTo(defaults("deepseek", 3, 1L));
-        assertThat(repository.find()).contains(updated);
+        assertThat(jpaAnalysisDefaultsRepositoryAdapter.find()).contains(updated);
     }
 
     @Test
     void aStaleSaveFailsAndLeavesTheNewerRowUnchanged() {
-        AnalysisDefaults saved = repository.save(defaults("openai", 1, null));
-        AnalysisDefaults firstCopy = repository.find().orElseThrow();
-        AnalysisDefaults staleCopy = repository.find().orElseThrow();
-        AnalysisDefaults firstWrite = repository.save(defaults("first", 2, firstCopy.version()));
+        AnalysisDefaults saved = jpaAnalysisDefaultsRepositoryAdapter.save(defaults("openai", 1, null));
+        AnalysisDefaults firstCopy = jpaAnalysisDefaultsRepositoryAdapter.find().orElseThrow();
+        AnalysisDefaults staleCopy = jpaAnalysisDefaultsRepositoryAdapter.find().orElseThrow();
+        AnalysisDefaults firstWrite =
+                jpaAnalysisDefaultsRepositoryAdapter.save(defaults("first", 2, firstCopy.version()));
 
-        assertThatThrownBy(() -> repository.save(defaults("second", 3, staleCopy.version())))
+        assertThatThrownBy(() -> jpaAnalysisDefaultsRepositoryAdapter.save(defaults("second", 3, staleCopy.version())))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(saved.version()).isZero();
-        assertThat(repository.find()).contains(firstWrite);
+        assertThat(jpaAnalysisDefaultsRepositoryAdapter.find()).contains(firstWrite);
     }
 
     @Test
     void aSaveWithoutAVersionFailsWhileTheRowExistsAndChangesNothing() {
-        AnalysisDefaults saved = repository.save(defaults("openai", 1, null));
+        AnalysisDefaults saved = jpaAnalysisDefaultsRepositoryAdapter.save(defaults("openai", 1, null));
 
-        assertThatThrownBy(() -> repository.save(defaults("other", 5, null)))
+        assertThatThrownBy(() -> jpaAnalysisDefaultsRepositoryAdapter.save(defaults("other", 5, null)))
                 .isInstanceOf(DataIntegrityViolationException.class);
 
-        assertThat(repository.find()).contains(saved);
+        assertThat(jpaAnalysisDefaultsRepositoryAdapter.find()).contains(saved);
     }
 
     private static AnalysisDefaults defaults(String provider, int rounds, Long version) {

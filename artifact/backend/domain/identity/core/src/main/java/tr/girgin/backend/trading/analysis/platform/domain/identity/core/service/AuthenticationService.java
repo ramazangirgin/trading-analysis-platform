@@ -28,9 +28,9 @@ class AuthenticationService implements AuthenticatePort {
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
     private static final int MAX_ATTEMPTS = 3;
 
-    private final UserRepositoryPort users;
+    private final UserRepositoryPort userRepositoryPort;
     private final AuthenticatedUserService authenticatedUserService;
-    private final PasswordHasherPort hasher;
+    private final PasswordHasherPort passwordHasherPort;
     /** Checked when the user is unknown, so that case takes as long as a wrong password. */
     private final PasswordHash decoyHash;
 
@@ -40,32 +40,32 @@ class AuthenticationService implements AuthenticatePort {
     private final UsernameService usernameService;
 
     AuthenticationService(
-            UserRepositoryPort users,
+            UserRepositoryPort userRepositoryPort,
             AuthenticatedUserService authenticatedUserService,
-            PasswordHasherPort hasher,
+            PasswordHasherPort passwordHasherPort,
             Clock clock,
             LoginLockoutService loginLockoutService,
             UserChangeService userChangeService,
             UsernameService usernameService) {
-        this.users = users;
+        this.userRepositoryPort = userRepositoryPort;
         this.authenticatedUserService = authenticatedUserService;
-        this.hasher = hasher;
+        this.passwordHasherPort = passwordHasherPort;
         this.clock = clock;
         this.loginLockoutService = loginLockoutService;
         this.userChangeService = userChangeService;
         this.usernameService = usernameService;
-        this.decoyHash = hasher.hash(UUID.randomUUID().toString());
+        this.decoyHash = passwordHasherPort.hash(UUID.randomUUID().toString());
     }
 
     @Override
     public AuthenticatedUser authenticate(String username, CharSequence password) {
         Optional<User> found = findByUsername(username);
         if (found.isEmpty()) {
-            hasher.matches(password, decoyHash);
+            passwordHasherPort.matches(password, decoyHash);
             throw badCredentials();
         }
         User user = found.get();
-        boolean matches = hasher.matches(password, user.passwordHash());
+        boolean matches = passwordHasherPort.matches(password, user.passwordHash());
         if (loginLockoutService.isLocked(user, clock.instant())) {
             throw badCredentials();
         }
@@ -81,7 +81,7 @@ class AuthenticationService implements AuthenticatePort {
 
     @Override
     public Optional<AuthenticatedUser> findActiveUser(UserId id) {
-        return users.findById(id).filter(User::enabled).map(authenticatedUserService::create);
+        return userRepositoryPort.findById(id).filter(User::enabled).map(authenticatedUserService::create);
     }
 
     private Optional<User> findByUsername(String username) {
@@ -91,7 +91,7 @@ class AuthenticationService implements AuthenticatePort {
         } catch (IdentityException _) {
             return Optional.empty();
         }
-        return users.findByUsername(name);
+        return userRepositoryPort.findByUsername(name);
     }
 
     /** Counts a wrong password and locks the account when the count reaches the limit. Never changes the answer. */
@@ -143,14 +143,14 @@ class AuthenticationService implements AuthenticatePort {
                     if (current.failedLoginCount() > 0 || current.lockedUntil().isPresent()) {
                         updated = loginLockoutService.unlocked(updated);
                     }
-                    if (hasher.needsRehash(current.passwordHash())) {
+                    if (passwordHasherPort.needsRehash(current.passwordHash())) {
                         updated = userChangeService.withPassword(
-                                updated, hasher.hash(password), current.mustChangePassword());
+                                updated, passwordHasherPort.hash(password), current.mustChangePassword());
                     }
                     return updated;
                 })
                 .orElseGet(() -> {
-                    User latest = users.findById(user.id()).orElseThrow(this::badCredentials);
+                    User latest = userRepositoryPort.findById(user.id()).orElseThrow(this::badCredentials);
                     requireStillValid(latest, checked, password);
                     return latest;
                 });
@@ -161,7 +161,7 @@ class AuthenticationService implements AuthenticatePort {
         if (!current.enabled()) {
             throw badCredentials();
         }
-        if (!current.passwordHash().equals(checked) && !hasher.matches(password, current.passwordHash())) {
+        if (!current.passwordHash().equals(checked) && !passwordHasherPort.matches(password, current.passwordHash())) {
             throw badCredentials();
         }
     }
@@ -180,7 +180,7 @@ class AuthenticationService implements AuthenticatePort {
                 return Optional.of(current);
             }
             try {
-                return Optional.of(users.save(next));
+                return Optional.of(userRepositoryPort.save(next));
             } catch (OptimisticLockingFailureException e) {
                 log.debug(
                         "User {} was updated concurrently, attempt {}",
@@ -188,7 +188,7 @@ class AuthenticationService implements AuthenticatePort {
                         attempt,
                         e);
                 if (attempt < MAX_ATTEMPTS) {
-                    Optional<User> reloaded = users.findById(user.id());
+                    Optional<User> reloaded = userRepositoryPort.findById(user.id());
                     if (reloaded.isEmpty()) {
                         return Optional.empty();
                     }

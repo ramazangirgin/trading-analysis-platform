@@ -30,11 +30,13 @@ class V6AnalysisColumnTypesMigrationTest {
             + AnalysisPersistenceConfiguration.class.getPackageName().replace('.', '/');
 
     @Autowired
-    private JpaAnalysisRepositoryAdapter repository;
+    private JpaAnalysisRepositoryAdapter jpaAnalysisRepositoryAdapter;
 
     @Test
     void elapsedMillisecondsAndCostWrittenAtV5ReadTheSameAfterV6() {
-        Analysis costed = repository.findById(new AnalysisId("r_v5_costed")).orElseThrow();
+        Analysis costed = jpaAnalysisRepositoryAdapter
+                .findById(new AnalysisId("r_v5_costed"))
+                .orElseThrow();
 
         assertThat(costed.stats().elapsed()).isEqualTo(Duration.ofMillis(261_500));
         assertThat(costed.stats().costUsd()).isEqualByComparingTo("0.0277");
@@ -42,7 +44,9 @@ class V6AnalysisColumnTypesMigrationTest {
 
     @Test
     void aNullCostStaysNull() {
-        Analysis free = repository.findById(new AnalysisId("r_v5_free")).orElseThrow();
+        Analysis free = jpaAnalysisRepositoryAdapter
+                .findById(new AnalysisId("r_v5_free"))
+                .orElseThrow();
 
         assertThat(free.stats().costUsd()).isNull();
         assertThat(free.stats().elapsed()).isEqualTo(Duration.ZERO);

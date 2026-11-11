@@ -37,8 +37,8 @@ class AnalysisServiceTest {
     private Fakes.Runner runner;
     private Fakes.EventStore eventStore;
     private AnalysisEventService analysisEventService;
-    private AnalysisService service;
-    private AnalysisListService lists;
+    private AnalysisService analysisService;
+    private AnalysisListService analysisListService;
 
     @BeforeEach
     void setUp() {
@@ -46,16 +46,16 @@ class AnalysisServiceTest {
         runner = new Fakes.Runner();
         eventStore = new Fakes.EventStore();
         analysisEventService = Fakes.events(repository, eventStore);
-        service = Fakes.analysisService(repository, runner, eventStore, analysisEventService, CLOCK, 2);
-        lists = new AnalysisListService(repository);
+        analysisService = Fakes.analysisService(repository, runner, eventStore, analysisEventService, CLOCK, 2);
+        analysisListService = new AnalysisListService(repository);
     }
 
     private Analysis start(AnalysisSpec spec) {
-        return service.start(spec, Fakes.OWNER);
+        return analysisService.start(spec, Fakes.OWNER);
     }
 
     private Analysis get(AnalysisId id) {
-        return service.get(id, Fakes.OWN);
+        return analysisService.get(id, Fakes.OWN);
     }
 
     @Test
@@ -277,7 +277,7 @@ class AnalysisServiceTest {
         start(Fakes.spec("MU"));
         AnalysisId queued = start(Fakes.spec("GOOG")).id();
 
-        Analysis stopped = service.stop(queued, Fakes.OWN);
+        Analysis stopped = analysisService.stop(queued, Fakes.OWN);
 
         assertThat(stopped.status()).isEqualTo(AnalysisStatus.STOPPED);
         assertThat(runner.stopped).isEmpty();
@@ -287,7 +287,7 @@ class AnalysisServiceTest {
     void asksTheRunnerToStopARunningRun() {
         AnalysisId id = start(Fakes.spec("NVDA")).id();
 
-        service.stop(id, Fakes.OWN);
+        analysisService.stop(id, Fakes.OWN);
 
         assertThat(runner.stopped).extracting(h -> h.ref()).containsExactly("pid-" + id.value());
     }
@@ -298,7 +298,7 @@ class AnalysisServiceTest {
         runner.sink(id).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(id).onExit(0);
 
-        assertThatThrownBy(() -> service.stop(id, Fakes.OWN))
+        assertThatThrownBy(() -> analysisService.stop(id, Fakes.OWN))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_RUNNING));
     }
@@ -309,7 +309,7 @@ class AnalysisServiceTest {
         runner.sink(first.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(first.id()).onExit(0);
 
-        Analysis again = service.rerun(first.id(), Fakes.OWN);
+        Analysis again = analysisService.rerun(first.id(), Fakes.OWN);
 
         assertThat(again.id()).isNotEqualTo(first.id());
         assertThat(again.spec()).isEqualTo(first.spec());
@@ -321,7 +321,7 @@ class AnalysisServiceTest {
         runner.sink(first.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(first.id()).onExit(0);
 
-        Analysis again = service.rerun(first.id(), Fakes.EVERYONE);
+        Analysis again = analysisService.rerun(first.id(), Fakes.EVERYONE);
 
         assertThat(again.owner()).isEqualTo(Fakes.OTHER);
         assertThat(get(first.id()).owner()).isEqualTo(Fakes.OWNER);
@@ -331,7 +331,7 @@ class AnalysisServiceTest {
     void failsRunsLeftRunningWhoseRunnerIsGone() {
         Analysis orphan = orphan("NVDA", "4242");
 
-        service.afterSingletonsInstantiated();
+        analysisService.afterSingletonsInstantiated();
 
         Analysis failed = get(orphan.id());
         assertThat(failed.status()).isEqualTo(AnalysisStatus.FAILED);
@@ -348,7 +348,7 @@ class AnalysisServiceTest {
         eventStore.append(orphan.id(), Fakes.decision(2, Rating.OVERWEIGHT));
         eventStore.append(orphan.id(), Fakes.finished(3, RunOutcome.COMPLETED, null));
 
-        service.afterSingletonsInstantiated();
+        analysisService.afterSingletonsInstantiated();
 
         Analysis done = get(orphan.id());
         assertThat(done.status()).isEqualTo(AnalysisStatus.COMPLETED);
@@ -363,7 +363,7 @@ class AnalysisServiceTest {
         eventStore.append(orphan.id(), Fakes.stats(1, 3));
         runner.alive.add("4242");
 
-        service.afterSingletonsInstantiated();
+        analysisService.afterSingletonsInstantiated();
 
         assertThat(runner.reattachedAfter).containsEntry(orphan.id(), 1L);
         assertThat(get(orphan.id()).status()).isEqualTo(AnalysisStatus.RUNNING);
@@ -372,7 +372,7 @@ class AnalysisServiceTest {
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.ALREADY_RUNNING));
 
-        service.stop(orphan.id(), Fakes.OWN);
+        analysisService.stop(orphan.id(), Fakes.OWN);
         assertThat(runner.stopped).extracting(RunHandle::ref).containsExactly("4242");
 
         runner.sink(orphan.id()).onEvent(Fakes.finished(2, RunOutcome.STOPPED, null));
@@ -390,7 +390,7 @@ class AnalysisServiceTest {
         repository.insert(first);
         repository.insert(second);
 
-        service.afterSingletonsInstantiated();
+        analysisService.afterSingletonsInstantiated();
 
         assertThat(runner.sinks.keySet()).containsExactly(first.id(), second.id());
         assertThat(get(third.id()).status()).isEqualTo(AnalysisStatus.QUEUED);
@@ -408,8 +408,9 @@ class AnalysisServiceTest {
         start(Fakes.spec("NVDA"));
         start(Fakes.spec("MU"));
 
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.MINE, Fakes.OWN)).hasSize(2);
-        assertThat(lists.list(Fakes.filter(null, "MU", null), AnalysisScope.MINE, Fakes.OWN))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.MINE, Fakes.OWN))
+                .hasSize(2);
+        assertThat(analysisListService.list(Fakes.filter(null, "MU", null), AnalysisScope.MINE, Fakes.OWN))
                 .singleElement()
                 .satisfies(a -> assertThat(a.spec().ticker()).isEqualTo("MU"));
     }
@@ -417,15 +418,15 @@ class AnalysisServiceTest {
     @Test
     void listsOnlyTheCallersRunsInTheMineScope() {
         Analysis mine = start(Fakes.spec("NVDA"));
-        service.start(Fakes.spec("MU"), Fakes.OTHER);
+        analysisService.start(Fakes.spec("MU"), Fakes.OTHER);
 
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.MINE, Fakes.OWN))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.MINE, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
-        assertThat(lists.list(Fakes.filter(null, null, Fakes.OTHER), AnalysisScope.MINE, Fakes.OWN))
+        assertThat(analysisListService.list(Fakes.filter(null, null, Fakes.OTHER), AnalysisScope.MINE, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.MINE, Fakes.EVERYONE))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.MINE, Fakes.EVERYONE))
                 .extracting(Analysis::owner)
                 .containsExactly(Fakes.OTHER);
     }
@@ -433,11 +434,12 @@ class AnalysisServiceTest {
     @Test
     void listsEveryonesRunsInTheAllScopeWithAllUsers() {
         start(Fakes.spec("NVDA"));
-        service.start(Fakes.spec("MU"), Fakes.OTHER);
-        service.start(Fakes.spec("GOOG"), Fakes.OTHER);
+        analysisService.start(Fakes.spec("MU"), Fakes.OTHER);
+        analysisService.start(Fakes.spec("GOOG"), Fakes.OTHER);
 
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.ALL, Fakes.EVERYONE)).hasSize(3);
-        assertThat(lists.list(Fakes.filter(null, null, Fakes.OWNER), AnalysisScope.ALL, Fakes.EVERYONE))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.ALL, Fakes.EVERYONE))
+                .hasSize(3);
+        assertThat(analysisListService.list(Fakes.filter(null, null, Fakes.OWNER), AnalysisScope.ALL, Fakes.EVERYONE))
                 .singleElement()
                 .satisfies(a -> assertThat(a.owner()).isEqualTo(Fakes.OWNER));
     }
@@ -445,9 +447,9 @@ class AnalysisServiceTest {
     @Test
     void theAllScopeIsTheMineScopeWithoutAllUsers() {
         Analysis mine = start(Fakes.spec("NVDA"));
-        service.start(Fakes.spec("MU"), Fakes.OTHER);
+        analysisService.start(Fakes.spec("MU"), Fakes.OTHER);
 
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.ALL, Fakes.OWN))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.ALL, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactly(mine.id());
     }
@@ -457,16 +459,16 @@ class AnalysisServiceTest {
         Analysis ownPublic = publicRun("NVDA", Fakes.OWNER);
         Analysis othersPublic = publicRun("MU", Fakes.OTHER);
         Analysis othersPartial = sharedRun("AMD", Fakes.OTHER, Visibility.PARTIAL);
-        Analysis othersPrivate = service.start(Fakes.spec("GOOG"), Fakes.OTHER);
+        Analysis othersPrivate = analysisService.start(Fakes.spec("GOOG"), Fakes.OTHER);
 
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.OWN))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.OWN))
                 .extracting(Analysis::id)
                 .containsExactlyInAnyOrder(othersPublic.id(), othersPartial.id());
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.OTHERS))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.OTHERS))
                 .extracting(Analysis::id)
                 .containsExactly(ownPublic.id())
                 .doesNotContain(othersPrivate.id());
-        assertThat(lists.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.EVERYONE))
+        assertThat(analysisListService.list(Fakes.ALL, AnalysisScope.SHARED, Fakes.EVERYONE))
                 .extracting(Analysis::id)
                 .containsExactly(ownPublic.id());
     }
@@ -478,12 +480,12 @@ class AnalysisServiceTest {
 
         for (AnalysisScope scope : AnalysisScope.values()) {
             AnalysisAccess access = scope == AnalysisScope.SHARED ? Fakes.OTHERS : Fakes.OWN;
-            assertThat(lists.list(Fakes.filter(null, "MU", null), scope, access))
+            assertThat(analysisListService.list(Fakes.filter(null, "MU", null), scope, access))
                     .singleElement()
                     .satisfies(a -> assertThat(a.spec().ticker()).isEqualTo("MU"));
-            assertThat(lists.list(Fakes.filter(AnalysisStatus.COMPLETED, null, null), scope, access))
+            assertThat(analysisListService.list(Fakes.filter(AnalysisStatus.COMPLETED, null, null), scope, access))
                     .hasSize(2);
-            assertThat(lists.list(Fakes.filter(AnalysisStatus.RUNNING, null, null), scope, access))
+            assertThat(analysisListService.list(Fakes.filter(AnalysisStatus.RUNNING, null, null), scope, access))
                     .isEmpty();
         }
     }
@@ -498,9 +500,9 @@ class AnalysisServiceTest {
         for (Visibility visibility : List.of(Visibility.PUBLIC, Visibility.PARTIAL)) {
             Analysis shared = sharedRun("NVDA" + visibility, Fakes.OWNER, visibility);
 
-            assertThat(service.get(shared.id(), Fakes.OTHERS).id()).isEqualTo(shared.id());
-            assertNotFound(() -> service.stop(shared.id(), Fakes.OTHERS), shared.id());
-            assertNotFound(() -> service.rerun(shared.id(), Fakes.OTHERS), shared.id());
+            assertThat(analysisService.get(shared.id(), Fakes.OTHERS).id()).isEqualTo(shared.id());
+            assertNotFound(() -> analysisService.stop(shared.id(), Fakes.OTHERS), shared.id());
+            assertNotFound(() -> analysisService.rerun(shared.id(), Fakes.OTHERS), shared.id());
         }
     }
 
@@ -508,7 +510,7 @@ class AnalysisServiceTest {
     void aRerunOfAPublicRunIsPrivate() {
         Analysis shared = publicRun("NVDA", Fakes.OWNER);
 
-        assertThat(service.rerun(shared.id(), Fakes.OWN).visibility()).isEqualTo(Visibility.PRIVATE);
+        assertThat(analysisService.rerun(shared.id(), Fakes.OWN).visibility()).isEqualTo(Visibility.PRIVATE);
     }
 
     private Analysis publicRun(String ticker, OwnerId owner) {
@@ -516,7 +518,7 @@ class AnalysisServiceTest {
     }
 
     private Analysis sharedRun(String ticker, OwnerId owner, Visibility visibility) {
-        Analysis run = service.start(Fakes.spec(ticker), owner);
+        Analysis run = analysisService.start(Fakes.spec(ticker), owner);
         runner.sink(run.id()).onEvent(Fakes.finished(1, RunOutcome.COMPLETED, null));
         runner.sink(run.id()).onExit(0);
         Analysis shared = Fakes.withVisibility(repository.rows.get(run.id()), visibility, NOW);
@@ -528,9 +530,9 @@ class AnalysisServiceTest {
     void anotherUsersRunIsNotFoundForGetStopAndRerun() {
         AnalysisId id = start(Fakes.spec("NVDA")).id();
 
-        assertNotFound(() -> service.get(id, Fakes.OTHERS), id);
-        assertNotFound(() -> service.stop(id, Fakes.OTHERS), id);
-        assertNotFound(() -> service.rerun(id, Fakes.OTHERS), id);
+        assertNotFound(() -> analysisService.get(id, Fakes.OTHERS), id);
+        assertNotFound(() -> analysisService.stop(id, Fakes.OTHERS), id);
+        assertNotFound(() -> analysisService.rerun(id, Fakes.OTHERS), id);
         assertThat(runner.stopped).isEmpty();
         assertThat(repository.rows).hasSize(1);
     }
@@ -540,20 +542,20 @@ class AnalysisServiceTest {
         Analysis unowned = Fakes.queued(Fakes.spec("NVDA"), null, NOW);
         repository.insert(unowned);
 
-        assertNotFound(() -> service.get(unowned.id(), Fakes.OWN), unowned.id());
-        assertThat(service.get(unowned.id(), Fakes.EVERYONE).id()).isEqualTo(unowned.id());
+        assertNotFound(() -> analysisService.get(unowned.id(), Fakes.OWN), unowned.id());
+        assertThat(analysisService.get(unowned.id(), Fakes.EVERYONE).id()).isEqualTo(unowned.id());
     }
 
     @Test
     void allUsersMayGetStopAndRerunAnotherUsersRun() {
         AnalysisId id = start(Fakes.spec("NVDA")).id();
 
-        assertThat(service.get(id, Fakes.EVERYONE).id()).isEqualTo(id);
-        service.stop(id, Fakes.EVERYONE);
+        assertThat(analysisService.get(id, Fakes.EVERYONE).id()).isEqualTo(id);
+        analysisService.stop(id, Fakes.EVERYONE);
         assertThat(runner.stopped).hasSize(1);
         runner.sink(id).onEvent(Fakes.finished(1, RunOutcome.STOPPED, null));
         runner.sink(id).onExit(0);
-        assertThat(service.rerun(id, Fakes.EVERYONE).owner()).isEqualTo(Fakes.OTHER);
+        assertThat(analysisService.rerun(id, Fakes.EVERYONE).owner()).isEqualTo(Fakes.OTHER);
     }
 
     @Test
@@ -565,19 +567,19 @@ class AnalysisServiceTest {
         repository.insert(second);
         OwnerId admin = new OwnerId("admin");
 
-        assertThat(service.assignUnowned(admin)).isEqualTo(2);
+        assertThat(analysisService.assignUnowned(admin)).isEqualTo(2);
 
         assertThat(repository.rows.get(owned.id()).owner()).isEqualTo(Fakes.OWNER);
         assertThat(repository.rows.get(first.id()).owner()).isEqualTo(admin);
         assertThat(repository.rows.get(second.id()).owner()).isEqualTo(admin);
-        assertThat(service.assignUnowned(admin)).isZero();
+        assertThat(analysisService.assignUnowned(admin)).isZero();
     }
 
     @Test
     void unknownIdsAreNotFound() {
         AnalysisId id = new AnalysisId("r_missing");
 
-        assertNotFound(() -> service.get(id, Fakes.OWN), id);
+        assertNotFound(() -> analysisService.get(id, Fakes.OWN), id);
     }
 
     private void assertNotFound(Runnable call, AnalysisId id) {

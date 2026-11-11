@@ -21,10 +21,10 @@ class RunnerOutputLineToRunEventMapperTest extends AdapterTestSupport {
     private final RunnerOutputLineParser parser = new RunnerOutputLineParser();
 
     @Autowired
-    private RunnerOutputLineToRunEventMapper mapper;
+    private RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper;
 
     @Autowired
-    private StringToRatingMapper ratingMapper;
+    private StringToRatingMapper stringToRatingMapper;
 
     @Test
     void mapsTheEnvelopeAndKeepsThePayloadVerbatim() {
@@ -114,10 +114,10 @@ class RunnerOutputLineToRunEventMapperTest extends AdapterTestSupport {
         "'',REVIEW"
     })
     void mapsRatingsLeniently(String raw, Rating expected) {
-        assertThat(ratingMapper.map(raw)).isEqualTo(expected);
+        assertThat(stringToRatingMapper.map(raw)).isEqualTo(expected);
     }
 
     private RunEvent map(String line) {
-        return parser.parse(line).map(mapper::map).orElseThrow();
+        return parser.parse(line).map(runnerOutputLineToRunEventMapper::map).orElseThrow();
     }
 }

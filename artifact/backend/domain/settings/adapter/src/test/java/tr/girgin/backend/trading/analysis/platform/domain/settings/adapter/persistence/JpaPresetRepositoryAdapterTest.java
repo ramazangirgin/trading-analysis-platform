@@ -29,13 +29,13 @@ class JpaPresetRepositoryAdapterTest {
     private static final OwnerId BOB = new OwnerId("u_bob");
 
     @Autowired
-    private JpaPresetRepositoryAdapter repository;
+    private JpaPresetRepositoryAdapter jpaPresetRepositoryAdapter;
 
     @Autowired
     private MutableTestClock clock;
 
     @Autowired
-    private PresetJpaRepository jpaRepository;
+    private PresetJpaRepository presetJpaRepository;
 
     private static PresetId newId() {
         return new PresetId(UUID.randomUUID().toString());
@@ -43,124 +43,132 @@ class JpaPresetRepositoryAdapterTest {
 
     @BeforeEach
     void emptyTableAndResetClock() {
-        jpaRepository.deleteAll();
+        presetJpaRepository.deleteAll();
         clock.set(MutableTestClock.START);
     }
 
     @Test
     void savesUpdatesAndDeletes() {
         Preset preset = new Preset(newId(), "Cheap DeepSeek", "{\"llmProvider\":\"deepseek\"}", ALICE, null, null);
-        Preset saved = repository.save(preset);
+        Preset saved = jpaPresetRepositoryAdapter.save(preset);
         clock.advance(Duration.ofHours(1));
-        Preset renamed = repository.save(new Preset(preset.id(), "DeepSeek flash", preset.payload(), ALICE, null, 0L));
+        Preset renamed = jpaPresetRepositoryAdapter.save(
+                new Preset(preset.id(), "DeepSeek flash", preset.payload(), ALICE, null, 0L));
 
         assertThat(saved)
                 .isEqualTo(new Preset(preset.id(), preset.name(), preset.payload(), ALICE, MutableTestClock.START, 0L));
         Instant later = MutableTestClock.START.plus(Duration.ofHours(1));
         assertThat(renamed).isEqualTo(new Preset(preset.id(), "DeepSeek flash", preset.payload(), ALICE, later, 1L));
-        assertThat(repository.findById(preset.id())).contains(renamed);
-        assertThat(repository.findAll(null)).containsExactly(renamed);
-        assertThat(repository.delete(preset.id())).isTrue();
-        assertThat(repository.delete(preset.id())).isFalse();
-        assertThat(repository.findAll(null)).isEmpty();
+        assertThat(jpaPresetRepositoryAdapter.findById(preset.id())).contains(renamed);
+        assertThat(jpaPresetRepositoryAdapter.findAll(null)).containsExactly(renamed);
+        assertThat(jpaPresetRepositoryAdapter.delete(preset.id())).isTrue();
+        assertThat(jpaPresetRepositoryAdapter.delete(preset.id())).isFalse();
+        assertThat(jpaPresetRepositoryAdapter.findAll(null)).isEmpty();
     }
 
     @Test
     void theOwnerIsStoredAndReadBack() {
-        Preset saved = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        Preset saved = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
 
         assertThat(saved.owner()).isEqualTo(ALICE);
-        assertThat(repository.findById(saved.id()).orElseThrow().owner()).isEqualTo(ALICE);
+        assertThat(jpaPresetRepositoryAdapter.findById(saved.id()).orElseThrow().owner())
+                .isEqualTo(ALICE);
     }
 
     @Test
     void findAllFiltersByOwnerAndNullMeansEveryOwner() {
-        Preset alices = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
-        Preset bobs = repository.save(new Preset(newId(), "B", "{}", BOB, null, null));
-        Preset unowned = repository.save(new Preset(newId(), "C", "{}", null, null, null));
+        Preset alices = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        Preset bobs = jpaPresetRepositoryAdapter.save(new Preset(newId(), "B", "{}", BOB, null, null));
+        Preset unowned = jpaPresetRepositoryAdapter.save(new Preset(newId(), "C", "{}", null, null, null));
 
-        assertThat(repository.findAll(ALICE)).containsExactly(alices);
-        assertThat(repository.findAll(BOB)).containsExactly(bobs);
-        assertThat(repository.findAll(null)).containsExactlyInAnyOrder(alices, bobs, unowned);
+        assertThat(jpaPresetRepositoryAdapter.findAll(ALICE)).containsExactly(alices);
+        assertThat(jpaPresetRepositoryAdapter.findAll(BOB)).containsExactly(bobs);
+        assertThat(jpaPresetRepositoryAdapter.findAll(null)).containsExactlyInAnyOrder(alices, bobs, unowned);
     }
 
     @Test
     void savingAnUpdateWithTheStoredOwnerKeepsIt() {
-        Preset saved = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        Preset saved = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
 
-        Preset again = repository.save(new Preset(saved.id(), "B", "{}", saved.owner(), null, saved.version()));
+        Preset again = jpaPresetRepositoryAdapter.save(
+                new Preset(saved.id(), "B", "{}", saved.owner(), null, saved.version()));
 
         assertThat(again.owner()).isEqualTo(ALICE);
-        assertThat(repository.findById(saved.id()).orElseThrow().owner()).isEqualTo(ALICE);
+        assertThat(jpaPresetRepositoryAdapter.findById(saved.id()).orElseThrow().owner())
+                .isEqualTo(ALICE);
     }
 
     @Test
     void assignOwnerWhereMissingSetsOnlyMissingOwnersAndRaisesTheirVersion() {
-        Preset owned = repository.save(new Preset(newId(), "A", "{}", BOB, null, null));
-        Preset unowned = repository.save(new Preset(newId(), "B", "{}", null, null, null));
+        Preset owned = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", BOB, null, null));
+        Preset unowned = jpaPresetRepositoryAdapter.save(new Preset(newId(), "B", "{}", null, null, null));
 
-        int assigned = repository.assignOwnerWhereMissing(ALICE);
+        int assigned = jpaPresetRepositoryAdapter.assignOwnerWhereMissing(ALICE);
 
         assertThat(assigned).isEqualTo(1);
-        assertThat(repository.findById(owned.id())).contains(owned);
-        Preset now = repository.findById(unowned.id()).orElseThrow();
+        assertThat(jpaPresetRepositoryAdapter.findById(owned.id())).contains(owned);
+        Preset now = jpaPresetRepositoryAdapter.findById(unowned.id()).orElseThrow();
         assertThat(now.owner()).isEqualTo(ALICE);
         assertThat(now.version()).isEqualTo(unowned.version() + 1);
-        assertThat(repository.assignOwnerWhereMissing(ALICE)).isZero();
+        assertThat(jpaPresetRepositoryAdapter.assignOwnerWhereMissing(ALICE)).isZero();
     }
 
     @Test
     void aNewPresetGetsTheTimeOfTheClockInTheReturnedRecordAndOnRead() {
-        Preset saved = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        Preset saved = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
 
         assertThat(saved.updatedAt()).isEqualTo(MutableTestClock.START);
-        assertThat(repository.findById(saved.id()).orElseThrow().updatedAt()).isEqualTo(MutableTestClock.START);
+        assertThat(jpaPresetRepositoryAdapter.findById(saved.id()).orElseThrow().updatedAt())
+                .isEqualTo(MutableTestClock.START);
     }
 
     @Test
     void anUpdateWithUnchangedNameAndPayloadStillMovesUpdatedAt() {
-        Preset saved = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        Preset saved = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
         clock.advance(Duration.ofMinutes(5));
 
-        Preset again =
-                repository.save(new Preset(saved.id(), saved.name(), saved.payload(), ALICE, null, saved.version()));
+        Preset again = jpaPresetRepositoryAdapter.save(
+                new Preset(saved.id(), saved.name(), saved.payload(), ALICE, null, saved.version()));
 
         Instant expected = MutableTestClock.START.plus(Duration.ofMinutes(5));
         assertThat(again.updatedAt()).isEqualTo(expected);
-        assertThat(repository.findById(saved.id()).orElseThrow().updatedAt()).isEqualTo(expected);
+        assertThat(jpaPresetRepositoryAdapter.findById(saved.id()).orElseThrow().updatedAt())
+                .isEqualTo(expected);
     }
 
     @Test
     void aStaleSaveFailsAndLeavesTheNewerRowUnchanged() {
-        Preset saved = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
-        Preset firstCopy = repository.findById(saved.id()).orElseThrow();
-        Preset staleCopy = repository.findById(saved.id()).orElseThrow();
-        Preset firstWrite = repository.save(new Preset(saved.id(), "First", "{}", ALICE, null, firstCopy.version()));
+        Preset saved = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        Preset firstCopy = jpaPresetRepositoryAdapter.findById(saved.id()).orElseThrow();
+        Preset staleCopy = jpaPresetRepositoryAdapter.findById(saved.id()).orElseThrow();
+        Preset firstWrite = jpaPresetRepositoryAdapter.save(
+                new Preset(saved.id(), "First", "{}", ALICE, null, firstCopy.version()));
 
-        assertThatThrownBy(
-                        () -> repository.save(new Preset(saved.id(), "Second", "{}", ALICE, null, staleCopy.version())))
+        assertThatThrownBy(() -> jpaPresetRepositoryAdapter.save(
+                        new Preset(saved.id(), "Second", "{}", ALICE, null, staleCopy.version())))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(firstWrite.version()).isEqualTo(1);
-        assertThat(repository.findById(saved.id())).contains(firstWrite);
+        assertThat(jpaPresetRepositoryAdapter.findById(saved.id())).contains(firstWrite);
     }
 
     @Test
     void savingWithoutAVersionFailsOnAnExistingId() {
-        Preset saved = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        Preset saved = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
 
-        assertThatThrownBy(() -> repository.save(new Preset(saved.id(), "B", "{}", ALICE, null, null)))
+        assertThatThrownBy(() -> jpaPresetRepositoryAdapter.save(new Preset(saved.id(), "B", "{}", ALICE, null, null)))
                 .isInstanceOf(DataAccessException.class);
 
-        assertThat(repository.findById(saved.id())).contains(saved);
+        assertThat(jpaPresetRepositoryAdapter.findById(saved.id())).contains(saved);
     }
 
     @Test
     void savingAVersionForADeletedRowFails() {
-        Preset saved = repository.save(new Preset(newId(), "A", "{}", ALICE, null, null));
-        repository.delete(saved.id());
+        Preset saved = jpaPresetRepositoryAdapter.save(new Preset(newId(), "A", "{}", ALICE, null, null));
+        jpaPresetRepositoryAdapter.delete(saved.id());
 
-        assertThatThrownBy(() -> repository.save(saved)).isInstanceOf(OptimisticLockingFailureException.class);
+        assertThatThrownBy(() -> jpaPresetRepositoryAdapter.save(saved))
+                .isInstanceOf(OptimisticLockingFailureException.class);
     }
 
     @Configuration

@@ -15,21 +15,21 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 @Service
 class AnalysisListService implements ListAnalysesPort {
 
-    private final AnalysisRepositoryPort repository;
+    private final AnalysisRepositoryPort analysisRepositoryPort;
 
-    AnalysisListService(AnalysisRepositoryPort repository) {
-        this.repository = repository;
+    AnalysisListService(AnalysisRepositoryPort analysisRepositoryPort) {
+        this.analysisRepositoryPort = analysisRepositoryPort;
     }
 
     @Override
     public List<Analysis> list(AnalysisFilter filter, AnalysisScope scope, AnalysisAccess access) {
         if (scope == AnalysisScope.ALL && access.allUsers()) {
-            return repository.findAll(filter);
+            return analysisRepositoryPort.findAll(filter);
         }
         if (scope == AnalysisScope.SHARED) {
-            return repository.findAll(publicOfOthersThan(filter, access.user()));
+            return analysisRepositoryPort.findAll(publicOfOthersThan(filter, access.user()));
         }
-        return repository.findAll(ownedBy(filter, access.user()));
+        return analysisRepositoryPort.findAll(ownedBy(filter, access.user()));
     }
 
     private AnalysisFilter ownedBy(AnalysisFilter filter, OwnerId user) {

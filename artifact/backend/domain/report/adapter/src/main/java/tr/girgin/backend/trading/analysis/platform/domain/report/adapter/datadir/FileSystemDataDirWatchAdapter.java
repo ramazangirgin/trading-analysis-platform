@@ -48,29 +48,29 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
 
     @Override
     public AutoCloseable watch(Runnable onChange) {
-        WatchService service;
+        WatchService watchService;
         try {
-            service = dataDir.getFileSystem().newWatchService();
+            watchService = dataDir.getFileSystem().newWatchService();
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot watch " + dataDir, e);
         }
-        Watch watch = new Watch(service, onChange);
+        Watch watch = new Watch(watchService, onChange);
         watch.register(dataDir);
         watch.register(deepReportsDir);
         watch.registerTree(resultsDir);
         Thread.ofVirtual().name("data-dir-watch").start(watch::run);
         log.info("Watching {} for new runs", dataDir);
-        return service;
+        return watchService;
     }
 
     private final class Watch {
 
-        private final WatchService service;
+        private final WatchService watchService;
         private final Runnable onChange;
         private final Map<WatchKey, Path> dirs = new ConcurrentHashMap<>();
 
-        Watch(WatchService service, Runnable onChange) {
-            this.service = service;
+        Watch(WatchService watchService, Runnable onChange) {
+            this.watchService = watchService;
             this.onChange = onChange;
         }
 
@@ -78,7 +78,7 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
         void run() {
             try {
                 while (true) {
-                    WatchKey key = service.take();
+                    WatchKey key = watchService.take();
                     Path dir = dirs.get(key);
                     boolean relevant = false;
                     for (WatchEvent<?> event : key.pollEvents()) {
@@ -150,7 +150,7 @@ class FileSystemDataDirWatchAdapter implements DataDirWatchPort {
             try {
                 dirs.put(
                         dir.register(
-                                service,
+                                watchService,
                                 StandardWatchEventKinds.ENTRY_CREATE,
                                 StandardWatchEventKinds.ENTRY_MODIFY,
                                 StandardWatchEventKinds.ENTRY_DELETE),

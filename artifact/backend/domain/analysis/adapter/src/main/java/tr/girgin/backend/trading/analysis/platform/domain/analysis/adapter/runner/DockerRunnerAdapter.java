@@ -93,10 +93,10 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
     // Docker's short container id, as `docker ps` shows it.
     private static final int SHORT_ID_LENGTH = 12;
 
-    private final AnalysisSpecToRunnerSpecMapper specMapper;
-    private final RunnerOutputLineToRunEventMapper eventMapper;
+    private final AnalysisSpecToRunnerSpecMapper analysisSpecToRunnerSpecMapper;
+    private final RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper;
     private final RunnerOutputLineParser parser = new RunnerOutputLineParser();
-    private final JsonMapper specWriter = JsonMapper.builder()
+    private final JsonMapper specJsonMapper = JsonMapper.builder()
             .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .build();
     private final DockerClient docker;
@@ -115,8 +115,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
     @Autowired
     @SuppressWarnings("checkstyle:ParameterNumber") // one @Value per runner setting
     DockerRunnerAdapter(
-            AnalysisSpecToRunnerSpecMapper specMapper,
-            RunnerOutputLineToRunEventMapper eventMapper,
+            AnalysisSpecToRunnerSpecMapper analysisSpecToRunnerSpecMapper,
+            RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper,
             @Value("${platform.runner.docker.host}") String host,
             @Value("${platform.runner.docker.image}") String image,
             @Value("${platform.runner.docker.data-mount}") String dataMount,
@@ -128,8 +128,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             @Value("${platform.home}") Path platformHome,
             @Value("${platform.runner.stop-grace-seconds:15}") int stopGraceSeconds) {
         this(
-                specMapper,
-                eventMapper,
+                analysisSpecToRunnerSpecMapper,
+                runnerOutputLineToRunEventMapper,
                 DockerClients.create(host, Duration.ofMinutes(logSilenceMinutes)),
                 image,
                 dataMount,
@@ -143,8 +143,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // the runner settings above, with the Docker client given
     DockerRunnerAdapter(
-            AnalysisSpecToRunnerSpecMapper specMapper,
-            RunnerOutputLineToRunEventMapper eventMapper,
+            AnalysisSpecToRunnerSpecMapper analysisSpecToRunnerSpecMapper,
+            RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper,
             DockerClient docker,
             String image,
             String dataMount,
@@ -154,8 +154,8 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
             long tmpSizeMb,
             Path platformHome,
             int stopGraceSeconds) {
-        this.specMapper = specMapper;
-        this.eventMapper = eventMapper;
+        this.analysisSpecToRunnerSpecMapper = analysisSpecToRunnerSpecMapper;
+        this.runnerOutputLineToRunEventMapper = runnerOutputLineToRunEventMapper;
         this.docker = docker;
         this.image = image;
         this.dataMount = dataMount;
@@ -175,7 +175,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         String specJson;
         try {
             Files.createDirectories(runDir);
-            specJson = specWriter.writeValueAsString(specMapper.map(id, spec));
+            specJson = specJsonMapper.writeValueAsString(analysisSpecToRunnerSpecMapper.map(id, spec));
             // Kept for the record, like the process runner's; the container gets it from the environment.
             Files.writeString(runDir.resolve("spec.json"), specJson);
         } catch (IOException e) {
@@ -506,7 +506,7 @@ class DockerRunnerAdapter implements RunnerPort, DisposableBean {
         @SuppressWarnings("checkstyle:IllegalCatch") // one bad event must not stop the log stream
         private void event(String text) {
             try {
-                Optional<RunEvent> event = parser.parse(text).map(eventMapper::map);
+                Optional<RunEvent> event = parser.parse(text).map(runnerOutputLineToRunEventMapper::map);
                 if (event.isEmpty()) {
                     log.warn("{}: ignoring a runner output line that is not a protocol event", id.value());
                 } else if (event.get().seq() > lastSeq) {

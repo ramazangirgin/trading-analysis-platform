@@ -71,10 +71,10 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
     private static DockerClient docker;
 
     @Autowired
-    private AnalysisSpecToRunnerSpecMapper specMapper;
+    private AnalysisSpecToRunnerSpecMapper analysisSpecToRunnerSpecMapper;
 
     @Autowired
-    private RunnerOutputLineToRunEventMapper eventMapper;
+    private RunnerOutputLineToRunEventMapper runnerOutputLineToRunEventMapper;
 
     @TempDir
     private Path home;
@@ -137,11 +137,11 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
     @Test
     void stopEndsTheRunCleanly() throws Exception {
         RecordingSink sink = new RecordingSink();
-        DockerRunnerAdapter adapter = adapter(home);
-        RunHandle handle = adapter.start(TestAnalyses.newId(), spec("SLOW"), Map.of(), sink);
+        DockerRunnerAdapter dockerRunnerAdapter = adapter(home);
+        RunHandle handle = dockerRunnerAdapter.start(TestAnalyses.newId(), spec("SLOW"), Map.of(), sink);
         sink.awaitEvents(2);
 
-        adapter.stop(handle);
+        dockerRunnerAdapter.stop(handle);
 
         assertThat(sink.awaitExit()).isEqualTo(2);
         assertThat(sink.events.getLast().outcome()).isEqualTo(RunOutcome.STOPPED);
@@ -196,14 +196,26 @@ class DockerRunnerAdapterTest extends AdapterTestSupport {
 
     @Test
     void doesNotFollowContainersThatAreGoneOrBelongToAnotherRun() {
-        DockerRunnerAdapter adapter = adapter(home);
+        DockerRunnerAdapter dockerRunnerAdapter = adapter(home);
 
-        assertThat(adapter.reattach(TestAnalyses.newId(), new RunHandle("0123456789ab"), 0, new RecordingSink()))
+        assertThat(dockerRunnerAdapter.reattach(
+                        TestAnalyses.newId(), new RunHandle("0123456789ab"), 0, new RecordingSink()))
                 .isFalse();
     }
 
     private DockerRunnerAdapter adapter(Path platformHome) {
-        return new DockerRunnerAdapter(specMapper, eventMapper, docker, IMAGE, VOLUME, "", 256, 1, 64, platformHome, 3);
+        return new DockerRunnerAdapter(
+                analysisSpecToRunnerSpecMapper,
+                runnerOutputLineToRunEventMapper,
+                docker,
+                IMAGE,
+                VOLUME,
+                "",
+                256,
+                1,
+                64,
+                platformHome,
+                3);
     }
 
     private static void awaitRemoved(String containerId) throws InterruptedException {
