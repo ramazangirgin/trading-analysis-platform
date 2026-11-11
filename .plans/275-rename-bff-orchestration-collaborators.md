@@ -59,7 +59,7 @@ lifted.
 
 ### WP2: BFF delegates, part 2, and config
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `bff/delegate/impl/RolesApiDelegateImpl.java`,
   `bff/delegate/impl/SettingsApiDelegateImpl.java`, `bff/delegate/impl/UsersApiDelegateImpl.java`,

@@ -35,42 +35,44 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 @Service
 class UsersApiDelegateImpl implements UsersApiDelegate {
 
-    private final ManageUsersPort manageUsers;
-    private final UnlockUserPort unlockUser;
+    private final ManageUsersPort manageUsersPort;
+    private final UnlockUserPort unlockUserPort;
     private final UserSessions userSessions;
-    private final UserAccountToUserDtoMapper userMapper;
+    private final UserAccountToUserDtoMapper userAccountToUserDtoMapper;
 
     UsersApiDelegateImpl(
-            ManageUsersPort manageUsers,
-            UnlockUserPort unlockUser,
+            ManageUsersPort manageUsersPort,
+            UnlockUserPort unlockUserPort,
             UserSessions userSessions,
-            UserAccountToUserDtoMapper userMapper) {
-        this.manageUsers = manageUsers;
-        this.unlockUser = unlockUser;
+            UserAccountToUserDtoMapper userAccountToUserDtoMapper) {
+        this.manageUsersPort = manageUsersPort;
+        this.unlockUserPort = unlockUserPort;
         this.userSessions = userSessions;
-        this.userMapper = userMapper;
+        this.userAccountToUserDtoMapper = userAccountToUserDtoMapper;
     }
 
     @Override
     @RequiresPermission(Permission.USER_READ)
     public List<UserDto> listUsers() {
-        return manageUsers.list().stream().map(userMapper::map).toList();
+        return manageUsersPort.list().stream()
+                .map(userAccountToUserDtoMapper::map)
+                .toList();
     }
 
     @Override
     @RequiresPermission(Permission.USER_READ)
     public UserDto getUser(String id) {
-        return userMapper.map(manageUsers.get(new UserId(id)));
+        return userAccountToUserDtoMapper.map(manageUsersPort.get(new UserId(id)));
     }
 
     @Override
     @RequiresPermission(Permission.USER_MANAGE)
     public ResponseEntity<CreatedUserDto> createUser(CreateUserRequest request) {
         CreatedUserAccount created =
-                manageUsers.create(request.username(), roleIds(request.roleIds()), password(request.password()));
+                manageUsersPort.create(request.username(), roleIds(request.roleIds()), password(request.password()));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreatedUserDto(
-                        userMapper.map(created.account()),
+                        userAccountToUserDtoMapper.map(created.account()),
                         created.generatedPassword().orElse(null)));
     }
 
@@ -85,8 +87,8 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
                     Map.of("fields", List.of("roleIds", "enabled")));
         }
         UserId target = new UserId(id);
-        Set<RoleId> rolesBefore = roleIdsOf(manageUsers.get(target));
-        UserAccount updated = manageUsers.update(
+        Set<RoleId> rolesBefore = roleIdsOf(manageUsersPort.get(target));
+        UserAccount updated = manageUsersPort.update(
                 currentUserId(),
                 target,
                 Optional.ofNullable(request.roleIds()).map(this::roleIds),
@@ -98,14 +100,14 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
             // A session keeps the authorities of its login: end the target's, but not the caller's own.
             userSessions.endAllExcept(target, sessionId(http));
         }
-        return userMapper.map(updated);
+        return userAccountToUserDtoMapper.map(updated);
     }
 
     @Override
     @RequiresPermission(Permission.USER_MANAGE)
     public OneTimePasswordDto resetPassword(String id, ResetPasswordRequest request) {
         UserId target = new UserId(id);
-        Optional<String> generated = manageUsers.resetPassword(target, password(request.password()));
+        Optional<String> generated = manageUsersPort.resetPassword(target, password(request.password()));
         userSessions.endAll(target);
         return new OneTimePasswordDto(generated.orElse(null));
     }
@@ -113,7 +115,7 @@ class UsersApiDelegateImpl implements UsersApiDelegate {
     @Override
     @RequiresPermission(Permission.USER_MANAGE)
     public ResponseEntity<Void> unlock(String id) {
-        unlockUser.unlock(new UserId(id));
+        unlockUserPort.unlock(new UserId(id));
         return ResponseEntity.noContent().build();
     }
 
