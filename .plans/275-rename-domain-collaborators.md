@@ -150,7 +150,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP9: Report adapter and the data dir watch
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/report/adapter/datadir/FileSystemDataDirAdapter.java`,
   `domain/report/adapter/datadir/FileSystemDataDirWatchAdapter.java`,
