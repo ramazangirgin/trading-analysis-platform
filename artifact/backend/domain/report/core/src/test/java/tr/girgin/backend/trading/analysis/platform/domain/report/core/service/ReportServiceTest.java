@@ -117,7 +117,7 @@ class ReportServiceTest {
                     Map.of(),
                     Instant.parse("2026-09-28T12:00:00Z")));
         }
-        ReportService scanning = new ReportService(
+        ReportService scanningReportService = new ReportService(
                 new DataDirPort() {
                     @Override
                     public List<ReportContent> readAll() {
@@ -132,12 +132,12 @@ class ReportServiceTest {
                 new ReportKeyService(),
                 decisionRatingService);
 
-        assertThat(scanning.scan()).extracting(Report::key).containsExactly(GOOG, MU);
+        assertThat(scanningReportService.scan()).extracting(Report::key).containsExactly(GOOG, MU);
     }
 
     @Test
     void anInvalidTickerIsEmptyWithoutReadingTheDataDir() {
-        ReportService guarded = new ReportService(
+        ReportService guardedReportService = new ReportService(
                 new DataDirPort() {
                     @Override
                     public List<ReportContent> readAll() {
@@ -152,7 +152,7 @@ class ReportServiceTest {
                 new ReportKeyService(),
                 decisionRatingService);
 
-        assertThat(guarded.get(new ReportKey("../x", LocalDate.of(2026, 9, 28))))
+        assertThat(guardedReportService.get(new ReportKey("../x", LocalDate.of(2026, 9, 28))))
                 .isEmpty();
     }
 

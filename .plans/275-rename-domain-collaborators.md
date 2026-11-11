@@ -163,7 +163,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP10: Report core and library/mapper
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/report/core/service/PriceHistoryService.java`,
   `domain/report/core/service/ReportService.java`,

@@ -11,13 +11,13 @@ import org.mapstruct.factory.Mappers;
 
 class SharedMapperConfigTest {
 
-    private final SampleToSampleViewMapper mapper = Mappers.getMapper(SampleToSampleViewMapper.class);
+    private final SampleToSampleViewMapper sampleToSampleViewMapper = Mappers.getMapper(SampleToSampleViewMapper.class);
 
     @Test
     void copiesWhatItMapsInsteadOfSharingIt() {
         Sample source = new Sample(new BigDecimal("12.50"), new Part("main"), List.of(new Part("a"), new Part("b")));
 
-        SampleView copy = mapper.map(source);
+        SampleView copy = sampleToSampleViewMapper.map(source);
 
         assertThat(copy.getPart()).isEqualTo(source.getPart()).isNotSameAs(source.getPart());
         assertThat(copy.getParts()).isEqualTo(source.getParts()).isNotSameAs(source.getParts());
@@ -29,7 +29,7 @@ class SharedMapperConfigTest {
     void changingTheCopyLeavesTheSourceAlone() {
         Sample source = new Sample(BigDecimal.ONE, new Part("main"), List.of(new Part("a")));
 
-        mapper.map(source).getPart().setLabel("changed");
+        sampleToSampleViewMapper.map(source).getPart().setLabel("changed");
 
         assertThat(source.getPart().getLabel()).isEqualTo("main");
     }
@@ -38,7 +38,7 @@ class SharedMapperConfigTest {
     void stillAppliesTheBuiltInConversion() {
         Sample source = new Sample(new BigDecimal("12.50"), new Part("main"), List.of());
 
-        assertThat(mapper.map(source).getPrice()).isEqualTo("12.50");
+        assertThat(sampleToSampleViewMapper.map(source).getPrice()).isEqualTo("12.50");
     }
 
     @Mapper(config = SharedMapperConfig.class)
