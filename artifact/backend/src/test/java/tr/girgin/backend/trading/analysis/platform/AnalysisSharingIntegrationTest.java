@@ -73,13 +73,13 @@ class AnalysisSharingIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
-    private AnalysisRepositoryPort analyses;
+    private AnalysisRepositoryPort analysisRepositoryPort;
 
     @Autowired
     private DataSource dataSource;
@@ -102,11 +102,11 @@ class AnalysisSharingIntegrationTest {
                 Statement statement = connection.createStatement()) {
             statement.execute("DELETE FROM \"SETTINGS\".\"ANALYSIS_DEFAULTS\"");
         }
-        analystAName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
-        analystBName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        analystAName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
+        analystBName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
         analystA = loggedInAs(analystAName);
         analystB = loggedInAs(analystBName);
-        admin = loggedInAs(TestSession.createUser(users, hasher, true, RoleId.ADMIN));
+        admin = loggedInAs(TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ADMIN));
     }
 
     @Test
@@ -140,12 +140,17 @@ class AnalysisSharingIntegrationTest {
         analystA = loggedInAs(analystAName);
         OwnerId owner = ownerOf(analystAName);
         AnalysisId running = TestAnalyses.newId();
-        analyses.insert(TestAnalyses.queued(running, spec("SHRB"), owner, Instant.now()));
-        analyses.update(TestAnalyses.running(analyses.findById(running).orElseThrow(), Instant.now(), "ref"));
+        analysisRepositoryPort.insert(TestAnalyses.queued(running, spec("SHRB"), owner, Instant.now()));
+        analysisRepositoryPort.update(
+                TestAnalyses.running(analysisRepositoryPort.findById(running).orElseThrow(), Instant.now(), "ref"));
         AnalysisId failed = TestAnalyses.newId();
-        analyses.insert(TestAnalyses.queued(failed, spec("SHRC"), owner, Instant.now()));
-        analyses.update(TestAnalyses.finished(
-                analyses.findById(failed).orElseThrow(), AnalysisStatus.FAILED, Instant.now(), "boom", "failed"));
+        analysisRepositoryPort.insert(TestAnalyses.queued(failed, spec("SHRC"), owner, Instant.now()));
+        analysisRepositoryPort.update(TestAnalyses.finished(
+                analysisRepositoryPort.findById(failed).orElseThrow(),
+                AnalysisStatus.FAILED,
+                Instant.now(),
+                "boom",
+                "failed"));
 
         for (AnalysisId id : List.of(running, failed)) {
             JsonNode dto = get(analystA, id.value());
@@ -224,8 +229,8 @@ class AnalysisSharingIntegrationTest {
     void anOwnerWhoLostAnalysisShareCanStillTakeItBack() throws Exception {
         String id = startAndAwait(analystA, "SHRF");
         makePublic(id);
-        users.save(TestUsers.withRoleIds(
-                users.findByUsername(new Username(analystAName)).orElseThrow(), Set.of(RoleId.ANALYST)));
+        userRepositoryPort.save(TestUsers.withRoleIds(
+                userRepositoryPort.findByUsername(new Username(analystAName)).orElseThrow(), Set.of(RoleId.ANALYST)));
         analystA = loggedInAs(analystAName);
 
         HttpResponse<String> back = setVisibility(analystA, id, PRIVATE, version(get(analystA, id)));
@@ -298,13 +303,16 @@ class AnalysisSharingIntegrationTest {
     }
 
     private void grantPublisher(String username) {
-        User user = users.findByUsername(new Username(username)).orElseThrow();
-        users.save(TestUsers.withRoleIds(user, Set.of(RoleId.ANALYST, RoleId.PUBLISHER)));
+        User user = userRepositoryPort.findByUsername(new Username(username)).orElseThrow();
+        userRepositoryPort.save(TestUsers.withRoleIds(user, Set.of(RoleId.ANALYST, RoleId.PUBLISHER)));
     }
 
     private OwnerId ownerOf(String username) {
-        return new OwnerId(
-                users.findByUsername(new Username(username)).orElseThrow().id().value());
+        return new OwnerId(userRepositoryPort
+                .findByUsername(new Username(username))
+                .orElseThrow()
+                .id()
+                .value());
     }
 
     private static HttpResponse<String> setVisibility(TestSession client, String id, String visibility, long version)

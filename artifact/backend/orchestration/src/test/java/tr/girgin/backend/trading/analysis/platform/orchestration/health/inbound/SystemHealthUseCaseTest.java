@@ -63,7 +63,7 @@ class SystemHealthUseCaseTest {
 
     @Test
     void aMissingRunnerIsDown() {
-        SystemHealthUseCase service = new SystemHealthUseCase(
+        SystemHealthUseCase systemHealthUseCase = new SystemHealthUseCase(
                 () -> {
                     throw new CatalogUnavailableException("Cannot start ta-runner", null);
                 },
@@ -74,14 +74,14 @@ class SystemHealthUseCaseTest {
                 secrets(List.of()),
                 (_, _, _) -> List.of());
 
-        assertThat(service.checkHealth().checks().getFirst().code()).isEqualTo("runner_unavailable");
+        assertThat(systemHealthUseCase.checkHealth().checks().getFirst().code()).isEqualTo("runner_unavailable");
     }
 
     private static SystemHealthUseCase service(EngineVersion version, List<SecretStatus> secrets, int reports) {
-        GetCatalogPort catalog = () -> CATALOG;
+        GetCatalogPort getCatalogPort = () -> CATALOG;
         return new SystemHealthUseCase(
                 () -> version,
-                catalog,
+                getCatalogPort,
                 () -> java.util.Collections.nCopies(reports, null),
                 secrets(secrets),
                 (_, _, _) -> List.of());

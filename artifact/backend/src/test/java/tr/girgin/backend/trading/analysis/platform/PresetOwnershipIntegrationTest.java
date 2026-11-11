@@ -39,19 +39,19 @@ class PresetOwnershipIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
-    private PresetRepositoryPort presets;
+    private PresetRepositoryPort presetRepositoryPort;
 
     @Autowired
-    private UserDirectoryPort userDirectory;
+    private UserDirectoryPort userDirectoryPort;
 
     @Autowired
-    private AssignPresetOwnersUseCase assignOwners;
+    private AssignPresetOwnersUseCase assignPresetOwnersUseCase;
 
     private String analystAName;
     private String analystBName;
@@ -67,10 +67,10 @@ class PresetOwnershipIntegrationTest {
 
     @BeforeEach
     void logIn() throws Exception {
-        analystAName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
-        analystBName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
-        String adminName = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
-        String viewerName = TestSession.createUser(users, hasher, true, RoleId.VIEWER);
+        analystAName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
+        analystBName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
+        String adminName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ADMIN);
+        String viewerName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.VIEWER);
         analystA = loggedInAs(analystAName);
         analystB = loggedInAs(analystBName);
         admin = loggedInAs(adminName);
@@ -142,12 +142,13 @@ class PresetOwnershipIntegrationTest {
 
     @Test
     void presetsWithoutAnOwnerGoToTheFirstAdmin() throws Exception {
-        PresetId unowned = presets.save(new Preset(
+        PresetId unowned = presetRepositoryPort
+                .save(new Preset(
                         new PresetId(UUID.randomUUID().toString()), "Old", "{\"ticker\":\"NVDA\"}", null, null, null))
                 .id();
-        String firstAdmin = userDirectory.firstAdmin().orElseThrow().value();
+        String firstAdmin = userDirectoryPort.firstAdmin().orElseThrow().value();
 
-        assignOwners.assignUnownedToFirstAdmin();
+        assignPresetOwnersUseCase.assignUnownedToFirstAdmin();
 
         JsonNode all = JSON.readTree(
                 admin.send("GET", "/api/presets?allUsers=true", null).body());

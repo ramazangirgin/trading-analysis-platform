@@ -10,11 +10,11 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.A
 @EnableConfigurationProperties(PreviewSettings.class)
 public class GetAnalysisPreviewUseCase {
 
-    private final GetPartialAnalysisPort getPartialAnalysis;
+    private final GetPartialAnalysisPort getPartialAnalysisPort;
     private final PreviewCutter cutter;
 
-    GetAnalysisPreviewUseCase(GetPartialAnalysisPort getPartialAnalysis, PreviewCutter cutter) {
-        this.getPartialAnalysis = getPartialAnalysis;
+    GetAnalysisPreviewUseCase(GetPartialAnalysisPort getPartialAnalysisPort, PreviewCutter cutter) {
+        this.getPartialAnalysisPort = getPartialAnalysisPort;
         this.cutter = cutter;
     }
 
@@ -23,6 +23,6 @@ public class GetAnalysisPreviewUseCase {
      * not found. A report that is missing gives a preview without sections.
      */
     public AnalysisPreview get(AnalysisId id) {
-        return cutter.preview(getPartialAnalysis.get(id));
+        return cutter.preview(getPartialAnalysisPort.get(id));
     }
 }

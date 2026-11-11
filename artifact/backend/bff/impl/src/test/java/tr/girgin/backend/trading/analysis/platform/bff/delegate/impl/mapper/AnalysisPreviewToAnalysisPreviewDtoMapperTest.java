@@ -16,7 +16,7 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.A
 
 class AnalysisPreviewToAnalysisPreviewDtoMapperTest {
 
-    private final AnalysisPreviewToAnalysisPreviewDtoMapper mapper =
+    private final AnalysisPreviewToAnalysisPreviewDtoMapper analysisPreviewToAnalysisPreviewDtoMapper =
             new AnalysisPreviewToAnalysisPreviewDtoMapperImpl(new ReportSectionToStringMapperImpl());
 
     @Test
@@ -32,7 +32,7 @@ class AnalysisPreviewToAnalysisPreviewDtoMapperTest {
                 sections,
                 List.of("news_report", "fundamentals_report"));
 
-        AnalysisPreviewDto dto = mapper.map(preview);
+        AnalysisPreviewDto dto = analysisPreviewToAnalysisPreviewDtoMapper.map(preview);
 
         assertThat(dto.id()).isEqualTo("a1");
         assertThat(dto.ticker()).isEqualTo("NVDA");
@@ -53,6 +53,7 @@ class AnalysisPreviewToAnalysisPreviewDtoMapperTest {
                 new EnumMap<>(ReportSection.class),
                 List.of());
 
-        assertThat(mapper.map(preview).rating()).isNull();
+        assertThat(analysisPreviewToAnalysisPreviewDtoMapper.map(preview).rating())
+                .isNull();
     }
 }

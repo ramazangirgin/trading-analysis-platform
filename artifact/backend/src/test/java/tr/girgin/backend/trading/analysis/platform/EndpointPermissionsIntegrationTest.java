@@ -61,13 +61,13 @@ class EndpointPermissionsIntegrationTest {
     private int port;
 
     @Autowired
-    private RoleRepositoryPort roles;
+    private RoleRepositoryPort roleRepositoryPort;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
     @Qualifier("requestMappingHandlerMapping")
@@ -82,7 +82,7 @@ class EndpointPermissionsIntegrationTest {
     void aUserWithoutRolesIsRefusedOnEveryEndpointButTheOpenOnes() throws Exception {
         List<Endpoint> endpoints = endpoints();
         assertThat(endpoints).hasSizeGreaterThan(15);
-        TestSession session = TestSession.loggedIn(port, users, hasher);
+        TestSession session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort);
 
         List<String> notRefused = new ArrayList<>();
         for (Endpoint endpoint : endpoints) {
@@ -97,9 +97,9 @@ class EndpointPermissionsIntegrationTest {
     @Test
     void aCustomRoleWithOnlyAnalysisReadGivesExactlyThatAccess() throws Exception {
         RoleId role = new RoleId(UUID.randomUUID().toString());
-        roles.save(new Role(
+        roleRepositoryPort.save(new Role(
                 role, "reader-" + role.value(), false, "reads analyses", Set.of(Permission.ANALYSIS_READ), null));
-        TestSession session = TestSession.loggedIn(port, users, hasher, role);
+        TestSession session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, role);
 
         Set<String> notRefused = new TreeSet<>();
         for (Endpoint endpoint : endpoints()) {
@@ -127,7 +127,7 @@ class EndpointPermissionsIntegrationTest {
 
     @Test
     void anAdminIsRefusedOnNoEndpoint() throws Exception {
-        TestSession session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
 
         List<String> refused = new ArrayList<>();
         for (Endpoint endpoint : endpoints()) {

@@ -52,7 +52,7 @@ class ImportExistingRunsUseCaseTest {
     private final List<ExternalAnalysis> registered = new ArrayList<>();
     private final List<OwnerId> owners = new ArrayList<>();
     private Optional<UserId> firstAdmin = Optional.of(new UserId("admin-1"));
-    private final UserDirectoryPort directory = new UserDirectoryPort() {
+    private final UserDirectoryPort userDirectoryPort = new UserDirectoryPort() {
         @Override
         public Optional<UserId> firstAdmin() {
             return firstAdmin;
@@ -97,7 +97,7 @@ class ImportExistingRunsUseCaseTest {
                     owners.add(owner);
                     return new ExternalRegistration(imported(owner, external), outcome);
                 },
-                directory,
+                userDirectoryPort,
                 NO_WATCH,
                 false,
                 false,
@@ -152,7 +152,7 @@ class ImportExistingRunsUseCaseTest {
                     registered.add(external);
                     return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
                 },
-                directory,
+                userDirectoryPort,
                 NO_WATCH,
                 false,
                 false,
@@ -210,7 +210,7 @@ class ImportExistingRunsUseCaseTest {
                     registered.add(external);
                     return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
                 },
-                directory,
+                userDirectoryPort,
                 NO_WATCH,
                 false,
                 false,
@@ -239,7 +239,7 @@ class ImportExistingRunsUseCaseTest {
                     owners.add(owner);
                     return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
                 },
-                directory,
+                userDirectoryPort,
                 NO_WATCH,
                 false,
                 false,
@@ -279,7 +279,7 @@ class ImportExistingRunsUseCaseTest {
                     registered.add(external);
                     return new ExternalRegistration(imported(owner, external), Outcome.CREATED);
                 },
-                directory,
+                userDirectoryPort,
                 NO_WATCH,
                 false,
                 false,

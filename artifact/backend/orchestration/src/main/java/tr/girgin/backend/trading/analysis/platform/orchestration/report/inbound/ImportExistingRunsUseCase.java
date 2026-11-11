@@ -64,43 +64,44 @@ public class ImportExistingRunsUseCase implements DisposableBean {
             "news", Analyst.NEWS,
             "fundamentals", Analyst.FUNDAMENTALS);
 
-    private final ScanReportsPort scanReports;
-    private final ScanRunHistoryPort scanHistory;
-    private final CheckReportDecisionPort checkReportDecision;
-    private final ValidateExternalAnalysesPort validateExternalAnalyses;
-    private final RegisterExternalAnalysisPort registerExternal;
-    private final UserDirectoryPort userDirectory;
-    private final WatchDataDirPort watchDataDir;
+    private final ScanReportsPort scanReportsPort;
+    private final ScanRunHistoryPort scanRunHistoryPort;
+    private final CheckReportDecisionPort checkReportDecisionPort;
+    private final ValidateExternalAnalysesPort validateExternalAnalysesPort;
+    private final RegisterExternalAnalysisPort registerExternalAnalysisPort;
+    private final UserDirectoryPort userDirectoryPort;
+    private final WatchDataDirPort watchDataDirPort;
     private final boolean importOnStartup;
     private final boolean watch;
     private final Duration settleTime;
     private final Clock clock;
-    private final ScheduledExecutorService followUps = Executors.newSingleThreadScheduledExecutor(
-            Thread.ofVirtual().name("import-follow-up").factory());
+    private final ScheduledExecutorService followUpScheduledExecutorService =
+            Executors.newSingleThreadScheduledExecutor(
+                    Thread.ofVirtual().name("import-follow-up").factory());
     private AutoCloseable watchHandle;
     private ScheduledFuture<?> followUp;
 
     @Autowired
     @SuppressWarnings("checkstyle:ParameterNumber") // the ports and the settings it is built from
     ImportExistingRunsUseCase(
-            ScanReportsPort scanReports,
-            ScanRunHistoryPort scanHistory,
-            CheckReportDecisionPort checkReportDecision,
-            ValidateExternalAnalysesPort validateExternalAnalyses,
-            RegisterExternalAnalysisPort registerExternal,
-            UserDirectoryPort userDirectory,
-            WatchDataDirPort watchDataDir,
+            ScanReportsPort scanReportsPort,
+            ScanRunHistoryPort scanRunHistoryPort,
+            CheckReportDecisionPort checkReportDecisionPort,
+            ValidateExternalAnalysesPort validateExternalAnalysesPort,
+            RegisterExternalAnalysisPort registerExternalAnalysisPort,
+            UserDirectoryPort userDirectoryPort,
+            WatchDataDirPort watchDataDirPort,
             @Value("${platform.import.on-startup:true}") boolean importOnStartup,
             @Value("${platform.import.watch.enabled:true}") boolean watch,
             @Value("${platform.import.settle-minutes:10}") long settleMinutes) {
         this(
-                scanReports,
-                scanHistory,
-                checkReportDecision,
-                validateExternalAnalyses,
-                registerExternal,
-                userDirectory,
-                watchDataDir,
+                scanReportsPort,
+                scanRunHistoryPort,
+                checkReportDecisionPort,
+                validateExternalAnalysesPort,
+                registerExternalAnalysisPort,
+                userDirectoryPort,
+                watchDataDirPort,
                 importOnStartup,
                 watch,
                 Duration.ofMinutes(settleMinutes),
@@ -109,24 +110,24 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // the settings above, with the settle time and clock given
     ImportExistingRunsUseCase(
-            ScanReportsPort scanReports,
-            ScanRunHistoryPort scanHistory,
-            CheckReportDecisionPort checkReportDecision,
-            ValidateExternalAnalysesPort validateExternalAnalyses,
-            RegisterExternalAnalysisPort registerExternal,
-            UserDirectoryPort userDirectory,
-            WatchDataDirPort watchDataDir,
+            ScanReportsPort scanReportsPort,
+            ScanRunHistoryPort scanRunHistoryPort,
+            CheckReportDecisionPort checkReportDecisionPort,
+            ValidateExternalAnalysesPort validateExternalAnalysesPort,
+            RegisterExternalAnalysisPort registerExternalAnalysisPort,
+            UserDirectoryPort userDirectoryPort,
+            WatchDataDirPort watchDataDirPort,
             boolean importOnStartup,
             boolean watch,
             Duration settleTime,
             Clock clock) {
-        this.scanReports = scanReports;
-        this.scanHistory = scanHistory;
-        this.checkReportDecision = checkReportDecision;
-        this.validateExternalAnalyses = validateExternalAnalyses;
-        this.registerExternal = registerExternal;
-        this.userDirectory = userDirectory;
-        this.watchDataDir = watchDataDir;
+        this.scanReportsPort = scanReportsPort;
+        this.scanRunHistoryPort = scanRunHistoryPort;
+        this.checkReportDecisionPort = checkReportDecisionPort;
+        this.validateExternalAnalysesPort = validateExternalAnalysesPort;
+        this.registerExternalAnalysisPort = registerExternalAnalysisPort;
+        this.userDirectoryPort = userDirectoryPort;
+        this.watchDataDirPort = watchDataDirPort;
         this.importOnStartup = importOnStartup;
         this.watch = watch;
         this.settleTime = settleTime;
@@ -153,7 +154,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
     private synchronized void startWatching() {
         if (watchHandle == null) {
             try {
-                watchHandle = watchDataDir.watch(this::importQuietly);
+                watchHandle = watchDataDirPort.watch(this::importQuietly);
             } catch (RuntimeException e) {
                 log.warn("Cannot watch the data dir; new runs show up after a rescan: {}", e.getMessage());
             }
@@ -162,7 +163,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     @Override
     public synchronized void destroy() throws Exception {
-        followUps.shutdownNow();
+        followUpScheduledExecutorService.shutdownNow();
         if (watchHandle != null) {
             watchHandle.close();
             watchHandle = null;
@@ -180,7 +181,7 @@ public class ImportExistingRunsUseCase implements DisposableBean {
 
     /** Registers every run found in the data dir as an EXTERNAL analysis. */
     public synchronized ImportResult importExistingRuns() {
-        List<RunHistoryEntry> history = scanHistory.scan();
+        List<RunHistoryEntry> history = scanRunHistoryPort.scan();
         // Newest first: the first completed run of a ticker and date is the one its files are from.
         Map<ReportKey, RunHistoryEntry> latestCompleted = new HashMap<>();
         history.stream()
@@ -189,8 +190,9 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         List<ExternalAnalysis> externals = new ArrayList<>();
         Instant settledBefore = clock.instant().minus(settleTime);
         Instant lastUnsettled = null;
-        for (Report report : scanReports.scan()) {
-            if (!checkReportDecision.hasDecision(report) && report.modifiedAt().isAfter(settledBefore)) {
+        for (Report report : scanReportsPort.scan()) {
+            if (!checkReportDecisionPort.hasDecision(report)
+                    && report.modifiedAt().isAfter(settledBefore)) {
                 // Likely a run still being written: importing it now would show it as failed.
                 lastUnsettled = max(lastUnsettled, report.modifiedAt());
                 continue;
@@ -206,14 +208,17 @@ public class ImportExistingRunsUseCase implements DisposableBean {
                 .filter(entry -> entry.status() != RunHistoryEntry.Status.COMPLETED)
                 .map(this::fromHistory)
                 .forEach(externals::add);
-        validateExternalAnalyses.validate(externals);
+        validateExternalAnalysesPort.validate(externals);
 
         Map<ExternalRegistration.Outcome, Integer> outcomes = new EnumMap<>(ExternalRegistration.Outcome.class);
         // No platform user started these runs, so they belong to the first admin (none yet on a fresh install).
-        OwnerId owner =
-                userDirectory.firstAdmin().map(id -> new OwnerId(id.value())).orElse(null);
+        OwnerId owner = userDirectoryPort
+                .firstAdmin()
+                .map(id -> new OwnerId(id.value()))
+                .orElse(null);
         for (ExternalAnalysis external : externals) {
-            outcomes.merge(registerExternal.register(external, owner).outcome(), 1, Integer::sum);
+            outcomes.merge(
+                    registerExternalAnalysisPort.register(external, owner).outcome(), 1, Integer::sum);
         }
         ImportResult result = new ImportResult(
                 externals.size(),
@@ -234,7 +239,8 @@ public class ImportExistingRunsUseCase implements DisposableBean {
         }
         long delayMillis = Math.max(0, Duration.between(clock.instant(), at).toMillis()) + 1_000;
         try {
-            followUp = followUps.schedule(this::importQuietly, delayMillis, TimeUnit.MILLISECONDS);
+            followUp =
+                    followUpScheduledExecutorService.schedule(this::importQuietly, delayMillis, TimeUnit.MILLISECONDS);
         } catch (RejectedExecutionException _) {
             // Shutting down.
         }

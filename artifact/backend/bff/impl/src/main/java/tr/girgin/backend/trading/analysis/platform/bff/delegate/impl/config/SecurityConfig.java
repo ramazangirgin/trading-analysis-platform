@@ -50,9 +50,10 @@ public class SecurityConfig {
 
     @Bean
     CsrfTokenRepository csrfTokenRepository() {
-        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookieCustomizer(cookie -> cookie.sameSite("Lax").path("/"));
-        return repository;
+        CookieCsrfTokenRepository cookieCsrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        cookieCsrfTokenRepository.setCookieCustomizer(
+                cookie -> cookie.sameSite("Lax").path("/"));
+        return cookieCsrfTokenRepository;
     }
 
     /** The sessions of each user (the principal is the user ID), kept in memory like the sessions themselves. */
@@ -87,7 +88,7 @@ public class SecurityConfig {
             LoginAttemptLimiter loginAttemptLimiter,
             PublicRequestLimiter publicRequestLimiter,
             SessionAuthorities sessionAuthorities,
-            AuthenticatePort authentication,
+            AuthenticatePort authenticatePort,
             JsonMapper jsonMapper)
             throws Exception {
         ApiErrorWriter writer = new ApiErrorWriter(jsonMapper);
@@ -108,7 +109,8 @@ public class SecurityConfig {
                 .addFilterBefore(new PublicRateLimitFilter(publicRequestLimiter, writer), CsrfFilter.class)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .addFilterBefore(
-                        new RoleAuthoritiesRefreshFilter(sessionAuthorities, authentication, securityContextRepository),
+                        new RoleAuthoritiesRefreshFilter(
+                                sessionAuthorities, authenticatePort, securityContextRepository),
                         AuthorizationFilter.class)
                 .addFilterAfter(new PasswordChangeRequiredFilter(writer), AuthorizationFilter.class)
                 .authorizeHttpRequests(this::authorizeApi);

@@ -11,18 +11,20 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.report.inbound.
 @Service
 class ReportsApiDelegateImpl implements ReportsApiDelegate {
 
-    private final ImportExistingRunsUseCase importExistingRuns;
-    private final ImportResultToImportResultDtoMapper mapper;
+    private final ImportExistingRunsUseCase importExistingRunsUseCase;
+    private final ImportResultToImportResultDtoMapper importResultToImportResultDtoMapper;
 
-    ReportsApiDelegateImpl(ImportExistingRunsUseCase importExistingRuns, ImportResultToImportResultDtoMapper mapper) {
-        this.importExistingRuns = importExistingRuns;
-        this.mapper = mapper;
+    ReportsApiDelegateImpl(
+            ImportExistingRunsUseCase importExistingRunsUseCase,
+            ImportResultToImportResultDtoMapper importResultToImportResultDtoMapper) {
+        this.importExistingRunsUseCase = importExistingRunsUseCase;
+        this.importResultToImportResultDtoMapper = importResultToImportResultDtoMapper;
     }
 
     @Override
     // It creates and updates analyses from the data folder, as runs do.
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ImportResultDto rescan() {
-        return mapper.map(importExistingRuns.importExistingRuns());
+        return importResultToImportResultDtoMapper.map(importExistingRunsUseCase.importExistingRuns());
     }
 }

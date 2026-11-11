@@ -11,12 +11,13 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.exceptio
 
 class AnalysisExceptionToApiExceptionMapperTest {
 
-    private final AnalysisExceptionToApiExceptionMapper mapper = new AnalysisExceptionToApiExceptionMapperImpl();
+    private final AnalysisExceptionToApiExceptionMapper analysisExceptionToApiExceptionMapper =
+            new AnalysisExceptionToApiExceptionMapperImpl();
 
     @Test
     void mapsAConcurrentUpdateToConflict() {
-        ApiException mapped =
-                mapper.map(new AnalysisException(AnalysisError.CONCURRENT_UPDATE, "changed", Map.of("id", "a1")));
+        ApiException mapped = analysisExceptionToApiExceptionMapper.map(
+                new AnalysisException(AnalysisError.CONCURRENT_UPDATE, "changed", Map.of("id", "a1")));
 
         assertThat(mapped.status()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(mapped.errorCode()).isEqualTo("concurrent_update");
@@ -25,7 +26,8 @@ class AnalysisExceptionToApiExceptionMapperTest {
 
     @Test
     void mapsAMissingSharePermissionToForbiddenWithAnAnalysisPrefix() {
-        ApiException mapped = mapper.map(new AnalysisException(AnalysisError.SHARE_FORBIDDEN, "no", Map.of()));
+        ApiException mapped = analysisExceptionToApiExceptionMapper.map(
+                new AnalysisException(AnalysisError.SHARE_FORBIDDEN, "no", Map.of()));
 
         assertThat(mapped.status()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(mapped.errorCode()).isEqualTo("analysis_share_forbidden");
@@ -33,8 +35,8 @@ class AnalysisExceptionToApiExceptionMapperTest {
 
     @Test
     void mapsAnAnalysisThatCannotBeSharedToConflictWithItsStatus() {
-        ApiException mapped =
-                mapper.map(new AnalysisException(AnalysisError.NOT_SHAREABLE, "running", Map.of("status", "RUNNING")));
+        ApiException mapped = analysisExceptionToApiExceptionMapper.map(
+                new AnalysisException(AnalysisError.NOT_SHAREABLE, "running", Map.of("status", "RUNNING")));
 
         assertThat(mapped.status()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(mapped.errorCode()).isEqualTo("analysis_not_shareable");

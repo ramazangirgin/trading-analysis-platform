@@ -46,13 +46,13 @@ class LoginLockoutIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private RoleRepositoryPort roles;
+    private RoleRepositoryPort roleRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
     private MutableTestClock clock;
@@ -77,10 +77,10 @@ class LoginLockoutIntegrationTest {
 
     private String createAdmin() {
         String username = "admin-" + UUID.randomUUID();
-        users.save(new User(
+        userRepositoryPort.save(new User(
                 new UserId(UUID.randomUUID().toString()),
                 new Username(username),
-                hasher.hash(TestSession.PASSWORD),
+                passwordHasherPort.hash(TestSession.PASSWORD),
                 true,
                 false,
                 0,
@@ -88,7 +88,7 @@ class LoginLockoutIntegrationTest {
                 Optional.empty(),
                 null,
                 null,
-                Set.of(roles.findByName("ADMIN").orElseThrow().id()),
+                Set.of(roleRepositoryPort.findByName("ADMIN").orElseThrow().id()),
                 null));
         return username;
     }
@@ -108,7 +108,7 @@ class LoginLockoutIntegrationTest {
 
     @Test
     void aLockedAccountFailsLikeAWrongPasswordEvenWithTheRightOne() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
         HttpResponse<String> wrong = TestSession.anonymous(port).login(username, "not the password");
         failLoginsOf(username, MAX_FAILED - 1);
 
@@ -117,27 +117,30 @@ class LoginLockoutIntegrationTest {
         assertThat(locked.statusCode()).isEqualTo(401);
         assertThat(errorCode(locked)).isEqualTo("bad_credentials");
         assertThat(locked.body()).isEqualTo(wrong.body());
-        assertThat(users.findByUsername(new Username(username)).orElseThrow().lockedUntil())
+        assertThat(userRepositoryPort
+                        .findByUsername(new Username(username))
+                        .orElseThrow()
+                        .lockedUntil())
                 .isPresent();
     }
 
     @Test
     void theRightPasswordWorksAgainWhenTheLockExpires() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
         failLoginsOf(username, MAX_FAILED);
         assertThat(loginWithTheRightPassword(username).statusCode()).isEqualTo(401);
 
         clock.advance(Duration.ofMinutes(15).plusSeconds(1));
 
         assertThat(loginWithTheRightPassword(username).statusCode()).isEqualTo(200);
-        User user = users.findByUsername(new Username(username)).orElseThrow();
+        User user = userRepositoryPort.findByUsername(new Username(username)).orElseThrow();
         assertThat(user.failedLoginCount()).isZero();
         assertThat(user.lockedUntil()).isEmpty();
     }
 
     @Test
     void aSuccessResetsTheCount() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
         failLoginsOf(username, MAX_FAILED - 1);
         assertThat(loginWithTheRightPassword(username).statusCode()).isEqualTo(200);
 
@@ -148,14 +151,17 @@ class LoginLockoutIntegrationTest {
 
     @Test
     void anAdminUnlocksAnAccountEarly() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
         failLoginsOf(username, MAX_FAILED);
         assertThat(loginWithTheRightPassword(username).statusCode()).isEqualTo(401);
         TestSession admin = TestSession.anonymous(port);
         assertThat(admin.login(createAdmin(), TestSession.PASSWORD).statusCode())
                 .isEqualTo(200);
-        String id =
-                users.findByUsername(new Username(username)).orElseThrow().id().value();
+        String id = userRepositoryPort
+                .findByUsername(new Username(username))
+                .orElseThrow()
+                .id()
+                .value();
 
         assertThat(admin.send("POST", "/api/users/" + id + "/unlock", null).statusCode())
                 .isEqualTo(204);
@@ -174,8 +180,8 @@ class LoginLockoutIntegrationTest {
         assertThat(anonymous.statusCode()).isEqualTo(401);
         assertThat(errorCode(anonymous)).isEqualTo("unauthorized");
 
-        HttpResponse<String> forbidden =
-                TestSession.loggedIn(port, users, hasher).send("POST", "/api/users/" + id + "/unlock", null);
+        HttpResponse<String> forbidden = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort)
+                .send("POST", "/api/users/" + id + "/unlock", null);
         assertThat(forbidden.statusCode()).isEqualTo(403);
         assertThat(errorCode(forbidden)).isEqualTo("forbidden");
     }
@@ -194,7 +200,7 @@ class LoginLockoutIntegrationTest {
 
     @Test
     void anAddressWithTooManyFailedLoginsGets429EvenForAnAccountThatIsNotLocked() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
         for (int i = 0; i < IP_MAX_FAILED; i++) {
             assertThat(TestSession.anonymous(port)
                             .login("nobody-" + i, "not the password")
@@ -208,7 +214,10 @@ class LoginLockoutIntegrationTest {
         assertThat(errorCode(blocked)).isEqualTo("too_many_login_attempts");
         assertThat(Long.parseLong(blocked.headers().firstValue("Retry-After").orElseThrow()))
                 .isBetween(1L, 300L);
-        assertThat(users.findByUsername(new Username(username)).orElseThrow().failedLoginCount())
+        assertThat(userRepositoryPort
+                        .findByUsername(new Username(username))
+                        .orElseThrow()
+                        .failedLoginCount())
                 .isZero();
 
         clock.advance(Duration.ofMinutes(5).plusSeconds(1));
@@ -218,7 +227,7 @@ class LoginLockoutIntegrationTest {
 
     @Test
     void behindTheProxyTheLimitCountsTheForwardedClientAndNotTheProxy() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
         for (int i = 0; i < IP_MAX_FAILED; i++) {
             assertThat(TestSession.anonymous(port)
                             .withHeader("X-Forwarded-For", "203.0.113.1")

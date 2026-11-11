@@ -72,12 +72,12 @@ class LoginAttemptLimiterTest {
     @Test
     void concurrentAttemptsLetExactlyTheLimitThrough() throws Exception {
         int attempts = 50;
-        ExecutorService executor = Executors.newFixedThreadPool(attempts);
+        ExecutorService executorService = Executors.newFixedThreadPool(attempts);
         try {
             CountDownLatch start = new CountDownLatch(1);
             List<Future<Boolean>> results = new ArrayList<>();
             for (int i = 0; i < attempts; i++) {
-                results.add(executor.submit(() -> {
+                results.add(executorService.submit(() -> {
                     start.await();
                     return limiter.tryAcquire("10.0.0.1").isEmpty();
                 }));
@@ -92,7 +92,7 @@ class LoginAttemptLimiterTest {
 
             assertThat(allowed).isEqualTo(3);
         } finally {
-            executor.shutdownNow();
+            executorService.shutdownNow();
         }
     }
 

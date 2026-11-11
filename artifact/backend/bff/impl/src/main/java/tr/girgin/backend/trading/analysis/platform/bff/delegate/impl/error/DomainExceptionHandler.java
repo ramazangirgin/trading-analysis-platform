@@ -19,41 +19,41 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exceptio
 public class DomainExceptionHandler {
 
     private final ApiExceptionHandler apiErrors;
-    private final AnalysisExceptionToApiExceptionMapper analysisErrors;
-    private final CatalogExceptionToApiExceptionMapper catalogErrors;
-    private final IdentityExceptionToApiExceptionMapper identityErrors;
-    private final SettingsExceptionToApiExceptionMapper settingsErrors;
+    private final AnalysisExceptionToApiExceptionMapper analysisExceptionToApiExceptionMapper;
+    private final CatalogExceptionToApiExceptionMapper catalogExceptionToApiExceptionMapper;
+    private final IdentityExceptionToApiExceptionMapper identityExceptionToApiExceptionMapper;
+    private final SettingsExceptionToApiExceptionMapper settingsExceptionToApiExceptionMapper;
 
     DomainExceptionHandler(
             ApiExceptionHandler apiErrors,
-            AnalysisExceptionToApiExceptionMapper analysisErrors,
-            CatalogExceptionToApiExceptionMapper catalogErrors,
-            IdentityExceptionToApiExceptionMapper identityErrors,
-            SettingsExceptionToApiExceptionMapper settingsErrors) {
+            AnalysisExceptionToApiExceptionMapper analysisExceptionToApiExceptionMapper,
+            CatalogExceptionToApiExceptionMapper catalogExceptionToApiExceptionMapper,
+            IdentityExceptionToApiExceptionMapper identityExceptionToApiExceptionMapper,
+            SettingsExceptionToApiExceptionMapper settingsExceptionToApiExceptionMapper) {
         this.apiErrors = apiErrors;
-        this.analysisErrors = analysisErrors;
-        this.catalogErrors = catalogErrors;
-        this.identityErrors = identityErrors;
-        this.settingsErrors = settingsErrors;
+        this.analysisExceptionToApiExceptionMapper = analysisExceptionToApiExceptionMapper;
+        this.catalogExceptionToApiExceptionMapper = catalogExceptionToApiExceptionMapper;
+        this.identityExceptionToApiExceptionMapper = identityExceptionToApiExceptionMapper;
+        this.settingsExceptionToApiExceptionMapper = settingsExceptionToApiExceptionMapper;
     }
 
     @ExceptionHandler(AnalysisException.class)
     public ResponseEntity<ApiErrorDto> handleAnalysisException(AnalysisException ex) {
-        return apiErrors.response(analysisErrors.map(ex));
+        return apiErrors.response(analysisExceptionToApiExceptionMapper.map(ex));
     }
 
     @ExceptionHandler(CatalogUnavailableException.class)
     public ResponseEntity<ApiErrorDto> handleCatalogUnavailable(CatalogUnavailableException ex) {
-        return apiErrors.response(catalogErrors.map(ex));
+        return apiErrors.response(catalogExceptionToApiExceptionMapper.map(ex));
     }
 
     @ExceptionHandler(IdentityException.class)
     public ResponseEntity<ApiErrorDto> handleIdentityException(IdentityException ex) {
-        return apiErrors.response(identityErrors.map(ex));
+        return apiErrors.response(identityExceptionToApiExceptionMapper.map(ex));
     }
 
     @ExceptionHandler(SettingsException.class)
     public ResponseEntity<ApiErrorDto> handleSettingsException(SettingsException ex) {
-        return apiErrors.response(settingsErrors.map(ex));
+        return apiErrors.response(settingsExceptionToApiExceptionMapper.map(ex));
     }
 }

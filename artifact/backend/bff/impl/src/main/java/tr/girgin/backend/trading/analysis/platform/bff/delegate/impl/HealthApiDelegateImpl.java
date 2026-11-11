@@ -11,18 +11,20 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.health.inbound.
 @Service
 class HealthApiDelegateImpl implements HealthApiDelegate {
 
-    private final SystemHealthUseCase systemHealth;
-    private final SystemHealthToSystemHealthDtoMapper mapper;
+    private final SystemHealthUseCase systemHealthUseCase;
+    private final SystemHealthToSystemHealthDtoMapper systemHealthToSystemHealthDtoMapper;
 
-    HealthApiDelegateImpl(SystemHealthUseCase systemHealth, SystemHealthToSystemHealthDtoMapper mapper) {
-        this.systemHealth = systemHealth;
-        this.mapper = mapper;
+    HealthApiDelegateImpl(
+            SystemHealthUseCase systemHealthUseCase,
+            SystemHealthToSystemHealthDtoMapper systemHealthToSystemHealthDtoMapper) {
+        this.systemHealthUseCase = systemHealthUseCase;
+        this.systemHealthToSystemHealthDtoMapper = systemHealthToSystemHealthDtoMapper;
     }
 
     @Override
     // Its alerts are about running (runner, Docker, missing keys).
     @RequiresPermission({Permission.ANALYSIS_RUN, Permission.SETTINGS_READ})
     public SystemHealthDto getHealth() {
-        return mapper.map(systemHealth.checkHealth());
+        return systemHealthToSystemHealthDtoMapper.map(systemHealthUseCase.checkHealth());
     }
 }

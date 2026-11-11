@@ -34,10 +34,10 @@ class RolePermissionsIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -46,7 +46,7 @@ class RolePermissionsIntegrationTest {
 
     @Test
     void aViewerIsRefusedEverythingButReadingAnalysesAndPresets() throws Exception {
-        TestSession viewer = TestSession.loggedIn(port, users, hasher, RoleId.VIEWER);
+        TestSession viewer = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.VIEWER);
         String id = UUID.randomUUID().toString();
 
         List<String[]> refused = List.of(
@@ -79,7 +79,7 @@ class RolePermissionsIntegrationTest {
 
     @Test
     void anAnalystRunsAnalysesButWritesNoKeysAndUnlocksNobody() throws Exception {
-        TestSession analyst = TestSession.loggedIn(port, users, hasher, RoleId.ANALYST);
+        TestSession analyst = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ANALYST);
         String id = UUID.randomUUID().toString();
 
         for (String[] request : List.of(
@@ -129,14 +129,15 @@ class RolePermissionsIntegrationTest {
     void aPublisherHoldsOnlyAnalysisShareAndAnAnalystWithPublisherHoldsBoth() throws Exception {
         assertThat(me(RoleId.PUBLISHER, "PUBLISHER")).containsExactly("analysis:share");
 
-        TestSession both = TestSession.loggedIn(port, users, hasher, RoleId.ANALYST, RoleId.PUBLISHER);
+        TestSession both =
+                TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ANALYST, RoleId.PUBLISHER);
         JsonNode me = JSON.readTree(both.send("GET", "/api/auth/me", null).body());
         assertThat(me.get("permissions").valueStream().map(JsonNode::asString))
                 .contains("analysis:share", "analysis:run", "analysis:read");
     }
 
     private List<String> me(RoleId role, String roleName) throws Exception {
-        TestSession session = TestSession.loggedIn(port, users, hasher, role);
+        TestSession session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, role);
         JsonNode me = JSON.readTree(session.send("GET", "/api/auth/me", null).body());
         assertThat(me.get("roles")).extracting(JsonNode::asString).containsExactly(roleName);
         return me.get("permissions").valueStream().map(JsonNode::asString).toList();

@@ -16,20 +16,20 @@ public class AssignPresetOwnersUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(AssignPresetOwnersUseCase.class);
 
-    private final UserDirectoryPort userDirectory;
-    private final AssignUnownedPresetsPort assignUnowned;
+    private final UserDirectoryPort userDirectoryPort;
+    private final AssignUnownedPresetsPort assignUnownedPresetsPort;
 
-    AssignPresetOwnersUseCase(UserDirectoryPort userDirectory, AssignUnownedPresetsPort assignUnowned) {
-        this.userDirectory = userDirectory;
-        this.assignUnowned = assignUnowned;
+    AssignPresetOwnersUseCase(UserDirectoryPort userDirectoryPort, AssignUnownedPresetsPort assignUnownedPresetsPort) {
+        this.userDirectoryPort = userDirectoryPort;
+        this.assignUnownedPresetsPort = assignUnownedPresetsPort;
     }
 
     /** Gives every preset without an owner to the first admin; does nothing while there is none. */
     @EventListener(ApplicationReadyEvent.class)
     public void assignUnownedToFirstAdmin() {
-        userDirectory.firstAdmin().ifPresent(admin -> {
+        userDirectoryPort.firstAdmin().ifPresent(admin -> {
             try {
-                int assigned = assignUnowned.assignUnowned(new OwnerId(admin.value()));
+                int assigned = assignUnownedPresetsPort.assignUnowned(new OwnerId(admin.value()));
                 if (assigned > 0) {
                     log.info("Gave {} presets without an owner to the first admin", assigned);
                 }

@@ -53,19 +53,22 @@ class StartAnalysisWithDefaultsUseCaseTest {
 
     private final List<AnalysisSpec> started = new ArrayList<>();
     private int catalogCalls;
-    private final GetCatalogPort catalog = () -> {
+    private final GetCatalogPort getCatalogPort = () -> {
         catalogCalls++;
         return CATALOG;
     };
-    private final StartAnalysisWithDefaultsUseCase service = new StartAnalysisWithDefaultsUseCase(
-            new ManageAnalysisDefaultsUseCase(new StoredDefaults(), catalog), catalog, (spec, owner) -> {
-                started.add(spec);
-                return TestAnalyses.queued(new AnalysisId("r_1"), spec, owner, Instant.EPOCH);
-            });
+    private final StartAnalysisWithDefaultsUseCase startAnalysisWithDefaultsUseCase =
+            new StartAnalysisWithDefaultsUseCase(
+                    new ManageAnalysisDefaultsUseCase(new StoredDefaults(), getCatalogPort),
+                    getCatalogPort,
+                    (spec, owner) -> {
+                        started.add(spec);
+                        return TestAnalyses.queued(new AnalysisId("r_1"), spec, owner, Instant.EPOCH);
+                    });
 
     @Test
     void usesThePlatformValuesWhenNothingIsSent() {
-        service.start(requested(null, null, null, null, null), OWNER, false);
+        startAnalysisWithDefaultsUseCase.start(requested(null, null, null, null, null), OWNER, false);
 
         assertThat(started).singleElement().satisfies(spec -> {
             assertThat(spec.llmProvider()).isEqualTo("openai");
@@ -82,7 +85,7 @@ class StartAnalysisWithDefaultsUseCaseTest {
 
     @Test
     void acceptsExactlyThePlatformValuesWithoutThePermission() {
-        service.start(requested("openai", "gpt-deep", "gpt-quick", 3, 2), OWNER, false);
+        startAnalysisWithDefaultsUseCase.start(requested("openai", "gpt-deep", "gpt-quick", 3, 2), OWNER, false);
 
         assertThat(started).hasSize(1);
         assertThat(catalogCalls).isZero();
@@ -90,7 +93,8 @@ class StartAnalysisWithDefaultsUseCaseTest {
 
     @Test
     void refusesADifferingValueWithoutThePermissionAndStartsNothing() {
-        assertThatThrownBy(() -> service.start(requested(null, null, null, 4, null), OWNER, false))
+        assertThatThrownBy(() ->
+                        startAnalysisWithDefaultsUseCase.start(requested(null, null, null, 4, null), OWNER, false))
                 .isInstanceOfSatisfying(AnalysisException.class, e -> {
                     assertThat(e.error()).isEqualTo(AnalysisError.OVERRIDE_FORBIDDEN);
                     assertThat(e.params()).isEqualTo(Map.of("field", "maxDebateRounds"));
@@ -101,17 +105,19 @@ class StartAnalysisWithDefaultsUseCaseTest {
 
     @Test
     void namesTheFirstDifferingField() {
-        assertThatThrownBy(() -> service.start(requested("ollama", "x", null, null, 5), OWNER, false))
+        assertThatThrownBy(() ->
+                        startAnalysisWithDefaultsUseCase.start(requested("ollama", "x", null, null, 5), OWNER, false))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.params()).containsEntry("field", "llmProvider"));
-        assertThatThrownBy(() -> service.start(requested(null, null, "gpt-fast", null, 5), OWNER, false))
+        assertThatThrownBy(() -> startAnalysisWithDefaultsUseCase.start(
+                        requested(null, null, "gpt-fast", null, 5), OWNER, false))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.params()).containsEntry("field", "quickThinkLlm"));
     }
 
     @Test
     void mergesOverridesWithThePlatformValuesForTheRest() {
-        service.start(requested(null, "gpt-big", null, 5, null), OWNER, true);
+        startAnalysisWithDefaultsUseCase.start(requested(null, "gpt-big", null, 5, null), OWNER, true);
 
         assertThat(started).singleElement().satisfies(spec -> {
             assertThat(spec.llmProvider()).isEqualTo("openai");
@@ -133,7 +139,7 @@ class StartAnalysisWithDefaultsUseCaseTest {
 
     @Test
     void acceptsAnyModelIdForAProviderWithCustomModels() {
-        service.start(requested("ollama", "my-deep", "my-quick", null, null), OWNER, true);
+        startAnalysisWithDefaultsUseCase.start(requested("ollama", "my-deep", "my-quick", null, null), OWNER, true);
 
         assertThat(started).singleElement().satisfies(spec -> {
             assertThat(spec.llmProvider()).isEqualTo("ollama");
@@ -143,13 +149,13 @@ class StartAnalysisWithDefaultsUseCaseTest {
 
     @Test
     void doesNotAskTheCatalogForRoundsOnly() {
-        service.start(requested(null, null, null, 4, null), OWNER, true);
+        startAnalysisWithDefaultsUseCase.start(requested(null, null, null, 4, null), OWNER, true);
 
         assertThat(catalogCalls).isZero();
     }
 
     private void assertInvalid(RequestedAnalysis requested, String field) {
-        assertThatThrownBy(() -> service.start(requested, OWNER, true))
+        assertThatThrownBy(() -> startAnalysisWithDefaultsUseCase.start(requested, OWNER, true))
                 .isInstanceOfSatisfying(AnalysisException.class, e -> {
                     assertThat(e.error()).isEqualTo(AnalysisError.INVALID_SPEC);
                     assertThat(e.params()).isEqualTo(Map.of("field", field));

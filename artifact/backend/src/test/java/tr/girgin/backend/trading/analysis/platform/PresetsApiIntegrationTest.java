@@ -31,16 +31,16 @@ class PresetsApiIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     private TestSession session;
 
     @BeforeEach
     void logIn() throws Exception {
-        session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
     }
 
     @DynamicPropertySource

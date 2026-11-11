@@ -178,13 +178,10 @@ class ArchitectureTest {
 
 The check's name comes after `checkstyle:` (the name in the report, without `Check`). There is no
 central suppressions file, so each exception is visible where it applies and is reviewed with the
-code around it. Seven settings in `checkstyle.xml` limit where a check applies. They are not
+code around it. Six settings in `checkstyle.xml` limit where a check applies. They are not
 suppressions:
 
 - `MissingJavadocType` applies to `core/inbound` and `core/outbound` only (`SuppressionSingleFilter`).
-- `TAP-D9` is temporarily off in `bff/impl`, `orchestration` and the
-  application's tests, where the existing names are renamed step by step (`SuppressionSingleFilter`);
-  the filter goes away with #275.
 - `TAP-D7` applies to main sources only (`SuppressionSingleFilter`).
 - `TAP-D8` applies to the main sources of `bff/api` only (`SuppressionSingleFilter`).
 - `TAP-M2` applies to main sources only (`SuppressionSingleFilter`).

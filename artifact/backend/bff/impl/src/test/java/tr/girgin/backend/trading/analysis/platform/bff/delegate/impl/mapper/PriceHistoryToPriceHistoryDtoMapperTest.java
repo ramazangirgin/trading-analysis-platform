@@ -13,7 +13,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 
 class PriceHistoryToPriceHistoryDtoMapperTest {
 
-    private final PriceHistoryToPriceHistoryDtoMapper mapper = new PriceHistoryToPriceHistoryDtoMapperImpl();
+    private final PriceHistoryToPriceHistoryDtoMapper priceHistoryToPriceHistoryDtoMapper =
+            new PriceHistoryToPriceHistoryDtoMapperImpl();
 
     @Test
     void mapsTickerTradeDateAndPointsInOrder() {
@@ -24,7 +25,7 @@ class PriceHistoryToPriceHistoryDtoMapperTest {
                         new PricePoint(LocalDate.of(2026, 2, 27), 10.5, 1000L, 10.1, 9.9, 9.5),
                         new PricePoint(LocalDate.of(2026, 3, 2), 11.5, 2000L, 10.6, 10.0, 9.6)));
 
-        PriceHistoryDto dto = mapper.map(history);
+        PriceHistoryDto dto = priceHistoryToPriceHistoryDtoMapper.map(history);
 
         assertThat(dto.ticker()).isEqualTo("NVDA");
         assertThat(dto.tradeDate()).isEqualTo(tradeDate);

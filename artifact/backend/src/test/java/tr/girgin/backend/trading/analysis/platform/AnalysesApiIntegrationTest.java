@@ -73,10 +73,10 @@ class AnalysesApiIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
     private DataSource dataSource;
@@ -89,7 +89,7 @@ class AnalysesApiIntegrationTest {
                 Statement statement = connection.createStatement()) {
             statement.execute("DELETE FROM \"SETTINGS\".\"ANALYSIS_DEFAULTS\"");
         }
-        session = TestSession.loggedIn(port, users, hasher, RoleId.ANALYST);
+        session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ANALYST);
     }
 
     @DynamicPropertySource
@@ -203,7 +203,7 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void loggingOutClosesTheOpenStreamWithoutAnEndEvent() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
         session = loggedInAs(username);
         String id = JSON.readTree(post("/api/analyses", request("SLOW")).body())
                 .get("id")
@@ -231,7 +231,7 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void aPasswordChangeClosesTheOtherSessionsStreamAndKeepsThisSessions() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
         TestSession first = loggedInAs(username);
         TestSession second = loggedInAs(username);
         String id = JSON.readTree(
@@ -261,7 +261,7 @@ class AnalysesApiIntegrationTest {
 
     @Test
     void loggingOutAfterAPasswordChangeClosesTheStreamThatMovedToTheNewSessionId() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
         TestSession first = loggedInAs(username);
         String id = JSON.readTree(
                         first.send("POST", "/api/analyses", request("SLOW")).body())
@@ -337,7 +337,7 @@ class AnalysesApiIntegrationTest {
     @Test
     void importsRunsFoundInTheDataDirAndServesTheirReport() throws Exception {
         // Imported runs belong to the first admin: only a user who reads every analysis sees them.
-        session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         HttpResponse<String> rescan = post("/api/reports/rescan", "");
 
         assertThat(rescan.statusCode()).isEqualTo(200);
@@ -376,7 +376,7 @@ class AnalysesApiIntegrationTest {
     @Test
     void managesSecretsWithoutEverReturningThem() throws Exception {
         // Writing keys is an admin permission: the analyst of the other tests does not have it.
-        session = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        session = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         HttpResponse<String> set = put("/api/secrets/OPENAI_API_KEY", "{\"value\":\"sk-test-secret-9876\"}");
         HttpResponse<String> forbidden = put("/api/secrets/PATH", "{\"value\":\"/tmp\"}");
 

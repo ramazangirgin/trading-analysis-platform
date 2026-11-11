@@ -11,7 +11,8 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.exceptio
 
 class IdentityExceptionToApiExceptionMapperTest {
 
-    private final IdentityExceptionToApiExceptionMapper mapper = new IdentityExceptionToApiExceptionMapperImpl();
+    private final IdentityExceptionToApiExceptionMapper identityExceptionToApiExceptionMapper =
+            new IdentityExceptionToApiExceptionMapperImpl();
 
     @ParameterizedTest
     @CsvSource({
@@ -30,7 +31,8 @@ class IdentityExceptionToApiExceptionMapperTest {
         "UNKNOWN_PERMISSION, 500, unknown_permission"
     })
     void mapsEveryErrorCodeToItsStatusAndErrorCode(IdentityError error, int status, String errorCode) {
-        ApiException mapped = mapper.map(new IdentityException(error, "failed", Map.of("k", "v")));
+        ApiException mapped =
+                identityExceptionToApiExceptionMapper.map(new IdentityException(error, "failed", Map.of("k", "v")));
 
         assertThat(mapped.status().value()).isEqualTo(status);
         assertThat(mapped.errorCode()).isEqualTo(errorCode);

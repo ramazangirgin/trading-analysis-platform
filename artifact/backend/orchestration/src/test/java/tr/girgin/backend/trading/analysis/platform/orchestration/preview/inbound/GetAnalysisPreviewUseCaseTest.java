@@ -53,7 +53,7 @@ class GetAnalysisPreviewUseCaseTest {
                     Instant.parse("2026-09-25T10:00:00Z")),
             Rating.BUY,
             "Buy it");
-    private final GetPartialAnalysisPort getPartial = id -> {
+    private final GetPartialAnalysisPort getPartialAnalysisPort = id -> {
         if (!id.equals(analysis.id())) {
             throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of());
         }
@@ -71,8 +71,9 @@ class GetAnalysisPreviewUseCaseTest {
             Instant.parse("2026-09-25T11:00:00Z")));
 
     private AnalysisPreview preview(PreviewSettings settings) {
-        GetReportPort getReport = key -> key.equals(KEY) ? report : Optional.empty();
-        return new GetAnalysisPreviewUseCase(getPartial, new PreviewCutter(getReport, settings)).get(analysis.id());
+        GetReportPort getReportPort = key -> key.equals(KEY) ? report : Optional.empty();
+        return new GetAnalysisPreviewUseCase(getPartialAnalysisPort, new PreviewCutter(getReportPort, settings))
+                .get(analysis.id());
     }
 
     @Test
@@ -144,10 +145,10 @@ class GetAnalysisPreviewUseCaseTest {
 
     @Test
     void anAnalysisThatIsNotPartialIsNotFound() {
-        GetAnalysisPreviewUseCase useCase =
-                new GetAnalysisPreviewUseCase(getPartial, new PreviewCutter(_ -> report, DEFAULTS));
+        GetAnalysisPreviewUseCase getAnalysisPreviewUseCase =
+                new GetAnalysisPreviewUseCase(getPartialAnalysisPort, new PreviewCutter(_ -> report, DEFAULTS));
 
-        assertThatThrownBy(() -> useCase.get(TestAnalyses.newId()))
+        assertThatThrownBy(() -> getAnalysisPreviewUseCase.get(TestAnalyses.newId()))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
     }

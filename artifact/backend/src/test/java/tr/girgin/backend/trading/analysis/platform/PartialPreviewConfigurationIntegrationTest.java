@@ -57,7 +57,7 @@ class PartialPreviewConfigurationIntegrationTest {
     private int port;
 
     @Autowired
-    private AnalysisRepositoryPort analyses;
+    private AnalysisRepositoryPort analysisRepositoryPort;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -67,7 +67,7 @@ class PartialPreviewConfigurationIntegrationTest {
     @Test
     void theConfiguredSectionsDecideWhatAVisitorReadsAndTheRequestsOverTheLimitAreRefused() throws Exception {
         AnalysisId id = TestAnalyses.newId();
-        analyses.insert(TestAnalyses.queued(
+        analysisRepositoryPort.insert(TestAnalyses.queued(
                 id,
                 new AnalysisSpec(
                         "CFGA",
@@ -83,11 +83,13 @@ class PartialPreviewConfigurationIntegrationTest {
                         true),
                 new OwnerId("00000000-0000-0000-0000-000000000001"),
                 Instant.now()));
-        Analysis running = TestAnalyses.running(analyses.findById(id).orElseThrow(), Instant.now(), "ref");
+        Analysis running =
+                TestAnalyses.running(analysisRepositoryPort.findById(id).orElseThrow(), Instant.now(), "ref");
         Analysis decided = TestAnalyses.withDecision(running, Rating.HOLD, "Hold");
-        analyses.update(TestAnalyses.finished(decided, AnalysisStatus.COMPLETED, Instant.now(), null, null));
-        analyses.update(
-                TestAnalyses.withVisibility(analyses.findById(id).orElseThrow(), Visibility.PARTIAL, Instant.now()));
+        analysisRepositoryPort.update(
+                TestAnalyses.finished(decided, AnalysisStatus.COMPLETED, Instant.now(), null, null));
+        analysisRepositoryPort.update(TestAnalyses.withVisibility(
+                analysisRepositoryPort.findById(id).orElseThrow(), Visibility.PARTIAL, Instant.now()));
         writeReport();
 
         HttpResponse<String> preview = get("/api/public/analyses/" + id.value());

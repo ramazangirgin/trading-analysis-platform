@@ -82,13 +82,13 @@ class PartialPreviewIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
-    private AnalysisRepositoryPort analyses;
+    private AnalysisRepositoryPort analysisRepositoryPort;
 
     private String ownerName;
     private String otherName;
@@ -107,11 +107,12 @@ class PartialPreviewIntegrationTest {
 
     @BeforeEach
     void logIn() throws Exception {
-        ownerName = TestSession.createUser(users, hasher, true, RoleId.ANALYST, RoleId.PUBLISHER);
-        otherName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        ownerName =
+                TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST, RoleId.PUBLISHER);
+        otherName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
         owner = loggedInAs(ownerName);
         other = loggedInAs(otherName);
-        admin = loggedInAs(TestSession.createUser(users, hasher, true, RoleId.ADMIN));
+        admin = loggedInAs(TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ADMIN));
         visitor = TestSession.anonymous(port);
     }
 
@@ -132,8 +133,9 @@ class PartialPreviewIntegrationTest {
     @Test
     void aRunningAnalysisCannotBeMadePartial() throws Exception {
         AnalysisId running = TestAnalyses.newId();
-        analyses.insert(TestAnalyses.queued(running, spec("PRVB"), ownerId(ownerName), Instant.now()));
-        analyses.update(TestAnalyses.running(analyses.findById(running).orElseThrow(), Instant.now(), "ref"));
+        analysisRepositoryPort.insert(TestAnalyses.queued(running, spec("PRVB"), ownerId(ownerName), Instant.now()));
+        analysisRepositoryPort.update(
+                TestAnalyses.running(analysisRepositoryPort.findById(running).orElseThrow(), Instant.now(), "ref"));
 
         HttpResponse<String> response =
                 setVisibility(owner, running.value(), PARTIAL, version(get(owner, running.value())));
@@ -312,8 +314,11 @@ class PartialPreviewIntegrationTest {
     }
 
     private OwnerId ownerId(String username) {
-        return new OwnerId(
-                users.findByUsername(new Username(username)).orElseThrow().id().value());
+        return new OwnerId(userRepositoryPort
+                .findByUsername(new Username(username))
+                .orElseThrow()
+                .id()
+                .value());
     }
 
     private static AnalysisSpec spec(String ticker) {

@@ -47,9 +47,10 @@ final class TestSession {
     }
 
     // A client logged in as a new enabled user with the given roles (none: a user without any permission).
-    static TestSession loggedIn(int port, UserRepositoryPort users, PasswordHasherPort hasher, RoleId... roles)
+    static TestSession loggedIn(
+            int port, UserRepositoryPort userRepositoryPort, PasswordHasherPort passwordHasherPort, RoleId... roles)
             throws IOException, InterruptedException {
-        String username = createUser(users, hasher, true, roles);
+        String username = createUser(userRepositoryPort, passwordHasherPort, true, roles);
         TestSession session = anonymous(port);
         HttpResponse<String> login = session.login(username, PASSWORD);
         if (login.statusCode() != 200) {
@@ -59,27 +60,31 @@ final class TestSession {
     }
 
     /** Stores a user with the given roles, a unique username and {@link #PASSWORD}; returns the username. */
-    static String createUser(UserRepositoryPort users, PasswordHasherPort hasher, boolean enabled, RoleId... roles) {
-        return storeUser(users, hasher, enabled, false, roles);
+    static String createUser(
+            UserRepositoryPort userRepositoryPort,
+            PasswordHasherPort passwordHasherPort,
+            boolean enabled,
+            RoleId... roles) {
+        return storeUser(userRepositoryPort, passwordHasherPort, enabled, false, roles);
     }
 
     /** Stores an enabled user with a unique username and {@link #PASSWORD} who must change it; returns the username. */
     static String createUserWhoMustChangePassword(
-            UserRepositoryPort users, PasswordHasherPort hasher, RoleId... roles) {
-        return storeUser(users, hasher, true, true, roles);
+            UserRepositoryPort userRepositoryPort, PasswordHasherPort passwordHasherPort, RoleId... roles) {
+        return storeUser(userRepositoryPort, passwordHasherPort, true, true, roles);
     }
 
     private static String storeUser(
-            UserRepositoryPort users,
-            PasswordHasherPort hasher,
+            UserRepositoryPort userRepositoryPort,
+            PasswordHasherPort passwordHasherPort,
             boolean enabled,
             boolean mustChangePassword,
             RoleId... roles) {
         String username = "user-" + UUID.randomUUID();
-        users.save(new User(
+        userRepositoryPort.save(new User(
                 new UserId(UUID.randomUUID().toString()),
                 new Username(username),
-                hasher.hash(PASSWORD),
+                passwordHasherPort.hash(PASSWORD),
                 enabled,
                 mustChangePassword,
                 0,

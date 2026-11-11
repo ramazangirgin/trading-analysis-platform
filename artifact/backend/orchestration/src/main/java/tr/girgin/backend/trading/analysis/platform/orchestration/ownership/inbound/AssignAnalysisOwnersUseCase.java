@@ -16,12 +16,13 @@ public class AssignAnalysisOwnersUseCase {
 
     private static final Logger log = LoggerFactory.getLogger(AssignAnalysisOwnersUseCase.class);
 
-    private final UserDirectoryPort userDirectory;
-    private final AssignUnownedAnalysesPort assignUnowned;
+    private final UserDirectoryPort userDirectoryPort;
+    private final AssignUnownedAnalysesPort assignUnownedAnalysesPort;
 
-    AssignAnalysisOwnersUseCase(UserDirectoryPort userDirectory, AssignUnownedAnalysesPort assignUnowned) {
-        this.userDirectory = userDirectory;
-        this.assignUnowned = assignUnowned;
+    AssignAnalysisOwnersUseCase(
+            UserDirectoryPort userDirectoryPort, AssignUnownedAnalysesPort assignUnownedAnalysesPort) {
+        this.userDirectoryPort = userDirectoryPort;
+        this.assignUnownedAnalysesPort = assignUnownedAnalysesPort;
     }
 
     /**
@@ -30,9 +31,9 @@ public class AssignAnalysisOwnersUseCase {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void assignUnownedToFirstAdmin() {
-        userDirectory.firstAdmin().ifPresent(admin -> {
+        userDirectoryPort.firstAdmin().ifPresent(admin -> {
             try {
-                int assigned = assignUnowned.assignUnowned(new OwnerId(admin.value()));
+                int assigned = assignUnownedAnalysesPort.assignUnowned(new OwnerId(admin.value()));
                 if (assigned > 0) {
                     log.info("Gave {} analyses without an owner to the first admin", assigned);
                 }

@@ -55,13 +55,13 @@ class AnalysisDefaultsApiIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private RoleRepositoryPort roles;
+    private RoleRepositoryPort roleRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
     private DataSource dataSource;
@@ -80,7 +80,7 @@ class AnalysisDefaultsApiIntegrationTest {
                 Statement statement = connection.createStatement()) {
             statement.execute("DELETE FROM \"SETTINGS\".\"ANALYSIS_DEFAULTS\"");
         }
-        admin = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        admin = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
     }
 
     @Test
@@ -115,7 +115,7 @@ class AnalysisDefaultsApiIntegrationTest {
 
     @Test
     void theSecondOfTwoAdminsWhoReadNothingStoredGetsAConflictAndTheFirstValuesStay() throws Exception {
-        TestSession other = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession other = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         assertThat(JSON.readTree(admin.send("GET", PATH, null).body())
                         .get("version")
                         .isNull())
@@ -170,9 +170,9 @@ class AnalysisDefaultsApiIntegrationTest {
     @Test
     void aRoleWithOnlyTheManagePermissionReadsAndSavesTheDefaults() throws Exception {
         RoleId role = new RoleId(UUID.randomUUID().toString());
-        roles.save(new Role(
+        roleRepositoryPort.save(new Role(
                 role, "test-" + role.value(), false, "test role", Set.of(Permission.ANALYSIS_DEFAULTS_MANAGE), null));
-        TestSession manager = TestSession.loggedIn(port, users, hasher, role);
+        TestSession manager = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, role);
 
         assertThat(manager.send("GET", PATH, null).statusCode()).isEqualTo(200);
         assertThat(manager.send("PUT", PATH, body("alpha", "alpha-deep", "alpha-quick", 1, 1, null))
