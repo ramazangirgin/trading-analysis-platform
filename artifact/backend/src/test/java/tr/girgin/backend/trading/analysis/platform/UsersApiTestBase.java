@@ -67,13 +67,13 @@ abstract class UsersApiTestBase {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private RoleRepositoryPort roles;
+    private RoleRepositoryPort roleRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) throws IOException {
@@ -86,15 +86,19 @@ abstract class UsersApiTestBase {
     }
 
     UserRepositoryPort users() {
-        return users;
+        return userRepositoryPort;
     }
 
     // A stored enabled user with the given roles and TestSession.PASSWORD.
     Account newAccount(RoleId... roleIds) {
-        String username = TestSession.createUser(users, hasher, true, roleIds);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, roleIds);
         return new Account(
                 username,
-                users.findByUsername(new Username(username)).orElseThrow().id().value());
+                userRepositoryPort
+                        .findByUsername(new Username(username))
+                        .orElseThrow()
+                        .id()
+                        .value());
     }
 
     TestSession login(Account account) throws Exception {
@@ -114,14 +118,16 @@ abstract class UsersApiTestBase {
     // A logged-in user whose only role holds exactly the given permissions.
     TestSession userWithPermissions(Permission... permissions) throws Exception {
         RoleId role = new RoleId(UUID.randomUUID().toString());
-        roles.save(new Role(role, "test-" + role.value(), false, "test role", Set.of(permissions), null));
+        roleRepositoryPort.save(new Role(role, "test-" + role.value(), false, "test role", Set.of(permissions), null));
         return login(newAccount(role));
     }
 
     // Locks the account until the given time, as failed logins do.
     void lock(Account account, Instant until) {
-        User user = users.findByUsername(new Username(account.username())).orElseThrow();
-        users.save(TestUsers.withFailedLogin(user, 5, Optional.of(until)));
+        User user = userRepositoryPort
+                .findByUsername(new Username(account.username()))
+                .orElseThrow();
+        userRepositoryPort.save(TestUsers.withFailedLogin(user, 5, Optional.of(until)));
     }
 
     JsonNode getUser(TestSession session, String id) throws Exception {

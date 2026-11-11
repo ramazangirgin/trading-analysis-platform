@@ -162,13 +162,13 @@ lifted.
 
 ### WP11: Application test support, and TAP-D9 everywhere
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1-WP10
 - **Files**: `TestSession.java`, `UsersApiTestBase.java`, `config/checkstyle/checkstyle.xml`,
   `docs/coding-convention/backend-java-checkstyle.md`
 - **Steps**:
-  - [ ] Delete the `TAP-D9` filter (and its XML comment) from `checkstyle.xml`.
-  - [ ] Rename what the check still reports anywhere in the backend (files no package named).
+  - [x] Delete the `TAP-D9` filter (and its XML comment) from `checkstyle.xml`.
+  - [x] Rename what the check still reports anywhere in the backend (files no package named).
 - **Tests**: `mise run check` and `mise run build` pass without the filter.
 
 ## Tests
