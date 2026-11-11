@@ -83,7 +83,7 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP5: Analysis runner adapters
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP4
 - **Files**: `artifact/backend/domain/analysis/adapter/src/main/java/.../analysis/adapter/runner/ProcessRunnerAdapter.java`, `.../adapter/runner/DockerRunnerAdapter.java`, `artifact/backend/domain/analysis/adapter/src/test/java/.../adapter/runner/ProcessRunnerAdapterTest.java`, `.../adapter/runner/DockerRunnerAdapterTest.java`
 - **Tests**: the two adapter tests, imports only; `mise run gradle :backend:domain:analysis:adapter:test`.
