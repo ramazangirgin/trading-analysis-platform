@@ -22,15 +22,17 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisstart.m
 @Service
 public class StartAnalysisWithDefaultsUseCase {
 
-    private final ManageAnalysisDefaultsUseCase defaults;
-    private final GetCatalogPort catalog;
-    private final StartAnalysisPort startAnalysis;
+    private final ManageAnalysisDefaultsUseCase manageAnalysisDefaultsUseCase;
+    private final GetCatalogPort getCatalogPort;
+    private final StartAnalysisPort startAnalysisPort;
 
     StartAnalysisWithDefaultsUseCase(
-            ManageAnalysisDefaultsUseCase defaults, GetCatalogPort catalog, StartAnalysisPort startAnalysis) {
-        this.defaults = defaults;
-        this.catalog = catalog;
-        this.startAnalysis = startAnalysis;
+            ManageAnalysisDefaultsUseCase manageAnalysisDefaultsUseCase,
+            GetCatalogPort getCatalogPort,
+            StartAnalysisPort startAnalysisPort) {
+        this.manageAnalysisDefaultsUseCase = manageAnalysisDefaultsUseCase;
+        this.getCatalogPort = getCatalogPort;
+        this.startAnalysisPort = startAnalysisPort;
     }
 
     /**
@@ -44,7 +46,7 @@ public class StartAnalysisWithDefaultsUseCase {
      *     when the catalog has to be read and cannot be
      */
     public Analysis start(RequestedAnalysis requested, OwnerId owner, boolean mayOverrideModels) {
-        AnalysisDefaults platform = defaults.get();
+        AnalysisDefaults platform = manageAnalysisDefaultsUseCase.get();
         Optional<String> provider = override(requested.llmProvider(), platform.llmProvider());
         Optional<String> deep = override(requested.deepThinkLlm(), platform.deepThinkLlm());
         Optional<String> quick = override(requested.quickThinkLlm(), platform.quickThinkLlm());
@@ -68,7 +70,7 @@ public class StartAnalysisWithDefaultsUseCase {
             }
         }
 
-        return startAnalysis.start(
+        return startAnalysisPort.start(
                 new AnalysisSpec(
                         requested.ticker(),
                         requested.tradeDate(),
@@ -118,7 +120,7 @@ public class StartAnalysisWithDefaultsUseCase {
     }
 
     private void checkAgainstCatalog(String providerId, String deep, String quick) {
-        Provider provider = catalog.getCatalog().providers().stream()
+        Provider provider = getCatalogPort.getCatalog().providers().stream()
                 .filter(p -> p.id().equalsIgnoreCase(providerId.strip()))
                 .findFirst()
                 .orElseThrow(() -> invalid("llmProvider", "Unknown provider: " + providerId));

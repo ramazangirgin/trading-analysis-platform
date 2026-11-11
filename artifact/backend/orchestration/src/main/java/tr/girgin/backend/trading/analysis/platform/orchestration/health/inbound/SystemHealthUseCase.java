@@ -33,23 +33,23 @@ public class SystemHealthUseCase {
     // The queue is the platform's, not one user's: the counts cover every owner.
     private static final AnalysisAccess PLATFORM = new AnalysisAccess(new OwnerId("platform"), true, false);
 
-    private final GetEngineVersionPort engineVersion;
-    private final GetCatalogPort catalog;
-    private final ScanReportsPort scanReports;
-    private final ManageSecretsPort secrets;
-    private final ListAnalysesPort analyses;
+    private final GetEngineVersionPort getEngineVersionPort;
+    private final GetCatalogPort getCatalogPort;
+    private final ScanReportsPort scanReportsPort;
+    private final ManageSecretsPort manageSecretsPort;
+    private final ListAnalysesPort listAnalysesPort;
 
     SystemHealthUseCase(
-            GetEngineVersionPort engineVersion,
-            GetCatalogPort catalog,
-            ScanReportsPort scanReports,
-            ManageSecretsPort secrets,
-            ListAnalysesPort analyses) {
-        this.engineVersion = engineVersion;
-        this.catalog = catalog;
-        this.scanReports = scanReports;
-        this.secrets = secrets;
-        this.analyses = analyses;
+            GetEngineVersionPort getEngineVersionPort,
+            GetCatalogPort getCatalogPort,
+            ScanReportsPort scanReportsPort,
+            ManageSecretsPort manageSecretsPort,
+            ListAnalysesPort listAnalysesPort) {
+        this.getEngineVersionPort = getEngineVersionPort;
+        this.getCatalogPort = getCatalogPort;
+        this.scanReportsPort = scanReportsPort;
+        this.manageSecretsPort = manageSecretsPort;
+        this.listAnalysesPort = listAnalysesPort;
     }
 
     public SystemHealth checkHealth() {
@@ -63,7 +63,7 @@ public class SystemHealthUseCase {
 
     private HealthCheck runner() {
         try {
-            EngineVersion version = engineVersion.getEngineVersion();
+            EngineVersion version = getEngineVersionPort.getEngineVersion();
             Map<String, Object> params = Map.of(
                     "runnerVersion",
                     String.valueOf(version.runnerVersion()),
@@ -84,10 +84,11 @@ public class SystemHealthUseCase {
     }
 
     private HealthCheck keys() {
-        Set<String> set = secrets.listSecrets().stream().map(SecretStatus::name).collect(Collectors.toSet());
+        Set<String> set =
+                manageSecretsPort.listSecrets().stream().map(SecretStatus::name).collect(Collectors.toSet());
         List<String> usable;
         try {
-            usable = catalog.getCatalog().providers().stream()
+            usable = getCatalogPort.getCatalog().providers().stream()
                     .filter(p -> p.apiKeyEnv() != null && set.contains(p.apiKeyEnv()))
                     .map(Provider::id)
                     .sorted()
@@ -107,7 +108,7 @@ public class SystemHealthUseCase {
     @SuppressWarnings("checkstyle:IllegalCatch") // a health check reports any failure as DOWN
     private HealthCheck dataDir() {
         try {
-            int reports = scanReports.scan().size();
+            int reports = scanReportsPort.scan().size();
             return new HealthCheck(
                     "dataDir",
                     reports > 0 ? HealthStatus.UP : HealthStatus.WARN,
@@ -123,9 +124,11 @@ public class SystemHealthUseCase {
     }
 
     private HealthCheck queue() {
-        long running = analyses.list(statusFilter(AnalysisStatus.RUNNING), AnalysisScope.ALL, PLATFORM)
+        long running = listAnalysesPort
+                .list(statusFilter(AnalysisStatus.RUNNING), AnalysisScope.ALL, PLATFORM)
                 .size();
-        long queued = analyses.list(statusFilter(AnalysisStatus.QUEUED), AnalysisScope.ALL, PLATFORM)
+        long queued = listAnalysesPort
+                .list(statusFilter(AnalysisStatus.QUEUED), AnalysisScope.ALL, PLATFORM)
                 .size();
         return new HealthCheck("queue", HealthStatus.UP, "queue_ok", Map.of("running", running, "queued", queued));
     }

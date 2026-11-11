@@ -95,7 +95,7 @@ lifted.
 
 ### WP5: Orchestration use cases, part 1
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `orchestration/analysisdefaults/inbound/ManageAnalysisDefaultsUseCase.java`,
   `orchestration/analysisstart/inbound/StartAnalysisWithDefaultsUseCase.java`,
