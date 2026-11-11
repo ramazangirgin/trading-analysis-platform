@@ -51,11 +51,11 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP1: Identity core, roles
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/backend/domain/identity/core/src/main/java/tr/girgin/backend/trading/analysis/platform/domain/identity/core/inbound/RoleSummary.java` (moved to `core/model/RoleSummary.java`), `.../identity/core/inbound/ManageRolesPort.java`, `.../identity/core/service/RoleManagementService.java`, `artifact/backend/domain/identity/core/src/test/java/.../identity/core/service/RoleManagementServiceTest.java`
 - **Steps**:
-  - [ ] `ManageRolesPort` imports `RoleSummary` from `model` (it used it from its own package without an import).
+  - [x] `ManageRolesPort` imports `RoleSummary` from `model` (it used it from its own package without an import).
 - **Tests**: `RoleManagementServiceTest` unchanged apart from the import; `mise run gradle :backend:domain:identity:core:test`.
 
 ### WP2: Identity core, users

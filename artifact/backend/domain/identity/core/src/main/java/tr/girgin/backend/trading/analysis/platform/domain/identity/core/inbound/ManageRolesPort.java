@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleSummary;
 
 /**
  * What admins do with roles. The built-in roles cannot be renamed or deleted, and the permissions of ADMIN cannot
