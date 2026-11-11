@@ -32,13 +32,16 @@ class V5AnalysisPartialVisibilityMigrationTest {
             + AnalysisPersistenceConfiguration.class.getPackageName().replace('.', '/');
 
     @Autowired
-    private JpaAnalysisRepositoryAdapter repository;
+    private JpaAnalysisRepositoryAdapter jpaAnalysisRepositoryAdapter;
 
     @Test
     void rowsWrittenAtV4ReadTheSameAfterV5() {
-        Analysis privateRun =
-                repository.findById(new AnalysisId("r_v4_private")).orElseThrow();
-        Analysis publicRun = repository.findById(new AnalysisId("r_v4_public")).orElseThrow();
+        Analysis privateRun = jpaAnalysisRepositoryAdapter
+                .findById(new AnalysisId("r_v4_private"))
+                .orElseThrow();
+        Analysis publicRun = jpaAnalysisRepositoryAdapter
+                .findById(new AnalysisId("r_v4_public"))
+                .orElseThrow();
 
         assertThat(privateRun.visibility()).isEqualTo(Visibility.PRIVATE);
         assertThat(privateRun.visibilityChangedAt()).isNull();
@@ -48,13 +51,18 @@ class V5AnalysisPartialVisibilityMigrationTest {
 
     @Test
     void aRowCanBecomePartialAfterV5() {
-        Analysis privateRun =
-                repository.findById(new AnalysisId("r_v4_private")).orElseThrow();
+        Analysis privateRun = jpaAnalysisRepositoryAdapter
+                .findById(new AnalysisId("r_v4_private"))
+                .orElseThrow();
 
-        Analysis partial =
-                repository.update(TestAnalyses.withVisibility(privateRun, Visibility.PARTIAL, Instant.EPOCH));
+        Analysis partial = jpaAnalysisRepositoryAdapter.update(
+                TestAnalyses.withVisibility(privateRun, Visibility.PARTIAL, Instant.EPOCH));
 
-        assertThat(repository.findById(partial.id()).orElseThrow().visibility()).isEqualTo(Visibility.PARTIAL);
+        assertThat(jpaAnalysisRepositoryAdapter
+                        .findById(partial.id())
+                        .orElseThrow()
+                        .visibility())
+                .isEqualTo(Visibility.PARTIAL);
     }
 
     // Not a @Configuration, as in the other migration tests: this Flyway stops at V4 to write rows the way V4

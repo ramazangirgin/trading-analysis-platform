@@ -58,7 +58,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP2: Analysis adapter tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/analysis/adapter/credentials/EnvFileCredentialsAdapterTest.java`,
   `domain/analysis/adapter/eventline/mapper/RunnerOutputLineToRunEventMapperTest.java`,
