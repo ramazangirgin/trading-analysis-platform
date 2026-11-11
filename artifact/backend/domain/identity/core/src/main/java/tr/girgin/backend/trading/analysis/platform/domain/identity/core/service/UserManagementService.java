@@ -45,9 +45,9 @@ class UserManagementService implements ManageUsersPort {
 
     private static final Logger log = LoggerFactory.getLogger(UserManagementService.class);
 
-    private final UserRepositoryPort users;
-    private final RoleRepositoryPort roles;
-    private final PasswordHasherPort hasher;
+    private final UserRepositoryPort userRepositoryPort;
+    private final RoleRepositoryPort roleRepositoryPort;
+    private final PasswordHasherPort passwordHasherPort;
     private final PasswordPolicyService passwordPolicyService;
     private final OneTimePasswordService oneTimePasswordService;
     private final Clock clock;
@@ -59,18 +59,18 @@ class UserManagementService implements ManageUsersPort {
     @Autowired
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     UserManagementService(
-            UserRepositoryPort users,
-            RoleRepositoryPort roles,
-            PasswordHasherPort hasher,
+            UserRepositoryPort userRepositoryPort,
+            RoleRepositoryPort roleRepositoryPort,
+            PasswordHasherPort passwordHasherPort,
             PasswordPolicyService passwordPolicyService,
             OneTimePasswordService oneTimePasswordService,
             Clock clock,
             UserChangeService userChangeService,
             UsernameService usernameService,
             LoginLockoutService loginLockoutService) {
-        this.users = users;
-        this.roles = roles;
-        this.hasher = hasher;
+        this.userRepositoryPort = userRepositoryPort;
+        this.roleRepositoryPort = roleRepositoryPort;
+        this.passwordHasherPort = passwordHasherPort;
         this.passwordPolicyService = passwordPolicyService;
         this.oneTimePasswordService = oneTimePasswordService;
         this.clock = clock;
@@ -83,7 +83,9 @@ class UserManagementService implements ManageUsersPort {
     public List<UserAccount> list() {
         Map<RoleId, Role> byId = rolesById();
         Instant now = clock.instant();
-        return users.findAll().stream().map(user -> toAccount(user, byId, now)).toList();
+        return userRepositoryPort.findAll().stream()
+                .map(user -> toAccount(user, byId, now))
+                .toList();
     }
 
     @Override
@@ -103,7 +105,7 @@ class UserManagementService implements ManageUsersPort {
         User toSave = new User(
                 userChangeService.newId(),
                 name,
-                hasher.hash(plain),
+                passwordHasherPort.hash(plain),
                 true,
                 true,
                 0,
@@ -115,7 +117,7 @@ class UserManagementService implements ManageUsersPort {
                 null);
         User saved;
         try {
-            saved = users.save(toSave);
+            saved = userRepositoryPort.save(toSave);
         } catch (DuplicateKeyException _) {
             throw new IdentityException(
                     IdentityError.USERNAME_TAKEN,
@@ -187,7 +189,9 @@ class UserManagementService implements ManageUsersPort {
 
     private void checkAnAdminRemains(User user, Set<RoleId> newRoles, boolean newEnabled) {
         boolean leavesAdmins = user.enabled() && (!newEnabled || losesAdmin(user, newRoles));
-        if (leavesAdmins && user.roleIds().contains(RoleId.ADMIN) && users.countEnabledWithRole(RoleId.ADMIN) - 1 < 1) {
+        if (leavesAdmins
+                && user.roleIds().contains(RoleId.ADMIN)
+                && userRepositoryPort.countEnabledWithRole(RoleId.ADMIN) - 1 < 1) {
             throw new IdentityException(
                     IdentityError.LAST_ADMIN,
                     "The last enabled ADMIN cannot be disabled or lose the ADMIN role",
@@ -206,7 +210,7 @@ class UserManagementService implements ManageUsersPort {
         entered.ifPresent(p -> passwordPolicyService.check(p, user.username()));
         Optional<String> generated = entered.isPresent() ? Optional.empty() : Optional.of(generate());
         String plain = entered.orElseGet(generated::orElseThrow);
-        save(loginLockoutService.unlocked(userChangeService.withPassword(user, hasher.hash(plain), true)));
+        save(loginLockoutService.unlocked(userChangeService.withPassword(user, passwordHasherPort.hash(plain), true)));
         log.info(
                 "Password of user {} reset, password {}",
                 target.value(),
@@ -220,14 +224,15 @@ class UserManagementService implements ManageUsersPort {
     }
 
     private User find(UserId id) {
-        return users.findById(id)
+        return userRepositoryPort
+                .findById(id)
                 .orElseThrow(() -> new IdentityException(
                         IdentityError.USER_NOT_FOUND, "User " + id.value() + " not found", Map.of("id", id.value())));
     }
 
     private User save(User user) {
         try {
-            return users.save(user);
+            return userRepositoryPort.save(user);
         } catch (OptimisticLockingFailureException e) {
             throw concurrentUpdate(user.id(), e);
         }
@@ -245,7 +250,7 @@ class UserManagementService implements ManageUsersPort {
     }
 
     private Map<RoleId, Role> rolesById() {
-        return roles.findAll().stream().collect(Collectors.toMap(Role::id, Function.identity()));
+        return roleRepositoryPort.findAll().stream().collect(Collectors.toMap(Role::id, Function.identity()));
     }
 
     private void requireKnown(Set<RoleId> roleIds, Map<RoleId, Role> byId) {

@@ -18,20 +18,20 @@ class PasswordChangeService implements ChangePasswordPort {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordChangeService.class);
 
-    private final UserRepositoryPort users;
-    private final PasswordHasherPort hasher;
+    private final UserRepositoryPort userRepositoryPort;
+    private final PasswordHasherPort passwordHasherPort;
     private final AuthenticatedUserService authenticatedUserService;
     private final PasswordPolicyService passwordPolicyService;
     private final UserChangeService userChangeService;
 
     PasswordChangeService(
-            UserRepositoryPort users,
-            PasswordHasherPort hasher,
+            UserRepositoryPort userRepositoryPort,
+            PasswordHasherPort passwordHasherPort,
             AuthenticatedUserService authenticatedUserService,
             PasswordPolicyService passwordPolicyService,
             UserChangeService userChangeService) {
-        this.users = users;
-        this.hasher = hasher;
+        this.userRepositoryPort = userRepositoryPort;
+        this.passwordHasherPort = passwordHasherPort;
         this.authenticatedUserService = authenticatedUserService;
         this.passwordPolicyService = passwordPolicyService;
         this.userChangeService = userChangeService;
@@ -39,19 +39,21 @@ class PasswordChangeService implements ChangePasswordPort {
 
     @Override
     public AuthenticatedUser changePassword(UserId id, CharSequence currentPassword, CharSequence newPassword) {
-        User user = users.findById(id)
+        User user = userRepositoryPort
+                .findById(id)
                 .filter(User::enabled)
                 .orElseThrow(() -> new IdentityException(IdentityError.BAD_CREDENTIALS, "Bad credentials", Map.of()));
-        if (!hasher.matches(currentPassword, user.passwordHash())) {
+        if (!passwordHasherPort.matches(currentPassword, user.passwordHash())) {
             throw new IdentityException(
                     IdentityError.WRONG_CURRENT_PASSWORD, "The current password is wrong", Map.of());
         }
         passwordPolicyService.check(newPassword, user.username());
-        if (hasher.matches(newPassword, user.passwordHash())) {
+        if (passwordHasherPort.matches(newPassword, user.passwordHash())) {
             throw new IdentityException(
                     IdentityError.PASSWORD_UNCHANGED, "The new password is the same as the current one", Map.of());
         }
-        User saved = users.save(userChangeService.withPassword(user, hasher.hash(newPassword), false));
+        User saved = userRepositoryPort.save(
+                userChangeService.withPassword(user, passwordHasherPort.hash(newPassword), false));
         log.info("Password changed for user {}", saved.id().value());
         return authenticatedUserService.create(saved);
     }

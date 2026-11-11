@@ -125,7 +125,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP7: Identity core services and their tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/identity/core/service/FirstAdminService.java`,
   `domain/identity/core/service/PasswordChangeService.java`,

@@ -35,18 +35,18 @@ class RoleManagementService implements ManageRolesPort {
     private static final Pattern VALID_NAME = Pattern.compile("[A-Za-z0-9 _-]{2,40}");
     private static final int MAX_DESCRIPTION_LENGTH = 200;
 
-    private final RoleRepositoryPort roles;
-    private final UserRepositoryPort users;
+    private final RoleRepositoryPort roleRepositoryPort;
+    private final UserRepositoryPort userRepositoryPort;
 
-    RoleManagementService(RoleRepositoryPort roles, UserRepositoryPort users) {
-        this.roles = roles;
-        this.users = users;
+    RoleManagementService(RoleRepositoryPort roleRepositoryPort, UserRepositoryPort userRepositoryPort) {
+        this.roleRepositoryPort = roleRepositoryPort;
+        this.userRepositoryPort = userRepositoryPort;
     }
 
     @Override
     public List<RoleSummary> list() {
-        Map<RoleId, Long> counts = users.countUsersByRole();
-        return roles.findAll().stream()
+        Map<RoleId, Long> counts = userRepositoryPort.countUsersByRole();
+        return roleRepositoryPort.findAll().stream()
                 .sorted(Comparator.comparing(Role::name))
                 .map(role -> new RoleSummary(role, counts.getOrDefault(role.id(), 0L)))
                 .toList();
@@ -55,7 +55,7 @@ class RoleManagementService implements ManageRolesPort {
     @Override
     public RoleSummary get(RoleId id) {
         Role role = find(id);
-        return new RoleSummary(role, users.countWithRole(id));
+        return new RoleSummary(role, userRepositoryPort.countWithRole(id));
     }
 
     @Override
@@ -65,7 +65,7 @@ class RoleManagementService implements ManageRolesPort {
         requireNameFree(validName, null);
         Role saved;
         try {
-            saved = roles.save(
+            saved = roleRepositoryPort.save(
                     new Role(newRoleId(), validName, false, validDescription, Set.copyOf(permissions), null));
         } catch (DuplicateKeyException e) {
             throw nameTaken(validName, e);
@@ -106,11 +106,11 @@ class RoleManagementService implements ManageRolesPort {
             changed = withPermissions(changed, newPermissions.get());
         }
         if (changed.equals(role)) {
-            return new RoleSummary(role, users.countWithRole(id));
+            return new RoleSummary(role, userRepositoryPort.countWithRole(id));
         }
         Role saved = save(changed);
         logChanges(role, saved);
-        return new RoleSummary(saved, users.countWithRole(id));
+        return new RoleSummary(saved, userRepositoryPort.countWithRole(id));
     }
 
     private RoleId newRoleId() {
@@ -155,27 +155,28 @@ class RoleManagementService implements ManageRolesPort {
         if (role.builtIn()) {
             throwBuiltIn(id, "delete");
         }
-        long userCount = users.countWithRole(id);
+        long userCount = userRepositoryPort.countWithRole(id);
         if (userCount > 0) {
             throw inUse(id, userCount, null);
         }
         try {
-            roles.deleteById(id);
+            roleRepositoryPort.deleteById(id);
         } catch (DataIntegrityViolationException e) {
-            throw inUse(id, users.countWithRole(id), e);
+            throw inUse(id, userRepositoryPort.countWithRole(id), e);
         }
         log.info("Role {} (\"{}\") deleted", id.value(), role.name());
     }
 
     private Role find(RoleId id) {
-        return roles.findById(id)
+        return roleRepositoryPort
+                .findById(id)
                 .orElseThrow(() -> new IdentityException(
                         IdentityError.ROLE_NOT_FOUND, "Role " + id.value() + " not found", Map.of("id", id.value())));
     }
 
     private Role save(Role role) {
         try {
-            return roles.save(role);
+            return roleRepositoryPort.save(role);
         } catch (OptimisticLockingFailureException e) {
             throw concurrentUpdate(role.id(), e);
         } catch (DuplicateKeyException e) {
@@ -184,7 +185,10 @@ class RoleManagementService implements ManageRolesPort {
     }
 
     private void requireNameFree(String name, RoleId self) {
-        if (roles.findByName(name).filter(other -> !other.id().equals(self)).isPresent()) {
+        if (roleRepositoryPort
+                .findByName(name)
+                .filter(other -> !other.id().equals(self))
+                .isPresent()) {
             throw nameTaken(name, null);
         }
     }
