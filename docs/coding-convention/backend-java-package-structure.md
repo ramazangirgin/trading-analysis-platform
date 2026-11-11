@@ -61,8 +61,10 @@ domain/<d>/adapter/
     support/   ...                 helpers: clients, file tails, Spring conditions
 orchestration/<feature>/
   inbound/                         *UseCase: concrete Spring beans (@Service) holding the logic, no
-                                   interface and no service/ package
-  model/                           value types, records, enums
+                                   interface and no service/ package, and their helper beans only
+  model/                           composite models: types combining data of several domains
+                                   (AnalysisView)
+  config/                          @ConfigurationProperties records
 library/<library>/                 a shared library, one kind of technical code; its README.md says
                                    what it holds
 ```
@@ -131,7 +133,10 @@ packages like it are listed in `ArchitectureTest.SHARED_ADAPTER_PACKAGES`.
 | Exception (anything `Throwable`) | `domain.<d>.core.exception` or `bff.controller.api.error` | `exceptions_live_in_exception_packages` |
 | Error-code enum `*Error` | `domain.<d>.core.exception`, next to its exception | `error_codes_live_next_to_their_exception` |
 | Domain core sub-packages | only `inbound`, `outbound`, `service`, `model`, `exception` | `domain_core_sub_packages_are_known_kinds` |
-| Orchestration feature sub-packages | only `inbound`, `model` | `orchestration_features_follow_the_domain_core_shape` |
+| Orchestration feature sub-packages | only `inbound`, `model`, `config` | `orchestration_features_follow_the_domain_core_shape` |
+| Top-level class in `orchestration.<f>.inbound` | a Spring bean (`@Component`, `@Service`): a `*UseCase` or its helper bean; properties go to `config`, composite models to `model` | `orchestration_inbound_packages_hold_only_beans` |
+| Top-level class in `orchestration.<f>.config` | annotated `@ConfigurationProperties` | `orchestration_config_packages_hold_only_configuration_properties` |
+| Class annotated `@ConfigurationProperties` | in a `config` package, anywhere in the backend | `configuration_properties_live_in_config_packages` |
 | Classes in a module root package | none | `module_root_packages_hold_no_classes` |
 
 The placement rules sit next to the dependency rules that were there before (BFF uses inbound

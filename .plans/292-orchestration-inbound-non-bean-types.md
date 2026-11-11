@@ -67,13 +67,13 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP2: ArchUnit rules for the orchestration packages
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/ArchitectureTest.java`
 - **Steps**:
-  - [ ] Add the three rules and widen `orchestration_features_follow_the_domain_core_shape` as in "Design"; reuse `ORCHESTRATION_INBOUND` and add a constant for the config packages.
-  - [ ] If dependency analysis flags the `ConfigurationProperties` import in `:backend`'s tests, declare the artifact it comes from.
+  - [x] Add the three rules and widen `orchestration_features_follow_the_domain_core_shape` as in "Design"; reuse `ORCHESTRATION_INBOUND` and add a constant for the config packages.
+  - [x] If dependency analysis flags the `ConfigurationProperties` import in `:backend`'s tests, declare the artifact it comes from.
 - **Tests**: `ArchitectureTest` passes on the moved code. Prove each new rule fails once by hand
   (a plain record in `preview.inbound`, a plain class in `preview.config`, `PreviewSettings` back in
   `inbound`), then revert; no permanent negative test, like the existing rules.

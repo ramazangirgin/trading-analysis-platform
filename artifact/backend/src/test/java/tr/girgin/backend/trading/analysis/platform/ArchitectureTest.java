@@ -25,6 +25,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MapperConfig;
 import org.mapstruct.control.MappingControl;
 import org.mapstruct.control.MappingControls;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
@@ -72,6 +73,7 @@ class ArchitectureTest {
     private static final String BFF_API_ERROR = BASE + ".bff.controller.api.error..";
     private static final String BFF_IMPL_ERROR = BASE + ".bff.delegate.impl.error..";
     private static final String ORCHESTRATION_INBOUND = BASE + ".orchestration.*.inbound..";
+    private static final String ORCHESTRATION_CONFIG = BASE + ".orchestration.*.config..";
     private static final String[] MODEL_PACKAGES = {
         BASE + ".domain.*.core.model..",
         BASE + ".domain.*.core.inbound..",
@@ -420,6 +422,31 @@ class ArchitectureTest {
             .andShould()
             .beAnnotatedWith(Service.class)
             .because("an orchestration use case has a single implementation, so it is the bean itself");
+
+    @ArchTest
+    static final ArchRule orchestration_inbound_packages_hold_only_beans = topLevelClasses()
+            .and()
+            .resideInAPackage(ORCHESTRATION_INBOUND)
+            .should()
+            .beMetaAnnotatedWith(Component.class)
+            .because("orchestration inbound holds beans only: a use case or its helper bean; configuration"
+                    + " properties go to config, composite models to model");
+
+    @ArchTest
+    static final ArchRule orchestration_config_packages_hold_only_configuration_properties = topLevelClasses()
+            .and()
+            .resideInAPackage(ORCHESTRATION_CONFIG)
+            .should()
+            .beAnnotatedWith(ConfigurationProperties.class)
+            .because("an orchestration config package holds configuration properties records only");
+
+    @ArchTest
+    static final ArchRule configuration_properties_live_in_config_packages = classes()
+            .that()
+            .areAnnotatedWith(ConfigurationProperties.class)
+            .should()
+            .resideInAPackage("..config..")
+            .because("configuration properties are bound in a config package, away from beans and models");
 
     @ArchTest
     static final ArchRule use_cases_live_in_orchestration_inbound_packages = classes()
