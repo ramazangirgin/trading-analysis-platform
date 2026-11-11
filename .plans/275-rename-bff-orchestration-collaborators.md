@@ -119,7 +119,7 @@ lifted.
 
 ### WP7: Orchestration tests, part 1
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `orchestration/analysisdefaults/inbound/ManageAnalysisDefaultsUseCaseTest.java`,
   `orchestration/analysisstart/inbound/StartAnalysisWithDefaultsUseCaseTest.java`,

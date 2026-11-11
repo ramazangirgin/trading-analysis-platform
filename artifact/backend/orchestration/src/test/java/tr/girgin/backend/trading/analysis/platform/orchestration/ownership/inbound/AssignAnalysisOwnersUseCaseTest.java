@@ -22,29 +22,29 @@ class AssignAnalysisOwnersUseCaseTest {
 
     @Test
     void givesTheAnalysesWithoutAnOwnerToTheFirstAdmin() {
-        AssignAnalysisOwnersUseCase service = service(Optional.of(new UserId("admin-1")));
+        AssignAnalysisOwnersUseCase assignAnalysisOwnersUseCase = service(Optional.of(new UserId("admin-1")));
 
-        service.assignUnownedToFirstAdmin();
+        assignAnalysisOwnersUseCase.assignUnownedToFirstAdmin();
 
         assertThat(assignedTo).containsExactly(new OwnerId("admin-1"));
     }
 
     @Test
     void doesNothingBeforeThereIsAFirstAdmin() {
-        AssignAnalysisOwnersUseCase service = service(Optional.empty());
+        AssignAnalysisOwnersUseCase assignAnalysisOwnersUseCase = service(Optional.empty());
 
-        service.assignUnownedToFirstAdmin();
+        assignAnalysisOwnersUseCase.assignUnownedToFirstAdmin();
 
         assertThat(assignedTo).isEmpty();
     }
 
     @Test
     void doesNotFailTheStartWhenTheImportChangesTheAnalysesAtTheSameTime() {
-        AssignAnalysisOwnersUseCase service = service(Optional.of(new UserId("admin-1")), _ -> {
+        AssignAnalysisOwnersUseCase assignAnalysisOwnersUseCase = service(Optional.of(new UserId("admin-1")), _ -> {
             throw new OptimisticLockingFailureException("stale version");
         });
 
-        assertThatCode(service::assignUnownedToFirstAdmin).doesNotThrowAnyException();
+        assertThatCode(assignAnalysisOwnersUseCase::assignUnownedToFirstAdmin).doesNotThrowAnyException();
     }
 
     private AssignAnalysisOwnersUseCase service(Optional<UserId> firstAdmin) {
@@ -54,7 +54,8 @@ class AssignAnalysisOwnersUseCaseTest {
         });
     }
 
-    private AssignAnalysisOwnersUseCase service(Optional<UserId> firstAdmin, AssignUnownedAnalysesPort assignUnowned) {
+    private AssignAnalysisOwnersUseCase service(
+            Optional<UserId> firstAdmin, AssignUnownedAnalysesPort assignUnownedAnalysesPort) {
         return new AssignAnalysisOwnersUseCase(
                 new UserDirectoryPort() {
                     @Override
@@ -67,6 +68,6 @@ class AssignAnalysisOwnersUseCaseTest {
                         return Map.of();
                     }
                 },
-                assignUnowned);
+                assignUnownedAnalysesPort);
     }
 }
