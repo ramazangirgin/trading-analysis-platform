@@ -30,11 +30,11 @@ class UserManagementServiceTest {
     private static final UserChangeService CHANGES = new UserChangeService();
     private static final Instant NOW = Instant.parse("2026-10-01T10:00:00Z");
 
-    private final FakeUserStore fakeUserStore = new FakeUserStore(NOW);
+    private final InMemoryUserRepository inMemoryUserRepository = new InMemoryUserRepository(NOW);
     private final InMemoryRoleRepository inMemoryRoleRepository = new InMemoryRoleRepository();
     private final FixedGenerator generator = new FixedGenerator();
     private final UserManagementService userManagementService = new UserManagementService(
-            fakeUserStore,
+            inMemoryUserRepository,
             inMemoryRoleRepository,
             new FakeHasher(),
             new PasswordPolicyService(12, "password1234567\n"),
@@ -67,7 +67,8 @@ class UserManagementServiceTest {
         assertThat(created.account().mustChangePassword()).isTrue();
         assertThat(created.account().roles()).extracting(Role::name).containsExactly("ANALYST");
         assertThat(created.account().lastLoginAt()).isEmpty();
-        User stored = fakeUserStore.findByUsername(new Username("alice")).orElseThrow();
+        User stored =
+                inMemoryUserRepository.findByUsername(new Username("alice")).orElseThrow();
         assertThat(stored.passwordHash()).isEqualTo(new PasswordHash("hash:a-long-enough-password"));
         assertThat(stored.mustChangePassword()).isTrue();
         assertThat(stored.failedLoginCount()).isZero();
@@ -80,7 +81,8 @@ class UserManagementServiceTest {
 
         assertThat(created.generatedPassword()).contains("generated-password");
         assertThat(generator.lastLength).isEqualTo(24);
-        User stored = fakeUserStore.findByUsername(new Username("alice")).orElseThrow();
+        User stored =
+                inMemoryUserRepository.findByUsername(new Username("alice")).orElseThrow();
         assertThat(stored.passwordHash()).isEqualTo(new PasswordHash("hash:generated-password"));
         assertThat(stored.mustChangePassword()).isTrue();
     }
@@ -95,7 +97,7 @@ class UserManagementServiceTest {
     @Test
     void aGeneratedPasswordIsAsLongAsThePolicyAsksForWhenThatIsMore() {
         UserManagementService strictUserManagementService = new UserManagementService(
-                fakeUserStore,
+                inMemoryUserRepository,
                 inMemoryRoleRepository,
                 new FakeHasher(),
                 new PasswordPolicyService(40, "password1234567\n"),
@@ -117,7 +119,7 @@ class UserManagementServiceTest {
                     assertThat(e.error()).isEqualTo(IdentityError.WEAK_PASSWORD);
                     assertThat(e.params()).containsKey("reasons");
                 });
-        assertThat(fakeUserStore.users()).isEmpty();
+        assertThat(inMemoryUserRepository.users()).isEmpty();
     }
 
     @Test
@@ -136,7 +138,7 @@ class UserManagementServiceTest {
                     assertThat(e.error()).isEqualTo(IdentityError.UNKNOWN_ROLE);
                     assertThat(e.params()).containsEntry("roleId", "nope");
                 });
-        assertThat(fakeUserStore.users()).isEmpty();
+        assertThat(inMemoryUserRepository.users()).isEmpty();
     }
 
     @Test
@@ -150,25 +152,27 @@ class UserManagementServiceTest {
 
     @Test
     void updateChangesTheRoles() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
 
         UserAccount updated = userManagementService.update(
                 newId(), target.id(), Optional.of(Set.of(RoleId.ANALYST)), Optional.empty(), null);
 
         assertThat(updated.roles()).extracting(Role::name).containsExactly("ANALYST");
-        assertThat(fakeUserStore.findById(target.id()).orElseThrow().roleIds()).containsExactly(RoleId.ANALYST);
+        assertThat(inMemoryUserRepository.findById(target.id()).orElseThrow().roleIds())
+                .containsExactly(RoleId.ANALYST);
         assertThat(updated.enabled()).isTrue();
     }
 
     @Test
     void updateDisablesAndEnables() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
         UserId actor = newId();
 
         UserAccount disabled =
                 userManagementService.update(actor, target.id(), Optional.empty(), Optional.of(false), null);
         assertThat(disabled.enabled()).isFalse();
-        assertThat(fakeUserStore.findById(target.id()).orElseThrow().enabled()).isFalse();
+        assertThat(inMemoryUserRepository.findById(target.id()).orElseThrow().enabled())
+                .isFalse();
 
         UserAccount enabled =
                 userManagementService.update(actor, target.id(), Optional.empty(), Optional.of(true), null);
@@ -177,17 +181,17 @@ class UserManagementServiceTest {
 
     @Test
     void anUpdateThatChangesNothingWritesNothing() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
 
         userManagementService.update(newId(), target.id(), Optional.empty(), Optional.empty(), null);
         userManagementService.update(newId(), target.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.of(true), null);
 
-        assertThat(fakeUserStore.saved()).isEmpty();
+        assertThat(inMemoryUserRepository.saved()).isEmpty();
     }
 
     @Test
     void updateRejectsAnUnknownRole() {
-        User target = fakeUserStore.add(user("bob", true));
+        User target = inMemoryUserRepository.add(user("bob", true));
 
         assertThatThrownBy(() -> userManagementService.update(
                         newId(), target.id(), Optional.of(Set.of(new RoleId("nope"))), Optional.empty(), null))
@@ -210,7 +214,7 @@ class UserManagementServiceTest {
 
     @Test
     void aStaleVersionIsAConcurrentUpdate() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
 
         assertThatThrownBy(() -> userManagementService.update(
                         newId(), target.id(), Optional.empty(), Optional.of(false), target.version() + 1))
@@ -218,12 +222,12 @@ class UserManagementServiceTest {
                     assertThat(e.error()).isEqualTo(IdentityError.CONCURRENT_UPDATE);
                     assertThat(e.params()).containsEntry("id", target.id().value());
                 });
-        assertThat(fakeUserStore.saved()).isEmpty();
+        assertThat(inMemoryUserRepository.saved()).isEmpty();
     }
 
     @Test
     void theCurrentVersionIsAccepted() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
 
         UserAccount updated = userManagementService.update(
                 newId(), target.id(), Optional.empty(), Optional.of(false), target.version());
@@ -233,8 +237,8 @@ class UserManagementServiceTest {
 
     @Test
     void aLockingFailureOnSaveBecomesConcurrentUpdate() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
-        fakeUserStore.failNextSaves(1);
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
+        inMemoryUserRepository.failNextSaves(1);
 
         assertThatThrownBy(() ->
                         userManagementService.update(newId(), target.id(), Optional.empty(), Optional.of(false), null))
@@ -244,8 +248,8 @@ class UserManagementServiceTest {
 
     @Test
     void anAdminCannotDisableThemselves() {
-        User self = fakeUserStore.add(user("root", true, RoleId.ADMIN));
-        fakeUserStore.add(user("other", true, RoleId.ADMIN));
+        User self = inMemoryUserRepository.add(user("root", true, RoleId.ADMIN));
+        inMemoryUserRepository.add(user("other", true, RoleId.ADMIN));
 
         assertThatThrownBy(() ->
                         userManagementService.update(self.id(), self.id(), Optional.empty(), Optional.of(false), null))
@@ -256,8 +260,8 @@ class UserManagementServiceTest {
 
     @Test
     void anAdminCannotRemoveTheirOwnAdminRole() {
-        User self = fakeUserStore.add(user("root", true, RoleId.ADMIN));
-        fakeUserStore.add(user("other", true, RoleId.ADMIN));
+        User self = inMemoryUserRepository.add(user("root", true, RoleId.ADMIN));
+        inMemoryUserRepository.add(user("other", true, RoleId.ADMIN));
 
         assertThatThrownBy(() -> userManagementService.update(
                         self.id(), self.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.empty(), null))
@@ -268,7 +272,7 @@ class UserManagementServiceTest {
 
     @Test
     void anAdminCanChangeTheirOwnOtherRoles() {
-        User self = fakeUserStore.add(user("root", true, RoleId.ADMIN));
+        User self = inMemoryUserRepository.add(user("root", true, RoleId.ADMIN));
 
         UserAccount updated = userManagementService.update(
                 self.id(), self.id(), Optional.of(Set.of(RoleId.ADMIN, RoleId.VIEWER)), Optional.empty(), null);
@@ -278,21 +282,21 @@ class UserManagementServiceTest {
 
     @Test
     void theLastEnabledAdminCannotBeDisabled() {
-        User onlyAdmin = fakeUserStore.add(user("root", true, RoleId.ADMIN));
-        fakeUserStore.add(user("off", false, RoleId.ADMIN));
+        User onlyAdmin = inMemoryUserRepository.add(user("root", true, RoleId.ADMIN));
+        inMemoryUserRepository.add(user("off", false, RoleId.ADMIN));
         UserId manager = newId();
 
         assertThatThrownBy(() -> userManagementService.update(
                         manager, onlyAdmin.id(), Optional.empty(), Optional.of(false), null))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.LAST_ADMIN));
-        assertThat(fakeUserStore.findById(onlyAdmin.id()).orElseThrow().enabled())
+        assertThat(inMemoryUserRepository.findById(onlyAdmin.id()).orElseThrow().enabled())
                 .isTrue();
     }
 
     @Test
     void theLastEnabledAdminCannotBeDemoted() {
-        User onlyAdmin = fakeUserStore.add(user("root", true, RoleId.ADMIN));
+        User onlyAdmin = inMemoryUserRepository.add(user("root", true, RoleId.ADMIN));
         UserId manager = newId();
 
         assertThatThrownBy(() -> userManagementService.update(
@@ -303,8 +307,8 @@ class UserManagementServiceTest {
 
     @Test
     void anotherEnabledAdminLetsBothChangesThrough() {
-        User first = fakeUserStore.add(user("root", true, RoleId.ADMIN));
-        User second = fakeUserStore.add(user("second", true, RoleId.ADMIN));
+        User first = inMemoryUserRepository.add(user("root", true, RoleId.ADMIN));
+        User second = inMemoryUserRepository.add(user("second", true, RoleId.ADMIN));
         UserId manager = newId();
 
         UserAccount demoted = userManagementService.update(
@@ -322,8 +326,8 @@ class UserManagementServiceTest {
 
     @Test
     void aDisabledAdminDoesNotCount() {
-        User enabledAdmin = fakeUserStore.add(user("root", true, RoleId.ADMIN));
-        fakeUserStore.add(user("off", false, RoleId.ADMIN));
+        User enabledAdmin = inMemoryUserRepository.add(user("root", true, RoleId.ADMIN));
+        inMemoryUserRepository.add(user("off", false, RoleId.ADMIN));
 
         assertThatThrownBy(() -> userManagementService.update(
                         newId(), enabledAdmin.id(), Optional.empty(), Optional.of(false), null))
@@ -333,7 +337,7 @@ class UserManagementServiceTest {
 
     @Test
     void aNonAdminCanBeDisabledWithoutAnyAdminLeft() {
-        User viewerUser = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User viewerUser = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
 
         UserAccount disabled =
                 userManagementService.update(newId(), viewerUser.id(), Optional.empty(), Optional.of(false), null);
@@ -343,7 +347,7 @@ class UserManagementServiceTest {
 
     @Test
     void aDisabledAdminCanBeDemotedAndEnabledAgain() {
-        User off = fakeUserStore.add(user("off", false, RoleId.ADMIN));
+        User off = inMemoryUserRepository.add(user("off", false, RoleId.ADMIN));
         UserId manager = newId();
 
         userManagementService.update(manager, off.id(), Optional.of(Set.of(RoleId.VIEWER)), Optional.empty(), null);
@@ -355,14 +359,14 @@ class UserManagementServiceTest {
 
     @Test
     void resetWithAnEnteredPasswordFlagsTheUserAndClearsTheLock() {
-        User locked = fakeUserStore.add(
+        User locked = inMemoryUserRepository.add(
                 CHANGES.withFailedLogin(user("bob", true, RoleId.VIEWER), 2, Optional.of(NOW.plusSeconds(600))));
 
         Optional<String> generated =
                 userManagementService.resetPassword(locked.id(), Optional.of("another-long-password"));
 
         assertThat(generated).isEmpty();
-        User stored = fakeUserStore.findById(locked.id()).orElseThrow();
+        User stored = inMemoryUserRepository.findById(locked.id()).orElseThrow();
         assertThat(stored.passwordHash()).isEqualTo(new PasswordHash("hash:another-long-password"));
         assertThat(stored.mustChangePassword()).isTrue();
         assertThat(stored.failedLoginCount()).isZero();
@@ -372,33 +376,34 @@ class UserManagementServiceTest {
 
     @Test
     void resetWithoutAPasswordGeneratesOne() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
 
         Optional<String> generated = userManagementService.resetPassword(target.id(), Optional.empty());
 
         assertThat(generated).contains("generated-password");
-        User stored = fakeUserStore.findById(target.id()).orElseThrow();
+        User stored = inMemoryUserRepository.findById(target.id()).orElseThrow();
         assertThat(stored.passwordHash()).isEqualTo(new PasswordHash("hash:generated-password"));
         assertThat(stored.mustChangePassword()).isTrue();
     }
 
     @Test
     void resetDoesNotEnableADisabledUser() {
-        User off = fakeUserStore.add(user("off", false, RoleId.VIEWER));
+        User off = inMemoryUserRepository.add(user("off", false, RoleId.VIEWER));
 
         userManagementService.resetPassword(off.id(), Optional.empty());
 
-        assertThat(fakeUserStore.findById(off.id()).orElseThrow().enabled()).isFalse();
+        assertThat(inMemoryUserRepository.findById(off.id()).orElseThrow().enabled())
+                .isFalse();
     }
 
     @Test
     void resetRejectsAWeakPasswordAndChangesNothing() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
 
         assertThatThrownBy(() -> userManagementService.resetPassword(target.id(), Optional.of("bob")))
                 .isInstanceOfSatisfying(
                         IdentityException.class, e -> assertThat(e.error()).isEqualTo(IdentityError.WEAK_PASSWORD));
-        assertThat(fakeUserStore.saved()).isEmpty();
+        assertThat(inMemoryUserRepository.saved()).isEmpty();
     }
 
     @Test
@@ -410,8 +415,8 @@ class UserManagementServiceTest {
 
     @Test
     void aLockingFailureOnResetBecomesConcurrentUpdate() {
-        User target = fakeUserStore.add(user("bob", true, RoleId.VIEWER));
-        fakeUserStore.failNextSaves(1);
+        User target = inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
+        inMemoryUserRepository.failNextSaves(1);
 
         assertThatThrownBy(() -> userManagementService.resetPassword(target.id(), Optional.empty()))
                 .isInstanceOfSatisfying(
@@ -420,7 +425,7 @@ class UserManagementServiceTest {
 
     @Test
     void getGivesTheRoleNamesSortedAndTheLockAsOfNow() {
-        User lockedUser = fakeUserStore.add(CHANGES.withLastLogin(
+        User lockedUser = inMemoryUserRepository.add(CHANGES.withLastLogin(
                 CHANGES.withFailedLogin(
                         user("bob", true, RoleId.VIEWER, RoleId.ADMIN, RoleId.ANALYST),
                         0,
@@ -439,8 +444,8 @@ class UserManagementServiceTest {
 
     @Test
     void anExpiredLockReadsAsNotLocked() {
-        User expired =
-                fakeUserStore.add(CHANGES.withFailedLogin(user("bob", true), 0, Optional.of(NOW.minusSeconds(1))));
+        User expired = inMemoryUserRepository.add(
+                CHANGES.withFailedLogin(user("bob", true), 0, Optional.of(NOW.minusSeconds(1))));
 
         UserAccount account = userManagementService.get(expired.id());
 
@@ -457,8 +462,8 @@ class UserManagementServiceTest {
 
     @Test
     void listGivesEveryUserWithItsRoleNames() {
-        fakeUserStore.add(user("bob", true, RoleId.VIEWER));
-        fakeUserStore.add(user("alice", false, RoleId.ADMIN));
+        inMemoryUserRepository.add(user("bob", true, RoleId.VIEWER));
+        inMemoryUserRepository.add(user("alice", false, RoleId.ADMIN));
 
         List<UserAccount> accounts = userManagementService.list();
 

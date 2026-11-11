@@ -14,14 +14,14 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Us
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Username;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound.persistence.UserRepositoryPort;
 
-final class FakeUserStore implements UserRepositoryPort {
+final class InMemoryUserRepository implements UserRepositoryPort {
 
     private final List<User> users = new ArrayList<>();
     private final List<User> saved = new ArrayList<>();
     private int failSaves;
     private final Instant now;
 
-    FakeUserStore(Instant now) {
+    InMemoryUserRepository(Instant now) {
         this.now = now;
     }
 

@@ -58,7 +58,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP2: Analysis adapter tests
 
-- **Status**: done
+- **Status**: done (two tests of `JpaAnalysisRepositoryAdapterTest` moved to `JpaAnalysisOwnerTest` to stay under Checkstyle's FileLength)
 - **Depends on**: none
 - **Files**: `domain/analysis/adapter/credentials/EnvFileCredentialsAdapterTest.java`,
   `domain/analysis/adapter/eventline/mapper/RunnerOutputLineToRunEventMapperTest.java`,
@@ -139,7 +139,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP8: Identity core tests
 
-- **Status**: done
+- **Status**: done (the fake user repository of `UserManagementServiceTest` extracted to `InMemoryUserRepository` to stay under Checkstyle's FileLength)
 - **Depends on**: none
 - **Files**: `domain/identity/core/service/PasswordPolicyServiceTest.java`,
   `domain/identity/core/service/RoleManagementServiceTest.java`,
