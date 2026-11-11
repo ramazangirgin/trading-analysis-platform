@@ -111,7 +111,7 @@ This is likely for the next pull request of the queue once the previous one was 
    | ta-runner | `mise run runner-test` |
    | End-to-end tests | `mise run e2e` |
    | Docker images and Compose smoke test | needs Docker; else reason from the log and let CI verify |
-   | Version | should not fail here (update pull requests skip the bump): report it, do not bump |
+   | Version | `renovate-bump.yml` adds the minor bump after each push or rebase: wait for it; raise it to `major` by hand only if the update breaks the REST API, configuration or the ta-runner contract |
 
 4. **Fix the integration.** The goal is the new version working, not a green CI at any price: a
    downgrade is the last resort, never the first answer to a failure. Work through these in order,
@@ -190,8 +190,8 @@ The ruleset needs the branch up to date with `main`.
   `/renovate-fix <pr>` once Renovate is done.
 - **Other commits too** (fixes from 2): bring it up to date with the
   [`pr-ready`](../pr-ready/SKILL.md) skill (`Skill`, `pr-ready`, arguments `<pr> --no-fix`): it
-  rebases on `main`, pushes with `--force-with-lease` and waits for CI; no version bump, since
-  Renovate's pull requests are exempt. During its rebase, a conflict in `.github/renovate.json5`, a
+  rebases on `main`, pushes with `--force-with-lease` and waits for CI, and raises the
+  version when the branch has none (`renovate-bump.yml` does it after Renovate's own rebase). During its rebase, a conflict in `.github/renovate.json5`, a
   lock file or a version file of a dependency is resolved here (an exception to its "any other
   conflict: stop"): keep `main`'s change and redo this branch's on top (regenerate lock files). Any
   other conflict: stop and show it. A red CI comes back here: go to 2.

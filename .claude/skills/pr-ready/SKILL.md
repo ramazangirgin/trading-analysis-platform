@@ -1,6 +1,6 @@
 ---
 name: pr-ready
-description: Get a branch of this repository ready for review as a pull request into main - set up a fresh worktree so the Git hooks run, raise the version when the branch does not (every pull request into main must, Renovate's excepted), run the quick check, push, open the pull request (or update the existing one), bring it up to date with main, wait for CI and fix a red run until "CI passed" is green, then hand it over for review without merging. Use when the user asks to open, create, update or finish a pull request, or to get one green or ready, e.g. "/pr-ready", "/pr-ready 155", "open a PR for this" or "why is the PR failing". Other skills use it for their own pull requests (dependabot-fix, renovate-fix).
+description: Get a branch of this repository ready for review as a pull request into main - set up a fresh worktree so the Git hooks run, raise the version when the branch does not (every pull request into main must, Renovate's too), run the quick check, push, open the pull request (or update the existing one), bring it up to date with main, wait for CI and fix a red run until "CI passed" is green, then hand it over for review without merging. Use when the user asks to open, create, update or finish a pull request, or to get one green or ready, e.g. "/pr-ready", "/pr-ready 155", "open a PR for this" or "why is the PR failing". Other skills use it for their own pull requests (dependabot-fix, renovate-fix).
 ---
 
 # Pull request, ready for review
@@ -8,7 +8,7 @@ description: Get a branch of this repository ready for review as a pull request 
 `main` is protected ([`docs/ci-and-releases.md`](../../../docs/ci-and-releases.md), [versioning convention](../../../docs/coding-convention/repository-versioning-and-releases.md)):
 a pull request, the required check **CI passed** with the branch up to date, and a code owner's
 review. **Every pull request into `main` raises the version in its own diff**, a documentation or
-skill change too; only Renovate's pull requests (`renovate/*` opened by `renovate[bot]`) are exempt.
+skill change too, and a Renovate update (`renovate/*`) as well; only a plan-only pull request is exempt.
 This skill takes a branch to that state without asking at every step, and never merges on its own
 (see 6).
 
@@ -59,7 +59,7 @@ git branch --show-current
 
 ## 1. Version bump
 
-Skip it for Renovate's pull requests. Otherwise:
+Skip it for a plan-only pull request (`check-bump` says so). Otherwise:
 
 ```sh
 git fetch origin
