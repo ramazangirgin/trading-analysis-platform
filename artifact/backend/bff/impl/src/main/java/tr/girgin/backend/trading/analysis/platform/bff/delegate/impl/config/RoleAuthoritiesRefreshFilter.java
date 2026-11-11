@@ -26,16 +26,16 @@ public final class RoleAuthoritiesRefreshFilter extends OncePerRequestFilter {
     private static final String API_PREFIX = "/api/";
 
     private final SessionAuthorities sessionAuthorities;
-    private final AuthenticatePort authentication;
-    private final SecurityContextRepository contextRepository;
+    private final AuthenticatePort authenticatePort;
+    private final SecurityContextRepository securityContextRepository;
 
     RoleAuthoritiesRefreshFilter(
             SessionAuthorities sessionAuthorities,
-            AuthenticatePort authentication,
-            SecurityContextRepository contextRepository) {
+            AuthenticatePort authenticatePort,
+            SecurityContextRepository securityContextRepository) {
         this.sessionAuthorities = sessionAuthorities;
-        this.authentication = authentication;
-        this.contextRepository = contextRepository;
+        this.authenticatePort = authenticatePort;
+        this.securityContextRepository = securityContextRepository;
     }
 
     @Override
@@ -60,10 +60,10 @@ public final class RoleAuthoritiesRefreshFilter extends OncePerRequestFilter {
             return;
         }
         long builtAt = sessionAuthorities.generation();
-        authentication.findActiveUser(new UserId(id)).ifPresent(user -> {
+        authenticatePort.findActiveUser(new UserId(id)).ifPresent(user -> {
             context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
                     current.getPrincipal(), null, sessionAuthorities.authorities(user)));
-            contextRepository.saveContext(context, request, response);
+            securityContextRepository.saveContext(context, request, response);
             sessionAuthorities.stamp(session, builtAt);
         });
     }

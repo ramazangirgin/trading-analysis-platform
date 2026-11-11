@@ -39,23 +39,25 @@ class ManageAnalysisDefaultsUseCaseTest {
             List.of(),
             List.of());
 
-    private final FakeRepository repository = new FakeRepository();
+    private final FakeRepository fakeRepository = new FakeRepository();
     private int catalogCalls;
-    private final ManageAnalysisDefaultsUseCase service = new ManageAnalysisDefaultsUseCase(repository, () -> {
-        catalogCalls++;
-        return CATALOG;
-    });
+    private final ManageAnalysisDefaultsUseCase manageAnalysisDefaultsUseCase =
+            new ManageAnalysisDefaultsUseCase(fakeRepository, () -> {
+                catalogCalls++;
+                return CATALOG;
+            });
 
     @Test
     void answersTheCatalogDefaultsWithOneRoundEachWhileNothingIsStored() {
-        assertThat(service.get()).isEqualTo(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, null));
+        assertThat(manageAnalysisDefaultsUseCase.get())
+                .isEqualTo(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, null));
     }
 
     @Test
     void answersTheStoredRowWithoutAskingTheCatalog() {
-        repository.store(new AnalysisDefaults("anthropic", "claude-deep", "claude-quick", 3, 4, 2L));
+        fakeRepository.store(new AnalysisDefaults("anthropic", "claude-deep", "claude-quick", 3, 4, 2L));
 
-        assertThat(service.get()).isEqualTo(repository.stored());
+        assertThat(manageAnalysisDefaultsUseCase.get()).isEqualTo(fakeRepository.stored());
         assertThat(catalogCalls).isZero();
     }
 
@@ -82,41 +84,41 @@ class ManageAnalysisDefaultsUseCaseTest {
 
     @Test
     void storesTheFirstSaveAndAnswersItsVersion() {
-        AnalysisDefaults saved =
-                service.update(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 2, 3, null), null);
+        AnalysisDefaults saved = manageAnalysisDefaultsUseCase.update(
+                new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 2, 3, null), null);
 
         assertThat(saved.version()).isZero();
-        assertThat(service.get()).isEqualTo(saved);
+        assertThat(manageAnalysisDefaultsUseCase.get()).isEqualTo(saved);
     }
 
     @Test
     void updatesAtTheStoredVersion() {
-        repository.store(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, 0L));
+        fakeRepository.store(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, 0L));
 
-        AnalysisDefaults saved =
-                service.update(new AnalysisDefaults("anthropic", "claude-deep", "claude-quick", 5, 6, 0L), 0L);
+        AnalysisDefaults saved = manageAnalysisDefaultsUseCase.update(
+                new AnalysisDefaults("anthropic", "claude-deep", "claude-quick", 5, 6, 0L), 0L);
 
         assertThat(saved).isEqualTo(new AnalysisDefaults("anthropic", "claude-deep", "claude-quick", 5, 6, 1L));
     }
 
     @Test
     void failsOnAStaleVersion() {
-        repository.store(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, 3L));
+        fakeRepository.store(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, 3L));
 
         assertConcurrent(2L);
     }
 
     @Test
     void failsOnANullVersionWhileARowExists() {
-        repository.store(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, 0L));
+        fakeRepository.store(new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 1, 1, 0L));
 
         assertConcurrent(null);
     }
 
     private void assertConcurrent(Long expectedVersion) {
-        AnalysisDefaults before = repository.stored();
+        AnalysisDefaults before = fakeRepository.stored();
 
-        assertThatThrownBy(() -> service.update(
+        assertThatThrownBy(() -> manageAnalysisDefaultsUseCase.update(
                         new AnalysisDefaults("openai", "gpt-deep", "gpt-quick", 2, 2, expectedVersion),
                         expectedVersion))
                 .isInstanceOfSatisfying(SettingsException.class, e -> {
@@ -127,14 +129,15 @@ class ManageAnalysisDefaultsUseCaseTest {
                         assertThat(e.params()).containsEntry("version", expectedVersion.toString());
                     }
                 });
-        assertThat(repository.stored()).isEqualTo(before);
+        assertThat(fakeRepository.stored()).isEqualTo(before);
     }
 
     private void assertInvalid(AnalysisDefaults defaults, String field) {
-        assertThatThrownBy(() -> service.update(defaults, null)).isInstanceOfSatisfying(SettingsException.class, e -> {
-            assertThat(e.error()).isEqualTo(SettingsError.INVALID_ANALYSIS_DEFAULTS);
-            assertThat(e.params()).containsEntry("field", field);
-        });
+        assertThatThrownBy(() -> manageAnalysisDefaultsUseCase.update(defaults, null))
+                .isInstanceOfSatisfying(SettingsException.class, e -> {
+                    assertThat(e.error()).isEqualTo(SettingsError.INVALID_ANALYSIS_DEFAULTS);
+                    assertThat(e.params()).containsEntry("field", field);
+                });
     }
 
     private static final class FakeRepository implements AnalysisDefaultsRepositoryPort {

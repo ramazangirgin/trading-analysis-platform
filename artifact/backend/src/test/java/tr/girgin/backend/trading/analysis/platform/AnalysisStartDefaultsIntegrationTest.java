@@ -53,10 +53,10 @@ class AnalysisStartDefaultsIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
     private DataSource dataSource;
@@ -76,8 +76,8 @@ class AnalysisStartDefaultsIntegrationTest {
                 Statement statement = connection.createStatement()) {
             statement.execute("DELETE FROM \"SETTINGS\".\"ANALYSIS_DEFAULTS\"");
         }
-        analyst = TestSession.loggedIn(port, users, hasher, RoleId.ANALYST);
-        admin = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        analyst = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ANALYST);
+        admin = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
     }
 
     @Test

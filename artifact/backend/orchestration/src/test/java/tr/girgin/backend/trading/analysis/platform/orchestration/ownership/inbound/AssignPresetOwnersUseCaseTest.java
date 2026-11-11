@@ -22,29 +22,29 @@ class AssignPresetOwnersUseCaseTest {
 
     @Test
     void givesThePresetsWithoutAnOwnerToTheFirstAdmin() {
-        AssignPresetOwnersUseCase service = service(Optional.of(new UserId("admin-1")));
+        AssignPresetOwnersUseCase assignPresetOwnersUseCase = service(Optional.of(new UserId("admin-1")));
 
-        service.assignUnownedToFirstAdmin();
+        assignPresetOwnersUseCase.assignUnownedToFirstAdmin();
 
         assertThat(assignedTo).containsExactly(new OwnerId("admin-1"));
     }
 
     @Test
     void doesNothingBeforeThereIsAFirstAdmin() {
-        AssignPresetOwnersUseCase service = service(Optional.empty());
+        AssignPresetOwnersUseCase assignPresetOwnersUseCase = service(Optional.empty());
 
-        service.assignUnownedToFirstAdmin();
+        assignPresetOwnersUseCase.assignUnownedToFirstAdmin();
 
         assertThat(assignedTo).isEmpty();
     }
 
     @Test
     void doesNotFailTheStartWhenAPresetChangesAtTheSameTime() {
-        AssignPresetOwnersUseCase service = service(Optional.of(new UserId("admin-1")), _ -> {
+        AssignPresetOwnersUseCase assignPresetOwnersUseCase = service(Optional.of(new UserId("admin-1")), _ -> {
             throw new OptimisticLockingFailureException("stale version");
         });
 
-        assertThatCode(service::assignUnownedToFirstAdmin).doesNotThrowAnyException();
+        assertThatCode(assignPresetOwnersUseCase::assignUnownedToFirstAdmin).doesNotThrowAnyException();
     }
 
     private AssignPresetOwnersUseCase service(Optional<UserId> firstAdmin) {
@@ -54,7 +54,8 @@ class AssignPresetOwnersUseCaseTest {
         });
     }
 
-    private AssignPresetOwnersUseCase service(Optional<UserId> firstAdmin, AssignUnownedPresetsPort assignUnowned) {
+    private AssignPresetOwnersUseCase service(
+            Optional<UserId> firstAdmin, AssignUnownedPresetsPort assignUnownedPresetsPort) {
         return new AssignPresetOwnersUseCase(
                 new UserDirectoryPort() {
                     @Override
@@ -67,6 +68,6 @@ class AssignPresetOwnersUseCaseTest {
                         return Map.of();
                     }
                 },
-                assignUnowned);
+                assignUnownedPresetsPort);
     }
 }

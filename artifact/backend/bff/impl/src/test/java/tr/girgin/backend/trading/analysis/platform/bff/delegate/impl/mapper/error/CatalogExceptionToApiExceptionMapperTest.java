@@ -9,12 +9,13 @@ import tr.girgin.backend.trading.analysis.platform.domain.catalog.core.exception
 
 class CatalogExceptionToApiExceptionMapperTest {
 
-    private final CatalogExceptionToApiExceptionMapper mapper = new CatalogExceptionToApiExceptionMapperImpl();
+    private final CatalogExceptionToApiExceptionMapper catalogExceptionToApiExceptionMapper =
+            new CatalogExceptionToApiExceptionMapperImpl();
 
     @Test
     void mapsAnUnavailableCatalogToServiceUnavailable() {
-        ApiException mapped =
-                mapper.map(new CatalogUnavailableException("runner image missing", new IllegalStateException()));
+        ApiException mapped = catalogExceptionToApiExceptionMapper.map(
+                new CatalogUnavailableException("runner image missing", new IllegalStateException()));
 
         assertThat(mapped.status()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
         assertThat(mapped.errorCode()).isEqualTo("catalog_unavailable");

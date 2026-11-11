@@ -20,12 +20,13 @@ class PresetToPresetDtoMapperTest {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
-    private final PresetToPresetDtoMapper toDto = new PresetToPresetDtoMapperImpl();
-    private final PresetValuesDtoToJsonStringMapper toJson = new PresetValuesDtoToJsonStringMapperImpl();
+    private final PresetToPresetDtoMapper presetToPresetDtoMapper = new PresetToPresetDtoMapperImpl();
+    private final PresetValuesDtoToJsonStringMapper presetValuesDtoToJsonStringMapper =
+            new PresetValuesDtoToJsonStringMapperImpl();
 
     PresetToPresetDtoMapperTest() {
-        ReflectionTestUtils.setField(toDto, "jsonMapper", JSON);
-        ReflectionTestUtils.setField(toJson, "jsonMapper", JSON);
+        ReflectionTestUtils.setField(presetToPresetDtoMapper, "jsonMapper", JSON);
+        ReflectionTestUtils.setField(presetValuesDtoToJsonStringMapper, "jsonMapper", JSON);
     }
 
     @Test
@@ -33,14 +34,14 @@ class PresetToPresetDtoMapperTest {
         PresetValuesDto values =
                 new PresetValuesDto("STOCK", List.of("market", "news"), "openai", "o3", "gpt-5.4", 2, 3, "en", true);
 
-        PresetDto dto = toDto.map(preset(toJson.map(values)), Map.of());
+        PresetDto dto = presetToPresetDtoMapper.map(preset(presetValuesDtoToJsonStringMapper.map(values)), Map.of());
 
         assertThat(dto.values()).isEqualTo(values);
     }
 
     @Test
     void ignoresAnUnknownPropertyOfAnOlderPayload() {
-        PresetDto dto = toDto.map(preset("{\"assetType\":\"CRYPTO\",\"retired\":1}"), Map.of());
+        PresetDto dto = presetToPresetDtoMapper.map(preset("{\"assetType\":\"CRYPTO\",\"retired\":1}"), Map.of());
 
         assertThat(dto.values())
                 .isEqualTo(new PresetValuesDto("CRYPTO", null, null, null, null, null, null, null, null));
@@ -51,17 +52,18 @@ class PresetToPresetDtoMapperTest {
         PresetValuesDto values =
                 new PresetValuesDto("STOCK", List.of("market"), null, null, null, null, null, "en", null);
 
-        String payload = toJson.map(values);
+        String payload = presetValuesDtoToJsonStringMapper.map(values);
 
         assertThat(payload).doesNotContain("llmProvider", "maxDebateRounds", "null");
-        assertThat(toDto.map(preset(payload), Map.of()).values()).isEqualTo(values);
+        assertThat(presetToPresetDtoMapper.map(preset(payload), Map.of()).values())
+                .isEqualTo(values);
     }
 
     @Test
     void namesTheOwner() {
         Preset preset = preset("{}");
 
-        PresetDto dto = toDto.map(preset, Map.of(new UserId("u1"), new Username("alice")));
+        PresetDto dto = presetToPresetDtoMapper.map(preset, Map.of(new UserId("u1"), new Username("alice")));
 
         assertThat(dto.owner().id()).isEqualTo("u1");
         assertThat(dto.owner().username()).isEqualTo("alice");

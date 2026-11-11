@@ -36,69 +36,74 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisdefault
 @Service
 class SettingsApiDelegateImpl implements SettingsApiDelegate {
 
-    private final ManageSecretsPort secrets;
-    private final ManagePresetsPort presets;
-    private final ManageAnalysisDefaultsUseCase analysisDefaults;
-    private final SecretStatusToSecretStatusDtoMapper secretMapper;
-    private final PresetToPresetDtoMapper presetMapper;
-    private final AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper;
-    private final PresetValuesDtoToJsonStringMapper valuesMapper;
+    private final ManageSecretsPort manageSecretsPort;
+    private final ManagePresetsPort managePresetsPort;
+    private final ManageAnalysisDefaultsUseCase manageAnalysisDefaultsUseCase;
+    private final SecretStatusToSecretStatusDtoMapper secretStatusToSecretStatusDtoMapper;
+    private final PresetToPresetDtoMapper presetToPresetDtoMapper;
+    private final AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsToAnalysisDefaultsDtoMapper;
+    private final PresetValuesDtoToJsonStringMapper presetValuesDtoToJsonStringMapper;
     private final CurrentUser currentUser;
-    private final UserDirectoryPort userDirectory;
+    private final UserDirectoryPort userDirectoryPort;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     SettingsApiDelegateImpl(
-            ManageSecretsPort secrets,
-            ManagePresetsPort presets,
-            ManageAnalysisDefaultsUseCase analysisDefaults,
-            SecretStatusToSecretStatusDtoMapper secretMapper,
-            PresetToPresetDtoMapper presetMapper,
-            AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsMapper,
-            PresetValuesDtoToJsonStringMapper valuesMapper,
+            ManageSecretsPort manageSecretsPort,
+            ManagePresetsPort managePresetsPort,
+            ManageAnalysisDefaultsUseCase manageAnalysisDefaultsUseCase,
+            SecretStatusToSecretStatusDtoMapper secretStatusToSecretStatusDtoMapper,
+            PresetToPresetDtoMapper presetToPresetDtoMapper,
+            AnalysisDefaultsToAnalysisDefaultsDtoMapper analysisDefaultsToAnalysisDefaultsDtoMapper,
+            PresetValuesDtoToJsonStringMapper presetValuesDtoToJsonStringMapper,
             CurrentUser currentUser,
-            UserDirectoryPort userDirectory) {
+            UserDirectoryPort userDirectoryPort) {
         this.currentUser = currentUser;
-        this.userDirectory = userDirectory;
-        this.secrets = secrets;
-        this.presets = presets;
-        this.analysisDefaults = analysisDefaults;
-        this.secretMapper = secretMapper;
-        this.presetMapper = presetMapper;
-        this.analysisDefaultsMapper = analysisDefaultsMapper;
-        this.valuesMapper = valuesMapper;
+        this.userDirectoryPort = userDirectoryPort;
+        this.manageSecretsPort = manageSecretsPort;
+        this.managePresetsPort = managePresetsPort;
+        this.manageAnalysisDefaultsUseCase = manageAnalysisDefaultsUseCase;
+        this.secretStatusToSecretStatusDtoMapper = secretStatusToSecretStatusDtoMapper;
+        this.presetToPresetDtoMapper = presetToPresetDtoMapper;
+        this.analysisDefaultsToAnalysisDefaultsDtoMapper = analysisDefaultsToAnalysisDefaultsDtoMapper;
+        this.presetValuesDtoToJsonStringMapper = presetValuesDtoToJsonStringMapper;
     }
 
     @Override
     @RequiresPermission(Permission.SETTINGS_READ)
     public List<SecretStatusDto> listSecrets() {
-        return secrets.listSecrets().stream().map(secretMapper::map).toList();
+        return manageSecretsPort.listSecrets().stream()
+                .map(secretStatusToSecretStatusDtoMapper::map)
+                .toList();
     }
 
     @Override
     @RequiresPermission(Permission.SETTINGS_KEYS_WRITE)
     public SecretStatusDto setSecret(String name, String value) {
-        return secretMapper.map(secrets.setSecret(name, value));
+        return secretStatusToSecretStatusDtoMapper.map(manageSecretsPort.setSecret(name, value));
     }
 
     @Override
     @RequiresPermission(Permission.SETTINGS_KEYS_WRITE)
     public ResponseEntity<Void> removeSecret(String name) {
-        secrets.removeSecret(name);
+        manageSecretsPort.removeSecret(name);
         return ResponseEntity.noContent().build();
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_READ)
     public List<PresetDto> listPresets(boolean allUsers) {
-        List<Preset> found = presets.listPresets(access(), allUsers);
+        List<Preset> found = managePresetsPort.listPresets(access(), allUsers);
         Map<UserId, Username> usernames = usernames(found);
-        return found.stream().map(p -> presetMapper.map(p, usernames)).toList();
+        return found.stream()
+                .map(p -> presetToPresetDtoMapper.map(p, usernames))
+                .toList();
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<PresetDto> createPreset(SavePresetRequest request) {
-        Preset preset = presets.createPreset(request.name(), valuesMapper.map(request.values()), access().user());
+        Preset preset = managePresetsPort.createPreset(
+                request.name(), presetValuesDtoToJsonStringMapper.map(request.values()), access().user());
         return ResponseEntity.created(URI.create("/api/presets/" + preset.id().value()))
                 .body(dto(preset));
     }
@@ -106,19 +111,23 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
     public PresetDto updatePreset(String id, SavePresetRequest request) {
-        return dto(presets.updatePreset(
-                new PresetId(id), request.name(), valuesMapper.map(request.values()), request.version(), access()));
+        return dto(managePresetsPort.updatePreset(
+                new PresetId(id),
+                request.name(),
+                presetValuesDtoToJsonStringMapper.map(request.values()),
+                request.version(),
+                access()));
     }
 
     @Override
     @RequiresPermission(Permission.PRESET_MANAGE)
     public ResponseEntity<Void> deletePreset(String id) {
-        presets.deletePreset(new PresetId(id), access());
+        managePresetsPort.deletePreset(new PresetId(id), access());
         return ResponseEntity.noContent().build();
     }
 
     private PresetDto dto(Preset preset) {
-        return presetMapper.map(preset, usernames(List.of(preset)));
+        return presetToPresetDtoMapper.map(preset, usernames(List.of(preset)));
     }
 
     private Map<UserId, Username> usernames(List<Preset> found) {
@@ -127,7 +136,7 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
                 .filter(Objects::nonNull)
                 .map(owner -> new UserId(owner.value()))
                 .collect(Collectors.toSet());
-        return userDirectory.usernames(ids);
+        return userDirectoryPort.usernames(ids);
     }
 
     private PresetAccess access() {
@@ -137,7 +146,7 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
     @Override
     @RequiresPermission({Permission.ANALYSIS_RUN, Permission.ANALYSIS_DEFAULTS_MANAGE})
     public AnalysisDefaultsDto getAnalysisDefaults() {
-        return analysisDefaultsMapper.map(analysisDefaults.get());
+        return analysisDefaultsToAnalysisDefaultsDtoMapper.map(manageAnalysisDefaultsUseCase.get());
     }
 
     @Override
@@ -150,6 +159,7 @@ class SettingsApiDelegateImpl implements SettingsApiDelegate {
                 request.maxDebateRounds(),
                 request.maxRiskDiscussRounds(),
                 null);
-        return analysisDefaultsMapper.map(analysisDefaults.update(defaults, request.version()));
+        return analysisDefaultsToAnalysisDefaultsDtoMapper.map(
+                manageAnalysisDefaultsUseCase.update(defaults, request.version()));
     }
 }

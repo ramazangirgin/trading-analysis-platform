@@ -34,7 +34,7 @@ class ViewAnalysesUseCaseTest {
     private final List<Collection<UserId>> lookups = new ArrayList<>();
     private final Map<UserId, Username> directory = Map.of(new UserId("u-1"), new Username("alice"));
 
-    private final ViewAnalysesUseCase useCase = new ViewAnalysesUseCase(
+    private final ViewAnalysesUseCase viewAnalysesUseCase = new ViewAnalysesUseCase(
             (analysis, _) ->
                     analysis.owner() != null && analysis.owner().value().equals("u-1") ? MANAGER : READER,
             new UserDirectoryPort() {
@@ -55,7 +55,7 @@ class ViewAnalysesUseCaseTest {
         Analysis mine = analysis(new OwnerId("u-1"));
         Analysis theirs = analysis(new OwnerId("u-2"));
 
-        List<AnalysisView> views = useCase.view(List.of(mine, theirs), ACCESS);
+        List<AnalysisView> views = viewAnalysesUseCase.view(List.of(mine, theirs), ACCESS);
 
         assertThat(views).extracting(AnalysisView::analysis).containsExactly(mine, theirs);
         assertThat(views).extracting(AnalysisView::rights).containsExactly(MANAGER, READER);
@@ -63,7 +63,7 @@ class ViewAnalysesUseCaseTest {
 
     @Test
     void setsTheUsernameOfTheOwner() {
-        AnalysisView view = useCase.view(analysis(new OwnerId("u-1")), ACCESS);
+        AnalysisView view = viewAnalysesUseCase.view(analysis(new OwnerId("u-1")), ACCESS);
 
         assertThat(view.owner().id()).isEqualTo(new OwnerId("u-1"));
         assertThat(view.owner().username()).isEqualTo(new Username("alice"));
@@ -71,7 +71,7 @@ class ViewAnalysesUseCaseTest {
 
     @Test
     void leavesTheUsernameNullWhenTheOwnerIsNoLongerAUser() {
-        AnalysisView view = useCase.view(analysis(new OwnerId("u-2")), ACCESS);
+        AnalysisView view = viewAnalysesUseCase.view(analysis(new OwnerId("u-2")), ACCESS);
 
         assertThat(view.owner().id()).isEqualTo(new OwnerId("u-2"));
         assertThat(view.owner().username()).isNull();
@@ -79,14 +79,15 @@ class ViewAnalysesUseCaseTest {
 
     @Test
     void leavesTheOwnerNullWhenTheAnalysisHasNone() {
-        AnalysisView view = useCase.view(analysis(null), ACCESS);
+        AnalysisView view = viewAnalysesUseCase.view(analysis(null), ACCESS);
 
         assertThat(view.owner()).isNull();
     }
 
     @Test
     void looksTheUsernamesOfAWholeListUpOnce() {
-        useCase.view(List.of(analysis(new OwnerId("u-1")), analysis(new OwnerId("u-2")), analysis(null)), ACCESS);
+        viewAnalysesUseCase.view(
+                List.of(analysis(new OwnerId("u-1")), analysis(new OwnerId("u-2")), analysis(null)), ACCESS);
 
         assertThat(lookups).hasSize(1);
         assertThat(lookups.getFirst()).containsExactlyInAnyOrder(new UserId("u-1"), new UserId("u-2"));

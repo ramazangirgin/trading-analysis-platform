@@ -39,10 +39,11 @@ class AnalysisViewToAnalysisDtoMapperTest {
     private static final Instant ENDED = Instant.parse("2026-01-02T03:15:00Z");
     private static final Instant VISIBILITY_CHANGED = Instant.parse("2026-01-03T00:00:00Z");
 
-    private final AnalysisViewToAnalysisDtoMapper mapper = new AnalysisViewToAnalysisDtoMapperImpl(
-            new AnalysisIdToStringMapperImpl(),
-            new RunStatsToRunStatsDtoMapperImpl(new DurationToMillisMapperImpl()),
-            new VisibilityToVisibilityEnumDtoMapperImpl());
+    private final AnalysisViewToAnalysisDtoMapper analysisViewToAnalysisDtoMapper =
+            new AnalysisViewToAnalysisDtoMapperImpl(
+                    new AnalysisIdToStringMapperImpl(),
+                    new RunStatsToRunStatsDtoMapperImpl(new DurationToMillisMapperImpl()),
+                    new VisibilityToVisibilityEnumDtoMapperImpl());
 
     @Test
     void mapsEveryAnalysisFieldAndTheRights() {
@@ -51,7 +52,7 @@ class AnalysisViewToAnalysisDtoMapperTest {
                 new AnalysisOwner(new OwnerId("u-1"), new Username("alice")),
                 new AnalysisRights(true, true, List.of(Visibility.PRIVATE, Visibility.PUBLIC, Visibility.PARTIAL)));
 
-        AnalysisDto dto = mapper.map(view);
+        AnalysisDto dto = analysisViewToAnalysisDtoMapper.map(view);
 
         assertThat(dto.id()).isEqualTo("a-1");
         assertThat(dto.spec().ticker()).isEqualTo("NVDA");
@@ -96,7 +97,7 @@ class AnalysisViewToAnalysisDtoMapperTest {
                 new AnalysisOwner(new OwnerId("u-1"), new Username("alice")),
                 new AnalysisRights(false, false, List.of()));
 
-        AnalysisDto dto = mapper.map(view);
+        AnalysisDto dto = analysisViewToAnalysisDtoMapper.map(view);
 
         assertThat(dto.owner().id()).isEqualTo("u-1");
         assertThat(dto.owner().username()).isEqualTo("alice");
@@ -112,7 +113,7 @@ class AnalysisViewToAnalysisDtoMapperTest {
                 new AnalysisOwner(new OwnerId("u-1"), null),
                 new AnalysisRights(false, false, List.of()));
 
-        AnalysisDto dto = mapper.map(view);
+        AnalysisDto dto = analysisViewToAnalysisDtoMapper.map(view);
 
         assertThat(dto.owner().id()).isEqualTo("u-1");
         assertThat(dto.owner().username()).isNull();
@@ -122,7 +123,7 @@ class AnalysisViewToAnalysisDtoMapperTest {
     void mapsNoOwnerToNull() {
         AnalysisView view = new AnalysisView(analysis(null), null, new AnalysisRights(false, false, List.of()));
 
-        assertThat(mapper.map(view).owner()).isNull();
+        assertThat(analysisViewToAnalysisDtoMapper.map(view).owner()).isNull();
     }
 
     private static Analysis analysis(OwnerId owner) {

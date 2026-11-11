@@ -35,10 +35,10 @@ class AuthApiIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
     private ApplicationContext context;
@@ -73,7 +73,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void aLoginWithoutTheCsrfHeaderIs403() throws Exception {
-        String username = TestSession.createUser(users, hasher, true);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
         TestSession anonymous = TestSession.anonymous(port);
 
         HttpResponse<String> response = anonymous.sendWithoutCsrfHeader(
@@ -87,8 +87,8 @@ class AuthApiIntegrationTest {
 
     @Test
     void wrongPasswordUnknownUserAndDisabledUserAreTheSame401() throws Exception {
-        String active = TestSession.createUser(users, hasher, true);
-        String disabled = TestSession.createUser(users, hasher, false);
+        String active = TestSession.createUser(userRepositoryPort, passwordHasherPort, true);
+        String disabled = TestSession.createUser(userRepositoryPort, passwordHasherPort, false);
         TestSession anonymous = TestSession.anonymous(port);
 
         HttpResponse<String> wrongPassword = anonymous.login(active, "not the password");
@@ -106,7 +106,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void aValidLoginStartsAProtectedSessionWithAFreshId() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
         TestSession client = TestSession.anonymous(port);
 
         HttpResponse<String> login = client.login(username, TestSession.PASSWORD);
@@ -139,7 +139,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void theCookiesAreSecureBehindAProxyThatSpeaksHttpsAndOnlyThen() throws Exception {
-        String username = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
+        String username = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
 
         HttpResponse<String> https = TestSession.anonymous(port)
                 .withHeader("X-Forwarded-Proto", "https")
@@ -163,7 +163,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void anUnsafeRequestWithASessionNeedsTheCsrfToken() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession client = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
 
         HttpResponse<String> without = client.sendWithoutCsrfHeader("POST", "/api/presets", PRESET);
         HttpResponse<String> with = client.send("POST", "/api/presets", PRESET);
@@ -175,7 +175,7 @@ class AuthApiIntegrationTest {
 
     @Test
     void logoutEndsTheSession() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession client = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         String sessionId = client.cookie(TestSession.SESSION_COOKIE);
         assertThat(client.send("GET", "/api/analyses", null).statusCode()).isEqualTo(200);
 
@@ -191,14 +191,15 @@ class AuthApiIntegrationTest {
 
     @Test
     void meEndsTheSessionOfAUserDisabledSinceTheLogin() throws Exception {
-        TestSession client = TestSession.loggedIn(port, users, hasher, RoleId.ADMIN);
+        TestSession client = TestSession.loggedIn(port, userRepositoryPort, passwordHasherPort, RoleId.ADMIN);
         String sessionId = client.cookie(TestSession.SESSION_COOKIE);
         HttpResponse<String> before = client.send("GET", "/api/auth/me", null);
         assertThat(before.statusCode()).isEqualTo(200);
-        User stored = users.findByUsername(new Username(
+        User stored = userRepositoryPort
+                .findByUsername(new Username(
                         JSON.readTree(before.body()).get("username").asString()))
                 .orElseThrow();
-        users.save(new User(
+        userRepositoryPort.save(new User(
                 stored.id(),
                 stored.username(),
                 stored.passwordHash(),

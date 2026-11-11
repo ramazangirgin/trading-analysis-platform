@@ -22,12 +22,13 @@ public class ManageAnalysisDefaultsUseCase {
     private static final int MIN_ROUNDS = 1;
     private static final int MAX_ROUNDS = 10;
 
-    private final AnalysisDefaultsRepositoryPort repository;
-    private final GetCatalogPort catalog;
+    private final AnalysisDefaultsRepositoryPort analysisDefaultsRepositoryPort;
+    private final GetCatalogPort getCatalogPort;
 
-    public ManageAnalysisDefaultsUseCase(AnalysisDefaultsRepositoryPort repository, GetCatalogPort catalog) {
-        this.repository = repository;
-        this.catalog = catalog;
+    public ManageAnalysisDefaultsUseCase(
+            AnalysisDefaultsRepositoryPort analysisDefaultsRepositoryPort, GetCatalogPort getCatalogPort) {
+        this.analysisDefaultsRepositoryPort = analysisDefaultsRepositoryPort;
+        this.getCatalogPort = getCatalogPort;
     }
 
     /**
@@ -36,7 +37,7 @@ public class ManageAnalysisDefaultsUseCase {
      * by this method.
      */
     public AnalysisDefaults get() {
-        return repository.find().orElseGet(this::fromCatalog);
+        return analysisDefaultsRepositoryPort.find().orElseGet(this::fromCatalog);
     }
 
     /**
@@ -50,9 +51,9 @@ public class ManageAnalysisDefaultsUseCase {
      *     when the catalog the values are checked against cannot be read
      */
     public AnalysisDefaults update(AnalysisDefaults defaults, Long expectedVersion) {
-        validate(defaults, catalog.getCatalog());
+        validate(defaults, getCatalogPort.getCatalog());
         try {
-            return repository.save(new AnalysisDefaults(
+            return analysisDefaultsRepositoryPort.save(new AnalysisDefaults(
                     defaults.llmProvider(),
                     defaults.deepThinkLlm(),
                     defaults.quickThinkLlm(),
@@ -68,7 +69,7 @@ public class ManageAnalysisDefaultsUseCase {
     }
 
     private AnalysisDefaults fromCatalog() {
-        ModelDefaults defaults = catalog.getCatalog().defaults();
+        ModelDefaults defaults = getCatalogPort.getCatalog().defaults();
         return new AnalysisDefaults(
                 defaults.llmProvider(), defaults.deepThinkLlm(), defaults.quickThinkLlm(), 1, 1, null);
     }

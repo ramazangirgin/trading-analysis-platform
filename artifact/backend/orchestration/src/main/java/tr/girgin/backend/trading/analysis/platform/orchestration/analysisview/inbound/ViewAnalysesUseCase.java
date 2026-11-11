@@ -20,12 +20,12 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.analysisview.mo
 @Service
 public class ViewAnalysesUseCase {
 
-    private final GetAnalysisRightsPort getAnalysisRights;
-    private final UserDirectoryPort userDirectory;
+    private final GetAnalysisRightsPort getAnalysisRightsPort;
+    private final UserDirectoryPort userDirectoryPort;
 
-    ViewAnalysesUseCase(GetAnalysisRightsPort getAnalysisRights, UserDirectoryPort userDirectory) {
-        this.getAnalysisRights = getAnalysisRights;
-        this.userDirectory = userDirectory;
+    ViewAnalysesUseCase(GetAnalysisRightsPort getAnalysisRightsPort, UserDirectoryPort userDirectoryPort) {
+        this.getAnalysisRightsPort = getAnalysisRightsPort;
+        this.userDirectoryPort = userDirectoryPort;
     }
 
     public AnalysisView view(Analysis analysis, AnalysisAccess access) {
@@ -39,10 +39,10 @@ public class ViewAnalysesUseCase {
                 .filter(Objects::nonNull)
                 .map(owner -> new UserId(owner.value()))
                 .collect(Collectors.toSet());
-        Map<UserId, Username> usernames = userDirectory.usernames(ids);
+        Map<UserId, Username> usernames = userDirectoryPort.usernames(ids);
         return analyses.stream()
                 .map(analysis -> new AnalysisView(
-                        analysis, owner(analysis.owner(), usernames), getAnalysisRights.rights(analysis, access)))
+                        analysis, owner(analysis.owner(), usernames), getAnalysisRightsPort.rights(analysis, access)))
                 .toList();
     }
 

@@ -22,7 +22,7 @@ class UserAccountToUserDtoMapperTest {
     private static final Instant CREATED = Instant.parse("2026-01-01T10:00:00Z");
     private static final Instant UPDATED = Instant.parse("2026-02-01T10:00:00Z");
 
-    private final UserAccountToUserDtoMapper mapper =
+    private final UserAccountToUserDtoMapper userAccountToUserDtoMapper =
             new UserAccountToUserDtoMapperImpl(new OptionalInstantToInstantMapperImpl());
 
     @Test
@@ -30,7 +30,7 @@ class UserAccountToUserDtoMapperTest {
         Instant lockedUntil = Instant.parse("2026-03-01T10:00:00Z");
         Instant lastLoginAt = Instant.parse("2026-02-15T10:00:00Z");
 
-        UserDto dto = mapper.map(account(Optional.of(lockedUntil), Optional.of(lastLoginAt)));
+        UserDto dto = userAccountToUserDtoMapper.map(account(Optional.of(lockedUntil), Optional.of(lastLoginAt)));
 
         assertThat(dto.id()).isEqualTo("user-1");
         assertThat(dto.username()).isEqualTo("alice");
@@ -48,7 +48,7 @@ class UserAccountToUserDtoMapperTest {
 
     @Test
     void mapsEmptyLockedUntilAndLastLoginAtToNull() {
-        UserDto dto = mapper.map(account(Optional.empty(), Optional.empty()));
+        UserDto dto = userAccountToUserDtoMapper.map(account(Optional.empty(), Optional.empty()));
 
         assertThat(dto.lockedUntil()).isNull();
         assertThat(dto.lastLoginAt()).isNull();

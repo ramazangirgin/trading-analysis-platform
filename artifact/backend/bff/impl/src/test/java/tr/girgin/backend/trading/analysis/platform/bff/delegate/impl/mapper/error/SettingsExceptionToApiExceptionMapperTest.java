@@ -11,12 +11,13 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.exceptio
 
 class SettingsExceptionToApiExceptionMapperTest {
 
-    private final SettingsExceptionToApiExceptionMapper mapper = new SettingsExceptionToApiExceptionMapperImpl();
+    private final SettingsExceptionToApiExceptionMapper settingsExceptionToApiExceptionMapper =
+            new SettingsExceptionToApiExceptionMapperImpl();
 
     @Test
     void mapsAConcurrentUpdateToConflict() {
-        ApiException mapped =
-                mapper.map(new SettingsException(SettingsError.CONCURRENT_UPDATE, "changed", Map.of("id", "p1")));
+        ApiException mapped = settingsExceptionToApiExceptionMapper.map(
+                new SettingsException(SettingsError.CONCURRENT_UPDATE, "changed", Map.of("id", "p1")));
 
         assertThat(mapped.status()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(mapped.errorCode()).isEqualTo("concurrent_update");

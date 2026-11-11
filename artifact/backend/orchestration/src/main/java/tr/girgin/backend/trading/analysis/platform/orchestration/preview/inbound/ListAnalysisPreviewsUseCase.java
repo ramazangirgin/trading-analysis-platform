@@ -8,16 +8,16 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.A
 @Service
 public class ListAnalysisPreviewsUseCase {
 
-    private final ListPartialAnalysesPort listPartialAnalyses;
+    private final ListPartialAnalysesPort listPartialAnalysesPort;
     private final PreviewCutter cutter;
 
-    ListAnalysisPreviewsUseCase(ListPartialAnalysesPort listPartialAnalyses, PreviewCutter cutter) {
-        this.listPartialAnalyses = listPartialAnalyses;
+    ListAnalysisPreviewsUseCase(ListPartialAnalysesPort listPartialAnalysesPort, PreviewCutter cutter) {
+        this.listPartialAnalysesPort = listPartialAnalysesPort;
         this.cutter = cutter;
     }
 
     public AnalysisPreviewPage list(int page, int size) {
-        PartialAnalysisPage partial = listPartialAnalyses.list(page, size);
+        PartialAnalysisPage partial = listPartialAnalysesPort.list(page, size);
         return new AnalysisPreviewPage(
                 partial.items().stream().map(cutter::summary).toList(), partial.hasMore());
     }

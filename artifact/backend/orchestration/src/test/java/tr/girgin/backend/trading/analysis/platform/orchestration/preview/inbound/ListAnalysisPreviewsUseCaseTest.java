@@ -45,7 +45,7 @@ class ListAnalysisPreviewsUseCaseTest {
                     false),
             new OwnerId("user-a"),
             Instant.parse("2026-09-25T10:00:00Z"));
-    private final ListPartialAnalysesPort listPartial = (page, size) -> {
+    private final ListPartialAnalysesPort listPartialAnalysesPort = (page, size) -> {
         requests.add(new int[] {page, size});
         return new PartialAnalysisPage(List.of(analysis), true);
     };
@@ -59,7 +59,8 @@ class ListAnalysisPreviewsUseCaseTest {
                 Set.of(ReportSource.REPORT_TREE),
                 Instant.parse("2026-09-25T11:00:00Z"));
         PreviewSettings settings = new PreviewSettings(Set.of(ReportSection.MARKET_REPORT), excerptLength);
-        return new ListAnalysisPreviewsUseCase(listPartial, new PreviewCutter(_ -> Optional.of(report), settings))
+        return new ListAnalysisPreviewsUseCase(
+                        listPartialAnalysesPort, new PreviewCutter(_ -> Optional.of(report), settings))
                 .list(2, 12);
     }
 

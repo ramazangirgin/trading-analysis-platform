@@ -21,8 +21,9 @@ class ReportToAnalysisReportDtoMapperTest {
 
     private static final Instant MODIFIED_AT = Instant.parse("2026-03-02T10:15:30Z");
 
-    private final ReportToAnalysisReportDtoMapper mapper = new ReportToAnalysisReportDtoMapperImpl(
-            new ReportSectionToStringMapperImpl(), new DebateSpeakerToStringMapperImpl());
+    private final ReportToAnalysisReportDtoMapper reportToAnalysisReportDtoMapper =
+            new ReportToAnalysisReportDtoMapperImpl(
+                    new ReportSectionToStringMapperImpl(), new DebateSpeakerToStringMapperImpl());
 
     @Test
     void mapsKeysToLowerCaseInEnumOrder() {
@@ -33,7 +34,8 @@ class ReportToAnalysisReportDtoMapperTest {
         debates.put(DebateSpeaker.RISK_JUDGE, "risk");
         debates.put(DebateSpeaker.BULL, "bull");
 
-        AnalysisReportDto dto = mapper.map(report(sections, debates, null, EnumSet.noneOf(ReportSource.class)));
+        AnalysisReportDto dto = reportToAnalysisReportDtoMapper.map(
+                report(sections, debates, null, EnumSet.noneOf(ReportSource.class)));
 
         assertThat(dto.sections())
                 .containsExactly(Map.entry("market_report", "market"), Map.entry("final_trade_decision", "decision"));
@@ -42,7 +44,7 @@ class ReportToAnalysisReportDtoMapperTest {
 
     @Test
     void sortsSourcesByName() {
-        AnalysisReportDto dto = mapper.map(report(
+        AnalysisReportDto dto = reportToAnalysisReportDtoMapper.map(report(
                 Map.of(),
                 Map.of(),
                 null,
@@ -53,9 +55,10 @@ class ReportToAnalysisReportDtoMapperTest {
 
     @Test
     void mapsRatingWithAndWithoutValue() {
-        AnalysisReportDto rated =
-                mapper.map(report(Map.of(), Map.of(), Rating.OVERWEIGHT, EnumSet.noneOf(ReportSource.class)));
-        AnalysisReportDto unrated = mapper.map(report(Map.of(), Map.of(), null, EnumSet.noneOf(ReportSource.class)));
+        AnalysisReportDto rated = reportToAnalysisReportDtoMapper.map(
+                report(Map.of(), Map.of(), Rating.OVERWEIGHT, EnumSet.noneOf(ReportSource.class)));
+        AnalysisReportDto unrated = reportToAnalysisReportDtoMapper.map(
+                report(Map.of(), Map.of(), null, EnumSet.noneOf(ReportSource.class)));
 
         assertThat(rated.rating()).isEqualTo(RatingEnumDto.OVERWEIGHT);
         assertThat(unrated.rating()).isNull();
@@ -63,7 +66,8 @@ class ReportToAnalysisReportDtoMapperTest {
 
     @Test
     void mapsModifiedAt() {
-        AnalysisReportDto dto = mapper.map(report(Map.of(), Map.of(), null, EnumSet.noneOf(ReportSource.class)));
+        AnalysisReportDto dto = reportToAnalysisReportDtoMapper.map(
+                report(Map.of(), Map.of(), null, EnumSet.noneOf(ReportSource.class)));
 
         assertThat(dto.modifiedAt()).isEqualTo(MODIFIED_AT);
     }

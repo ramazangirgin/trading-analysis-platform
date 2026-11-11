@@ -45,20 +45,21 @@ class GetAnalysisPricesUseCaseTest {
                     false),
             OWNER,
             Instant.parse("2026-09-25T10:00:00Z"));
-    private final GetAnalysisPort getAnalysis = (id, access) -> {
+    private final GetAnalysisPort getAnalysisPort = (id, access) -> {
         if (!id.equals(analysis.id()) || !(access.allUsers() || OWNER.equals(access.user()))) {
             throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of());
         }
         return analysis;
     };
-    private final GetAnalysisPricesUseCase useCase = new GetAnalysisPricesUseCase(getAnalysis, key -> {
-        priceKeys.add(key);
-        return Optional.empty();
-    });
+    private final GetAnalysisPricesUseCase getAnalysisPricesUseCase =
+            new GetAnalysisPricesUseCase(getAnalysisPort, key -> {
+                priceKeys.add(key);
+                return Optional.empty();
+            });
 
     @Test
     void anotherUsersPricesAreNotFound() {
-        assertThatThrownBy(() -> useCase.getPrices(analysis.id(), OTHERS))
+        assertThatThrownBy(() -> getAnalysisPricesUseCase.getPrices(analysis.id(), OTHERS))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
         assertThat(priceKeys).isEmpty();
@@ -66,7 +67,7 @@ class GetAnalysisPricesUseCaseTest {
 
     @Test
     void anAllUsersReaderGetsThePricesOfTheAnalysisTickerAndDate() {
-        useCase.getPrices(analysis.id(), EVERYONE);
+        getAnalysisPricesUseCase.getPrices(analysis.id(), EVERYONE);
 
         assertThat(priceKeys).containsExactly(new ReportKey("NVDA", LocalDate.of(2026, 9, 25)));
     }

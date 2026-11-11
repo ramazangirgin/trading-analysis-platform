@@ -11,18 +11,18 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Pe
 @Service
 class CatalogApiDelegateImpl implements CatalogApiDelegate {
 
-    private final GetCatalogPort getCatalog;
-    private final CatalogToCatalogDtoMapper mapper;
+    private final GetCatalogPort getCatalogPort;
+    private final CatalogToCatalogDtoMapper catalogToCatalogDtoMapper;
 
-    CatalogApiDelegateImpl(GetCatalogPort getCatalog, CatalogToCatalogDtoMapper mapper) {
-        this.getCatalog = getCatalog;
-        this.mapper = mapper;
+    CatalogApiDelegateImpl(GetCatalogPort getCatalogPort, CatalogToCatalogDtoMapper catalogToCatalogDtoMapper) {
+        this.getCatalogPort = getCatalogPort;
+        this.catalogToCatalogDtoMapper = catalogToCatalogDtoMapper;
     }
 
     @Override
     // The new-analysis form and the key table of the settings page read the catalog.
     @RequiresPermission({Permission.ANALYSIS_RUN, Permission.SETTINGS_READ})
     public CatalogDto getCatalog() {
-        return mapper.map(getCatalog.getCatalog());
+        return catalogToCatalogDtoMapper.map(getCatalogPort.getCatalog());
     }
 }

@@ -26,39 +26,41 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Ro
 @Service
 class RolesApiDelegateImpl implements RolesApiDelegate {
 
-    private final ManageRolesPort manageRoles;
-    private final RoleSummaryToRoleDtoMapper roleMapper;
-    private final PermissionEnumDtoToPermissionMapper permissionMapper;
+    private final ManageRolesPort manageRolesPort;
+    private final RoleSummaryToRoleDtoMapper roleSummaryToRoleDtoMapper;
+    private final PermissionEnumDtoToPermissionMapper permissionEnumDtoToPermissionMapper;
     private final SessionAuthorities sessionAuthorities;
 
     RolesApiDelegateImpl(
-            ManageRolesPort manageRoles,
-            RoleSummaryToRoleDtoMapper roleMapper,
-            PermissionEnumDtoToPermissionMapper permissionMapper,
+            ManageRolesPort manageRolesPort,
+            RoleSummaryToRoleDtoMapper roleSummaryToRoleDtoMapper,
+            PermissionEnumDtoToPermissionMapper permissionEnumDtoToPermissionMapper,
             SessionAuthorities sessionAuthorities) {
         this.sessionAuthorities = sessionAuthorities;
-        this.manageRoles = manageRoles;
-        this.roleMapper = roleMapper;
-        this.permissionMapper = permissionMapper;
+        this.manageRolesPort = manageRolesPort;
+        this.roleSummaryToRoleDtoMapper = roleSummaryToRoleDtoMapper;
+        this.permissionEnumDtoToPermissionMapper = permissionEnumDtoToPermissionMapper;
     }
 
     @Override
     @RequiresPermission({Permission.USER_READ, Permission.ROLE_MANAGE})
     public List<RoleDto> listRoles() {
-        return manageRoles.list().stream().map(roleMapper::map).toList();
+        return manageRolesPort.list().stream()
+                .map(roleSummaryToRoleDtoMapper::map)
+                .toList();
     }
 
     @Override
     @RequiresPermission({Permission.USER_READ, Permission.ROLE_MANAGE})
     public RoleDto getRole(String id) {
-        return roleMapper.map(manageRoles.get(new RoleId(id)));
+        return roleSummaryToRoleDtoMapper.map(manageRolesPort.get(new RoleId(id)));
     }
 
     @Override
     @RequiresPermission(Permission.ROLE_MANAGE)
     public ResponseEntity<RoleDto> createRole(CreateRoleRequest request) {
-        RoleDto created = roleMapper.map(
-                manageRoles.create(request.name(), request.description(), permissions(request.permissions())));
+        RoleDto created = roleSummaryToRoleDtoMapper.map(
+                manageRolesPort.create(request.name(), request.description(), permissions(request.permissions())));
         return ResponseEntity.created(URI.create("/api/roles/" + created.id())).body(created);
     }
 
@@ -72,7 +74,7 @@ class RolesApiDelegateImpl implements RolesApiDelegate {
                     "Give name, description, permissions or any of them",
                     Map.of("fields", List.of("name", "description", "permissions")));
         }
-        RoleDto updated = roleMapper.map(manageRoles.update(
+        RoleDto updated = roleSummaryToRoleDtoMapper.map(manageRolesPort.update(
                 new RoleId(id),
                 Optional.ofNullable(request.name()),
                 Optional.ofNullable(request.description()),
@@ -85,11 +87,11 @@ class RolesApiDelegateImpl implements RolesApiDelegate {
     @Override
     @RequiresPermission(Permission.ROLE_MANAGE)
     public ResponseEntity<Void> deleteRole(String id) {
-        manageRoles.delete(new RoleId(id));
+        manageRolesPort.delete(new RoleId(id));
         return ResponseEntity.noContent().build();
     }
 
     private Set<Permission> permissions(List<PermissionEnumDto> dtos) {
-        return dtos.stream().map(permissionMapper::map).collect(Collectors.toSet());
+        return dtos.stream().map(permissionEnumDtoToPermissionMapper::map).collect(Collectors.toSet());
     }
 }
