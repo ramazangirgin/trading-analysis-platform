@@ -182,7 +182,7 @@ code around it. Seven settings in `checkstyle.xml` limit where a check applies. 
 suppressions:
 
 - `MissingJavadocType` applies to `core/inbound` and `core/outbound` only (`SuppressionSingleFilter`).
-- `TAP-D9` is temporarily off in `domain`, `library/mapper`, `bff/impl`, `orchestration` and the
+- `TAP-D9` is temporarily off in `bff/impl`, `orchestration` and the
   application's tests, where the existing names are renamed step by step (`SuppressionSingleFilter`);
   the filter goes away with #275.
 - `TAP-D7` applies to main sources only (`SuppressionSingleFilter`).

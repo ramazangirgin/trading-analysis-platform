@@ -200,13 +200,13 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP13: TAP-D9 on in the domains and library/mapper
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1-WP12
 - **Files**: `config/checkstyle/checkstyle.xml`, `docs/coding-convention/backend-java-checkstyle.md`
 - **Steps**:
-  - [ ] Remove `domain|library[\\/]mapper` from the `TAP-D9` filter's pattern, leaving
+  - [x] Remove `domain|library[\\/]mapper` from the `TAP-D9` filter's pattern, leaving
     `[\\/]artifact[\\/]backend[\\/](bff[\\/]impl|orchestration|src[\\/]test)[\\/]`.
-  - [ ] Rename what the check still reports in these modules (files no package named).
+  - [x] Rename what the check still reports in these modules (files no package named).
 - **Tests**: `mise run check` and `mise run build` pass with the narrowed filter.
 
 ## Tests
