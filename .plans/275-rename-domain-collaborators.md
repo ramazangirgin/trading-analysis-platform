@@ -190,7 +190,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP12: Settings core
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/settings/core/service/PresetService.java`,
   `domain/settings/core/service/SecretsService.java`,

@@ -25,20 +25,22 @@ class SecretsService implements ManageSecretsPort {
     private static final int MAX_VALUE_LENGTH = 4096;
     private static final int VISIBLE_SUFFIX = 4;
 
-    private final SecretStorePort store;
+    private final SecretStorePort secretStorePort;
 
-    SecretsService(SecretStorePort store) {
-        this.store = store;
+    SecretsService(SecretStorePort secretStorePort) {
+        this.secretStorePort = secretStorePort;
     }
 
     @Override
     public List<SecretStatus> listSecrets() {
         Map<String, SecretStatus> statuses = new TreeMap<>();
-        store.readExternal()
+        secretStorePort
+                .readExternal()
                 .forEach((name, value) ->
                         statuses.put(name, new SecretStatus(name, SecretSource.EXTERNAL_FILE, mask(value))));
         // The platform's file wins, as it does when the runner's environment is built.
-        store.readManaged()
+        secretStorePort
+                .readManaged()
                 .forEach((name, value) ->
                         statuses.put(name, new SecretStatus(name, SecretSource.PLATFORM, mask(value))));
         return new ArrayList<>(statuses.values());
@@ -54,23 +56,23 @@ class SecretsService implements ManageSecretsPort {
             throw new SettingsException(
                     SettingsError.INVALID_SECRET_VALUE, "Invalid value for " + name, Map.of("name", name));
         }
-        Map<String, String> managed = new LinkedHashMap<>(store.readManaged());
+        Map<String, String> managed = new LinkedHashMap<>(secretStorePort.readManaged());
         managed.put(name, trimmed);
-        store.writeManaged(managed);
+        secretStorePort.writeManaged(managed);
         return new SecretStatus(name, SecretSource.PLATFORM, mask(trimmed));
     }
 
     @Override
     public synchronized void removeSecret(String name) {
         requireWritable(name);
-        Map<String, String> managed = new LinkedHashMap<>(store.readManaged());
+        Map<String, String> managed = new LinkedHashMap<>(secretStorePort.readManaged());
         if (managed.remove(name) == null) {
             throw new SettingsException(
                     SettingsError.SECRET_NOT_MANAGED,
                     name + " is not set in the platform's secrets file",
                     Map.of("name", name));
         }
-        store.writeManaged(managed);
+        secretStorePort.writeManaged(managed);
     }
 
     private void requireWritable(String name) {
