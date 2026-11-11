@@ -405,8 +405,9 @@ class ArchitectureTest {
             .and()
             .resideInAPackage(ORCHESTRATION_FEATURE_SUB)
             .should()
-            .resideInAnyPackage(ORCHESTRATION + "inbound..", ORCHESTRATION + "model..")
-            .because("an orchestration feature holds its concrete use cases in inbound and their types in model");
+            .resideInAnyPackage(ORCHESTRATION + "inbound..", ORCHESTRATION + "model..", ORCHESTRATION + "config..")
+            .because("an orchestration feature holds its concrete use cases in inbound, their types in model"
+                    + " and its configuration properties in config");
 
     @ArchTest
     static final ArchRule orchestration_use_cases_are_concrete_beans = classes()

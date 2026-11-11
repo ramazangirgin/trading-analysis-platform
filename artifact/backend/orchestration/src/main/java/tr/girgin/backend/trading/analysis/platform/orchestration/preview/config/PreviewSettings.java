@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.preview.inbound;
+package tr.girgin.backend.trading.analysis.platform.orchestration.preview.config;
 
 import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;

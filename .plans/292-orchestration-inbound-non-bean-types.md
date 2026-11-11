@@ -51,7 +51,7 @@ Packages without a dependency between them can be implemented in parallel.
 
 ### WP1: Move PreviewSettings to the config package
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**:
   - `artifact/backend/orchestration/src/main/java/tr/girgin/backend/trading/analysis/platform/orchestration/preview/config/PreviewSettings.java` (moved from `preview/inbound/`)
@@ -61,7 +61,7 @@ Packages without a dependency between them can be implemented in parallel.
   - `artifact/backend/orchestration/src/test/java/tr/girgin/backend/trading/analysis/platform/orchestration/preview/inbound/GetAnalysisPreviewUseCaseTest.java`
   - `artifact/backend/orchestration/src/test/java/tr/girgin/backend/trading/analysis/platform/orchestration/preview/inbound/ListAnalysisPreviewsUseCaseTest.java`
 - **Steps**:
-  - [ ] `git mv` both files so the history follows them, change their package and import the record where it is used.
+  - [x] `git mv` both files so the history follows them, change their package and import the record where it is used.
 - **Tests**: the existing `PreviewSettingsTest` (binding, defaults, bounds) and the two use case
   tests pass unchanged apart from the import; `mise run gradle :backend:orchestration:test`.
 
