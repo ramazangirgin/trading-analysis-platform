@@ -177,7 +177,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP11: Settings adapter
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/settings/adapter/persistence/JpaAnalysisDefaultsRepositoryAdapter.java`,
   `domain/settings/adapter/persistence/JpaPresetRepositoryAdapter.java`,

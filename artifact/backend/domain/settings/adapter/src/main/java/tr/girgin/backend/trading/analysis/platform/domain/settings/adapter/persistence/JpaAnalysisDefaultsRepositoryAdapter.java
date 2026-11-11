@@ -12,28 +12,31 @@ import tr.girgin.backend.trading.analysis.platform.domain.settings.core.outbound
 @Component
 class JpaAnalysisDefaultsRepositoryAdapter implements AnalysisDefaultsRepositoryPort {
 
-    private final AnalysisDefaultsJpaRepository repository;
-    private final AnalysisDefaultsToAnalysisDefaultsEntityMapper toEntity;
-    private final AnalysisDefaultsEntityToAnalysisDefaultsMapper toDefaults;
+    private final AnalysisDefaultsJpaRepository analysisDefaultsJpaRepository;
+    private final AnalysisDefaultsToAnalysisDefaultsEntityMapper analysisDefaultsToAnalysisDefaultsEntityMapper;
+    private final AnalysisDefaultsEntityToAnalysisDefaultsMapper analysisDefaultsEntityToAnalysisDefaultsMapper;
 
     JpaAnalysisDefaultsRepositoryAdapter(
-            AnalysisDefaultsJpaRepository repository,
-            AnalysisDefaultsToAnalysisDefaultsEntityMapper toEntity,
-            AnalysisDefaultsEntityToAnalysisDefaultsMapper toDefaults) {
-        this.repository = repository;
-        this.toEntity = toEntity;
-        this.toDefaults = toDefaults;
+            AnalysisDefaultsJpaRepository analysisDefaultsJpaRepository,
+            AnalysisDefaultsToAnalysisDefaultsEntityMapper analysisDefaultsToAnalysisDefaultsEntityMapper,
+            AnalysisDefaultsEntityToAnalysisDefaultsMapper analysisDefaultsEntityToAnalysisDefaultsMapper) {
+        this.analysisDefaultsJpaRepository = analysisDefaultsJpaRepository;
+        this.analysisDefaultsToAnalysisDefaultsEntityMapper = analysisDefaultsToAnalysisDefaultsEntityMapper;
+        this.analysisDefaultsEntityToAnalysisDefaultsMapper = analysisDefaultsEntityToAnalysisDefaultsMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<AnalysisDefaults> find() {
-        return repository.findById(AnalysisDefaultsEntity.ROW_ID).map(toDefaults::map);
+        return analysisDefaultsJpaRepository
+                .findById(AnalysisDefaultsEntity.ROW_ID)
+                .map(analysisDefaultsEntityToAnalysisDefaultsMapper::map);
     }
 
     @Override
     @Transactional
     public AnalysisDefaults save(AnalysisDefaults defaults) {
-        return toDefaults.map(repository.saveAndFlush(toEntity.map(defaults)));
+        return analysisDefaultsEntityToAnalysisDefaultsMapper.map(analysisDefaultsJpaRepository.saveAndFlush(
+                analysisDefaultsToAnalysisDefaultsEntityMapper.map(defaults)));
     }
 }

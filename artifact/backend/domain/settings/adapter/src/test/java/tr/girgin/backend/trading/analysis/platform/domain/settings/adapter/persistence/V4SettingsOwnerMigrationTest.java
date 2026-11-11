@@ -28,11 +28,11 @@ class V4SettingsOwnerMigrationTest {
             + SettingsPersistenceConfiguration.class.getPackageName().replace('.', '/');
 
     @Autowired
-    private JpaPresetRepositoryAdapter repository;
+    private JpaPresetRepositoryAdapter jpaPresetRepositoryAdapter;
 
     @Test
     void anExistingPresetKeepsEveryValueAndHasNoOwner() {
-        assertThat(repository.findById(new PresetId("p_seed_owner")))
+        assertThat(jpaPresetRepositoryAdapter.findById(new PresetId("p_seed_owner")))
                 .contains(new Preset(
                         new PresetId("p_seed_owner"),
                         "Before owners",
