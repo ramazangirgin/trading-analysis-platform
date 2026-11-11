@@ -107,7 +107,7 @@ lifted.
 
 ### WP6: Orchestration use cases, part 2
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `orchestration/preview/inbound/GetAnalysisPreviewUseCase.java`,
   `orchestration/preview/inbound/ListAnalysisPreviewsUseCase.java`,

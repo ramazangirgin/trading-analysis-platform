@@ -13,12 +13,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 @Service
 public class GetAnalysisReportUseCase {
 
-    private final GetAnalysisPort getAnalysis;
-    private final GetReportPort getReport;
+    private final GetAnalysisPort getAnalysisPort;
+    private final GetReportPort getReportPort;
 
-    GetAnalysisReportUseCase(GetAnalysisPort getAnalysis, GetReportPort getReport) {
-        this.getAnalysis = getAnalysis;
-        this.getReport = getReport;
+    GetAnalysisReportUseCase(GetAnalysisPort getAnalysisPort, GetReportPort getReportPort) {
+        this.getAnalysisPort = getAnalysisPort;
+        this.getReportPort = getReportPort;
     }
 
     /**
@@ -27,8 +27,8 @@ public class GetAnalysisReportUseCase {
      * An analysis the caller may not see is reported as not found.
      */
     public Optional<Report> getReport(AnalysisId id, AnalysisAccess access) {
-        Analysis analysis = getAnalysis.get(id, access);
-        return getReport.get(
+        Analysis analysis = getAnalysisPort.get(id, access);
+        return getReportPort.get(
                 new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()));
     }
 }

@@ -22,11 +22,11 @@ class PreviewCutter {
 
     private static final String ELLIPSIS = "…";
 
-    private final GetReportPort getReport;
+    private final GetReportPort getReportPort;
     private final PreviewSettings settings;
 
-    PreviewCutter(GetReportPort getReport, PreviewSettings settings) {
-        this.getReport = getReport;
+    PreviewCutter(GetReportPort getReportPort, PreviewSettings settings) {
+        this.getReportPort = getReportPort;
         this.settings = settings;
     }
 
@@ -66,7 +66,7 @@ class PreviewCutter {
     }
 
     private Optional<Report> report(Analysis analysis) {
-        return getReport.get(
+        return getReportPort.get(
                 new ReportKey(analysis.spec().ticker(), analysis.spec().tradeDate()));
     }
 
