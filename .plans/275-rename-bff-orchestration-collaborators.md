@@ -83,7 +83,7 @@ lifted.
 
 ### WP4: BFF tests, part 2
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `bff/delegate/impl/mapper/RoleSummaryToRoleDtoMapperTest.java`,
   `bff/delegate/impl/mapper/UserAccountToUserDtoMapperTest.java`,

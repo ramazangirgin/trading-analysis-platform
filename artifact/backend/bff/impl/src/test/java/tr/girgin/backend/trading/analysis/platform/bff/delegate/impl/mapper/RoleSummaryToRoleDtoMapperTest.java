@@ -13,7 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Ro
 
 class RoleSummaryToRoleDtoMapperTest {
 
-    private final RoleSummaryToRoleDtoMapper mapper =
+    private final RoleSummaryToRoleDtoMapper roleSummaryToRoleDtoMapper =
             new RoleSummaryToRoleDtoMapperImpl(new PermissionToPermissionEnumDtoMapperImpl());
 
     @Test
@@ -26,7 +26,7 @@ class RoleSummaryToRoleDtoMapperTest {
                 Set.of(Permission.USER_READ, Permission.ANALYSIS_RUN, Permission.PRESET_READ),
                 3L);
 
-        RoleDto dto = mapper.map(new RoleSummary(role, 7));
+        RoleDto dto = roleSummaryToRoleDtoMapper.map(new RoleSummary(role, 7));
 
         assertThat(dto.id()).isEqualTo("ANALYST");
         assertThat(dto.name()).isEqualTo("ANALYST");
