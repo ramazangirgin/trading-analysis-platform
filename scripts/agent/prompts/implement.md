@@ -22,6 +22,9 @@ in your final message.
   answers `200` returns its DTO (`UserDto getUser(...)`), not `ResponseEntity` (`TAP-D6`); a
   delegate never catches a domain exception to map it: it lets it through, and
   `DomainExceptionHandler` answers it (a new domain exception gets a mapper and a handler method).
+- Name a field, parameter or local whose type ends in `Service`, `UseCase`, `Port`, `Mapper`,
+  `Repository` or `Adapter` after its type (`UserRepositoryPort userRepositoryPort`), optionally with a
+  lower-case qualifier (`strictUserManagementService`): `TAP-D9`.
 - You may hand independent steps to subagents (Task tool); you are responsible for the result.
 - Every change comes with tests (the package's "Tests", and the plan's "Tests" section where they
   apply to it). Do not delete or weaken existing tests to make them pass.
