@@ -66,70 +66,70 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     /** Sent once the run is over, so the browser closes the EventSource instead of reconnecting. */
     static final String END_EVENT = "end";
 
-    private final StartAnalysisWithDefaultsUseCase startAnalysis;
-    private final ListAnalysesPort listAnalyses;
-    private final GetAnalysisPort getAnalysis;
-    private final ChangeAnalysisVisibilityPort changeVisibility;
-    private final StopAnalysisPort stopAnalysis;
-    private final RerunAnalysisPort rerunAnalysis;
-    private final SubscribeAnalysisEventsPort subscribeEvents;
-    private final GetAnalysisReportUseCase getReport;
-    private final GetAnalysisPricesUseCase getPrices;
-    private final ReadAnalysisLogsPort readLogs;
-    private final ViewAnalysesUseCase viewAnalyses;
-    private final StartAnalysisRequestToRequestedAnalysisMapper requestMapper;
-    private final AnalysisViewToAnalysisDtoMapper analysisMapper;
-    private final RunEventToRunEventDtoMapper eventMapper;
-    private final AnalysisStatusEnumDtoToAnalysisStatusMapper statusMapper;
-    private final AnalysisScopeEnumDtoToAnalysisScopeMapper scopeMapper;
-    private final VisibilityEnumDtoToVisibilityMapper visibilityMapper;
-    private final ReportToAnalysisReportDtoMapper reportMapper;
-    private final PriceHistoryToPriceHistoryDtoMapper pricesMapper;
+    private final StartAnalysisWithDefaultsUseCase startAnalysisWithDefaultsUseCase;
+    private final ListAnalysesPort listAnalysesPort;
+    private final GetAnalysisPort getAnalysisPort;
+    private final ChangeAnalysisVisibilityPort changeAnalysisVisibilityPort;
+    private final StopAnalysisPort stopAnalysisPort;
+    private final RerunAnalysisPort rerunAnalysisPort;
+    private final SubscribeAnalysisEventsPort subscribeAnalysisEventsPort;
+    private final GetAnalysisReportUseCase getAnalysisReportUseCase;
+    private final GetAnalysisPricesUseCase getAnalysisPricesUseCase;
+    private final ReadAnalysisLogsPort readAnalysisLogsPort;
+    private final ViewAnalysesUseCase viewAnalysesUseCase;
+    private final StartAnalysisRequestToRequestedAnalysisMapper startAnalysisRequestToRequestedAnalysisMapper;
+    private final AnalysisViewToAnalysisDtoMapper analysisViewToAnalysisDtoMapper;
+    private final RunEventToRunEventDtoMapper runEventToRunEventDtoMapper;
+    private final AnalysisStatusEnumDtoToAnalysisStatusMapper analysisStatusEnumDtoToAnalysisStatusMapper;
+    private final AnalysisScopeEnumDtoToAnalysisScopeMapper analysisScopeEnumDtoToAnalysisScopeMapper;
+    private final VisibilityEnumDtoToVisibilityMapper visibilityEnumDtoToVisibilityMapper;
+    private final ReportToAnalysisReportDtoMapper reportToAnalysisReportDtoMapper;
+    private final PriceHistoryToPriceHistoryDtoMapper priceHistoryToPriceHistoryDtoMapper;
     private final SessionEventStreams sessionEventStreams;
     private final CurrentUser currentUser;
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysesApiDelegateImpl(
-            StartAnalysisWithDefaultsUseCase startAnalysis,
-            ListAnalysesPort listAnalyses,
-            GetAnalysisPort getAnalysis,
-            ChangeAnalysisVisibilityPort changeVisibility,
-            StopAnalysisPort stopAnalysis,
-            RerunAnalysisPort rerunAnalysis,
-            SubscribeAnalysisEventsPort subscribeEvents,
-            GetAnalysisReportUseCase getReport,
-            GetAnalysisPricesUseCase getPrices,
-            ReadAnalysisLogsPort readLogs,
-            ViewAnalysesUseCase viewAnalyses,
-            StartAnalysisRequestToRequestedAnalysisMapper requestMapper,
-            AnalysisViewToAnalysisDtoMapper analysisMapper,
-            RunEventToRunEventDtoMapper eventMapper,
-            AnalysisStatusEnumDtoToAnalysisStatusMapper statusMapper,
-            AnalysisScopeEnumDtoToAnalysisScopeMapper scopeMapper,
-            VisibilityEnumDtoToVisibilityMapper visibilityMapper,
-            ReportToAnalysisReportDtoMapper reportMapper,
-            PriceHistoryToPriceHistoryDtoMapper pricesMapper,
+            StartAnalysisWithDefaultsUseCase startAnalysisWithDefaultsUseCase,
+            ListAnalysesPort listAnalysesPort,
+            GetAnalysisPort getAnalysisPort,
+            ChangeAnalysisVisibilityPort changeAnalysisVisibilityPort,
+            StopAnalysisPort stopAnalysisPort,
+            RerunAnalysisPort rerunAnalysisPort,
+            SubscribeAnalysisEventsPort subscribeAnalysisEventsPort,
+            GetAnalysisReportUseCase getAnalysisReportUseCase,
+            GetAnalysisPricesUseCase getAnalysisPricesUseCase,
+            ReadAnalysisLogsPort readAnalysisLogsPort,
+            ViewAnalysesUseCase viewAnalysesUseCase,
+            StartAnalysisRequestToRequestedAnalysisMapper startAnalysisRequestToRequestedAnalysisMapper,
+            AnalysisViewToAnalysisDtoMapper analysisViewToAnalysisDtoMapper,
+            RunEventToRunEventDtoMapper runEventToRunEventDtoMapper,
+            AnalysisStatusEnumDtoToAnalysisStatusMapper analysisStatusEnumDtoToAnalysisStatusMapper,
+            AnalysisScopeEnumDtoToAnalysisScopeMapper analysisScopeEnumDtoToAnalysisScopeMapper,
+            VisibilityEnumDtoToVisibilityMapper visibilityEnumDtoToVisibilityMapper,
+            ReportToAnalysisReportDtoMapper reportToAnalysisReportDtoMapper,
+            PriceHistoryToPriceHistoryDtoMapper priceHistoryToPriceHistoryDtoMapper,
             SessionEventStreams sessionEventStreams,
             CurrentUser currentUser) {
-        this.startAnalysis = startAnalysis;
-        this.listAnalyses = listAnalyses;
-        this.getAnalysis = getAnalysis;
-        this.changeVisibility = changeVisibility;
-        this.stopAnalysis = stopAnalysis;
-        this.rerunAnalysis = rerunAnalysis;
-        this.subscribeEvents = subscribeEvents;
-        this.getReport = getReport;
-        this.getPrices = getPrices;
-        this.readLogs = readLogs;
-        this.viewAnalyses = viewAnalyses;
-        this.requestMapper = requestMapper;
-        this.analysisMapper = analysisMapper;
-        this.eventMapper = eventMapper;
-        this.statusMapper = statusMapper;
-        this.scopeMapper = scopeMapper;
-        this.visibilityMapper = visibilityMapper;
-        this.reportMapper = reportMapper;
-        this.pricesMapper = pricesMapper;
+        this.startAnalysisWithDefaultsUseCase = startAnalysisWithDefaultsUseCase;
+        this.listAnalysesPort = listAnalysesPort;
+        this.getAnalysisPort = getAnalysisPort;
+        this.changeAnalysisVisibilityPort = changeAnalysisVisibilityPort;
+        this.stopAnalysisPort = stopAnalysisPort;
+        this.rerunAnalysisPort = rerunAnalysisPort;
+        this.subscribeAnalysisEventsPort = subscribeAnalysisEventsPort;
+        this.getAnalysisReportUseCase = getAnalysisReportUseCase;
+        this.getAnalysisPricesUseCase = getAnalysisPricesUseCase;
+        this.readAnalysisLogsPort = readAnalysisLogsPort;
+        this.viewAnalysesUseCase = viewAnalysesUseCase;
+        this.startAnalysisRequestToRequestedAnalysisMapper = startAnalysisRequestToRequestedAnalysisMapper;
+        this.analysisViewToAnalysisDtoMapper = analysisViewToAnalysisDtoMapper;
+        this.runEventToRunEventDtoMapper = runEventToRunEventDtoMapper;
+        this.analysisStatusEnumDtoToAnalysisStatusMapper = analysisStatusEnumDtoToAnalysisStatusMapper;
+        this.analysisScopeEnumDtoToAnalysisScopeMapper = analysisScopeEnumDtoToAnalysisScopeMapper;
+        this.visibilityEnumDtoToVisibilityMapper = visibilityEnumDtoToVisibilityMapper;
+        this.reportToAnalysisReportDtoMapper = reportToAnalysisReportDtoMapper;
+        this.priceHistoryToPriceHistoryDtoMapper = priceHistoryToPriceHistoryDtoMapper;
         this.sessionEventStreams = sessionEventStreams;
         this.currentUser = currentUser;
     }
@@ -137,8 +137,10 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> startAnalysis(StartAnalysisRequest request) {
-        return created(startAnalysis.start(
-                requestMapper.map(request), owner(), currentUser.has(Permission.ANALYSIS_OVERRIDE_MODELS)));
+        return created(startAnalysisWithDefaultsUseCase.start(
+                startAnalysisRequestToRequestedAnalysisMapper.map(request),
+                owner(),
+                currentUser.has(Permission.ANALYSIS_OVERRIDE_MODELS)));
     }
 
     @Override
@@ -146,46 +148,52 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     public List<AnalysisDto> listAnalyses(AnalysisStatusEnumDto status, String ticker, AnalysisScopeEnumDto scope) {
         String normalizedTicker =
                 ticker == null || ticker.isBlank() ? null : ticker.strip().toUpperCase(Locale.ROOT);
-        AnalysisFilter filter = new AnalysisFilter(statusMapper.map(status), normalizedTicker, null, Set.of(), null);
+        AnalysisFilter filter = new AnalysisFilter(
+                analysisStatusEnumDtoToAnalysisStatusMapper.map(status), normalizedTicker, null, Set.of(), null);
         AnalysisAccess access = access();
-        List<Analysis> analyses =
-                listAnalyses.list(filter, scopeMapper.map(scope == null ? AnalysisScopeEnumDto.MINE : scope), access);
-        return viewAnalyses.view(analyses, access).stream()
-                .map(analysisMapper::map)
+        List<Analysis> analyses = listAnalysesPort.list(
+                filter,
+                analysisScopeEnumDtoToAnalysisScopeMapper.map(scope == null ? AnalysisScopeEnumDto.MINE : scope),
+                access);
+        return viewAnalysesUseCase.view(analyses, access).stream()
+                .map(analysisViewToAnalysisDtoMapper::map)
                 .toList();
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto getAnalysis(String id) {
-        return dto(getAnalysis.get(new AnalysisId(id), access()));
+        return dto(getAnalysisPort.get(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisDto changeVisibility(String id, ChangeVisibilityRequest request) {
-        return dto(changeVisibility.change(
-                new AnalysisId(id), visibilityMapper.map(request.visibility()), access(), request.version()));
+        return dto(changeAnalysisVisibilityPort.change(
+                new AnalysisId(id),
+                visibilityEnumDtoToVisibilityMapper.map(request.visibility()),
+                access(),
+                request.version()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public AnalysisDto stopAnalysis(String id) {
-        return dto(stopAnalysis.stop(new AnalysisId(id), access()));
+        return dto(stopAnalysisPort.stop(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_RUN)
     public ResponseEntity<AnalysisDto> rerunAnalysis(String id) {
-        return created(rerunAnalysis.rerun(new AnalysisId(id), access()));
+        return created(rerunAnalysisPort.rerun(new AnalysisId(id), access()));
     }
 
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public AnalysisReportDto getReport(String id) {
-        return getReport
+        return getAnalysisReportUseCase
                 .getReport(new AnalysisId(id), access())
-                .map(reportMapper::map)
+                .map(reportToAnalysisReportDtoMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "report_not_found",
@@ -196,9 +204,9 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public PriceHistoryDto getPrices(String id) {
-        return getPrices
+        return getAnalysisPricesUseCase
                 .getPrices(new AnalysisId(id), access())
-                .map(pricesMapper::map)
+                .map(priceHistoryToPriceHistoryDtoMapper::map)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "prices_not_found",
@@ -209,7 +217,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     @Override
     @RequiresPermission(Permission.ANALYSIS_READ)
     public RunLogDto getLogs(String id, int tail) {
-        return new RunLogDto(readLogs.tailLogs(new AnalysisId(id), access(), tail));
+        return new RunLogDto(readAnalysisLogsPort.tailLogs(new AnalysisId(id), access(), tail));
     }
 
     @Override
@@ -232,23 +240,24 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
         // client sees it open while the run has yet to send an event (and can be closed meanwhile).
         send(emitter, SseEmitter.event().comment("open"));
         // Events sent before this method returns are buffered by the emitter.
-        subscription.set(subscribeEvents.subscribe(new AnalysisId(id), afterSeq, access(), new RunEventListener() {
-            @Override
-            public void onEvent(RunEvent event) {
-                send(
-                        emitter,
-                        SseEmitter.event()
-                                .id(Long.toString(event.seq()))
-                                .data(eventMapper.map(event), MediaType.APPLICATION_JSON));
-            }
+        subscription.set(subscribeAnalysisEventsPort.subscribe(
+                new AnalysisId(id), afterSeq, access(), new RunEventListener() {
+                    @Override
+                    public void onEvent(RunEvent event) {
+                        send(
+                                emitter,
+                                SseEmitter.event()
+                                        .id(Long.toString(event.seq()))
+                                        .data(runEventToRunEventDtoMapper.map(event), MediaType.APPLICATION_JSON));
+                    }
 
-            @Override
-            public void onComplete() {
-                send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
-                ended.set(true);
-                emitter.complete();
-            }
-        }));
+                    @Override
+                    public void onComplete() {
+                        send(emitter, SseEmitter.event().name(END_EVENT).data("{}", MediaType.APPLICATION_JSON));
+                        ended.set(true);
+                        emitter.complete();
+                    }
+                }));
         // The stream belongs to the session that opened it and ends with it. It is registered only
         // once the subscription holds: a failed one never returns the emitter to Spring MVC, so
         // nothing would ever remove it again. The security chain guarantees a session here; without
@@ -281,7 +290,7 @@ class AnalysesApiDelegateImpl implements AnalysesApiDelegate {
     }
 
     private AnalysisDto dto(Analysis analysis) {
-        return analysisMapper.map(viewAnalyses.view(analysis, access()));
+        return analysisViewToAnalysisDtoMapper.map(viewAnalysesUseCase.view(analysis, access()));
     }
 
     private void send(SseEmitter emitter, SseEmitter.SseEventBuilder event) {

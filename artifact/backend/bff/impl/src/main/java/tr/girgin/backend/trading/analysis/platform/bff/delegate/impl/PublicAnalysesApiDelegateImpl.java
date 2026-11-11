@@ -15,33 +15,39 @@ import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.A
 @Service
 class PublicAnalysesApiDelegateImpl implements PublicAnalysesApiDelegate {
 
-    private final ListAnalysisPreviewsUseCase listPreviews;
-    private final GetAnalysisPreviewUseCase getPreview;
-    private final AnalysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper summaryMapper;
-    private final AnalysisPreviewToAnalysisPreviewDtoMapper previewMapper;
+    private final ListAnalysisPreviewsUseCase listAnalysisPreviewsUseCase;
+    private final GetAnalysisPreviewUseCase getAnalysisPreviewUseCase;
+    private final AnalysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper
+            analysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper;
+    private final AnalysisPreviewToAnalysisPreviewDtoMapper analysisPreviewToAnalysisPreviewDtoMapper;
 
     PublicAnalysesApiDelegateImpl(
-            ListAnalysisPreviewsUseCase listPreviews,
-            GetAnalysisPreviewUseCase getPreview,
-            AnalysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper summaryMapper,
-            AnalysisPreviewToAnalysisPreviewDtoMapper previewMapper) {
-        this.listPreviews = listPreviews;
-        this.getPreview = getPreview;
-        this.summaryMapper = summaryMapper;
-        this.previewMapper = previewMapper;
+            ListAnalysisPreviewsUseCase listAnalysisPreviewsUseCase,
+            GetAnalysisPreviewUseCase getAnalysisPreviewUseCase,
+            AnalysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper
+                    analysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper,
+            AnalysisPreviewToAnalysisPreviewDtoMapper analysisPreviewToAnalysisPreviewDtoMapper) {
+        this.listAnalysisPreviewsUseCase = listAnalysisPreviewsUseCase;
+        this.getAnalysisPreviewUseCase = getAnalysisPreviewUseCase;
+        this.analysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper =
+                analysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper;
+        this.analysisPreviewToAnalysisPreviewDtoMapper = analysisPreviewToAnalysisPreviewDtoMapper;
     }
 
     @Override
     @NoPermissionRequired("open to visitors: the preview of the partial analyses, cut on the server")
     public AnalysisPreviewPageDto listPublicAnalyses(int page, int size) {
-        AnalysisPreviewPage previews = listPreviews.list(page, size);
+        AnalysisPreviewPage previews = listAnalysisPreviewsUseCase.list(page, size);
         return new AnalysisPreviewPageDto(
-                previews.items().stream().map(summaryMapper::map).toList(), previews.hasMore());
+                previews.items().stream()
+                        .map(analysisPreviewSummaryToAnalysisPreviewSummaryDtoMapper::map)
+                        .toList(),
+                previews.hasMore());
     }
 
     @Override
     @NoPermissionRequired("open to visitors: the preview of one partial analysis, cut on the server")
     public AnalysisPreviewDto getPublicAnalysis(String id) {
-        return previewMapper.map(getPreview.get(new AnalysisId(id)));
+        return analysisPreviewToAnalysisPreviewDtoMapper.map(getAnalysisPreviewUseCase.get(new AnalysisId(id)));
     }
 }

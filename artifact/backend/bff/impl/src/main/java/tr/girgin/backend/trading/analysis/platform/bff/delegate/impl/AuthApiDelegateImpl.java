@@ -49,13 +49,13 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     private static final String SESSION_COOKIE = "JSESSIONID";
 
-    private final AuthenticatePort authentication;
-    private final ChangePasswordPort changePassword;
+    private final AuthenticatePort authenticatePort;
+    private final ChangePasswordPort changePasswordPort;
     private final UserSessions userSessions;
     private final SessionAuthorities sessionAuthorities;
-    private final PermissionToPermissionEnumDtoMapper permissionMapper;
-    private final SessionAuthenticationStrategy sessionStrategy;
-    private final SecurityContextRepository contextRepository;
+    private final PermissionToPermissionEnumDtoMapper permissionToPermissionEnumDtoMapper;
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
+    private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
     private final SecurityContextHolderStrategy holderStrategy = SecurityContextHolder.getContextHolderStrategy();
     private final SecurityContextLogoutHandler contextLogout = new SecurityContextLogoutHandler();
@@ -63,28 +63,28 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AuthApiDelegateImpl(
-            AuthenticatePort authentication,
-            ChangePasswordPort changePassword,
+            AuthenticatePort authenticatePort,
+            ChangePasswordPort changePasswordPort,
             UserSessions userSessions,
             SessionAuthorities sessionAuthorities,
-            PermissionToPermissionEnumDtoMapper permissionMapper,
-            SessionAuthenticationStrategy sessionStrategy,
-            SecurityContextRepository contextRepository,
+            PermissionToPermissionEnumDtoMapper permissionToPermissionEnumDtoMapper,
+            SessionAuthenticationStrategy sessionAuthenticationStrategy,
+            SecurityContextRepository securityContextRepository,
             CsrfTokenRepository csrfTokenRepository) {
-        this.authentication = authentication;
-        this.changePassword = changePassword;
+        this.authenticatePort = authenticatePort;
+        this.changePasswordPort = changePasswordPort;
         this.userSessions = userSessions;
         this.sessionAuthorities = sessionAuthorities;
-        this.permissionMapper = permissionMapper;
-        this.sessionStrategy = sessionStrategy;
-        this.contextRepository = contextRepository;
+        this.permissionToPermissionEnumDtoMapper = permissionToPermissionEnumDtoMapper;
+        this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
+        this.securityContextRepository = securityContextRepository;
         this.csrfTokenRepository = csrfTokenRepository;
     }
 
     @Override
     @NoPermissionRequired("the login itself: the caller has no session yet")
     public CurrentUserDto login(LoginRequest request, HttpServletRequest http, HttpServletResponse response) {
-        AuthenticatedUser user = authentication.authenticate(request.username(), request.password());
+        AuthenticatedUser user = authenticatePort.authenticate(request.username(), request.password());
         startSession(user, http, response);
         return toDto(user);
     }
@@ -99,7 +99,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         }
         AuthenticatedUser user;
         try {
-            user = changePassword.changePassword(id.get(), request.currentPassword(), request.newPassword());
+            user = changePasswordPort.changePassword(id.get(), request.currentPassword(), request.newPassword());
         } catch (IdentityException e) {
             if (e.error() == IdentityError.BAD_CREDENTIALS) {
                 // The user was disabled or deleted since the login, as in me.
@@ -118,7 +118,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         long builtAt = sessionAuthorities.generation();
         Authentication token = UsernamePasswordAuthenticationToken.authenticated(
                 user.id().value(), null, sessionAuthorities.authorities(user));
-        sessionStrategy.onAuthentication(token, http, response);
+        sessionAuthenticationStrategy.onAuthentication(token, http, response);
         sessionAuthorities.stamp(http.getSession(), builtAt);
         // The strategy expires the old CSRF cookie and only defers the new token: read it so this response sets it.
         if (http.getAttribute(CsrfToken.class.getName()) instanceof CsrfToken csrf) {
@@ -127,7 +127,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
         SecurityContext context = holderStrategy.createEmptyContext();
         context.setAuthentication(token);
         holderStrategy.setContext(context);
-        contextRepository.saveContext(context, http, response);
+        securityContextRepository.saveContext(context, http, response);
     }
 
     @Override
@@ -138,7 +138,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
             // Keeps the CSRF cookie that the filter chain just set, so a client can log in next.
             throw unauthorized();
         }
-        Optional<AuthenticatedUser> user = authentication.findActiveUser(id.get());
+        Optional<AuthenticatedUser> user = authenticatePort.findActiveUser(id.get());
         if (user.isEmpty()) {
             // The user was disabled or deleted since the login: never answer with a stale user.
             endSession(http, response);
@@ -184,7 +184,7 @@ class AuthApiDelegateImpl implements AuthApiDelegate {
                 user.roleNames().stream().sorted().toList(),
                 user.permissions().stream()
                         .sorted(Comparator.comparing(Permission::key))
-                        .map(permissionMapper::map)
+                        .map(permissionToPermissionEnumDtoMapper::map)
                         .toList(),
                 user.mustChangePassword());
     }

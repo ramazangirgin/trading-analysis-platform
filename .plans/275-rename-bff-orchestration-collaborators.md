@@ -48,7 +48,7 @@ lifted.
 
 ### WP1: BFF delegates, part 1
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `bff/delegate/impl/AnalysesApiDelegateImpl.java`,
   `bff/delegate/impl/AuthApiDelegateImpl.java`, `bff/delegate/impl/CatalogApiDelegateImpl.java`,
