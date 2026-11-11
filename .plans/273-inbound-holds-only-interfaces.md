@@ -90,7 +90,7 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP6: Orchestration
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP3
 - **Files**: `artifact/backend/orchestration/src/main/java/.../orchestration/analysisview/model/AnalysisView.java`, `artifact/backend/orchestration/src/test/java/.../orchestration/analysisview/inbound/ViewAnalysesUseCaseTest.java`
 - **Tests**: `ViewAnalysesUseCaseTest`, import only.
