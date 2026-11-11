@@ -111,7 +111,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP6: Identity adapter and three core services
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/identity/adapter/persistence/JpaRoleRepositoryAdapter.java`,
   `domain/identity/adapter/persistence/JpaUserRepositoryAdapter.java`,

@@ -18,15 +18,15 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 @Service
 class UserDirectoryService implements UserDirectoryPort {
 
-    private final UserRepositoryPort users;
+    private final UserRepositoryPort userRepositoryPort;
 
-    UserDirectoryService(UserRepositoryPort users) {
-        this.users = users;
+    UserDirectoryService(UserRepositoryPort userRepositoryPort) {
+        this.userRepositoryPort = userRepositoryPort;
     }
 
     @Override
     public Optional<UserId> firstAdmin() {
-        return users.findAll().stream()
+        return userRepositoryPort.findAll().stream()
                 .filter(user -> user.enabled() && user.roleIds().contains(RoleId.ADMIN))
                 .min(Comparator.comparing(User::createdAt)
                         .thenComparing(user -> user.id().value()))
@@ -36,7 +36,7 @@ class UserDirectoryService implements UserDirectoryPort {
     @Override
     public Map<UserId, Username> usernames(Collection<UserId> ids) {
         Set<UserId> wanted = new HashSet<>(ids);
-        return users.findAll().stream()
+        return userRepositoryPort.findAll().stream()
                 .filter(user -> wanted.contains(user.id()))
                 .collect(Collectors.toMap(User::id, User::username));
     }
