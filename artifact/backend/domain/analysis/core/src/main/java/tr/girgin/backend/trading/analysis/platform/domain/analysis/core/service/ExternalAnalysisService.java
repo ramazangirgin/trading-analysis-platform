@@ -25,16 +25,16 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 @Service
 class ExternalAnalysisService implements RegisterExternalAnalysisPort {
 
-    private final AnalysisRepositoryPort repository;
+    private final AnalysisRepositoryPort analysisRepositoryPort;
 
     private final AnalysisTransitionService analysisTransitionService;
     private final AnalysisIdService analysisIdService;
 
     ExternalAnalysisService(
-            AnalysisRepositoryPort repository,
+            AnalysisRepositoryPort analysisRepositoryPort,
             AnalysisTransitionService analysisTransitionService,
             AnalysisIdService analysisIdService) {
-        this.repository = repository;
+        this.analysisRepositoryPort = analysisRepositoryPort;
         this.analysisTransitionService = analysisTransitionService;
         this.analysisIdService = analysisIdService;
     }
@@ -48,11 +48,11 @@ class ExternalAnalysisService implements RegisterExternalAnalysisPort {
             }
         }
         String ref = ref(external);
-        Optional<Analysis> existing = repository.findByExternalRef(ref);
+        Optional<Analysis> existing = analysisRepositoryPort.findByExternalRef(ref);
         if (existing.isEmpty()) {
             Analysis created =
                     analysisTransitionService.imported(analysisIdService.newId(), null, owner, external, ref);
-            repository.insert(created);
+            analysisRepositoryPort.insert(created);
             return new ExternalRegistration(created, Outcome.CREATED);
         }
         Analysis current = existing.get();
@@ -64,7 +64,7 @@ class ExternalAnalysisService implements RegisterExternalAnalysisPort {
             return new ExternalRegistration(current, Outcome.UNCHANGED);
         }
         try {
-            return new ExternalRegistration(repository.replaceImported(refreshed), Outcome.UPDATED);
+            return new ExternalRegistration(analysisRepositoryPort.replaceImported(refreshed), Outcome.UPDATED);
         } catch (OptimisticLockingFailureException _) {
             throw new AnalysisException(
                     AnalysisError.CONCURRENT_UPDATE,
@@ -82,7 +82,9 @@ class ExternalAnalysisService implements RegisterExternalAnalysisPort {
     }
 
     private Optional<Analysis> platformRun(ExternalAnalysis external) {
-        return repository.findAll(new AnalysisFilter(null, external.ticker(), null, Set.of(), null)).stream()
+        return analysisRepositoryPort
+                .findAll(new AnalysisFilter(null, external.ticker(), null, Set.of(), null))
+                .stream()
                 .filter(a -> a.source() == AnalysisSource.PLATFORM)
                 .filter(a -> a.spec().tradeDate().equals(external.tradeDate()))
                 .findFirst();

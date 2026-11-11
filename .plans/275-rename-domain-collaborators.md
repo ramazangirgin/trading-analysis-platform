@@ -72,7 +72,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP3: Analysis core services
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/analysis/core/service/AnalysisEventService.java`,
   `domain/analysis/core/service/AnalysisListService.java`,
