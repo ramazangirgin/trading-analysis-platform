@@ -139,7 +139,7 @@ and Checkstyle reports no `TAP-D9` in its files with the filter lifted.
 
 ### WP8: Identity core tests
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `domain/identity/core/service/PasswordPolicyServiceTest.java`,
   `domain/identity/core/service/RoleManagementServiceTest.java`,

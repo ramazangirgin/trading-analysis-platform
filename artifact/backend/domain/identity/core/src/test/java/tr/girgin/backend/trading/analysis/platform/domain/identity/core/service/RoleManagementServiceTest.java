@@ -28,9 +28,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 
 class RoleManagementServiceTest {
 
-    private final InMemoryRoleRepository roles = new InMemoryRoleRepository();
-    private final FakeUserRepository users = new FakeUserRepository();
-    private final RoleManagementService service = new RoleManagementService(roles, users);
+    private final InMemoryRoleRepository inMemoryRoleRepository = new InMemoryRoleRepository();
+    private final FakeUserRepository fakeUserRepository = new FakeUserRepository();
+    private final RoleManagementService roleManagementService =
+            new RoleManagementService(inMemoryRoleRepository, fakeUserRepository);
 
     private Role admin;
     private Role analyst;
@@ -39,11 +40,13 @@ class RoleManagementServiceTest {
 
     @BeforeEach
     void seedRoles() {
-        admin = roles.add(new Role(RoleId.ADMIN, "ADMIN", true, "Everything", Set.of(Permission.values()), 0L));
-        analyst = roles.add(
+        admin = inMemoryRoleRepository.add(
+                new Role(RoleId.ADMIN, "ADMIN", true, "Everything", Set.of(Permission.values()), 0L));
+        analyst = inMemoryRoleRepository.add(
                 new Role(RoleId.ANALYST, "ANALYST", true, "Runs analyses", Set.of(Permission.ANALYSIS_RUN), 0L));
-        viewer = roles.add(new Role(RoleId.VIEWER, "VIEWER", true, "Reads", Set.of(Permission.ANALYSIS_READ), 0L));
-        custom = roles.add(new Role(
+        viewer = inMemoryRoleRepository.add(
+                new Role(RoleId.VIEWER, "VIEWER", true, "Reads", Set.of(Permission.ANALYSIS_READ), 0L));
+        custom = inMemoryRoleRepository.add(new Role(
                 new RoleId(UUID.randomUUID().toString()),
                 "Auditor",
                 false,
@@ -54,10 +57,10 @@ class RoleManagementServiceTest {
 
     @Test
     void listsTheRolesSortedByNameWithTheirUserCounts() {
-        users.counts.put(RoleId.ANALYST, 2L);
-        users.counts.put(custom.id(), 5L);
+        fakeUserRepository.counts.put(RoleId.ANALYST, 2L);
+        fakeUserRepository.counts.put(custom.id(), 5L);
 
-        assertThat(service.list())
+        assertThat(roleManagementService.list())
                 .containsExactly(
                         new RoleSummary(admin, 0),
                         new RoleSummary(analyst, 2),
@@ -67,20 +70,22 @@ class RoleManagementServiceTest {
 
     @Test
     void getsARoleWithItsUserCount() {
-        users.counts.put(custom.id(), 4L);
+        fakeUserRepository.counts.put(custom.id(), 4L);
 
-        assertThat(service.get(custom.id())).isEqualTo(new RoleSummary(custom, 4));
+        assertThat(roleManagementService.get(custom.id())).isEqualTo(new RoleSummary(custom, 4));
     }
 
     @Test
     void getFailsForAnUnknownRole() {
-        assertThatThrownBy(() -> service.get(new RoleId(UUID.randomUUID().toString())))
+        assertThatThrownBy(() ->
+                        roleManagementService.get(new RoleId(UUID.randomUUID().toString())))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 
     @Test
     void createsACustomRoleWithATrimmedNameAndDescription() {
-        RoleSummary created = service.create("  Risk Desk  ", " Watches risk ", Set.of(Permission.ANALYSIS_READ));
+        RoleSummary created =
+                roleManagementService.create("  Risk Desk  ", " Watches risk ", Set.of(Permission.ANALYSIS_READ));
 
         Role role = created.role();
         assertThat(role.name()).isEqualTo("Risk Desk");
@@ -88,14 +93,14 @@ class RoleManagementServiceTest {
         assertThat(role.builtIn()).isFalse();
         assertThat(role.permissions()).containsExactly(Permission.ANALYSIS_READ);
         assertThat(created.userCount()).isZero();
-        assertThat(roles.findById(role.id())).contains(role);
+        assertThat(inMemoryRoleRepository.findById(role.id())).contains(role);
     }
 
     @Test
     void copiesThePermissionSetOfACreatedRoleAndKeepsItImmutable() {
         Set<Permission> permissions = new HashSet<>(Set.of(Permission.ANALYSIS_RUN));
 
-        Role role = service.create("Runner", "", permissions).role();
+        Role role = roleManagementService.create("Runner", "", permissions).role();
         permissions.add(Permission.USER_MANAGE);
 
         assertThat(role.permissions()).containsExactly(Permission.ANALYSIS_RUN);
@@ -105,7 +110,8 @@ class RoleManagementServiceTest {
 
     @Test
     void anUpdateReplacesOnlyTheNameKeepingTheOtherParts() {
-        Role updated = service.update(custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), 3L)
+        Role updated = roleManagementService
+                .update(custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), 3L)
                 .role();
 
         assertThat(updated)
@@ -114,7 +120,8 @@ class RoleManagementServiceTest {
 
     @Test
     void anUpdateReplacesOnlyTheDescriptionKeepingTheOtherParts() {
-        Role updated = service.update(custom.id(), Optional.empty(), Optional.of("Other"), Optional.empty(), 3L)
+        Role updated = roleManagementService
+                .update(custom.id(), Optional.empty(), Optional.of("Other"), Optional.empty(), 3L)
                 .role();
 
         assertThat(updated)
@@ -123,8 +130,8 @@ class RoleManagementServiceTest {
 
     @Test
     void anUpdateReplacesOnlyThePermissionsKeepingTheOtherParts() {
-        Role updated = service.update(
-                        custom.id(), Optional.empty(), Optional.empty(), Optional.of(Set.of(Permission.USER_READ)), 3L)
+        Role updated = roleManagementService
+                .update(custom.id(), Optional.empty(), Optional.empty(), Optional.of(Set.of(Permission.USER_READ)), 3L)
                 .role();
 
         assertThat(updated)
@@ -133,7 +140,7 @@ class RoleManagementServiceTest {
 
     @Test
     void createsARoleWithoutPermissionsAndWithoutDescription() {
-        Role role = service.create("Prepared", null, Set.of()).role();
+        Role role = roleManagementService.create("Prepared", null, Set.of()).role();
 
         assertThat(role.permissions()).isEmpty();
         assertThat(role.description()).isEmpty();
@@ -142,7 +149,7 @@ class RoleManagementServiceTest {
     @Test
     void createRejectsInvalidNames() {
         for (String name : new String[] {null, "", " ", "a", " a ", "x".repeat(41), "Rôle", "bad/name", "a.b"}) {
-            assertThatThrownBy(() -> service.create(name, "", Set.of()))
+            assertThatThrownBy(() -> roleManagementService.create(name, "", Set.of()))
                     .as("name %s", name)
                     .satisfies(e -> assertError(e, IdentityError.INVALID_ROLE_NAME));
         }
@@ -150,7 +157,9 @@ class RoleManagementServiceTest {
 
     @Test
     void createAcceptsTheLongestNameAndDescription() {
-        Role role = service.create("x".repeat(40), "d".repeat(200), Set.of()).role();
+        Role role = roleManagementService
+                .create("x".repeat(40), "d".repeat(200), Set.of())
+                .role();
 
         assertThat(role.name()).hasSize(40);
         assertThat(role.description()).hasSize(200);
@@ -158,29 +167,29 @@ class RoleManagementServiceTest {
 
     @Test
     void createRejectsATooLongDescription() {
-        assertThatThrownBy(() -> service.create("Desk", "d".repeat(201), Set.of()))
+        assertThatThrownBy(() -> roleManagementService.create("Desk", "d".repeat(201), Set.of()))
                 .satisfies(e -> assertError(e, IdentityError.INVALID_ROLE_DESCRIPTION));
     }
 
     @Test
     void createRejectsANameTakenInAnotherCase() {
-        assertThatThrownBy(() -> service.create("admin", "", Set.of()))
+        assertThatThrownBy(() -> roleManagementService.create("admin", "", Set.of()))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NAME_TAKEN))
                 .satisfies(e -> assertThat(((IdentityException) e).params()).containsEntry("name", "admin"));
-        assertThat(roles.saved()).isEmpty();
+        assertThat(inMemoryRoleRepository.saved()).isEmpty();
     }
 
     @Test
     void createTurnsADuplicateKeyFromThePortIntoNameTaken() {
-        roles.failSavesWith(new DuplicateKeyException("duplicate"));
+        inMemoryRoleRepository.failSavesWith(new DuplicateKeyException("duplicate"));
 
-        assertThatThrownBy(() -> service.create("Desk", "", Set.of()))
+        assertThatThrownBy(() -> roleManagementService.create("Desk", "", Set.of()))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NAME_TAKEN));
     }
 
     @Test
     void renamesChangesTheDescriptionAndThePermissionsOfACustomRole() {
-        RoleSummary updated = service.update(
+        RoleSummary updated = roleManagementService.update(
                 custom.id(),
                 Optional.of(" Compliance "),
                 Optional.of("Checks"),
@@ -195,12 +204,13 @@ class RoleManagementServiceTest {
                         "Checks",
                         Set.of(Permission.AUDIT_READ, Permission.USER_READ),
                         4L));
-        assertThat(roles.findById(custom.id())).contains(updated.role());
+        assertThat(inMemoryRoleRepository.findById(custom.id())).contains(updated.role());
     }
 
     @Test
     void anEmptyArgumentLeavesItsPartUnchanged() {
-        Role updated = service.update(custom.id(), Optional.empty(), Optional.empty(), Optional.of(Set.of()), null)
+        Role updated = roleManagementService
+                .update(custom.id(), Optional.empty(), Optional.empty(), Optional.of(Set.of()), null)
                 .role();
 
         assertThat(updated.name()).isEqualTo("Auditor");
@@ -210,16 +220,17 @@ class RoleManagementServiceTest {
 
     @Test
     void updateReturnsTheUserCount() {
-        users.counts.put(custom.id(), 2L);
+        fakeUserRepository.counts.put(custom.id(), 2L);
 
-        assertThat(service.update(custom.id(), Optional.of("Renamed"), Optional.empty(), Optional.empty(), null)
+        assertThat(roleManagementService
+                        .update(custom.id(), Optional.of("Renamed"), Optional.empty(), Optional.empty(), null)
                         .userCount())
                 .isEqualTo(2);
     }
 
     @Test
     void anUpdateThatChangesNothingWritesNothing() {
-        RoleSummary result = service.update(
+        RoleSummary result = roleManagementService.update(
                 custom.id(),
                 Optional.of("Auditor"),
                 Optional.of("Audits"),
@@ -227,12 +238,13 @@ class RoleManagementServiceTest {
                 3L);
 
         assertThat(result.role()).isEqualTo(custom);
-        assertThat(roles.saved()).isEmpty();
+        assertThat(inMemoryRoleRepository.saved()).isEmpty();
     }
 
     @Test
     void anUpdateWithOnlyTheCurrentNameInAnotherCaseRenames() {
-        Role updated = service.update(custom.id(), Optional.of("AUDITOR"), Optional.empty(), Optional.empty(), null)
+        Role updated = roleManagementService
+                .update(custom.id(), Optional.of("AUDITOR"), Optional.empty(), Optional.empty(), null)
                 .role();
 
         assertThat(updated.name()).isEqualTo("AUDITOR");
@@ -240,53 +252,53 @@ class RoleManagementServiceTest {
 
     @Test
     void updateRejectsAnInvalidNameAndDescription() {
-        assertThatThrownBy(
-                        () -> service.update(custom.id(), Optional.of("x"), Optional.empty(), Optional.empty(), null))
+        assertThatThrownBy(() -> roleManagementService.update(
+                        custom.id(), Optional.of("x"), Optional.empty(), Optional.empty(), null))
                 .satisfies(e -> assertError(e, IdentityError.INVALID_ROLE_NAME));
-        assertThatThrownBy(() -> service.update(
+        assertThatThrownBy(() -> roleManagementService.update(
                         custom.id(), Optional.empty(), Optional.of("d".repeat(201)), Optional.empty(), null))
                 .satisfies(e -> assertError(e, IdentityError.INVALID_ROLE_DESCRIPTION));
     }
 
     @Test
     void updateRejectsANameTakenByAnotherRoleInAnyCase() {
-        assertThatThrownBy(() ->
-                        service.update(custom.id(), Optional.of("viewer"), Optional.empty(), Optional.empty(), null))
+        assertThatThrownBy(() -> roleManagementService.update(
+                        custom.id(), Optional.of("viewer"), Optional.empty(), Optional.empty(), null))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NAME_TAKEN));
     }
 
     @Test
     void updateTurnsADuplicateKeyFromThePortIntoNameTaken() {
-        roles.failSavesWith(new DuplicateKeyException("duplicate"));
+        inMemoryRoleRepository.failSavesWith(new DuplicateKeyException("duplicate"));
 
-        assertThatThrownBy(() ->
-                        service.update(custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), null))
+        assertThatThrownBy(() -> roleManagementService.update(
+                        custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), null))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NAME_TAKEN));
     }
 
     @Test
     void updateRejectsAStaleVersion() {
-        assertThatThrownBy(
-                        () -> service.update(custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), 2L))
+        assertThatThrownBy(() -> roleManagementService.update(
+                        custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), 2L))
                 .satisfies(e -> assertError(e, IdentityError.CONCURRENT_UPDATE))
                 .hasMessage("Role " + custom.id().value() + " was changed by someone else");
-        assertThat(roles.saved()).isEmpty();
+        assertThat(inMemoryRoleRepository.saved()).isEmpty();
     }
 
     @Test
     void updateTurnsAnOptimisticLockFailureOfTheSaveIntoConcurrentUpdate() {
         OptimisticLockingFailureException failure = new OptimisticLockingFailureException("stale");
-        roles.failSavesWith(failure);
+        inMemoryRoleRepository.failSavesWith(failure);
 
-        assertThatThrownBy(
-                        () -> service.update(custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), 3L))
+        assertThatThrownBy(() -> roleManagementService.update(
+                        custom.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), 3L))
                 .satisfies(e -> assertError(e, IdentityError.CONCURRENT_UPDATE))
                 .hasCause(failure);
     }
 
     @Test
     void updateFailsForAnUnknownRole() {
-        assertThatThrownBy(() -> service.update(
+        assertThatThrownBy(() -> roleManagementService.update(
                         new RoleId(UUID.randomUUID().toString()),
                         Optional.of("Other"),
                         Optional.empty(),
@@ -298,7 +310,7 @@ class RoleManagementServiceTest {
     @Test
     void aBuiltInRoleCannotBeRenamed() {
         for (Role builtIn : List.of(admin, analyst, viewer)) {
-            assertThatThrownBy(() -> service.update(
+            assertThatThrownBy(() -> roleManagementService.update(
                             builtIn.id(), Optional.of("Other"), Optional.empty(), Optional.empty(), null))
                     .satisfies(e -> assertError(e, IdentityError.BUILT_IN_ROLE))
                     .satisfies(e -> assertThat(((IdentityException) e).params())
@@ -309,15 +321,15 @@ class RoleManagementServiceTest {
 
     @Test
     void theDescriptionOfABuiltInRoleCannotChange() {
-        assertThatThrownBy(() ->
-                        service.update(RoleId.ANALYST, Optional.empty(), Optional.of("Other"), Optional.empty(), null))
+        assertThatThrownBy(() -> roleManagementService.update(
+                        RoleId.ANALYST, Optional.empty(), Optional.of("Other"), Optional.empty(), null))
                 .satisfies(e -> assertError(e, IdentityError.BUILT_IN_ROLE))
                 .satisfies(e -> assertThat(((IdentityException) e).params()).containsEntry("change", "description"));
     }
 
     @Test
     void thePermissionsOfAdminCannotChange() {
-        assertThatThrownBy(() -> service.update(
+        assertThatThrownBy(() -> roleManagementService.update(
                         RoleId.ADMIN,
                         Optional.empty(),
                         Optional.empty(),
@@ -325,20 +337,21 @@ class RoleManagementServiceTest {
                         null))
                 .satisfies(e -> assertError(e, IdentityError.BUILT_IN_ROLE))
                 .satisfies(e -> assertThat(((IdentityException) e).params()).containsEntry("change", "permissions"));
-        assertThat(roles.saved()).isEmpty();
+        assertThat(inMemoryRoleRepository.saved()).isEmpty();
     }
 
     @Test
     void thePermissionsOfAnalystAndViewerCanChange() {
-        Role changedAnalyst = service.update(
+        Role changedAnalyst = roleManagementService
+                .update(
                         RoleId.ANALYST,
                         Optional.empty(),
                         Optional.empty(),
                         Optional.of(Set.of(Permission.ANALYSIS_RUN, Permission.PRESET_READ)),
                         0L)
                 .role();
-        Role changedViewer = service.update(
-                        RoleId.VIEWER, Optional.empty(), Optional.empty(), Optional.of(Set.of()), null)
+        Role changedViewer = roleManagementService
+                .update(RoleId.VIEWER, Optional.empty(), Optional.empty(), Optional.of(Set.of()), null)
                 .role();
 
         assertThat(changedAnalyst.permissions())
@@ -349,7 +362,7 @@ class RoleManagementServiceTest {
 
     @Test
     void sendingTheCurrentNameOrDescriptionOfABuiltInRoleIsNotAChange() {
-        RoleSummary result = service.update(
+        RoleSummary result = roleManagementService.update(
                 RoleId.ADMIN,
                 Optional.of("ADMIN"),
                 Optional.of("Everything"),
@@ -357,12 +370,13 @@ class RoleManagementServiceTest {
                 0L);
 
         assertThat(result.role()).isEqualTo(admin);
-        assertThat(roles.saved()).isEmpty();
+        assertThat(inMemoryRoleRepository.saved()).isEmpty();
     }
 
     @Test
     void sendingTheCurrentNameOfABuiltInRoleWhileChangingItsPermissionsPasses() {
-        Role updated = service.update(
+        Role updated = roleManagementService
+                .update(
                         RoleId.VIEWER,
                         Optional.of("VIEWER"),
                         Optional.empty(),
@@ -375,46 +389,47 @@ class RoleManagementServiceTest {
 
     @Test
     void deletesACustomRoleWithoutUsers() {
-        service.delete(custom.id());
+        roleManagementService.delete(custom.id());
 
-        assertThat(roles.findById(custom.id())).isEmpty();
+        assertThat(inMemoryRoleRepository.findById(custom.id())).isEmpty();
     }
 
     @Test
     void deleteFailsForAnUnknownRole() {
-        assertThatThrownBy(() -> service.delete(new RoleId(UUID.randomUUID().toString())))
+        assertThatThrownBy(() -> roleManagementService.delete(
+                        new RoleId(UUID.randomUUID().toString())))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_NOT_FOUND));
     }
 
     @Test
     void aBuiltInRoleCannotBeDeleted() {
         for (RoleId id : List.of(RoleId.ADMIN, RoleId.ANALYST, RoleId.VIEWER)) {
-            assertThatThrownBy(() -> service.delete(id))
+            assertThatThrownBy(() -> roleManagementService.delete(id))
                     .satisfies(e -> assertError(e, IdentityError.BUILT_IN_ROLE))
                     .satisfies(e -> assertThat(((IdentityException) e).params()).containsEntry("change", "delete"));
         }
-        assertThat(roles.deleted()).isEmpty();
+        assertThat(inMemoryRoleRepository.deleted()).isEmpty();
     }
 
     @Test
     void aRoleHeldByUsersCannotBeDeleted() {
-        users.counts.put(custom.id(), 3L);
+        fakeUserRepository.counts.put(custom.id(), 3L);
 
-        assertThatThrownBy(() -> service.delete(custom.id()))
+        assertThatThrownBy(() -> roleManagementService.delete(custom.id()))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_IN_USE))
                 .satisfies(e -> assertThat(((IdentityException) e).params())
                         .containsEntry("id", custom.id().value())
                         .containsEntry("userCount", 3L));
-        assertThat(roles.deleted()).isEmpty();
+        assertThat(inMemoryRoleRepository.deleted()).isEmpty();
     }
 
     @Test
     void aForeignKeyViolationOfTheDeleteIsRoleInUse() {
         DataIntegrityViolationException failure = new DataIntegrityViolationException("fk");
-        roles.failDeletesWith(failure);
-        users.countsAfterDeleteFailure = 1L;
+        inMemoryRoleRepository.failDeletesWith(failure);
+        fakeUserRepository.countsAfterDeleteFailure = 1L;
 
-        assertThatThrownBy(() -> service.delete(custom.id()))
+        assertThatThrownBy(() -> roleManagementService.delete(custom.id()))
                 .satisfies(e -> assertError(e, IdentityError.ROLE_IN_USE))
                 .satisfies(e -> assertThat(((IdentityException) e).params()).containsEntry("userCount", 1L))
                 .hasCause(failure);

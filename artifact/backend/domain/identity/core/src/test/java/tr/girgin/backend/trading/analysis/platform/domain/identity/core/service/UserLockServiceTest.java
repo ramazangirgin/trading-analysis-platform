@@ -24,30 +24,30 @@ import tr.girgin.backend.trading.analysis.platform.domain.identity.core.outbound
 
 class UserLockServiceTest {
 
-    private final FakeUserRepository users = new FakeUserRepository();
+    private final FakeUserRepository fakeUserRepository = new FakeUserRepository();
     private final UserLockService userLockService =
-            new UserLockService(users, new LoginLockoutService(5, Duration.ofMinutes(15)));
+            new UserLockService(fakeUserRepository, new LoginLockoutService(5, Duration.ofMinutes(15)));
 
     @Test
     void unlockClearsTheLockAndTheCount() {
         User locked = user(3, Optional.of(Instant.parse("2026-10-01T10:15:00Z")));
-        users.user = locked;
+        fakeUserRepository.user = locked;
 
         userLockService.unlock(locked.id());
 
-        assertThat(users.user.failedLoginCount()).isZero();
-        assertThat(users.user.lockedUntil()).isEmpty();
-        assertThat(users.saved).hasSize(1);
+        assertThat(fakeUserRepository.user.failedLoginCount()).isZero();
+        assertThat(fakeUserRepository.user.lockedUntil()).isEmpty();
+        assertThat(fakeUserRepository.saved).hasSize(1);
     }
 
     @Test
     void anUnlockedUserWithNoFailuresIsNotWritten() {
         User free = user(0, Optional.empty());
-        users.user = free;
+        fakeUserRepository.user = free;
 
         userLockService.unlock(free.id());
 
-        assertThat(users.saved).isEmpty();
+        assertThat(fakeUserRepository.saved).isEmpty();
     }
 
     @Test
@@ -63,19 +63,19 @@ class UserLockServiceTest {
     @Test
     void aConflictIsRetried() {
         User locked = user(0, Optional.of(Instant.parse("2026-10-01T10:15:00Z")));
-        users.user = locked;
-        users.failSaves = 2;
+        fakeUserRepository.user = locked;
+        fakeUserRepository.failSaves = 2;
 
         userLockService.unlock(locked.id());
 
-        assertThat(users.user.lockedUntil()).isEmpty();
+        assertThat(fakeUserRepository.user.lockedUntil()).isEmpty();
     }
 
     @Test
     void threeConflictsFail() {
         User locked = user(2, Optional.empty());
-        users.user = locked;
-        users.failSaves = 3;
+        fakeUserRepository.user = locked;
+        fakeUserRepository.failSaves = 3;
 
         assertThatThrownBy(() -> userLockService.unlock(locked.id()))
                 .isInstanceOf(OptimisticLockingFailureException.class);
