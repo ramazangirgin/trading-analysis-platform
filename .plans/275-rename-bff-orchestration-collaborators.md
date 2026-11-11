@@ -142,7 +142,7 @@ lifted.
 
 ### WP9: Application integration tests, part 1
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `AnalysesApiIntegrationTest.java`, `AnalysisDefaultsApiIntegrationTest.java`,
   `AnalysisOwnershipIntegrationTest.java`, `AnalysisSharingIntegrationTest.java`,

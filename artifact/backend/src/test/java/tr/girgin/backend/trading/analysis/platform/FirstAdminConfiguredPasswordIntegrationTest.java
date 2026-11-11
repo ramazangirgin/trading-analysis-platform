@@ -32,7 +32,7 @@ class FirstAdminConfiguredPasswordIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -48,7 +48,7 @@ class FirstAdminConfiguredPasswordIntegrationTest {
         JsonNode me = JSON.readTree(session.send("GET", "/api/auth/me", null).body());
         assertThat(me.get("roles")).extracting(JsonNode::asString).containsExactly("ADMIN");
         assertThat(me.get("mustChangePassword").asBoolean()).isFalse();
-        assertThat(users.count()).isEqualTo(1);
+        assertThat(userRepositoryPort.count()).isEqualTo(1);
         assertThat(output.getAll()).doesNotContain(PASSWORD).doesNotContain("generated password");
     }
 }

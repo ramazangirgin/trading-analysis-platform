@@ -68,19 +68,19 @@ class AnalysisOwnershipIntegrationTest {
     private int port;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private PasswordHasherPort hasher;
+    private PasswordHasherPort passwordHasherPort;
 
     @Autowired
-    private AnalysisRepositoryPort analyses;
+    private AnalysisRepositoryPort analysisRepositoryPort;
 
     @Autowired
-    private UserDirectoryPort userDirectory;
+    private UserDirectoryPort userDirectoryPort;
 
     @Autowired
-    private AssignAnalysisOwnersUseCase assignOwners;
+    private AssignAnalysisOwnersUseCase assignAnalysisOwnersUseCase;
 
     @Autowired
     private DataSource dataSource;
@@ -104,9 +104,9 @@ class AnalysisOwnershipIntegrationTest {
                 Statement statement = connection.createStatement()) {
             statement.execute("DELETE FROM \"SETTINGS\".\"ANALYSIS_DEFAULTS\"");
         }
-        analystAName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
-        analystBName = TestSession.createUser(users, hasher, true, RoleId.ANALYST);
-        adminName = TestSession.createUser(users, hasher, true, RoleId.ADMIN);
+        analystAName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
+        analystBName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ANALYST);
+        adminName = TestSession.createUser(userRepositoryPort, passwordHasherPort, true, RoleId.ADMIN);
         analystA = loggedInAs(analystAName);
         analystB = loggedInAs(analystBName);
         admin = loggedInAs(adminName);
@@ -185,10 +185,10 @@ class AnalysisOwnershipIntegrationTest {
     @Test
     void analysesWithoutAnOwnerGoToTheFirstAdmin() throws Exception {
         AnalysisId unowned = TestAnalyses.newId();
-        analyses.insert(TestAnalyses.queued(unowned, spec("OWNE"), null, Instant.now()));
-        String firstAdmin = userDirectory.firstAdmin().orElseThrow().value();
+        analysisRepositoryPort.insert(TestAnalyses.queued(unowned, spec("OWNE"), null, Instant.now()));
+        String firstAdmin = userDirectoryPort.firstAdmin().orElseThrow().value();
 
-        assignOwners.assignUnownedToFirstAdmin();
+        assignAnalysisOwnersUseCase.assignUnownedToFirstAdmin();
 
         JsonNode all =
                 JSON.readTree(admin.send("GET", "/api/analyses?scope=ALL", null).body());
