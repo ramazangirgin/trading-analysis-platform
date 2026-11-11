@@ -131,7 +131,7 @@ lifted.
 
 ### WP8: Orchestration tests, part 2
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `orchestration/preview/inbound/GetAnalysisPreviewUseCaseTest.java`,
   `orchestration/preview/inbound/ListAnalysisPreviewsUseCaseTest.java`,

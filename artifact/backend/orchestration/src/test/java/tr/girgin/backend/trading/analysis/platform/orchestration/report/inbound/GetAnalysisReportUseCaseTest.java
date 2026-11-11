@@ -45,20 +45,21 @@ class GetAnalysisReportUseCaseTest {
                     false),
             OWNER,
             Instant.parse("2026-09-25T10:00:00Z"));
-    private final GetAnalysisPort getAnalysis = (id, access) -> {
+    private final GetAnalysisPort getAnalysisPort = (id, access) -> {
         if (!id.equals(analysis.id()) || !(access.allUsers() || OWNER.equals(access.user()))) {
             throw new AnalysisException(AnalysisError.NOT_FOUND, "Analysis not found: " + id, Map.of());
         }
         return analysis;
     };
-    private final GetAnalysisReportUseCase useCase = new GetAnalysisReportUseCase(getAnalysis, key -> {
-        reportKeys.add(key);
-        return Optional.empty();
-    });
+    private final GetAnalysisReportUseCase getAnalysisReportUseCase =
+            new GetAnalysisReportUseCase(getAnalysisPort, key -> {
+                reportKeys.add(key);
+                return Optional.empty();
+            });
 
     @Test
     void anotherUsersReportIsNotFound() {
-        assertThatThrownBy(() -> useCase.getReport(analysis.id(), OTHERS))
+        assertThatThrownBy(() -> getAnalysisReportUseCase.getReport(analysis.id(), OTHERS))
                 .isInstanceOfSatisfying(
                         AnalysisException.class, e -> assertThat(e.error()).isEqualTo(AnalysisError.NOT_FOUND));
         assertThat(reportKeys).isEmpty();
@@ -66,7 +67,7 @@ class GetAnalysisReportUseCaseTest {
 
     @Test
     void theOwnerGetsTheFilesOfTheAnalysisTickerAndDate() {
-        useCase.getReport(analysis.id(), OWN);
+        getAnalysisReportUseCase.getReport(analysis.id(), OWN);
 
         assertThat(reportKeys).containsExactly(new ReportKey("NVDA", LocalDate.of(2026, 9, 25)));
     }
