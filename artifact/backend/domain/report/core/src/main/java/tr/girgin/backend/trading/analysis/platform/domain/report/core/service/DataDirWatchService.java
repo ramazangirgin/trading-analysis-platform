@@ -24,21 +24,22 @@ class DataDirWatchService implements WatchDataDirPort {
 
     private static final Logger log = LoggerFactory.getLogger(DataDirWatchService.class);
 
-    private final DataDirWatchPort watcher;
+    private final DataDirWatchPort dataDirWatchPort;
     private final Duration quietPeriod;
     private final Duration maxDelay;
     private final LongSupplier nanoTime;
 
     @Autowired
     DataDirWatchService(
-            DataDirWatchPort watcher,
+            DataDirWatchPort dataDirWatchPort,
             @Value("${platform.import.watch.quiet-period-ms:5000}") long quietPeriodMs,
             @Value("${platform.import.watch.max-delay-seconds:60}") long maxDelaySeconds) {
-        this(watcher, Duration.ofMillis(quietPeriodMs), Duration.ofSeconds(maxDelaySeconds), System::nanoTime);
+        this(dataDirWatchPort, Duration.ofMillis(quietPeriodMs), Duration.ofSeconds(maxDelaySeconds), System::nanoTime);
     }
 
-    DataDirWatchService(DataDirWatchPort watcher, Duration quietPeriod, Duration maxDelay, LongSupplier nanoTime) {
-        this.watcher = watcher;
+    DataDirWatchService(
+            DataDirWatchPort dataDirWatchPort, Duration quietPeriod, Duration maxDelay, LongSupplier nanoTime) {
+        this.dataDirWatchPort = dataDirWatchPort;
         this.quietPeriod = quietPeriod;
         this.maxDelay = maxDelay;
         this.nanoTime = nanoTime;
@@ -46,12 +47,12 @@ class DataDirWatchService implements WatchDataDirPort {
 
     @Override
     public AutoCloseable watch(Runnable onSettled) {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
                 Thread.ofVirtual().name("data-dir-settled").factory());
-        Debouncer debouncer = new Debouncer(scheduler, onSettled);
-        AutoCloseable watch = watcher.watch(debouncer::changed);
+        Debouncer debouncer = new Debouncer(scheduledExecutorService, onSettled);
+        AutoCloseable watch = dataDirWatchPort.watch(debouncer::changed);
         return () -> {
-            scheduler.shutdownNow();
+            scheduledExecutorService.shutdownNow();
             watch.close();
         };
     }
@@ -59,13 +60,13 @@ class DataDirWatchService implements WatchDataDirPort {
     /** Fires {@code quietPeriod} after the last change, but no later than {@code maxDelay} after the first. */
     private final class Debouncer {
 
-        private final ScheduledExecutorService scheduler;
+        private final ScheduledExecutorService scheduledExecutorService;
         private final Runnable onSettled;
         private ScheduledFuture<?> pending;
         private long firstChange;
 
-        Debouncer(ScheduledExecutorService scheduler, Runnable onSettled) {
-            this.scheduler = scheduler;
+        Debouncer(ScheduledExecutorService scheduledExecutorService, Runnable onSettled) {
+            this.scheduledExecutorService = scheduledExecutorService;
             this.onSettled = onSettled;
         }
 
@@ -80,7 +81,7 @@ class DataDirWatchService implements WatchDataDirPort {
                 firstChange = now;
             }
             try {
-                pending = scheduler.schedule(this::fire, quietPeriod.toNanos(), TimeUnit.NANOSECONDS);
+                pending = scheduledExecutorService.schedule(this::fire, quietPeriod.toNanos(), TimeUnit.NANOSECONDS);
             } catch (RejectedExecutionException _) {
                 // Closed while a last change was coming in.
             }

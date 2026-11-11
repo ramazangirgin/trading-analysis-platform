@@ -70,7 +70,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
 
     private final Path resultsDir;
     private final Path deepReportsDir;
-    private final JsonMapper json = JsonMapper.builder()
+    private final JsonMapper jsonMapper = JsonMapper.builder()
             .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
@@ -172,7 +172,7 @@ class FileSystemDataDirAdapter implements DataDirPort {
         }
         FullStateLog state;
         try {
-            state = json.readValue(file.toFile(), FullStateLog.class);
+            state = jsonMapper.readValue(file.toFile(), FullStateLog.class);
         } catch (JacksonException e) {
             log.warn("Skipping unreadable {}: {}", file, e.getOriginalMessage());
             return Optional.empty();

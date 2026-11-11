@@ -35,9 +35,9 @@ class TaRunnerEngineInfoAdapter implements EngineInfoPort {
     private static final long TIMEOUT_SECONDS = 120;
     private static final long OUTPUT_TIMEOUT_SECONDS = 10;
 
-    private final CatalogJsonToCatalogMapper catalogMapper;
-    private final VersionJsonToEngineVersionMapper versionMapper;
-    private final JsonMapper json = JsonMapper.builder()
+    private final CatalogJsonToCatalogMapper catalogJsonToCatalogMapper;
+    private final VersionJsonToEngineVersionMapper versionJsonToEngineVersionMapper;
+    private final JsonMapper jsonMapper = JsonMapper.builder()
             .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
@@ -45,24 +45,25 @@ class TaRunnerEngineInfoAdapter implements EngineInfoPort {
     private final Path workingDir;
 
     TaRunnerEngineInfoAdapter(
-            CatalogJsonToCatalogMapper catalogMapper,
-            VersionJsonToEngineVersionMapper versionMapper,
+            CatalogJsonToCatalogMapper catalogJsonToCatalogMapper,
+            VersionJsonToEngineVersionMapper versionJsonToEngineVersionMapper,
             @Value("${platform.runner.process.command}") String[] command,
             @Value("${platform.runner.process.working-dir}") Path workingDir) {
-        this.catalogMapper = catalogMapper;
-        this.versionMapper = versionMapper;
+        this.catalogJsonToCatalogMapper = catalogJsonToCatalogMapper;
+        this.versionJsonToEngineVersionMapper = versionJsonToEngineVersionMapper;
         this.command = absoluteExecutable(List.of(command));
         this.workingDir = workingDir.toAbsolutePath();
     }
 
     @Override
     public Catalog fetchCatalog() {
-        return run("catalog", out -> catalogMapper.map(json.readValue(out, CatalogJson.class)));
+        return run("catalog", out -> catalogJsonToCatalogMapper.map(jsonMapper.readValue(out, CatalogJson.class)));
     }
 
     @Override
     public EngineVersion fetchVersion() {
-        return run("version", out -> versionMapper.map(json.readValue(out, VersionJson.class)));
+        return run(
+                "version", out -> versionJsonToEngineVersionMapper.map(jsonMapper.readValue(out, VersionJson.class)));
     }
 
     private <T> T run(String subcommand, Function<String, T> parse) {

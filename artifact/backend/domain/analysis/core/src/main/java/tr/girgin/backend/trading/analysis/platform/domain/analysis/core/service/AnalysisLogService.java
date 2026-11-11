@@ -22,26 +22,27 @@ class AnalysisLogService implements ReadAnalysisLogsPort {
     private static final Pattern KEY =
             Pattern.compile("\\b(sk-[A-Za-z]*-?|AIza|xai-|gsk_)([A-Za-z0-9_\\-]{4})[A-Za-z0-9_\\-]{8,}");
 
-    private final GetAnalysisPort getAnalysis;
-    private final RunLogPort runLog;
+    private final GetAnalysisPort getAnalysisPort;
+    private final RunLogPort runLogPort;
     private final AnalysisAccessService analysisAccessService;
 
-    AnalysisLogService(GetAnalysisPort getAnalysis, RunLogPort runLog, AnalysisAccessService analysisAccessService) {
-        this.getAnalysis = getAnalysis;
-        this.runLog = runLog;
+    AnalysisLogService(
+            GetAnalysisPort getAnalysisPort, RunLogPort runLogPort, AnalysisAccessService analysisAccessService) {
+        this.getAnalysisPort = getAnalysisPort;
+        this.runLogPort = runLogPort;
         this.analysisAccessService = analysisAccessService;
     }
 
     @Override
     public List<String> tailLogs(AnalysisId id, AnalysisAccess access, int maxLines) {
-        Analysis analysis = getAnalysis.get(id, access);
+        Analysis analysis = getAnalysisPort.get(id, access);
         // The log can hold internal details, so a reader of a public analysis does not get it.
         if (!analysisAccessService.canManage(analysis, access)) {
             throw new AnalysisException(
                     AnalysisError.NOT_FOUND, "Analysis not found: " + id.value(), Map.of("id", id.value()));
         }
         int lines = Math.clamp(maxLines, 1, MAX_LINES);
-        return runLog.tail(id, lines).stream().map(this::mask).toList();
+        return runLogPort.tail(id, lines).stream().map(this::mask).toList();
     }
 
     String mask(String line) {

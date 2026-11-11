@@ -49,9 +49,9 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
     private static final Duration RESPONSE_TIMEOUT = Duration.ofMinutes(3);
     private static final long PROBE_MEMORY_BYTES = 512L * 1024 * 1024;
 
-    private final CatalogJsonToCatalogMapper catalogMapper;
-    private final VersionJsonToEngineVersionMapper versionMapper;
-    private final JsonMapper json = JsonMapper.builder()
+    private final CatalogJsonToCatalogMapper catalogJsonToCatalogMapper;
+    private final VersionJsonToEngineVersionMapper versionJsonToEngineVersionMapper;
+    private final JsonMapper jsonMapper = JsonMapper.builder()
             .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
@@ -60,32 +60,37 @@ class DockerEngineInfoAdapter implements EngineInfoPort, DisposableBean {
 
     @Autowired
     DockerEngineInfoAdapter(
-            CatalogJsonToCatalogMapper catalogMapper,
-            VersionJsonToEngineVersionMapper versionMapper,
+            CatalogJsonToCatalogMapper catalogJsonToCatalogMapper,
+            VersionJsonToEngineVersionMapper versionJsonToEngineVersionMapper,
             @Value("${platform.runner.docker.host}") String host,
             @Value("${platform.runner.docker.image}") String image) {
-        this(catalogMapper, versionMapper, DockerClients.create(host, RESPONSE_TIMEOUT), image);
+        this(
+                catalogJsonToCatalogMapper,
+                versionJsonToEngineVersionMapper,
+                DockerClients.create(host, RESPONSE_TIMEOUT),
+                image);
     }
 
     DockerEngineInfoAdapter(
-            CatalogJsonToCatalogMapper catalogMapper,
-            VersionJsonToEngineVersionMapper versionMapper,
+            CatalogJsonToCatalogMapper catalogJsonToCatalogMapper,
+            VersionJsonToEngineVersionMapper versionJsonToEngineVersionMapper,
             DockerClient docker,
             String image) {
-        this.catalogMapper = catalogMapper;
-        this.versionMapper = versionMapper;
+        this.catalogJsonToCatalogMapper = catalogJsonToCatalogMapper;
+        this.versionJsonToEngineVersionMapper = versionJsonToEngineVersionMapper;
         this.docker = docker;
         this.image = image;
     }
 
     @Override
     public Catalog fetchCatalog() {
-        return run("catalog", out -> catalogMapper.map(json.readValue(out, CatalogJson.class)));
+        return run("catalog", out -> catalogJsonToCatalogMapper.map(jsonMapper.readValue(out, CatalogJson.class)));
     }
 
     @Override
     public EngineVersion fetchVersion() {
-        return run("version", out -> versionMapper.map(json.readValue(out, VersionJson.class)));
+        return run(
+                "version", out -> versionJsonToEngineVersionMapper.map(jsonMapper.readValue(out, VersionJson.class)));
     }
 
     @Override

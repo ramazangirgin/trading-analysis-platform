@@ -9,7 +9,7 @@ enforces each rule.
 | [backend-java-package-structure.md](backend-java-package-structure.md) | Backend (Java): modules, packages, which class kind goes where |
 | [frontend-folder-structure.md](frontend-folder-structure.md) | Frontend (Vue): `app` / `pages` / `features` / `shared`, what may import what |
 | [ta-runner-python-package-structure.md](ta-runner-python-package-structure.md) | ta-runner (Python): sub-packages, layer order, the single upstream import point |
-| [backend-java-checkstyle.md](backend-java-checkstyle.md) | Backend (Java): Checkstyle rules (naming, imports, size, bug-prone patterns, design, Javadoc) and how to suppress a finding |
+| [backend-java-checkstyle.md](backend-java-checkstyle.md) | Backend (Java): Checkstyle rules (naming, collaborator names, imports, size, bug-prone patterns, design, Javadoc) and how to suppress a finding |
 | [backend-java-formatting.md](backend-java-formatting.md) | Backend (Java): formatting with Spotless and Palantir Java Format, why that formatter, how to fix a finding |
 | [backend-database-naming.md](backend-database-naming.md) | Backend (database): table, column, constraint, index and enum type names, quoting, migrations |
 | [backend-java-persistence.md](backend-java-persistence.md) | Backend (Java): Spring Data JPA / Hibernate only, no plain SQL; entities, embeddables, converters, repositories, the column and Java type of every stored value (time, duration, amount), enum and array columns, optimistic locking with `@Version`, the shared persistence library and its test fixtures |

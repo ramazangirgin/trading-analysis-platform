@@ -23,10 +23,10 @@ class FileSystemDataDirWatchAdapterTest {
     @Test
     void noticesNewRunsInTheResultsTreeAndTheRunHistory() throws Exception {
         Path logs = Files.createDirectories(dataDir.resolve("logs"));
-        FileSystemDataDirWatchAdapter adapter =
+        FileSystemDataDirWatchAdapter fileSystemDataDirWatchAdapter =
                 new FileSystemDataDirWatchAdapter(dataDir, logs, dataDir.resolve("reports"));
 
-        try (AutoCloseable _ = adapter.watch(changes::release)) {
+        try (AutoCloseable _ = fileSystemDataDirWatchAdapter.watch(changes::release)) {
             // A new ticker and date: the directories appear first, then the files in them.
             Path stage = Files.createDirectories(logs.resolve("AMD/2026-09-30/reports/1_analysts"));
             assertChanged();
@@ -44,10 +44,10 @@ class FileSystemDataDirWatchAdapterTest {
     @Test
     void ignoresFilesTheImportDoesNotRead() throws Exception {
         Path cache = Files.createDirectories(dataDir.resolve("cache"));
-        FileSystemDataDirWatchAdapter adapter =
+        FileSystemDataDirWatchAdapter fileSystemDataDirWatchAdapter =
                 new FileSystemDataDirWatchAdapter(dataDir, dataDir.resolve("logs"), dataDir.resolve("reports"));
 
-        try (AutoCloseable _ = adapter.watch(changes::release)) {
+        try (AutoCloseable _ = fileSystemDataDirWatchAdapter.watch(changes::release)) {
             Files.writeString(cache.resolve("AMD-YFin-data.csv"), "Date,Close");
             Files.writeString(dataDir.resolve("ui_state.json"), "{}");
 

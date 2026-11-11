@@ -20,7 +20,7 @@ class SecretsServiceTest {
     private final Map<String, String> external = new LinkedHashMap<>(
             Map.of("DEEPSEEK_API_KEY", "sk-external-1234", "TRADINGAGENTS_LLM_PROVIDER", "deepseek"));
 
-    private final SecretsService service = new SecretsService(new SecretStorePort() {
+    private final SecretsService secretsService = new SecretsService(new SecretStorePort() {
         @Override
         public Map<String, String> readManaged() {
             return Map.copyOf(managed);
@@ -40,10 +40,10 @@ class SecretsServiceTest {
 
     @Test
     void listsMaskedValuesWithThePlatformFileWinning() {
-        service.setSecret("DEEPSEEK_API_KEY", "  sk-platform-9876  ");
-        service.setSecret("OPENAI_API_KEY", "sk-openai-abcd");
+        secretsService.setSecret("DEEPSEEK_API_KEY", "  sk-platform-9876  ");
+        secretsService.setSecret("OPENAI_API_KEY", "sk-openai-abcd");
 
-        assertThat(service.listSecrets())
+        assertThat(secretsService.listSecrets())
                 .containsExactly(
                         new SecretStatus("DEEPSEEK_API_KEY", SecretSource.PLATFORM, "••••9876"),
                         new SecretStatus("OPENAI_API_KEY", SecretSource.PLATFORM, "••••abcd"),
@@ -54,7 +54,7 @@ class SecretsServiceTest {
     @ParameterizedTest
     @ValueSource(strings = {"PATH", "PYTHONPATH", "DYLD_INSERT_LIBRARIES", "deepseek_api_key", "X_API_KEY\nPATH"})
     void refusesNamesThatAreNotProviderCredentials(String name) {
-        assertThatThrownBy(() -> service.setSecret(name, "x"))
+        assertThatThrownBy(() -> secretsService.setSecret(name, "x"))
                 .isInstanceOfSatisfying(
                         SettingsException.class,
                         e -> assertThat(e.error()).isEqualTo(SettingsError.INVALID_SECRET_NAME));
@@ -63,19 +63,20 @@ class SecretsServiceTest {
 
     @Test
     void refusesEmptyOrMultiLineValues() {
-        assertThatThrownBy(() -> service.setSecret("OPENAI_API_KEY", " ")).isInstanceOf(SettingsException.class);
-        assertThatThrownBy(() -> service.setSecret("OPENAI_API_KEY", "sk-1\nPATH=/tmp"))
+        assertThatThrownBy(() -> secretsService.setSecret("OPENAI_API_KEY", " "))
+                .isInstanceOf(SettingsException.class);
+        assertThatThrownBy(() -> secretsService.setSecret("OPENAI_API_KEY", "sk-1\nPATH=/tmp"))
                 .isInstanceOf(SettingsException.class);
     }
 
     @Test
     void removesOnlyFromThePlatformFile() {
-        service.setSecret("OPENAI_API_KEY", "sk-openai-abcd");
+        secretsService.setSecret("OPENAI_API_KEY", "sk-openai-abcd");
 
-        service.removeSecret("OPENAI_API_KEY");
+        secretsService.removeSecret("OPENAI_API_KEY");
 
         assertThat(managed).isEmpty();
-        assertThatThrownBy(() -> service.removeSecret("DEEPSEEK_API_KEY"))
+        assertThatThrownBy(() -> secretsService.removeSecret("DEEPSEEK_API_KEY"))
                 .isInstanceOfSatisfying(
                         SettingsException.class,
                         e -> assertThat(e.error()).isEqualTo(SettingsError.SECRET_NOT_MANAGED));

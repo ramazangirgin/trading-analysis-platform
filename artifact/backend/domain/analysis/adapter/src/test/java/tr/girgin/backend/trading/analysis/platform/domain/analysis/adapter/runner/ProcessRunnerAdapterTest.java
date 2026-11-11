@@ -29,7 +29,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 class ProcessRunnerAdapterTest extends AdapterTestSupport {
 
     @Autowired
-    private ProcessRunnerAdapter runner;
+    private ProcessRunnerAdapter processRunnerAdapter;
 
     @Test
     @SuppressWarnings("checkstyle:LineLength") // runner protocol lines in a fixture stay on one line
@@ -46,7 +46,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         AnalysisId id = TestAnalyses.newId();
         RecordingSink sink = new RecordingSink();
 
-        runner.start(id, spec("NVDA"), Map.of("DEEPSEEK_API_KEY", "sk-from-env"), sink);
+        processRunnerAdapter.start(id, spec("NVDA"), Map.of("DEEPSEEK_API_KEY", "sk-from-env"), sink);
 
         assertThat(sink.awaitExit()).isEqualTo(0);
         assertThat(sink.events).extracting(RunEvent::seq).containsExactly(1L, 2L, 3L, 4L);
@@ -78,7 +78,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         AnalysisId id = TestAnalyses.newId();
         RecordingSink sink = new RecordingSink();
 
-        runner.start(id, spec("MU"), Map.of(), sink);
+        processRunnerAdapter.start(id, spec("MU"), Map.of(), sink);
 
         sink.awaitExit();
         Path runDir = HOME.resolve("runs").resolve(id.value()).toAbsolutePath();
@@ -94,7 +94,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 """);
         RecordingSink sink = new RecordingSink();
 
-        runner.start(TestAnalyses.newId(), spec("MU"), Map.of(), sink);
+        processRunnerAdapter.start(TestAnalyses.newId(), spec("MU"), Map.of(), sink);
 
         sink.awaitExit();
         assertThat(sink.events.getFirst().payload().get("message"))
@@ -111,10 +111,10 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 while true; do sleep 0.1; done
                 """);
         RecordingSink sink = new RecordingSink();
-        RunHandle handle = runner.start(TestAnalyses.newId(), spec("GOOG"), Map.of(), sink);
+        RunHandle handle = processRunnerAdapter.start(TestAnalyses.newId(), spec("GOOG"), Map.of(), sink);
         sink.awaitEvents(1);
 
-        runner.stop(handle);
+        processRunnerAdapter.stop(handle);
 
         assertThat(sink.awaitExit()).isEqualTo(2);
         assertThat(sink.events.getLast().type()).isEqualTo(RunEventType.RUN_FINISHED);
@@ -129,10 +129,10 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 while true; do sleep 0.1; done
                 """);
         RecordingSink sink = new RecordingSink();
-        RunHandle handle = runner.start(TestAnalyses.newId(), spec("AAPL"), Map.of(), sink);
+        RunHandle handle = processRunnerAdapter.start(TestAnalyses.newId(), spec("AAPL"), Map.of(), sink);
         sink.awaitEvents(1);
 
-        runner.stop(handle);
+        processRunnerAdapter.stop(handle);
 
         assertThat(sink.awaitExit()).isNotEqualTo(0);
     }
@@ -153,7 +153,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 """);
         RecordingSink sink = new RecordingSink();
 
-        boolean followed = runner.reattach(id, new RunHandle(ref(orphan)), 1, sink);
+        boolean followed = processRunnerAdapter.reattach(id, new RunHandle(ref(orphan)), 1, sink);
 
         assertThat(followed).isTrue();
         assertThat(sink.awaitExit()).isEqualTo(-1);
@@ -175,10 +175,10 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
                 """);
         RecordingSink sink = new RecordingSink();
         RunHandle handle = new RunHandle(ref(orphan));
-        assertThat(runner.reattach(id, handle, 0, sink)).isTrue();
+        assertThat(processRunnerAdapter.reattach(id, handle, 0, sink)).isTrue();
         sink.awaitEvents(1);
 
-        runner.stop(handle);
+        processRunnerAdapter.stop(handle);
 
         assertThat(sink.awaitExit()).isEqualTo(-1);
         assertThat(sink.events.getLast().outcome()).isEqualTo(RunOutcome.STOPPED);
@@ -190,7 +190,7 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         try {
             RunHandle stale = new RunHandle(other.pid() + "@1000");
 
-            assertThat(runner.reattach(TestAnalyses.newId(), stale, 0, new RecordingSink()))
+            assertThat(processRunnerAdapter.reattach(TestAnalyses.newId(), stale, 0, new RecordingSink()))
                     .isFalse();
         } finally {
             other.destroyForcibly();
@@ -203,9 +203,10 @@ class ProcessRunnerAdapterTest extends AdapterTestSupport {
         gone.waitFor();
         String ref = gone.pid() + "@" + Instant.now().toEpochMilli();
 
-        assertThat(runner.reattach(TestAnalyses.newId(), new RunHandle(ref), 0, new RecordingSink()))
+        assertThat(processRunnerAdapter.reattach(TestAnalyses.newId(), new RunHandle(ref), 0, new RecordingSink()))
                 .isFalse();
-        assertThat(runner.reattach(TestAnalyses.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink()))
+        assertThat(processRunnerAdapter.reattach(
+                        TestAnalyses.newId(), new RunHandle("not-a-pid"), 0, new RecordingSink()))
                 .isFalse();
     }
 

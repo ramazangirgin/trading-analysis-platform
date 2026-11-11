@@ -18,19 +18,19 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 @Service
 class AnalysisVisibilityService implements ChangeAnalysisVisibilityPort {
 
-    private final AnalysisRepositoryPort repository;
+    private final AnalysisRepositoryPort analysisRepositoryPort;
     private final AnalysisAccessService analysisAccessService;
     private final AnalysisTransitionService analysisTransitionService;
     private final AnalysisIdService analysisIdService;
     private final Clock clock;
 
     AnalysisVisibilityService(
-            AnalysisRepositoryPort repository,
+            AnalysisRepositoryPort analysisRepositoryPort,
             AnalysisAccessService analysisAccessService,
             AnalysisTransitionService analysisTransitionService,
             AnalysisIdService analysisIdService,
             Clock clock) {
-        this.repository = repository;
+        this.analysisRepositoryPort = analysisRepositoryPort;
         this.analysisAccessService = analysisAccessService;
         this.analysisTransitionService = analysisTransitionService;
         this.analysisIdService = analysisIdService;
@@ -40,7 +40,7 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityPort {
     @Override
     public Analysis change(AnalysisId id, Visibility visibility, AnalysisAccess access, Long version) {
         analysisIdService.requireValid(id);
-        Analysis analysis = repository
+        Analysis analysis = analysisRepositoryPort
                 .findById(id)
                 .filter(found -> analysisAccessService.canSee(found, access))
                 .orElseThrow(() -> notFound(id));
@@ -60,7 +60,8 @@ class AnalysisVisibilityService implements ChangeAnalysisVisibilityPort {
                     Map.of("id", id.value(), "status", analysis.status().name()));
         }
         try {
-            return repository.update(analysisTransitionService.withVisibility(analysis, visibility, clock.instant()));
+            return analysisRepositoryPort.update(
+                    analysisTransitionService.withVisibility(analysis, visibility, clock.instant()));
         } catch (OptimisticLockingFailureException _) {
             throw concurrentUpdate(id);
         }

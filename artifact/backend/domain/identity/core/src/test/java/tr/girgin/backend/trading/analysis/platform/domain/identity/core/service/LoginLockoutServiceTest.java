@@ -72,10 +72,10 @@ class LoginLockoutServiceTest {
 
     @Test
     void holdsTheConfiguredValues() {
-        LoginLockoutService policy = new LoginLockoutService(5, Duration.ofMinutes(15));
+        LoginLockoutService configuredLoginLockoutService = new LoginLockoutService(5, Duration.ofMinutes(15));
 
-        assertThat(policy.maxFailedAttempts()).isEqualTo(5);
-        assertThat(policy.lockoutDuration()).isEqualTo(Duration.ofMinutes(15));
+        assertThat(configuredLoginLockoutService.maxFailedAttempts()).isEqualTo(5);
+        assertThat(configuredLoginLockoutService.lockoutDuration()).isEqualTo(Duration.ofMinutes(15));
     }
 
     @Test

@@ -46,13 +46,13 @@ class JpaIdentityRepositoryTest {
     private MutableTestClock clock;
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private RoleRepositoryPort roles;
+    private RoleRepositoryPort roleRepositoryPort;
 
     @Autowired
-    private UserJpaRepository userRepository;
+    private UserJpaRepository userJpaRepository;
 
     @BeforeEach
     void resetClock() {
@@ -77,19 +77,19 @@ class JpaIdentityRepositoryTest {
                 Set.of(admin.id(), viewer.id()),
                 null);
 
-        User saved = users.save(user);
+        User saved = userRepositoryPort.save(user);
 
         assertThat(saved).isEqualTo(audited(user, MutableTestClock.START, MutableTestClock.START, 0L));
-        assertThat(users.findById(user.id())).contains(saved);
+        assertThat(userRepositoryPort.findById(user.id())).contains(saved);
     }
 
     @Test
     void userWithoutLockRoundTrips() {
         User user = user("no-lock", Set.of());
 
-        User saved = users.save(user);
+        User saved = userRepositoryPort.save(user);
 
-        assertThat(users.findById(user.id())).hasValueSatisfying(found -> {
+        assertThat(userRepositoryPort.findById(user.id())).hasValueSatisfying(found -> {
             assertThat(found.lockedUntil()).isEmpty();
             assertThat(found).isEqualTo(saved);
         });
@@ -97,17 +97,17 @@ class JpaIdentityRepositoryTest {
 
     @Test
     void theFailedLoginCountAndTheLockRoundTripThroughASave() {
-        User user = users.save(user("lockout", Set.of()));
+        User user = userRepositoryPort.save(user("lockout", Set.of()));
 
-        User locked = users.save(IdentityCopies.withFailedLogin(user, 4, Optional.of(LOCKED_UNTIL)));
+        User locked = userRepositoryPort.save(IdentityCopies.withFailedLogin(user, 4, Optional.of(LOCKED_UNTIL)));
 
-        assertThat(users.findById(user.id())).hasValueSatisfying(found -> {
+        assertThat(userRepositoryPort.findById(user.id())).hasValueSatisfying(found -> {
             assertThat(found.failedLoginCount()).isEqualTo(4);
             assertThat(found.lockedUntil()).contains(LOCKED_UNTIL);
             assertThat(found).isEqualTo(locked);
         });
-        User cleared = users.save(IdentityCopies.withFailedLogin(locked, 0, Optional.empty()));
-        assertThat(users.findById(user.id())).hasValueSatisfying(found -> {
+        User cleared = userRepositoryPort.save(IdentityCopies.withFailedLogin(locked, 0, Optional.empty()));
+        assertThat(userRepositoryPort.findById(user.id())).hasValueSatisfying(found -> {
             assertThat(found.failedLoginCount()).isZero();
             assertThat(found.lockedUntil()).isEmpty();
             assertThat(found).isEqualTo(cleared);
@@ -116,37 +116,39 @@ class JpaIdentityRepositoryTest {
 
     @Test
     void theLastLoginRoundTripsAsNullAndAsATime() {
-        User saved = users.save(user("last-login", Set.of()));
-        assertThat(users.findById(saved.id()).orElseThrow().lastLoginAt()).isEmpty();
+        User saved = userRepositoryPort.save(user("last-login", Set.of()));
+        assertThat(userRepositoryPort.findById(saved.id()).orElseThrow().lastLoginAt())
+                .isEmpty();
 
         Instant at = Instant.parse("2026-10-04T08:30:00Z");
-        User loggedIn = users.save(IdentityCopies.withLastLogin(saved, at));
+        User loggedIn = userRepositoryPort.save(IdentityCopies.withLastLogin(saved, at));
 
         assertThat(loggedIn.lastLoginAt()).contains(at);
-        assertThat(users.findById(saved.id())).contains(loggedIn);
+        assertThat(userRepositoryPort.findById(saved.id())).contains(loggedIn);
     }
 
     @Test
     void countEnabledWithRoleCountsOnlyEnabledUsersWithThatRole() {
         Role role = saveRole("count-role", Set.of());
         Role other = saveRole("count-other-role", Set.of());
-        users.save(user("count-role-enabled-one", Set.of(role.id())));
-        users.save(user("count-role-enabled-two", Set.of(role.id(), other.id())));
-        users.save(IdentityCopies.withEnabled(user("count-role-disabled", Set.of(role.id())), false));
-        users.save(user("count-role-other", Set.of(other.id())));
+        userRepositoryPort.save(user("count-role-enabled-one", Set.of(role.id())));
+        userRepositoryPort.save(user("count-role-enabled-two", Set.of(role.id(), other.id())));
+        userRepositoryPort.save(IdentityCopies.withEnabled(user("count-role-disabled", Set.of(role.id())), false));
+        userRepositoryPort.save(user("count-role-other", Set.of(other.id())));
 
-        assertThat(users.countEnabledWithRole(role.id())).isEqualTo(2);
-        assertThat(users.countEnabledWithRole(other.id())).isEqualTo(2);
-        assertThat(users.countEnabledWithRole(IdentityCopies.newRoleId())).isZero();
+        assertThat(userRepositoryPort.countEnabledWithRole(role.id())).isEqualTo(2);
+        assertThat(userRepositoryPort.countEnabledWithRole(other.id())).isEqualTo(2);
+        assertThat(userRepositoryPort.countEnabledWithRole(IdentityCopies.newRoleId()))
+                .isZero();
     }
 
     @Test
     void aNewUserGetsTheTimeOfTheClockAsCreatedAtAndUpdatedAt() {
-        User saved = users.save(user("new-audit", Set.of()));
+        User saved = userRepositoryPort.save(user("new-audit", Set.of()));
 
         assertThat(saved.createdAt()).isEqualTo(MutableTestClock.START);
         assertThat(saved.updatedAt()).isEqualTo(MutableTestClock.START);
-        User found = users.findById(saved.id()).orElseThrow();
+        User found = userRepositoryPort.findById(saved.id()).orElseThrow();
         assertThat(found.createdAt()).isEqualTo(MutableTestClock.START);
         assertThat(found.updatedAt()).isEqualTo(MutableTestClock.START);
     }
@@ -155,7 +157,7 @@ class JpaIdentityRepositoryTest {
     void updatingAUserReplacesItsFieldsAndRoleAssignments() {
         Role first = saveRole("first-update", Set.of());
         Role second = saveRole("second-update", Set.of());
-        User user = users.save(user("update-me", Set.of(first.id())));
+        User user = userRepositoryPort.save(user("update-me", Set.of(first.id())));
         clock.advance(Duration.ofHours(1));
         User changed = new User(
                 user.id(),
@@ -171,27 +173,27 @@ class JpaIdentityRepositoryTest {
                 Set.of(second.id()),
                 user.version());
 
-        User saved = users.save(changed);
+        User saved = userRepositoryPort.save(changed);
 
         Instant later = MutableTestClock.START.plus(Duration.ofHours(1));
         assertThat(saved).isEqualTo(audited(changed, MutableTestClock.START, later, 1L));
-        assertThat(users.findById(user.id())).contains(saved);
-        assertThat(users.findAll())
+        assertThat(userRepositoryPort.findById(user.id())).contains(saved);
+        assertThat(userRepositoryPort.findAll())
                 .filteredOn(found -> found.id().equals(user.id()))
                 .containsExactly(saved);
     }
 
     @Test
     void aResaveKeepsCreatedAtAndMovesUpdatedAt() {
-        User first = users.save(user("keep-created", Set.of()));
+        User first = userRepositoryPort.save(user("keep-created", Set.of()));
         clock.advance(Duration.ofMinutes(10));
 
-        User resaved = users.save(first);
+        User resaved = userRepositoryPort.save(first);
 
         Instant later = MutableTestClock.START.plus(Duration.ofMinutes(10));
         assertThat(resaved.createdAt()).isEqualTo(MutableTestClock.START);
         assertThat(resaved.updatedAt()).isEqualTo(later);
-        User found = users.findById(first.id()).orElseThrow();
+        User found = userRepositoryPort.findById(first.id()).orElseThrow();
         assertThat(found.createdAt()).isEqualTo(MutableTestClock.START);
         assertThat(found.updatedAt()).isEqualTo(later);
     }
@@ -199,39 +201,44 @@ class JpaIdentityRepositoryTest {
     @Test
     void aResaveThatOnlyChangesTheRoleAssignmentsMovesUpdatedAt() {
         Role role = saveRole("only-roles", Set.of());
-        User first = users.save(user("only-role-change", Set.of()));
+        User first = userRepositoryPort.save(user("only-role-change", Set.of()));
         clock.advance(Duration.ofMinutes(10));
 
-        User resaved = users.save(IdentityCopies.withRoleIds(first, Set.of(role.id())));
+        User resaved = userRepositoryPort.save(IdentityCopies.withRoleIds(first, Set.of(role.id())));
 
         Instant later = MutableTestClock.START.plus(Duration.ofMinutes(10));
         assertThat(resaved.roleIds()).containsExactly(role.id());
         assertThat(resaved.updatedAt()).isEqualTo(later);
-        assertThat(users.findById(first.id()).orElseThrow().updatedAt()).isEqualTo(later);
+        assertThat(userRepositoryPort.findById(first.id()).orElseThrow().updatedAt())
+                .isEqualTo(later);
     }
 
     @Test
     void findByUsernameMatchesInAnyCase() {
-        User user = users.save(user("MixedCase.User", Set.of()));
+        User user = userRepositoryPort.save(user("MixedCase.User", Set.of()));
 
-        assertThat(users.findByUsername(new Username("mixedcase.user"))).contains(user);
-        assertThat(users.findByUsername(new Username("MIXEDCASE.USER"))).contains(user);
-        assertThat(users.findByUsername(new Username("mixedcase.other"))).isEmpty();
+        assertThat(userRepositoryPort.findByUsername(new Username("mixedcase.user")))
+                .contains(user);
+        assertThat(userRepositoryPort.findByUsername(new Username("MIXEDCASE.USER")))
+                .contains(user);
+        assertThat(userRepositoryPort.findByUsername(new Username("mixedcase.other")))
+                .isEmpty();
     }
 
     @Test
     void aSecondUserWithTheSameUsernameInAnotherCaseIsRejected() {
-        users.save(user("Taken.Name", Set.of()));
+        userRepositoryPort.save(user("Taken.Name", Set.of()));
 
-        assertThatThrownBy(() -> users.save(user("taken.name", Set.of()))).isInstanceOf(DuplicateKeyException.class);
+        assertThatThrownBy(() -> userRepositoryPort.save(user("taken.name", Set.of())))
+                .isInstanceOf(DuplicateKeyException.class);
     }
 
     @Test
     void renamingAUserToATakenUsernameIsRejected() {
-        users.save(user("Held.Name", Set.of()));
-        User other = users.save(user("other.name", Set.of()));
+        userRepositoryPort.save(user("Held.Name", Set.of()));
+        User other = userRepositoryPort.save(user("other.name", Set.of()));
 
-        assertThatThrownBy(() -> users.save(new User(
+        assertThatThrownBy(() -> userRepositoryPort.save(new User(
                         other.id(),
                         new Username("held.name"),
                         other.passwordHash(),
@@ -249,81 +256,86 @@ class JpaIdentityRepositoryTest {
 
     @Test
     void aNewUserStartsAtVersionZeroAndEveryWriteAddsOne() {
-        User first = users.save(user("version-steps", Set.of()));
-        User second = users.save(first);
+        User first = userRepositoryPort.save(user("version-steps", Set.of()));
+        User second = userRepositoryPort.save(first);
 
         assertThat(first.version()).isZero();
         assertThat(second.version()).isEqualTo(1);
-        assertThat(users.findById(first.id()).orElseThrow().version()).isEqualTo(1);
+        assertThat(userRepositoryPort.findById(first.id()).orElseThrow().version())
+                .isEqualTo(1);
     }
 
     @Test
     void aStaleUserWriteFailsAndLeavesTheNewerRowUnchanged() {
         Role role = saveRole("stale-user-role", Set.of());
-        User saved = users.save(user("stale-user", Set.of()));
-        User firstCopy = users.findById(saved.id()).orElseThrow();
-        User staleCopy = users.findById(saved.id()).orElseThrow();
-        User firstWrite = users.save(IdentityCopies.withRoleIds(firstCopy, Set.of(role.id())));
+        User saved = userRepositoryPort.save(user("stale-user", Set.of()));
+        User firstCopy = userRepositoryPort.findById(saved.id()).orElseThrow();
+        User staleCopy = userRepositoryPort.findById(saved.id()).orElseThrow();
+        User firstWrite = userRepositoryPort.save(IdentityCopies.withRoleIds(firstCopy, Set.of(role.id())));
 
         assertThat(firstWrite.version()).isEqualTo(1);
-        assertThatThrownBy(() -> users.save(IdentityCopies.withRoleIds(staleCopy, Set.of())))
+        assertThatThrownBy(() -> userRepositoryPort.save(IdentityCopies.withRoleIds(staleCopy, Set.of())))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
-        assertThat(users.findById(saved.id())).contains(firstWrite);
-        assertThat(users.findById(saved.id()).orElseThrow().roleIds()).containsExactly(role.id());
+        assertThat(userRepositoryPort.findById(saved.id())).contains(firstWrite);
+        assertThat(userRepositoryPort.findById(saved.id()).orElseThrow().roleIds())
+                .containsExactly(role.id());
     }
 
     @Test
     void savingAUserWithoutAVersionFailsOnAnExistingId() {
-        User saved = users.save(user("no-version-user", Set.of()));
+        User saved = userRepositoryPort.save(user("no-version-user", Set.of()));
 
-        assertThatThrownBy(() -> users.save(user(saved, null))).isInstanceOf(OptimisticLockingFailureException.class);
+        assertThatThrownBy(() -> userRepositoryPort.save(user(saved, null)))
+                .isInstanceOf(OptimisticLockingFailureException.class);
 
-        assertThat(users.findById(saved.id())).contains(saved);
+        assertThat(userRepositoryPort.findById(saved.id())).contains(saved);
     }
 
     @Test
     void savingAUserVersionForADeletedRowFails() {
-        User saved = users.save(user("deleted-user", Set.of()));
-        userRepository.deleteById(userKey(saved.id()));
+        User saved = userRepositoryPort.save(user("deleted-user", Set.of()));
+        userJpaRepository.deleteById(userKey(saved.id()));
 
-        assertThatThrownBy(() -> users.save(saved)).isInstanceOf(OptimisticLockingFailureException.class);
-        assertThat(users.findById(saved.id())).isEmpty();
+        assertThatThrownBy(() -> userRepositoryPort.save(saved)).isInstanceOf(OptimisticLockingFailureException.class);
+        assertThat(userRepositoryPort.findById(saved.id())).isEmpty();
     }
 
     @Test
     void aStaleRoleWriteFailsAndLeavesTheNewerRowUnchanged() {
         Role saved = saveRole("stale-role", Set.of(Permission.ANALYSIS_READ));
-        Role firstCopy = roles.findById(saved.id()).orElseThrow();
-        Role staleCopy = roles.findById(saved.id()).orElseThrow();
-        Role firstWrite = roles.save(IdentityCopies.withPermissions(firstCopy, Set.of(Permission.AUDIT_READ)));
+        Role firstCopy = roleRepositoryPort.findById(saved.id()).orElseThrow();
+        Role staleCopy = roleRepositoryPort.findById(saved.id()).orElseThrow();
+        Role firstWrite =
+                roleRepositoryPort.save(IdentityCopies.withPermissions(firstCopy, Set.of(Permission.AUDIT_READ)));
 
         assertThat(saved.version()).isZero();
         assertThat(firstWrite.version()).isEqualTo(1);
-        assertThatThrownBy(() -> roles.save(IdentityCopies.withPermissions(staleCopy, Set.of(Permission.USER_READ))))
+        assertThatThrownBy(() -> roleRepositoryPort.save(
+                        IdentityCopies.withPermissions(staleCopy, Set.of(Permission.USER_READ))))
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
-        assertThat(roles.findById(saved.id())).contains(firstWrite);
+        assertThat(roleRepositoryPort.findById(saved.id())).contains(firstWrite);
     }
 
     @Test
     void savingARoleWithoutAVersionFailsOnAnExistingId() {
         Role saved = saveRole("no-version-role", Set.of());
 
-        assertThatThrownBy(() -> roles.save(new Role(saved.id(), "other", false, "", Set.of(), null)))
+        assertThatThrownBy(() -> roleRepositoryPort.save(new Role(saved.id(), "other", false, "", Set.of(), null)))
                 .isInstanceOf(DataAccessException.class);
 
-        assertThat(roles.findById(saved.id())).contains(saved);
+        assertThat(roleRepositoryPort.findById(saved.id())).contains(saved);
     }
 
     @Test
     void countAndFindAllSeeEveryUser() {
-        long before = users.count();
-        users.save(user("count-one", Set.of()));
-        users.save(user("count-two", Set.of()));
+        long before = userRepositoryPort.count();
+        userRepositoryPort.save(user("count-one", Set.of()));
+        userRepositoryPort.save(user("count-two", Set.of()));
 
-        assertThat(users.count()).isEqualTo(before + 2);
-        assertThat(users.findAll()).hasSize((int) before + 2);
+        assertThat(userRepositoryPort.count()).isEqualTo(before + 2);
+        assertThat(userRepositoryPort.findAll()).hasSize((int) before + 2);
     }
 
     @Test
@@ -331,9 +343,9 @@ class JpaIdentityRepositoryTest {
         Role role = saveRole(
                 "analyst-permissions",
                 Set.of(Permission.ANALYSIS_RUN, Permission.ANALYSIS_READ, Permission.PRESET_READ));
-        assertThat(roles.findById(role.id())).contains(role);
+        assertThat(roleRepositoryPort.findById(role.id())).contains(role);
 
-        Role changed = roles.save(new Role(
+        Role changed = roleRepositoryPort.save(new Role(
                 role.id(),
                 role.name(),
                 true,
@@ -342,15 +354,15 @@ class JpaIdentityRepositoryTest {
                 role.version()));
 
         assertThat(changed.version()).isEqualTo(1);
-        assertThat(roles.findById(role.id())).contains(changed);
-        assertThat(roles.findAll()).contains(changed).doesNotContain(role);
+        assertThat(roleRepositoryPort.findById(role.id())).contains(changed);
+        assertThat(roleRepositoryPort.findAll()).contains(changed).doesNotContain(role);
     }
 
     @Test
     void everyPermissionRoundTrips() {
         Role role = saveRole("every-permission", new HashSet<>(Arrays.asList(Permission.values())));
 
-        assertThat(roles.findById(role.id()).orElseThrow().permissions())
+        assertThat(roleRepositoryPort.findById(role.id()).orElseThrow().permissions())
                 .containsExactlyInAnyOrder(Permission.values());
     }
 
@@ -358,16 +370,16 @@ class JpaIdentityRepositoryTest {
     void findByNameFindsTheRole() {
         Role role = saveRole("find-by-name", Set.of(Permission.SETTINGS_READ));
 
-        assertThat(roles.findByName("find-by-name")).contains(role);
-        assertThat(roles.findByName("no-such-role")).isEmpty();
+        assertThat(roleRepositoryPort.findByName("find-by-name")).contains(role);
+        assertThat(roleRepositoryPort.findByName("no-such-role")).isEmpty();
     }
 
     @Test
     void findByNameIgnoresCase() {
         Role role = saveRole("Mixed Case Role", Set.of());
 
-        assertThat(roles.findByName("mixed case role")).contains(role);
-        assertThat(roles.findByName("MIXED CASE ROLE")).contains(role);
+        assertThat(roleRepositoryPort.findByName("mixed case role")).contains(role);
+        assertThat(roleRepositoryPort.findByName("MIXED CASE ROLE")).contains(role);
     }
 
     @Test
@@ -382,26 +394,27 @@ class JpaIdentityRepositoryTest {
         saveRole("Held Role Name", Set.of());
         Role other = saveRole("other role name", Set.of());
 
-        assertThatThrownBy(() -> roles.save(IdentityCopies.withName(other, "HELD ROLE NAME")))
+        assertThatThrownBy(() -> roleRepositoryPort.save(IdentityCopies.withName(other, "HELD ROLE NAME")))
                 .isInstanceOf(DuplicateKeyException.class);
     }
 
     @Test
     void aRoleStillAssignedToAUserCannotBeDeleted() {
         Role role = saveRole("assigned-role", Set.of(Permission.ANALYSIS_RUN));
-        users.save(user("role-holder", Set.of(role.id())));
+        userRepositoryPort.save(user("role-holder", Set.of(role.id())));
 
-        assertThatThrownBy(() -> roles.deleteById(role.id())).isInstanceOf(DataIntegrityViolationException.class);
-        assertThat(roles.findById(role.id())).contains(role);
+        assertThatThrownBy(() -> roleRepositoryPort.deleteById(role.id()))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(roleRepositoryPort.findById(role.id())).contains(role);
     }
 
     @Test
     void aRoleWithoutUsersIsDeleted() {
         Role role = saveRole("deletable-role", Set.of());
 
-        roles.deleteById(role.id());
+        roleRepositoryPort.deleteById(role.id());
 
-        assertThat(roles.findById(role.id())).isEmpty();
+        assertThat(roleRepositoryPort.findById(role.id())).isEmpty();
     }
 
     @Test
@@ -409,13 +422,14 @@ class JpaIdentityRepositoryTest {
         Role role = saveRole("all-count-role", Set.of());
         Role other = saveRole("all-count-other-role", Set.of());
         Role unused = saveRole("all-count-unused-role", Set.of());
-        users.save(user("all-count-enabled", Set.of(role.id())));
-        users.save(IdentityCopies.withEnabled(user("all-count-disabled", Set.of(role.id(), other.id())), false));
+        userRepositoryPort.save(user("all-count-enabled", Set.of(role.id())));
+        userRepositoryPort.save(
+                IdentityCopies.withEnabled(user("all-count-disabled", Set.of(role.id(), other.id())), false));
 
-        assertThat(users.countWithRole(role.id())).isEqualTo(2);
-        assertThat(users.countWithRole(other.id())).isEqualTo(1);
-        assertThat(users.countWithRole(unused.id())).isZero();
-        assertThat(users.countUsersByRole())
+        assertThat(userRepositoryPort.countWithRole(role.id())).isEqualTo(2);
+        assertThat(userRepositoryPort.countWithRole(other.id())).isEqualTo(1);
+        assertThat(userRepositoryPort.countWithRole(unused.id())).isZero();
+        assertThat(userRepositoryPort.countUsersByRole())
                 .containsEntry(role.id(), 2L)
                 .containsEntry(other.id(), 1L)
                 .doesNotContainKey(unused.id());
@@ -425,12 +439,12 @@ class JpaIdentityRepositoryTest {
     void deletingAUserRemovesItsAssignmentsButNotTheRole() {
         Role role = saveRole("kept-role", Set.of());
         User user = user("goes-away", Set.of(role.id()));
-        users.save(user);
+        userRepositoryPort.save(user);
 
-        userRepository.deleteById(userKey(user.id()));
+        userJpaRepository.deleteById(userKey(user.id()));
 
-        assertThat(users.findById(user.id())).isEmpty();
-        assertThat(roles.findById(role.id())).isPresent();
+        assertThat(userRepositoryPort.findById(user.id())).isEmpty();
+        assertThat(roleRepositoryPort.findById(role.id())).isPresent();
     }
 
     @Test
@@ -438,14 +452,14 @@ class JpaIdentityRepositoryTest {
         Role known = saveRole("known-role", Set.of());
         User user = user("half-written", Set.of(known.id(), IdentityCopies.newRoleId()));
 
-        assertThatThrownBy(() -> users.save(user)).isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> userRepositoryPort.save(user)).isInstanceOf(DataAccessException.class);
 
-        assertThat(users.findById(user.id())).isEmpty();
+        assertThat(userRepositoryPort.findById(user.id())).isEmpty();
     }
 
     @Test
     void theMigrationsSeedTheBuiltInAdminRoleWithEveryPermission() {
-        assertThat(roles.findById(RoleId.ADMIN)).hasValueSatisfying(admin -> {
+        assertThat(roleRepositoryPort.findById(RoleId.ADMIN)).hasValueSatisfying(admin -> {
             assertThat(admin.name()).isEqualTo("ADMIN");
             assertThat(admin.builtIn()).isTrue();
             assertThat(admin.permissions()).containsExactlyInAnyOrder(Permission.values());
@@ -455,15 +469,15 @@ class JpaIdentityRepositoryTest {
 
     @Test
     void aUserWithTheAdminRoleRoundTrips() {
-        User saved = users.save(user("seeded-admin-user", Set.of(RoleId.ADMIN)));
+        User saved = userRepositoryPort.save(user("seeded-admin-user", Set.of(RoleId.ADMIN)));
 
-        assertThat(users.findById(saved.id())).contains(saved);
+        assertThat(userRepositoryPort.findById(saved.id())).contains(saved);
         assertThat(saved.roleIds()).containsExactly(RoleId.ADMIN);
     }
 
     @Test
     void theMigrationsSeedTheBuiltInAnalystRole() {
-        assertThat(roles.findById(RoleId.ANALYST)).hasValueSatisfying(analyst -> {
+        assertThat(roleRepositoryPort.findById(RoleId.ANALYST)).hasValueSatisfying(analyst -> {
             assertThat(analyst.name()).isEqualTo("ANALYST");
             assertThat(analyst.builtIn()).isTrue();
             assertThat(analyst.permissions())
@@ -479,7 +493,7 @@ class JpaIdentityRepositoryTest {
 
     @Test
     void theMigrationsSeedTheBuiltInViewerRole() {
-        assertThat(roles.findById(RoleId.VIEWER)).hasValueSatisfying(viewer -> {
+        assertThat(roleRepositoryPort.findById(RoleId.VIEWER)).hasValueSatisfying(viewer -> {
             assertThat(viewer.name()).isEqualTo("VIEWER");
             assertThat(viewer.builtIn()).isTrue();
             assertThat(viewer.permissions())
@@ -489,7 +503,7 @@ class JpaIdentityRepositoryTest {
 
     @Test
     void theMigrationsSeedTheBuiltInPublisherRoleWithOnlyAnalysisShare() {
-        assertThat(roles.findById(RoleId.PUBLISHER)).hasValueSatisfying(publisher -> {
+        assertThat(roleRepositoryPort.findById(RoleId.PUBLISHER)).hasValueSatisfying(publisher -> {
             assertThat(publisher.name()).isEqualTo("PUBLISHER");
             assertThat(publisher.builtIn()).isTrue();
             assertThat(publisher.permissions()).containsExactly(Permission.ANALYSIS_SHARE);
@@ -498,22 +512,24 @@ class JpaIdentityRepositoryTest {
 
     @Test
     void onlyAdminAndPublisherHoldAnalysisShare() {
-        assertThat(roles.findById(RoleId.ADMIN).orElseThrow().permissions()).contains(Permission.ANALYSIS_SHARE);
-        assertThat(roles.findById(RoleId.ANALYST).orElseThrow().permissions())
+        assertThat(roleRepositoryPort.findById(RoleId.ADMIN).orElseThrow().permissions())
+                .contains(Permission.ANALYSIS_SHARE);
+        assertThat(roleRepositoryPort.findById(RoleId.ANALYST).orElseThrow().permissions())
                 .doesNotContain(Permission.ANALYSIS_SHARE);
-        assertThat(roles.findById(RoleId.VIEWER).orElseThrow().permissions()).doesNotContain(Permission.ANALYSIS_SHARE);
+        assertThat(roleRepositoryPort.findById(RoleId.VIEWER).orElseThrow().permissions())
+                .doesNotContain(Permission.ANALYSIS_SHARE);
     }
 
     @Test
     void aUserWithTheAnalystOrViewerRoleRoundTrips() {
-        User saved = users.save(user("seeded-analyst-viewer-user", Set.of(RoleId.ANALYST, RoleId.VIEWER)));
+        User saved = userRepositoryPort.save(user("seeded-analyst-viewer-user", Set.of(RoleId.ANALYST, RoleId.VIEWER)));
 
-        assertThat(users.findById(saved.id())).contains(saved);
+        assertThat(userRepositoryPort.findById(saved.id())).contains(saved);
         assertThat(saved.roleIds()).containsExactlyInAnyOrder(RoleId.ANALYST, RoleId.VIEWER);
     }
 
     private Role saveRole(String name, Set<Permission> permissions) {
-        return roles.save(new Role(IdentityCopies.newRoleId(), name, false, "", permissions, null));
+        return roleRepositoryPort.save(new Role(IdentityCopies.newRoleId(), name, false, "", permissions, null));
     }
 
     private static User user(String username, Set<RoleId> roleIds) {

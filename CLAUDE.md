@@ -79,7 +79,8 @@ before Gradle tests, or Testcontainers finds no Docker.
 
 - Placement and imports: ArchUnit (backend), eslint-plugin-boundaries (frontend), import-linter
   (runner). Read the structure document of the part before adding a class, component or module.
-- Checkstyle with project rules `TAP-*` ([backend-java-checkstyle.md](docs/coding-convention/backend-java-checkstyle.md)),
+- Checkstyle with project rules `TAP-*` ([backend-java-checkstyle.md](docs/coding-convention/backend-java-checkstyle.md);
+  an injected collaborator is named after its type: `userRepositoryPort`, `TAP-D9`),
   Palantir Java Format, Prettier.
 - Persistence: Spring Data JPA only, no plain SQL ([backend-java-persistence.md](docs/coding-convention/backend-java-persistence.md));
   database naming ([backend-database-naming.md](docs/coding-convention/backend-database-naming.md)).

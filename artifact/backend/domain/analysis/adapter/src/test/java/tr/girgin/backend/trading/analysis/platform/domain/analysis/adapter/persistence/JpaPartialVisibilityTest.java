@@ -28,7 +28,7 @@ class JpaPartialVisibilityTest extends AdapterTestSupport {
     private static final OwnerId OTHER_OWNER = new OwnerId("zz-other-owner");
 
     @Autowired
-    private JpaAnalysisRepositoryAdapter repository;
+    private JpaAnalysisRepositoryAdapter jpaAnalysisRepositoryAdapter;
 
     @Autowired
     private DataSource dataSource;
@@ -40,14 +40,19 @@ class JpaPartialVisibilityTest extends AdapterTestSupport {
         Analysis open = shared("ZZPART", OTHER_OWNER, Visibility.PUBLIC, base);
         Analysis closed = inserted("ZZPART", OWNER, base);
 
-        assertThat(repository.findById(partial.id()).orElseThrow().visibility()).isEqualTo(Visibility.PARTIAL);
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZPART", null, Set.of(Visibility.PARTIAL), null)))
+        assertThat(jpaAnalysisRepositoryAdapter
+                        .findById(partial.id())
+                        .orElseThrow()
+                        .visibility())
+                .isEqualTo(Visibility.PARTIAL);
+        assertThat(jpaAnalysisRepositoryAdapter.findAll(
+                        new AnalysisFilter(null, "ZZPART", null, Set.of(Visibility.PARTIAL), null)))
                 .containsExactly(partial);
-        assertThat(repository.findAll(
+        assertThat(jpaAnalysisRepositoryAdapter.findAll(
                         new AnalysisFilter(null, "ZZPART", null, Set.of(Visibility.PUBLIC, Visibility.PARTIAL), null)))
                 .containsExactlyInAnyOrder(partial, open)
                 .doesNotContain(closed);
-        assertThat(repository.findAll(new AnalysisFilter(null, "ZZPART", null, Set.of(), null)))
+        assertThat(jpaAnalysisRepositoryAdapter.findAll(new AnalysisFilter(null, "ZZPART", null, Set.of(), null)))
                 .containsExactlyInAnyOrder(partial, open, closed);
     }
 
@@ -60,9 +65,9 @@ class JpaPartialVisibilityTest extends AdapterTestSupport {
         shared("ZZPAGE", OWNER, Visibility.PUBLIC, base.plusSeconds(3));
         AnalysisFilter partial = new AnalysisFilter(null, "ZZPAGE", null, Set.of(Visibility.PARTIAL), null);
 
-        PartialAnalysisPage first = repository.findPage(partial, 0, 2);
-        PartialAnalysisPage second = repository.findPage(partial, 1, 2);
-        PartialAnalysisPage beyond = repository.findPage(partial, 2, 2);
+        PartialAnalysisPage first = jpaAnalysisRepositoryAdapter.findPage(partial, 0, 2);
+        PartialAnalysisPage second = jpaAnalysisRepositoryAdapter.findPage(partial, 1, 2);
+        PartialAnalysisPage beyond = jpaAnalysisRepositoryAdapter.findPage(partial, 2, 2);
 
         assertThat(first.items()).containsExactly(newest, middle);
         assertThat(first.hasMore()).isTrue();
@@ -70,7 +75,8 @@ class JpaPartialVisibilityTest extends AdapterTestSupport {
         assertThat(second.hasMore()).isFalse();
         assertThat(beyond.items()).isEmpty();
         assertThat(beyond.hasMore()).isFalse();
-        assertThat(repository.findPage(partial, 0, 3).hasMore()).isFalse();
+        assertThat(jpaAnalysisRepositoryAdapter.findPage(partial, 0, 3).hasMore())
+                .isFalse();
     }
 
     @Test
@@ -92,12 +98,12 @@ class JpaPartialVisibilityTest extends AdapterTestSupport {
 
     private Analysis inserted(String ticker, OwnerId owner, Instant createdAt) {
         Analysis queued = TestAnalyses.queued(TestAnalyses.newId(), spec(ticker), owner, createdAt);
-        repository.insert(queued);
-        return repository.findById(queued.id()).orElseThrow();
+        jpaAnalysisRepositoryAdapter.insert(queued);
+        return jpaAnalysisRepositoryAdapter.findById(queued.id()).orElseThrow();
     }
 
     private Analysis shared(String ticker, OwnerId owner, Visibility visibility, Instant createdAt) {
-        return repository.update(
+        return jpaAnalysisRepositoryAdapter.update(
                 TestAnalyses.withVisibility(inserted(ticker, owner, createdAt), visibility, createdAt));
     }
 }

@@ -31,21 +31,21 @@ class AnalysisEventService implements SubscribeAnalysisEventsPort {
 
     private static final Logger log = LoggerFactory.getLogger(AnalysisEventService.class);
 
-    private final AnalysisRepositoryPort repository;
-    private final EventStorePort eventStore;
+    private final AnalysisRepositoryPort analysisRepositoryPort;
+    private final EventStorePort eventStorePort;
     private final AnalysisAccessService analysisAccessService;
     private final AnalysisIdService analysisIdService;
     private final AnalysisTransitionService analysisTransitionService;
     private final Map<AnalysisId, List<Subscriber>> subscribers = new ConcurrentHashMap<>();
 
     AnalysisEventService(
-            AnalysisRepositoryPort repository,
-            EventStorePort eventStore,
+            AnalysisRepositoryPort analysisRepositoryPort,
+            EventStorePort eventStorePort,
             AnalysisAccessService analysisAccessService,
             AnalysisIdService analysisIdService,
             AnalysisTransitionService analysisTransitionService) {
-        this.repository = repository;
-        this.eventStore = eventStore;
+        this.analysisRepositoryPort = analysisRepositoryPort;
+        this.eventStorePort = eventStorePort;
         this.analysisAccessService = analysisAccessService;
         this.analysisIdService = analysisIdService;
         this.analysisTransitionService = analysisTransitionService;
@@ -54,16 +54,16 @@ class AnalysisEventService implements SubscribeAnalysisEventsPort {
     @Override
     public EventSubscription subscribe(AnalysisId id, long afterSeq, AnalysisAccess access, RunEventListener listener) {
         analysisIdService.requireValid(id);
-        repository
+        analysisRepositoryPort
                 .findById(id)
                 .filter(analysis -> analysisAccessService.canSee(analysis, access))
                 .orElseThrow(() -> new AnalysisException(
                         AnalysisError.NOT_FOUND, "Analysis not found: " + id.value(), Map.of("id", id.value())));
         Subscriber subscriber = new Subscriber(listener, afterSeq);
         subscribers.computeIfAbsent(id, _ -> new CopyOnWriteArrayList<>()).add(subscriber);
-        subscriber.replay(eventStore.read(id, afterSeq));
+        subscriber.replay(eventStorePort.read(id, afterSeq));
         // A run that ended before (or while) we registered sends no more live events.
-        if (repository
+        if (analysisRepositoryPort
                 .findById(id)
                 .map(Analysis::status)
                 .map(analysisTransitionService::isTerminal)

@@ -41,14 +41,14 @@ class V2IdentityVersionMigrationTest {
     private static final UserId USER = new UserId("u_seed");
 
     @Autowired
-    private UserRepositoryPort users;
+    private UserRepositoryPort userRepositoryPort;
 
     @Autowired
-    private RoleRepositoryPort roles;
+    private RoleRepositoryPort roleRepositoryPort;
 
     @Test
     void anExistingRoleKeepsEveryValueAndStartsAtVersionZero() {
-        assertThat(roles.findById(ROLE))
+        assertThat(roleRepositoryPort.findById(ROLE))
                 .contains(new Role(
                         ROLE,
                         "Seed role",
@@ -60,7 +60,7 @@ class V2IdentityVersionMigrationTest {
 
     @Test
     void anExistingUserKeepsEveryValueAndItsRoleAndStartsAtVersionZero() {
-        assertThat(users.findById(USER))
+        assertThat(userRepositoryPort.findById(USER))
                 .contains(new User(
                         USER,
                         new Username("seed.user"),
@@ -78,9 +78,9 @@ class V2IdentityVersionMigrationTest {
 
     @Test
     void aMigratedUserCanBeSavedAtItsVersion() {
-        User seeded = users.findById(USER).orElseThrow();
+        User seeded = userRepositoryPort.findById(USER).orElseThrow();
 
-        User saved = users.save(new User(
+        User saved = userRepositoryPort.save(new User(
                 seeded.id(),
                 seeded.username(),
                 seeded.passwordHash(),

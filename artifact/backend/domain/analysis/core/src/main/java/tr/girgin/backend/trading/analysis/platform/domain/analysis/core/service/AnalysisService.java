@@ -63,10 +63,10 @@ class AnalysisService
 
     private static final Logger log = LoggerFactory.getLogger(AnalysisService.class);
 
-    private final AnalysisRepositoryPort repository;
-    private final RunnerPort runner;
-    private final CredentialsPort credentials;
-    private final EventStorePort eventStore;
+    private final AnalysisRepositoryPort analysisRepositoryPort;
+    private final RunnerPort runnerPort;
+    private final CredentialsPort credentialsPort;
+    private final EventStorePort eventStorePort;
     private final AnalysisEventService analysisEventService;
     private final AnalysisSpecService analysisSpecService;
     private final AnalysisTransitionService analysisTransitionService;
@@ -83,10 +83,10 @@ class AnalysisService
 
     @SuppressWarnings("checkstyle:ParameterNumber") // constructor injection of the collaborators above
     AnalysisService(
-            AnalysisRepositoryPort repository,
-            RunnerPort runner,
-            CredentialsPort credentials,
-            EventStorePort eventStore,
+            AnalysisRepositoryPort analysisRepositoryPort,
+            RunnerPort runnerPort,
+            CredentialsPort credentialsPort,
+            EventStorePort eventStorePort,
             AnalysisEventService analysisEventService,
             AnalysisSpecService analysisSpecService,
             AnalysisTransitionService analysisTransitionService,
@@ -97,10 +97,10 @@ class AnalysisService
         if (maxConcurrentRuns < 1) {
             throw new IllegalArgumentException("platform.analysis.max-concurrent-runs must be at least 1");
         }
-        this.repository = repository;
-        this.runner = runner;
-        this.credentials = credentials;
-        this.eventStore = eventStore;
+        this.analysisRepositoryPort = analysisRepositoryPort;
+        this.runnerPort = runnerPort;
+        this.credentialsPort = credentialsPort;
+        this.eventStorePort = eventStorePort;
         this.analysisEventService = analysisEventService;
         this.analysisSpecService = analysisSpecService;
         this.analysisTransitionService = analysisTransitionService;
@@ -118,7 +118,7 @@ class AnalysisService
     @Override
     public void afterSingletonsInstantiated() {
         List<Analysis> orphans =
-                repository.findByStatusIn(Set.of(AnalysisStatus.QUEUED, AnalysisStatus.RUNNING)).stream()
+                analysisRepositoryPort.findByStatusIn(Set.of(AnalysisStatus.QUEUED, AnalysisStatus.RUNNING)).stream()
                         .sorted(Comparator.comparing(Analysis::createdAt))
                         .toList();
         synchronized (lock) {
@@ -139,7 +139,7 @@ class AnalysisService
         AnalysisId id = orphan.id();
         Sink sink = new Sink(id);
         // Catch up on what the runner wrote while no platform was reading it.
-        List<RunEvent> missed = eventStore.read(id, 0);
+        List<RunEvent> missed = eventStorePort.read(id, 0);
         missed.forEach(sink::onEvent);
         if (sink.finishedReported) {
             log.info("{} ended while the platform was down: {}", id.value(), get(id).status());
@@ -147,7 +147,7 @@ class AnalysisService
         }
         long lastSeq = missed.stream().mapToLong(RunEvent::seq).max().orElse(0);
         RunHandle handle = orphan.runnerRef() == null ? null : new RunHandle(orphan.runnerRef());
-        if (handle != null && runner.reattach(id, handle, lastSeq, sink)) {
+        if (handle != null && runnerPort.reattach(id, handle, lastSeq, sink)) {
             running.put(id, handle);
             active.put(id, orphan.spec());
             log.info("Following {} again ({}) after a platform restart", id.value(), handle.ref());
@@ -168,7 +168,7 @@ class AnalysisService
         Analysis analysis = analysisTransitionService.queued(analysisIdService.newId(), spec, owner, clock.instant());
         synchronized (lock) {
             ensureNotActive(spec);
-            repository.insert(analysis);
+            analysisRepositoryPort.insert(analysis);
             queue.addLast(analysis.id());
             active.put(analysis.id(), spec);
             log.info("Queued {} for {} on {}", analysis.id().value(), spec.ticker(), spec.tradeDate());
@@ -201,7 +201,7 @@ class AnalysisService
                     Map.of("id", id.value(), "status", analysis.status().name()));
         }
         log.info("Stopping {}", id.value());
-        runner.stop(handle);
+        runnerPort.stop(handle);
         return get(id);
     }
 
@@ -216,7 +216,7 @@ class AnalysisService
     }
 
     private Analysis get(AnalysisId id) {
-        return repository.findById(id).orElseThrow(() -> notFound(id));
+        return analysisRepositoryPort.findById(id).orElseThrow(() -> notFound(id));
     }
 
     private Analysis getManaged(AnalysisId id, AnalysisAccess access) {
@@ -230,7 +230,7 @@ class AnalysisService
 
     @Override
     public int assignUnowned(OwnerId owner) {
-        return repository.assignOwnerWhereMissing(owner);
+        return analysisRepositoryPort.assignOwnerWhereMissing(owner);
     }
 
     private AnalysisException notFound(AnalysisId id) {
@@ -264,7 +264,7 @@ class AnalysisService
      */
     private void update(Analysis analysis) {
         try {
-            repository.update(analysis);
+            analysisRepositoryPort.update(analysis);
         } catch (OptimisticLockingFailureException _) {
             throw new AnalysisException(
                     AnalysisError.CONCURRENT_UPDATE,
@@ -280,7 +280,7 @@ class AnalysisService
             AnalysisId id = queue.pollFirst();
             Analysis analysis = get(id);
             try {
-                RunHandle handle = runner.start(id, analysis.spec(), credentials.environment(), new Sink(id));
+                RunHandle handle = runnerPort.start(id, analysis.spec(), credentialsPort.environment(), new Sink(id));
                 running.put(id, handle);
                 update(analysisTransitionService.running(analysis, clock.instant(), handle.ref()));
                 log.info("Started {} ({})", id.value(), handle.ref());
@@ -299,7 +299,7 @@ class AnalysisService
     private void end(Analysis analysis, RunOutcome outcome, String errorCode, String message) {
         update(analysisTransitionService.finished(
                 analysis, analysisTransitionService.toStatus(outcome), clock.instant(), errorCode, message));
-        long seq = eventStore.read(analysis.id(), 0).stream()
+        long seq = eventStorePort.read(analysis.id(), 0).stream()
                         .mapToLong(RunEvent::seq)
                         .max()
                         .orElse(0)
@@ -318,7 +318,7 @@ class AnalysisService
         }
         RunEvent event =
                 new RunEvent(seq, clock.instant(), RunEventType.RUN_FINISHED, null, outcome, null, message, payload);
-        eventStore.append(analysis.id(), event);
+        eventStorePort.append(analysis.id(), event);
         analysisEventService.publish(analysis.id(), event);
     }
 
