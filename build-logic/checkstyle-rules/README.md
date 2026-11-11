@@ -19,6 +19,7 @@ instance of a check: a few lines of XML, no Java. The rules, with their reasons 
 | [`RequiredAnnotationAttributeCheck`](docs/RequiredAnnotationAttributeCheck.md) | an annotation of a configured type that does not set every required attribute | `TAP-M1` |
 | [`RequiredMethodAnnotationCheck`](docs/RequiredMethodAnnotationCheck.md) | a public method of a selected class without one of the required annotations | `TAP-A1` |
 | [`StaticMethodInAnnotatedClassCheck`](docs/StaticMethodInAnnotatedClassCheck.md) | a static method in a class that carries one of the configured annotations | `TAP-D7` |
+| [`VariableNamedAfterTypeCheck`](docs/VariableNamedAfterTypeCheck.md) | a variable of a configured type that is not named after it in lower camel case | `TAP-D9` |
 
 Every check has a reference document in
 [`docs/`](docs/), written from the

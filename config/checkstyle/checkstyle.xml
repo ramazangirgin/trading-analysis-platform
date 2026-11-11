@@ -47,6 +47,13 @@
         <property name="files" value="^(?!.*[\\/]bff[\\/]api[\\/]src[\\/]main[\\/]).*$"/>
     </module>
 
+    <!-- Temporary (#275): TAP-D9 is off where the existing code still has findings; the renames of
+         plans 2 and 3 of the issue shrink this pattern and then delete the filter. -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-D9"/>
+        <property name="files" value="[\\/]artifact[\\/]backend[\\/](domain|library[\\/]mapper|bff[\\/]impl|orchestration|src[\\/]test)[\\/]"/>
+    </module>
+
     <!-- TAP-M2 applies to main code only (not a suppression of a finding). -->
     <module name="SuppressionSingleFilter">
         <property name="id" value="TAP-M2"/>
@@ -379,6 +386,12 @@
             <property name="annotations" value="org.mapstruct.Mapping"/>
             <property name="attributes" value="expression, defaultExpression, conditionExpression"/>
             <property name="suggestion" value="Compute the value where the source object is built, map a nested value with source = &quot;a.b&quot; or a typed method, and use nullValueIterableMappingStrategy for empty lists."/>
+        </module>
+        <module name="tr.girgin.checkstyle.VariableNamedAfterTypeCheck">
+            <property name="id" value="TAP-D9"/>
+            <property name="types" value="*Service, *UseCase, *Port, *Mapper, *Repository, *Adapter"/>
+            <property name="allowQualifier" value="true"/>
+            <property name="suggestion" value="Name a collaborator after its type in lower camel case, with an optional qualifier: userRepositoryPort, strictUserManagementService."/>
         </module>
     </module>
 </module>
