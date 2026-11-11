@@ -1,0 +1,50 @@
+# Version bump for Renovate's pull requests. The hosted Renovate app cannot run scripts/version.sh,
+# but every pull request into main must raise the version (CI's Version job), a dependency update
+# included. When a Renovate pull request has no bump, this pushes one commit to its branch:
+# `scripts/version.sh set` to main's next minor version.
+#
+# A push with the workflow's GITHUB_TOKEN starts no pull_request run, so the new commit would have
+# no CI; the workflow starts CI on the branch itself (workflow_dispatch is exempt from that rule),
+# and its "CI passed" check counts for the pull request. When Renovate rebases or updates the branch
+# the bump is gone and this runs again; renovate.json5 (gitIgnoredAuthors) keeps Renovate from
+# treating the bump commit as someone else's edit and abandoning the branch.
+
+name: Renovate version bump
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  bump:
+    name: Bump the version
+    if: startsWith(github.head_ref, 'renovate/') && github.event.pull_request.user.login == 'renovate[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_REF: ${{ github.head_ref }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Bump when the branch is not above main
+        run: |
+          git fetch --tags origin main
+          main_version=$(git show origin/main:gradle.properties | sed -n 's/^version=//p')
+          scripts/version.sh check-bump origin/main >/dev/null 2>&1 && { echo "Already bumped"; exit 0; }
+          IFS=. read -r major minor _ <<<"$main_version"
+          next="$major.$((minor + 1)).0"
+          scripts/version.sh set "$next"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Bump version to $next"
+          git push origin "HEAD:$HEAD_REF"
+          gh workflow run ci.yml --ref "$HEAD_REF"
