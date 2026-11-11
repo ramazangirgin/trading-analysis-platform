@@ -31,12 +31,12 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.An
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.credentials.CredentialsPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.eventstore.EventStorePort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunEventSink;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunnerPort;
 
 /**

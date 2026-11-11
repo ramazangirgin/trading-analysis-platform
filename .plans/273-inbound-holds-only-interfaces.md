@@ -76,7 +76,7 @@ after the core package they depend on; the build is green once all are done.
 
 ### WP4: Analysis core, run handle
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `.../analysis/core/outbound/runner/RunHandle.java` (moved to `core/model/RunHandle.java`), `.../analysis/core/outbound/runner/RunnerPort.java`, `.../analysis/core/service/AnalysisService.java`, `artifact/backend/domain/analysis/core/src/test/java/.../analysis/core/service/AnalysisServiceTest.java`, `.../analysis/core/service/Fakes.java` (test)
 - **Tests**: `AnalysisServiceTest` unchanged apart from the import; `mise run gradle :backend:domain:analysis:core:test`.

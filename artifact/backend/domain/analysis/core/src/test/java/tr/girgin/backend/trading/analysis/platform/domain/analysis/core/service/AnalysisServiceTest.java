@@ -24,9 +24,9 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.As
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.OwnerId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 
 class AnalysisServiceTest {
 

@@ -32,10 +32,10 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.runne
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.adapter.runner.support.DockerClients;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.AnalysisId;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.TestAnalyses;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunEventSink;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 
 /**
  * Against a real Docker Engine API (Docker, or Podman's compatible socket), with a fake runner
