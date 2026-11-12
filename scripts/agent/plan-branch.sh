@@ -43,6 +43,7 @@ trap 'status=$?; trap - ERR; set +e; git worktree remove --force "$worktree"; (e
 mkdir -p "$worktree/.plans"
 cp "$file" "$worktree/.plans/$name.md"
 title=$(sed -n 's/^# Plan: //p' "$file" | head -n 1)
+number=$(plan_number "$file")
 git -C "$worktree" add ".plans/$name.md"
 git -C "$worktree" commit --quiet -m "Plan for #$issue: ${title:-$name}"
 git -C "$worktree" push --quiet --set-upstream origin "$branch"
@@ -62,7 +63,7 @@ Approve it in the planning session, or start the agents:
 The agents push the implementation to this pull request and change its label from \`$AGENT_PLAN_LABEL\` to \`$AGENT_LABEL\`.
 EOF
 gh label create "$AGENT_PLAN_LABEL" --color FBCA04 --description "A plan under review" 2>/dev/null || true
-url=$(gh pr create --draft --base "$AGENT_BASE_BRANCH" --head "$branch" --title "Plan: ${title:-$name}" \
+url=$(gh pr create --draft --base "$AGENT_BASE_BRANCH" --head "$branch" --title "Plan${number:+ $number}: ${title:-$name}" \
   --body-file "$AGENT_TMP/pr.md" --label "$AGENT_PLAN_LABEL")
 gh issue comment "$issue" --body "Plan for review: [\`.plans/$name.md\`]($blob) on branch \`$branch\`, draft pull request $url.
 

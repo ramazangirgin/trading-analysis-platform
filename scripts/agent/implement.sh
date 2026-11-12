@@ -347,6 +347,8 @@ for retry in "${results[@]+"${results[@]}"}"; do
 done
 
 title=$(sed -n 's/^# Plan: //p' "$plan" | head -n 1)
+number=$(plan_number "$plan")
+title=${title:+$title${number:+ (plan $number)}}
 blob="https://github.com/$(repo_slug)/blob"
 cat >"$AGENT_TMP/pr.md" <<EOF
 $(issue_reference "$branch")

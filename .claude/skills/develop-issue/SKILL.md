@@ -7,7 +7,7 @@ model: claude-sonnet-5-5
 # Develop an issue
 
 The whole [agentic development flow](../../../docs/agentic-development.md) for one issue, driven
-from this Claude Code session. The developer approves the plan; every later step runs without
+from this Claude Code session. The developer approves each plan just before its implementation starts; every other step runs without
 asking, and the run ends with a notification that the pull request is ready for the developer's
 review. It adds no new behaviour of its own beyond a run summary comment on the pull request
 (step 7): planning is the
@@ -24,10 +24,13 @@ repository than this one (`gh repo view --json nameWithOwner`) is an error: stop
 (`main` unless the developer set `AGENT_BASE_BRANCH`, for example to try out a change to the agents
 themselves). Wherever this skill says `main` or `origin/main`, it means `$base`.
 
-## One approval: the plan
+## One approval per plan
 
 The plan (step 2) is the only step that waits for the developer: it is pushed as a draft pull
-request labelled `plan`, which the developer reviews there or in this session. When a plan branch
+request labelled `plan`, which the developer reviews there or in this session. Each plan is
+approved on its own, in step 3, just before its implementation starts: for a split issue the
+developer is asked again before every plan, never once for all of them, and an earlier plan's
+approval does not cover a later one. When a plan branch
 exists already, the developer is first asked whether to use that plan, skipping the writing, or to
 write it again; either way the approval follows. Everything after the
 approval (implementing, CI fixes, reviews, fix rounds, finalising, the update with `main`) runs
@@ -213,13 +216,20 @@ Show the plan(s) in full with the pull request link(s) (unless just shown for
 request, or both) and **Stop here**. On **Change it**, or an answer in "Other", run the skill's
 review loop: collect the terminal answer and `scripts/agent/plan-comments.sh <pr>`, change the plan
 on its branch and push, answer every comment, then ask again, until it is approved. Its open
-questions must be answered in the plan before it can be approved. This is the last question of the
-run: say so in the question ("after this, the run goes on to the pull request without asking").
+questions must be answered in the plan before it can be approved. This is the last question before
+this plan's implementation: say so in the question ("after this, the run goes on to the pull
+request without asking"), and for a split issue name the plan and the plans still to come.
 Take `plan_start` before the skill starts and count the **Change it** rounds (see
 [Progress on the issue](#progress-on-the-issue)). On **Stop here**, the plan pull request stays open
 for review, and `/develop-issue <n>` continues it.
 
-## 3. After the approval
+## 3. Approve the plan, then continue
+
+For a split issue, step 2 only writes and reviews the plans; it does not ask the approval question
+below. Ask it here for the plan that is next in the order of its dependencies, with the plan's
+number ("plan 2 of 3"), after the plans it depends on are merged and immediately before step 4 for
+that plan, and again for every later plan. A plan whose turn has not come is not approved yet. A
+single plan is asked in step 2 as before.
 
 Record the plan step on each plan branch ([Progress on the issue](#progress-on-the-issue)), print
 the comment's link, and continue with step 4. Before it, make sure the plan branch is pushed with

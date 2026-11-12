@@ -751,3 +751,11 @@ push_branch() {
   git push --quiet origin "HEAD:refs/heads/$branch"
   milestone "pushed $branch ($(git rev-parse --short HEAD))"
 }
+
+# "2/5" for the plan "2 of 5" of a split issue; nothing for a single plan.
+plan_number() {
+  local numbers
+  numbers=$(sed -n 's/^- \*\*Plan\*\*: \([0-9][0-9]*\) of \([0-9][0-9]*\).*/\1\/\2/p' "$1" | head -n 1)
+  [[ -n $numbers && ${numbers#*/} -gt 1 ]] && echo "$numbers"
+  return 0
+}
