@@ -71,6 +71,7 @@ Packages without a dependency between them can be implemented in parallel.
 - **Depends on**: WP1
 - **Files**:
   - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/ArchitectureTest.java`
+  - `artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/OrchestrationArchitectureTest.java` (the orchestration rules, split out for file length)
 - **Steps**:
   - [x] Add the three rules and widen `orchestration_features_follow_the_domain_core_shape` as in "Design"; reuse `ORCHESTRATION_INBOUND` and add a constant for the config packages.
   - [x] If dependency analysis flags the `ConfigurationProperties` import in `:backend`'s tests, declare the artifact it comes from.

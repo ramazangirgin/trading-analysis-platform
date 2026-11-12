@@ -196,7 +196,7 @@ Suppressions in the code today:
 | `IllegalCatch` | runner loops, background threads, event delivery, health checks, Docker probes in tests | fault isolation: one failure must not stop a run, a thread or other subscribers |
 | `ParameterNumber` | constructors of `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `SettingsApiDelegateImpl`, `DockerRunnerAdapter`, `ImportExistingRunsUseCase`, `AnalysisService`, `FirstAdminService`, `UserManagementService`; `SecurityConfig.securityFilterChain` | constructor injection of collaborators and `@Value` settings; the security chain's collaborators |
 | `ClassFanOutComplexity` | `AnalysesApiDelegateImpl`, `AuthApiDelegateImpl`, `SecurityConfig`, `AnalysisService` | an API delegate with an inbound port or use case and a mapper per endpoint; the security chain's wiring and the filters' collaborators; the run lifecycle's ports and the services that hold the rules |
-| `ConstantName`, `DeclarationOrder`, `HideUtilityClassConstructor` | `ArchitectureTest` | ArchUnit rule names, rules grouped by topic, JUnit instantiates the class |
+| `ConstantName`, `DeclarationOrder`, `HideUtilityClassConstructor` | `ArchitectureTest`, `OrchestrationArchitectureTest` | ArchUnit rule names, rules grouped by topic, JUnit instantiates the class |
 | `HideUtilityClassConstructor` | `TradingPlatformApplication` | Spring instantiates the `@SpringBootApplication` class |
 | `VisibilityModifier` | test doubles (`Fakes`, `RecordingSink`) | tests read and set their state directly |
 | `TAP-D7` | `MethodSecurityConfig.requiresPermissionAdvisor` | Spring needs the static `@Bean` interceptor before it creates the configuration |

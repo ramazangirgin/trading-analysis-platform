@@ -3,7 +3,10 @@
 Where each kind of class lives in the Spring Boot backend (`artifact/backend`), and which ArchUnit
 rule in [`ArchitectureTest`](../../artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/ArchitectureTest.java)
 guards it (the persistence and shared-library rules: in
-[`PersistenceArchitectureTest`](../../artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PersistenceArchitectureTest.java)). The rule names below are the field names in that class.
+[`PersistenceArchitectureTest`](../../artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/PersistenceArchitectureTest.java),
+the orchestration rules: in
+[`OrchestrationArchitectureTest`](../../artifact/backend/src/test/java/tr/girgin/backend/trading/analysis/platform/OrchestrationArchitectureTest.java)).
+The rule names below are the field names in those classes.
 
 ## Modules
 
