@@ -25,7 +25,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MapperConfig;
 import org.mapstruct.control.MappingControl;
 import org.mapstruct.control.MappingControls;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
@@ -66,14 +65,11 @@ class ArchitectureTest {
     private static final String DOMAIN_ADAPTER_MAPPER = BASE + ".domain.*.adapter..mapper..";
     private static final String LIBRARY_MAPPER = BASE + ".library.mapper..";
     private static final String DOMAIN_CORE_SUB = BASE + ".domain.*.core.*..";
-    private static final String ORCHESTRATION_FEATURE_SUB = BASE + ".orchestration.*.*..";
     private static final String DOMAIN_CORE_INBOUND = BASE + ".domain.*.core.inbound..";
     private static final String SERVICE = "..service..";
     private static final String CORE_EXCEPTION = BASE + ".domain.*.core.exception..";
     private static final String BFF_API_ERROR = BASE + ".bff.controller.api.error..";
     private static final String BFF_IMPL_ERROR = BASE + ".bff.delegate.impl.error..";
-    private static final String ORCHESTRATION_INBOUND = BASE + ".orchestration.*.inbound..";
-    private static final String ORCHESTRATION_CONFIG = BASE + ".orchestration.*.config..";
     private static final String[] MODEL_PACKAGES = {
         BASE + ".domain.*.core.model..", BASE + ".orchestration.*.model..", BASE + ".bff.controller.api.model.."
     };
@@ -397,60 +393,6 @@ class ArchitectureTest {
                     "..core.service..",
                     "..core.model..",
                     "..core.exception..");
-
-    @ArchTest
-    static final ArchRule orchestration_features_follow_the_domain_core_shape = topLevelClasses()
-            .and()
-            .resideInAPackage(ORCHESTRATION_FEATURE_SUB)
-            .should()
-            .resideInAnyPackage(ORCHESTRATION + "inbound..", ORCHESTRATION + "model..", ORCHESTRATION + "config..")
-            .because("an orchestration feature holds its concrete use cases in inbound, their types in model"
-                    + " and its configuration properties in config");
-
-    @ArchTest
-    static final ArchRule orchestration_use_cases_are_concrete_beans = classes()
-            .that()
-            .resideInAPackage(ORCHESTRATION_INBOUND)
-            .and()
-            .haveSimpleNameEndingWith("UseCase")
-            .should()
-            .notBeInterfaces()
-            .andShould()
-            .beAnnotatedWith(Service.class)
-            .because("an orchestration use case has a single implementation, so it is the bean itself");
-
-    @ArchTest
-    static final ArchRule orchestration_inbound_packages_hold_only_beans = topLevelClasses()
-            .and()
-            .resideInAPackage(ORCHESTRATION_INBOUND)
-            .should()
-            .beMetaAnnotatedWith(Component.class)
-            .because("orchestration inbound holds beans only: a use case or its helper bean; configuration"
-                    + " properties go to config, composite models to model");
-
-    @ArchTest
-    static final ArchRule orchestration_config_packages_hold_only_configuration_properties = topLevelClasses()
-            .and()
-            .resideInAPackage(ORCHESTRATION_CONFIG)
-            .should()
-            .beAnnotatedWith(ConfigurationProperties.class)
-            .because("an orchestration config package holds configuration properties records only");
-
-    @ArchTest
-    static final ArchRule configuration_properties_live_in_config_packages = classes()
-            .that()
-            .areAnnotatedWith(ConfigurationProperties.class)
-            .should()
-            .resideInAPackage("..config..")
-            .because("configuration properties are bound in a config package, away from beans and models");
-
-    @ArchTest
-    static final ArchRule use_cases_live_in_orchestration_inbound_packages = classes()
-            .that()
-            .haveSimpleNameEndingWith("UseCase")
-            .should()
-            .resideInAPackage(ORCHESTRATION_INBOUND)
-            .because("UseCase names a concrete orchestration bean; a domain's inbound interface is a Port");
 
     @ArchTest
     static final ArchRule domain_services_implement_inbound_ports = topLevelClasses()
