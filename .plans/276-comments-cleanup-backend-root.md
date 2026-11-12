@@ -6,16 +6,16 @@
 
 ## Goal
 
-The comments and Javadoc of the backend root module pass the test of [repository-code-comments.md](../docs/coding-convention/repository-code-comments.md), and the rules `TAP-J1` to `TAP-J3`, `TAP-C1` and `TAP-C2` apply to it: the pending block for the root module (`artifact/backend/src/`) that plan 1 put into `config/checkstyle/checkstyle.xml` is gone, so the build fails on any redundant Javadoc or comment the rules can see there. With it the last block goes, and #276 is done.
+The comments and Javadoc of the backend root module pass the test of [repository-code-comments.md](../docs/coding-convention/repository-code-comments.md), and the rules `TAP-J1`, `TAP-C1` and `TAP-C2` apply to it: the pending block for the root module (`artifact/backend/src/`) that plan 1 put into `config/checkstyle/checkstyle.xml` is gone, so the build fails on any redundant Javadoc or comment the rules can see there. With it the last block goes, and #276 is done.
 
 ## Affected parts and their conventions
 
-- Backend: [repository-code-comments.md](../docs/coding-convention/repository-code-comments.md) ("Existing comments" is the triage), [backend-java-checkstyle.md](../docs/coding-convention/backend-java-checkstyle.md) (`TAP-J*`, `TAP-C*`)
+- Backend: [repository-code-comments.md](../docs/coding-convention/repository-code-comments.md) ("Existing comments" is the triage), [backend-java-checkstyle.md](../docs/coding-convention/backend-java-checkstyle.md) (`TAP-J1`, `TAP-C*`)
 
 ## Design
 
 - The packages name every file of these modules that held a Javadoc or a comment on `main` at `d0e86794` (not `package-info.java`, which keeps its Javadoc). A path is relative to `artifact/backend/<module>/src/<source set>/java/tr/girgin/backend/trading/analysis/platform/<module package>/` and starts with the source set (`main/`, `testFixtures/`, `test/`); the module package of `bff/api` is `bff/controller/api`, of `bff/impl` `bff/delegate/impl`, of the root module empty, otherwise the module path. A file renamed since by another pull request is triaged under its new name.
-- Each comment and Javadoc is triaged as "Existing comments" says: kept, shortened to the one sentence `TAP-J3` allows (an error case into `@throws`), turned into a `//` comment (a why in a Javadoc outside a port), or deleted. Only comments change: no code, no test, no migration.
+- Every Javadoc goes, on ports too (`package-info.java` aside). A why it held that passes the test of "Existing comments" becomes a `//` comment above the declaration; an error case a `@throws` named is dropped, since the exception type the code throws shows it. Every other comment is kept when it says why and deleted otherwise. Only comments change: no code, no test, no migration.
 - The last package removes the block and fixes what `mise run check` then still reports in these modules, also in a file no package names.
 
 ## Work packages
@@ -69,7 +69,7 @@ Packages without a dependency between them can be implemented in parallel.
 - **Files**: `config/checkstyle/checkstyle.xml`
 - **Steps**:
   - [ ] Remove the pending block for the root module (`artifact/backend/src/`)
-  - [ ] Fix every `TAP-J*` / `TAP-C*` finding left
+  - [ ] Fix every `TAP-J1` / `TAP-C*` finding left
 - **Tests**: `mise run check`; `mise run gradle :backend:test`
 
 ## Tests
