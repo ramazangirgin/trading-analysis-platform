@@ -82,7 +82,6 @@ class OrchestrationArchitectureTest {
             .resideInAPackage(ORCHESTRATION_INBOUND)
             .because("UseCase names a concrete orchestration bean; a domain's inbound interface is a Port");
 
-    /** Top-level project classes, without {@code package-info} and generated nested types. */
     private static GivenClassesConjunction topLevelClasses() {
         return classes().that().areTopLevelClasses().and().doNotHaveSimpleName("package-info");
     }
