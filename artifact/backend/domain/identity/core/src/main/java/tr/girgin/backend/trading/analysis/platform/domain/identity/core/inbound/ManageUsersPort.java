@@ -3,7 +3,9 @@ package tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.CreatedUserAccount;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleId;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserAccount;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.UserId;
 
 /** What admins do with accounts. There is no hard delete: a user is disabled instead. */

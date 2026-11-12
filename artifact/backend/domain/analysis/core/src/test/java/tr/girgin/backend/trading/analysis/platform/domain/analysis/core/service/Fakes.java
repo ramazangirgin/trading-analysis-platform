@@ -28,6 +28,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Pa
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Rating;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEvent;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunEventType;
+import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunOutcome;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.RunStats;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.model.Visibility;
@@ -35,7 +36,6 @@ import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.eventstore.EventStorePort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.persistence.AnalysisRepositoryPort;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunEventSink;
-import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunHandle;
 import tr.girgin.backend.trading.analysis.platform.domain.analysis.core.outbound.runner.RunnerPort;
 
 /** In-memory stand-ins for the analysis domain's outbound ports. */

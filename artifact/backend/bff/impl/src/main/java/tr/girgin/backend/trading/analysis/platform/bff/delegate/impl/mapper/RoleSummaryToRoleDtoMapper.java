@@ -7,8 +7,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.PermissionEnumDto;
 import tr.girgin.backend.trading.analysis.platform.bff.controller.api.model.RoleDto;
-import tr.girgin.backend.trading.analysis.platform.domain.identity.core.inbound.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.Permission;
+import tr.girgin.backend.trading.analysis.platform.domain.identity.core.model.RoleSummary;
 import tr.girgin.backend.trading.analysis.platform.library.mapper.SharedMapperConfig;
 
 @Mapper(config = SharedMapperConfig.class, uses = PermissionToPermissionEnumDtoMapper.class)
