@@ -236,7 +236,9 @@ and the review agent checks the code against it. A plan-only pull request needs 
 
 ### 4. Start the agents
 
-Approve the plan in the session, or:
+For an issue split into several plans, each plan is its own pull request titled with its number
+("Plan 2/5: …") and is approved separately, just before its implementation starts. Approve the plan
+in the session, or:
 
 ```sh
 mise run agent:run plan/32-compare-runs
@@ -429,7 +431,9 @@ The `develop-issue` skill
 steps 2 to 8 of this walkthrough in one Claude Code session. It works in a folder of its own: a
 Git worktree `../<checkout>-<issue>` checked out from `origin/main` (reused when it exists), so it
 never switches branches or writes in the checkout the session started in, and several issues can
-run side by side. It asks the developer only to approve the plan; when the issue has a plan branch
+run side by side. It asks the developer only to approve a plan, and for an issue split into several plans it asks
+before each one, just before that plan's implementation starts (never once for all of them; an earlier
+approval does not cover a later plan). When the issue has a plan branch
 already, it first asks whether to use that plan, skipping the writing, or to write it again. Every later step runs without asking: pushing the plan branch, the implementation, each CI
 fix, review, fix round and the finalising, and the update with `main` (run by `update-main.sh`, not in
 the session's own context; the session runs on Sonnet, its turns are routine). When the pull request is

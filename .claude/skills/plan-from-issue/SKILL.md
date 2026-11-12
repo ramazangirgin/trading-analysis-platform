@@ -69,7 +69,8 @@ do not read other plans in `.plans/` as models.
   one part with substantial changes each, or more than ~1000 changed lines), split it into several
   plans `.plans/<issue>-<slug-a>.md`, `.plans/<issue>-<slug-b>.md`, each naming the plans it
   depends on. A plan that depends on another one is implemented after that one is merged.
-- **The issue closes with its last plan.** Fill in "Plan: <n> of <total>" in every plan. The issue
+- **The issue closes with its last plan.** Fill in "Plan: <n> of <total>" in every plan, numbering them in the order they are implemented
+  (`plan-branch.sh` puts it in the pull request's title, "Plan 2/5: …"). The issue
   must stay open until every plan of it is merged: the agent scripts write `Part of #<issue>` into a
   plan's pull request while another `plan/<issue>-*` branch has no merged pull request, and
   `Closes #<issue>` only into the last one. So push every plan of the issue in step 4, never only
@@ -181,7 +182,8 @@ Open questions in the plan must be answered in it before it can be approved.
 ## 6. Tell the user what is next
 
 Print the pull request link(s) and the next steps: comment on the plan or ask for changes (step 5),
-then approve it by letting the agents take it to a pull request ready for review. The same pull
+then approve it by letting the agents take it to a pull request ready for review. For a split
+issue, each plan is approved on its own, just before its implementation starts. The same pull
 request carries on: the implementation is pushed to it, and its label changes from `plan` to
 `agent`.
 
