@@ -27,6 +27,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Repo
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSource;
+import tr.girgin.backend.trading.analysis.platform.orchestration.preview.config.PreviewSettings;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.AnalysisPreview;
 
 class GetAnalysisPreviewUseCaseTest {

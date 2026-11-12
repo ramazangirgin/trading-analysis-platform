@@ -13,6 +13,7 @@ import tr.girgin.backend.trading.analysis.platform.domain.report.core.inbound.Ge
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.Report;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportKey;
 import tr.girgin.backend.trading.analysis.platform.domain.report.core.model.ReportSection;
+import tr.girgin.backend.trading.analysis.platform.orchestration.preview.config.PreviewSettings;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.AnalysisPreview;
 import tr.girgin.backend.trading.analysis.platform.orchestration.preview.model.AnalysisPreviewSummary;
 

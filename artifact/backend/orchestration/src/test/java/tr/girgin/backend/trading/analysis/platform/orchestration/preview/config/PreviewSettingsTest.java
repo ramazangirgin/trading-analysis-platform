@@ -1,4 +1,4 @@
-package tr.girgin.backend.trading.analysis.platform.orchestration.preview.inbound;
+package tr.girgin.backend.trading.analysis.platform.orchestration.preview.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
