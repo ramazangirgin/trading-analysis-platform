@@ -20,24 +20,25 @@ and what the review flags.
 
 ## Design
 
-- `scripts/agent/prompts/implement.md`: the "Comments follow …" rule names the test; the commits
-  section gets a last step before the last commit: read the comment and Javadoc lines that
-  `git diff {{BASE}}...HEAD` adds or changes, apply the test, delete what fails (a Javadoc Checkstyle
-  does not require, too).
-- `scripts/agent/prompts/review.md`: the comments part of "Conventions" says that `TAP-J*`,
+- `scripts/agent/prompts/implement.md`: the "Comments follow …" rule names the test, and its
+  Javadoc sentence becomes "no Javadoc, ports included (`TAP-J1`); `package-info.java` aside"; the
+  commits section gets a last step before the last commit: read the comment lines that
+  `git diff {{BASE}}...HEAD` adds or changes, apply the test, delete what fails.
+- `scripts/agent/prompts/review.md`: the comments part of "Conventions" says that `TAP-J1`,
   `TAP-C*` and ruff `ERA` check part of it, and that the review applies the test to every comment and
   Javadoc the diff adds or changes, in every language: one that fails is `MINOR` ("A comment or
   Javadoc that restates the code"), repeats in `also_at`; a comment the change makes wrong (the code
   under it no longer does what it says) is `MAJOR`, since it misleads.
 - `scripts/agent/prompts/fix.md`: a finding about a comment that restates the code is fixed by
-  deleting it (a required Javadoc: shortening it to its one sentence), never by rewording it, and
+  deleting it (a Javadoc is always deleted; a why it held becomes a `//` comment), never by rewording it, and
   never declined because the code around has the same kind.
 - The project has no `/code-review` guidance of its own (no skill under `.claude/skills/`), so there
   is nothing to change there.
 - **Manual, by the developer on this branch** (headless agents cannot edit `.claude/`):
   - `.claude/skills/plan-from-issue/SKILL.md`, "Keep it short", the list of what to delete before
     step 4: add "a request for a comment or Javadoc, anywhere in the plan; a comment is never a doc
-    to update";
+    to update"; and in "No comments in the plan", "Checkstyle asks for the Javadoc it requires"
+    becomes "there is no Javadoc, ports included (`TAP-J1`)";
   - `.claude/skills/plan-from-issue/plan-template.md`, under the "Docs to update" table: "Never a
     comment or Javadoc: the plan asks for none (repository-code-comments.md)."
   The implementing agent does not touch them; the final comment of the pull request lists them as
