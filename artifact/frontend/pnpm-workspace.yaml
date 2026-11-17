@@ -25,3 +25,8 @@ minimumReleaseAgeExclude:
 allowBuilds:
   # Its install script only fetches a native binding when the platform package is missing.
   unrs-resolver: false
+
+overrides:
+  # GHSA-8r5x-fm3f-whwj, GHSA-p8wg-vrv2-v86f, GHSA-xw65-4hp5-5hc7: handlebars 4.7.9 from
+  # eslint-plugin-boundaries > @boundaries/elements. Remove when eslint-plugin-boundaries brings >= 4.7.10.
+  handlebars: 4.7.10

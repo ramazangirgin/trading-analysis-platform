@@ -65,6 +65,17 @@ sourceSets.configureEach {
     }
 }
 
+// Guava 33.4.8-jre / 33.7.1-jre comes from Checkstyle and the plugins' helper configurations (apiHelper*,
+// permit*, checkstyle), which do not extend `implementation`; the version is in gradle/libs.versions.toml.
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.google.guava" && requested.name == "guava") {
+            useVersion(libs.findVersion("guava").get().requiredVersion)
+            because("Dependabot alert on Guava (GHSA-xxph-c9ww-hj94)")
+        }
+    }
+}
+
 // Dependency analysis (gradle-dependency-analyze): the build fails on a library the code uses but the
 // module does not declare, and on one it declares but does not use. Part of `check`. The plugin
 // fails by default; exceptions go into its permit* configurations, in the build file of the module.

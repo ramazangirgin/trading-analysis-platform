@@ -16,6 +16,16 @@ java {
     }
 }
 
+// Guava from Checkstyle; the version and the reason are in gradle/libs.versions.toml.
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.google.guava" && requested.name == "guava") {
+            useVersion(libs.versions.guava.get())
+            because("Dependabot alert on Guava (GHSA-xxph-c9ww-hj94)")
+        }
+    }
+}
+
 dependencies {
     // Not bundled: the Checkstyle that runs the checks supplies its own API.
     compileOnly(libs.checkstyle)

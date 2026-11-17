@@ -378,6 +378,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/42/f4/a0313ef208458d099
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/a5/7094b0125310078cd37193b590925a6f7104f826e0ecf94a8d3ac75001c2/grimp-3.18-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:cad017a08dd7a7387b5208a640d4eee90a4152433080626aad09e6ce2d56a07d", size = 2153895, upload-time = "2026-10-26T09:57:57.693Z" },
     { url = "https://files.pythonhosted.org/packages/73/03/dd45288eacd34c97ce76e2596a865bcf9815525417057379affca3423063/grimp-3.18-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:4482b0551ff5596c5b578ae6820fd32a8e0db278c314eb24e7cfffd84f20cf06", size = 2099041, upload-time = "2026-10-26T09:57:48.107Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/b9/3c59b026e38290c2935a657fd72cb22daea41a2e38a485a63ae162522d06/grimp-3.18-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:43d38ab816a9e5d3ed5e8448468e6ed61bccc491007bdafb10f1b2e433fcd215", size = 2276173, upload-time = "2026-10-30T09:05:26.777Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/15/f1aef5e8ca3a427108470281ee3a0185c9bca38277cc255060c81aa049d6/grimp-3.18-cp312-cp312-manylinux2014_armv7l.manylinux_2_17_armv7l.whl", hash = "sha256:4d3bf444df87c4f3a2fe9a8d7ee95e6f28d37c961252821abc93ff872ee87097", size = 2224396, upload-time = "2026-10-30T09:05:38.203Z" },
+    { url = "https://files.pythonhosted.org/packages/dc/1d/7b72207aff83223fd081d41f335774f138973b8625e58508767a3245880a/grimp-3.18-cp312-cp312-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:26cec100e8af7e8c21bee1fb93c2c0e00ef468c5ceb42f03b4cd26f556e5ea67", size = 2365690, upload-time = "2026-10-30T09:06:04.795Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/13/922657cebff2fc8e25cac5f15165e63fc7880a33a6ebe7c59d0c3bc2f278/grimp-3.18-cp312-cp312-manylinux2014_ppc64le.manylinux_2_17_ppc64le.whl", hash = "sha256:c80ec28572574af7f867bc39b05a1768a295ffb3b73aa49ac6a188ae57b3c66d", size = 2629257, upload-time = "2026-10-30T09:05:46.886Z" },
+    { url = "https://files.pythonhosted.org/packages/65/1a/960bb943b7b51ea5c036bee858b5e49416a6b98165ef01eae98a49f64576/grimp-3.18-cp312-cp312-manylinux2014_s390x.manylinux_2_17_s390x.whl", hash = "sha256:3b855e27874b633fa3a52e357b5804507fbd877ff097468197a2a463fd2c81b7", size = 2359483, upload-time = "2026-10-30T09:05:55.697Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/cf/c133969021923097c0699f920721af4800f4d0540ec495596a3eb2c37e1f/grimp-3.18-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:c046c18afd7123ef20abe3052b971c7645b1483dbde0b527ff0636f87077a77a", size = 2285072, upload-time = "2026-10-30T09:06:17.004Z" },
     { url = "https://files.pythonhosted.org/packages/a9/a8/dc870213de5ac4360ab2433e888334fbdca8350bf7d2fdf455bdcd846706/grimp-3.18-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4ca16afcf41957c89bf67970e08ffc69fbb339c1ebc84b6a728e2027914a0a9a", size = 2276176, upload-time = "2026-10-26T09:56:51.079Z" },
     { url = "https://files.pythonhosted.org/packages/5c/5f/a1c80a1c0c2263b813c8c60ee4435c329d3e008872998e066104a1711f08/grimp-3.18-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:256a59bc8a8518dad521bcbd5d0d97398cb4e85304298a56950b504ce27a3818", size = 2224397, upload-time = "2026-10-26T09:57:02.294Z" },
     { url = "https://files.pythonhosted.org/packages/64/25/d958b14791a80a2eff35901a0a688070134b182c46cb7cf7503eece9cc4f/grimp-3.18-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5760ae67db4a230e34e37a743facee2daab407176b1de8ad7a3e5fe87de1315b", size = 2365689, upload-time = "2026-10-26T09:57:27.532Z" },
@@ -818,14 +824,14 @@ wheels = [
 
 [[package]]
 name = "opentelemetry-api"
-version = "1.45.1"
+version = "1.45.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/02/6e0ae9cc61bd3169d401077b507b3ebc344745171e1051ab430be012dcd9/opentelemetry_api-1.45.1.tar.gz", hash = "sha256:aa38ed19bcc084ba42782a73255b3582283eced7ad6dddbd6695189e69adfb75", size = 72804, upload-time = "2026-10-06T17:32:58.133Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/14/cf3a6b6448849656e1e5f4e2101f3988dc6789724050096aba1bc5ccf592/opentelemetry_api-1.45.2.tar.gz", hash = "sha256:d7b0008e21e5fd61cbe7a7f34ca3b6905a78ab677d9bc395e299359c75cda6b4", size = 73277, upload-time = "2026-10-29T17:29:37.888Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/41/f7dcf80b81ee8e71c1a2b59f14208bc723edbd89ed027a73b175abf6348e/opentelemetry_api-1.45.1-py3-none-any.whl", hash = "sha256:b31553efa588ae44bc306f863c785c5333a9ecc091248c6ee68b4b6c87fdedfb", size = 60256, upload-time = "2026-10-06T17:32:33.506Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/2d/610db864d7513158cebb8f36cc88e67e73bd6c7aa1905ef18d89e1281c81/opentelemetry_api-1.45.2-py3-none-any.whl", hash = "sha256:2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34", size = 60335, upload-time = "2026-10-29T17:29:06.955Z" },
 ]
 
 [[package]]
