@@ -59,6 +59,11 @@ tomcat = "11.0.26"
 # commons-compress. Remove when the Spring Boot Gradle plugin brings >= 3.20.0.
 # Advisories: GHSA-j288-q9x7-2f5v.
 commonsLang3 = "3.21.0"
+# Guava, alert 60: 33.4.8-jre and 33.7.1-jre from Checkstyle, the dependency analysis plugin's helper
+# configurations, the frontend's node plugin and the checkstyle-rules build. Remove when Checkstyle and
+# the plugins bring >= 33.7.2-jre.
+# Advisories: GHSA-xxph-c9ww-hj94.
+guava = "33.7.2-jre"
 # kotlin-gradle-plugin, alert 15: 2.4.10 from the kotlin-dsl plugin on the build-logic build script
 # classpath. Remove when Gradle's kotlin-dsl brings >= 2.4.20-Beta1.
 # Advisories: GHSA-r937-wjx7-w2jp.
@@ -152,6 +157,7 @@ tomcat-embed-core = { module = "org.apache.tomcat.embed:tomcat-embed-core", vers
 tomcat-embed-el = { module = "org.apache.tomcat.embed:tomcat-embed-el", version.ref = "tomcat" }
 tomcat-embed-websocket = { module = "org.apache.tomcat.embed:tomcat-embed-websocket", version.ref = "tomcat" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlinGradlePlugin" }
 # Gradle plugin used by the build-logic convention plugins.
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
