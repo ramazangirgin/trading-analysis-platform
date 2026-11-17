@@ -1,8 +1,8 @@
 # Backend: Checkstyle
 
 Static checks on the backend's Java sources (`artifact/backend`, every module, main and test):
-naming, imports, size and complexity, bug-prone patterns, design, modifiers and a small set of
-Javadoc rules. They come from [Checkstyle](https://checkstyle.org/)'s built-in checks, configured in
+naming, imports, size and complexity, bug-prone patterns, design, modifiers, and the rules for
+comments (no Javadoc, no comment that restates the code). They come from [Checkstyle](https://checkstyle.org/)'s built-in checks, configured in
 [`config/checkstyle/checkstyle.xml`](../../config/checkstyle/checkstyle.xml).
 
 Checkstyle does not check layout (indentation, brace placement, import order, whitespace inside a
@@ -106,14 +106,14 @@ leave out `permits`, and the compiler already checks that list.
 the formatter.
 
 ### Javadoc
-The set is kept small:
-- Public types in `core/inbound` and `core/outbound` (inbound and outbound ports, the domain's contracts)
-  need a Javadoc comment (`MissingJavadocType`). Adapters, mappers and services do not.
-- A Javadoc comment that is present has to be well formed: the first sentence ends with a period
-  (`SummaryJavadoc`); the comment sits right before a declaration (`InvalidJavadocPosition`);
-  `@throws` matches what the method throws (`JavadocMethod`; `@param` and `@return` are optional);
-  block tags have a description and are in the standard order; a one-line comment has no block tags.
-  Checkstyle 14 replaced `JavadocStyle` with `SummaryJavadoc` and similar checks.
+There is none in backend Java: [`TAP-J1`](#project-rules) reports every Javadoc comment, ports in
+`core/inbound` and `core/outbound` included. Only `package-info.java` may have one, and these checks
+keep that one well formed:
+- The first sentence ends with a period (`SummaryJavadoc`); the comment sits right before a
+  declaration (`InvalidJavadocPosition`); block tags have a description and are in the standard order;
+  a one-line comment has no block tags. Checkstyle 14 replaced `JavadocStyle` with `SummaryJavadoc`
+  and similar checks.
+- `MissingJavadocType` and `JavadocMethod` are not enabled: no Javadoc is expected anywhere.
 - `JavadocPackage` (a `package-info.java` in every package) is not enabled. Only a module's root
   package has one, describing its role
   ([package structure](backend-java-package-structure.md)).
@@ -134,7 +134,7 @@ built-in check such as `IllegalImport`, `TodoComment` or `RegexpSingleline`, lin
 `TAP-L1: Field 'System#out' is not allowed. Use an SLF4J logger: log.info(...).`
 
 **Ids** are `TAP-<group><n>`, with a group per topic (`L`, `D`, `T`, `C`, `J`, `S`, `X`, `A`, `M`; `L` is
-logging, `D` Spring, `A` access control, `M` MapStruct and mapping). Ids are not reused.
+logging, `D` Spring, `A` access control, `M` MapStruct and mapping, `C` comments, `J` Javadoc). Ids are not reused.
 
 **Suppressing** one is as for any check, with the id: `@SuppressWarnings("checkstyle:TAP-L1")` and a
 reason on the same line or the line above (see [Suppressing a finding](#suppressing-a-finding)).
@@ -155,6 +155,9 @@ the repository.
 | `TAP-D7` | No `static` method in a class annotated `@Service`, `@Component`, `@Repository`, `@Controller`, `@RestController`, `@RestControllerAdvice` or `@Configuration`; static fields and nested types stay allowed | main | [`StaticMethodInAnnotatedClassCheck`](../../build-logic/checkstyle-rules/docs/StaticMethodInAnnotatedClassCheck.md) | `annotations = ...stereotype.Service, ...stereotype.Component, ...stereotype.Repository, ...stereotype.Controller, ...annotation.RestController, ...annotation.RestControllerAdvice, ...annotation.Configuration` | A Spring bean is a singleton already, so its methods are instance methods; a static method hides a dependency from the bean and from its tests (it cannot be injected or replaced). The one known exception is a `static @Bean` method that Spring needs before it creates the configuration, such as a method interceptor or a bean post-processor: suppress it with `@SuppressWarnings("checkstyle:TAP-D7")` and that reason | `@Service class PriceService { static BigDecimal round(BigDecimal v) {...} }` / `@Service class PriceService { BigDecimal round(BigDecimal v) {...} }` |
 | `TAP-D8` | A web DTO enum (an `enum` in `bff/api` main sources) is named `...EnumDto` | `bff/api` main | [`TypeName`](https://checkstyle.org/checks/naming/typename.html) | `tokens = ENUM_DEF`, `format = ^[A-Z][A-Za-z0-9]*EnumDto$` | The suffix tells an enum DTO from a record DTO where it is used, and a MapStruct enum mapper (`VisibilityToVisibilityEnumDtoMapper`) reads the same way | `enum VisibilityDto {...}` / `enum VisibilityEnumDto {...}` |
 | `TAP-D9` | A field, parameter, local, for-each, resource or record component whose type is named `*Service`, `*UseCase`, `*Port`, `*Mapper`, `*Repository` or `*Adapter` is named after its type, in lower camel case, with an optional lower-case qualifier | main and test | [`VariableNamedAfterTypeCheck`](../../build-logic/checkstyle-rules/docs/VariableNamedAfterTypeCheck.md) | `types = *Service, *UseCase, *Port, *Mapper, *Repository, *Adapter`, `allowQualifier = true` | One name per collaborator type makes the code readable without looking up a declaration, and a name that tells the role (`users`) hides which type it is. Library types with these suffixes (`JsonMapper`, `ExecutorService`) count too, since the check has no type resolution. The qualifier covers two collaborators of one type in a scope (`strictUserManagementService`) and a local that would otherwise hide a field | `UserRepositoryPort users` / `UserRepositoryPort userRepositoryPort` |
+| `TAP-J1` | No Javadoc comment (`/** ... */`) anywhere; `package-info.java` is outside the rule | main and test | [`ForbiddenJavadocCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenJavadocCheck.md) | none (`package-info.java` is excluded by a scope filter) | A Javadoc on a method or a port mostly repeats its name and signature, and drifts from the code; a reason the reader needs goes into a `//` comment ([code comments](repository-code-comments.md)) | `/** Stores presets. */ interface PresetRepositoryPort {...}` / `interface PresetRepositoryPort {...}` |
+| `TAP-C1` | A `//` comment on lines of its own whose every word occurs in the statement below it is a restatement | main and test | [`CommentRepeatsCodeCheck`](../../build-logic/checkstyle-rules/docs/CommentRepeatsCodeCheck.md) | `ignoredWords = a, an, the, and, or, of, to, in, on, at, for, with, by, from, as, is, are, be, it, its, this, that, then` | A comment that says nothing the code does not already say costs the reader time and goes stale; a section heading made of the next member's words is reported too. Only an exact restatement is found; the review covers the rest | `// max retry count` above `int maxRetryCount;` / no comment, or `// The upstream rate limit allows three tries.` |
+| `TAP-C2` | A `TODO` or `FIXME` comment names an issue (`#123`) | main and test | [`TodoComment`](https://checkstyle.org/checks/miscellaneous/todocomment.html) | `format = \b(TODO\|FIXME)\b(?!.*#[0-9]+)` | A marker without an issue has no owner and is never done; with the number it can be found and closed | `// TODO handle empty input` / `// TODO #123: handle empty input` |
 | `TAP-M1` | Every `@Mapper` sets `config`, the shared `SharedMapperConfig` | main and test | [`RequiredAnnotationAttributeCheck`](../../build-logic/checkstyle-rules/docs/RequiredAnnotationAttributeCheck.md) | `annotations = org.mapstruct.Mapper`, `attributes = config` | One place sets deep copying and the unmapped target policy; a mapper without it silently shares state with its source and leaves target fields unset | `@Mapper(uses = X.class)` / `@Mapper(config = SharedMapperConfig.class, uses = X.class)` |
 | `TAP-M2` | A mapper takes no `@Context` parameter | main | [`ForbiddenAnnotationCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenAnnotationCheck.md) | `annotations = org.mapstruct.Context` | The data comes with the source object, which the delegate or a use case builds; a context parameter lets a mapper depend on data its source does not carry | `String map(Integer v, @Context Set<String> names)` / a source object that carries the names |
 | `TAP-M3` | A `@Mapping` sets none of `expression`, `defaultExpression` and `conditionExpression` | main | [`ForbiddenAnnotationCheck`](../../build-logic/checkstyle-rules/docs/ForbiddenAnnotationCheck.md) | `annotations = org.mapstruct.Mapping`, `attributes = expression, defaultExpression, conditionExpression` | Java in a string is not compiled until MapStruct generates the code, so a mistake shows late and the IDE cannot help; a computed value comes from the service that builds the source, a nested value through `source = "a.b"` or a typed method, an empty list from `nullValueIterableMappingStrategy`. `constant` and `defaultValue` are literals and stay allowed | `@Mapping(target = "ticker", expression = "java(s.key().ticker())")` / `@Mapping(target = "ticker", source = "key.ticker")` |
@@ -181,7 +184,7 @@ central suppressions file, so each exception is visible where it applies and is 
 code around it. Six settings in `checkstyle.xml` limit where a check applies. They are not
 suppressions:
 
-- `MissingJavadocType` applies to `core/inbound` and `core/outbound` only (`SuppressionSingleFilter`).
+- `TAP-J1` does not apply to `package-info.java` (`SuppressionSingleFilter`).
 - `TAP-D7` applies to main sources only (`SuppressionSingleFilter`).
 - `TAP-D8` applies to the main sources of `bff/api` only (`SuppressionSingleFilter`).
 - `TAP-M2` applies to main sources only (`SuppressionSingleFilter`).
@@ -201,6 +204,25 @@ Suppressions in the code today:
 | `VisibilityModifier` | test doubles (`Fakes`, `RecordingSink`) | tests read and set their state directly |
 | `TAP-D7` | `MethodSecurityConfig.requiresPermissionAdvisor` | Spring needs the static `@Bean` interceptor before it creates the configuration |
 | `LineLength` | test fixtures holding runner protocol lines | a protocol line stays on one line |
+
+### Temporary filters (#276)
+
+`TAP-J1` and `TAP-C1` went in before their findings were fixed: about 560 Javadoc blocks in about 360
+files would have made one pull request unreviewable, so the rule "a project rule goes in with its
+findings fixed" is set aside for #276. Until a cleanup plan has fixed its modules, a
+`SuppressionSingleFilter` per rule in `checkstyle.xml` (headed `Temporary (#276, plan <n>)`) hides the
+findings there. Each plan removes its own block; the fixtures never match a filter, because their path
+does not start with `artifact/backend/`.
+
+| Plan | Plan file (`.plans/`) | Modules (`artifact/backend/...`) |
+|---|---|---|
+| 3 | `276-comments-analysis-core.md` | `domain/analysis/core` |
+| 4 | `276-comments-analysis-adapter-orchestration.md` | `domain/analysis/adapter`, `orchestration` |
+| 5 | `276-comments-identity.md` | `domain/identity` |
+| 6 | `276-comments-report-catalog.md` | `domain/report`, `domain/catalog` |
+| 7 | `276-comments-settings-library.md` | `domain/settings`, `library` |
+| 8 | `276-comments-bff.md` | `bff` |
+| 9 | `276-comments-backend-root.md` | the root module (`src`; `TAP-C1` reports only its tests) |
 
 ## Adding or changing a rule
 

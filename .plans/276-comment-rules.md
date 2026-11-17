@@ -107,13 +107,13 @@ Paths under `build-logic/checkstyle-rules/` are relative to it.
 
 ### WP3: Project rules `TAP-J1`, `TAP-C1`, `TAP-C2` and the temporary filters
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1, WP2
 - **Files**: `config/checkstyle/checkstyle.xml`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-J1/`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-C1/`, `build-logic/checkstyle-rules/src/test/resources/rules/TAP-C2/`
 - **Steps**:
-  - [ ] Configure the three rules at the end of `TreeWalker`, the `TAP-J1` scope filter, the
+  - [x] Configure the three rules at the end of `TreeWalker`, the `TAP-J1` scope filter, the
     Javadoc checks as decided, and the temporary filter blocks
-  - [ ] Fixtures: `Violation.java` and `Compliant.java` per rule, and a `package-info.java` with
+  - [x] Fixtures: `Violation.java` and `Compliant.java` per rule, and a `package-info.java` with
     a Javadoc under `TAP-J1` (reports nothing)
 - **Tests**: `ProjectRulesTest`, `DocumentationTest` (catalogue rows), and `mise run build` green:
   the temporary filters cover every finding of today, and nothing else is filtered.
