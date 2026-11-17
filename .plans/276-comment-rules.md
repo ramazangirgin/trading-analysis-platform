@@ -83,11 +83,11 @@ Paths under `build-logic/checkstyle-rules/` are relative to it.
 
 ### WP1: Check `ForbiddenJavadocCheck`
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `src/main/java/tr/girgin/checkstyle/ForbiddenJavadocCheck.java`, `src/main/resources/tr/girgin/checkstyle/messages.properties`, `src/test/java/tr/girgin/checkstyle/ForbiddenJavadocCheckTest.java`, `src/test/resources/checks/ForbiddenJavadocCheck/`, `docs/ForbiddenJavadocCheck.md`, `README.md`
 - **Steps**:
-  - [ ] Write the check, its reference document and its row in the README's table of checks
+  - [x] Write the check, its reference document and its row in the README's table of checks
 - **Tests**: `ForbiddenJavadocCheckTest` (a Javadoc on a type, a member, a record component, a
   misplaced one inside a method; near misses `/**/`, `/* */`, `//` and `/**` in a string literal;
   the message with and without `suggestion`), `DocumentationTest`, 100% coverage.
