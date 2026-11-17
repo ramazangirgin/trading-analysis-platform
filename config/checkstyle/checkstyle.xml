@@ -28,11 +28,10 @@
          below). Generated sources (build/generated/) are not passed to Checkstyle at all. -->
     <module name="SuppressWarningsFilter"/>
 
-    <!-- Scope of MissingJavadocType (not a suppression): public types in core/inbound and
-         core/outbound, the domain's contracts (inbound and outbound ports), need Javadoc; other types do not. -->
+    <!-- TAP-J1 does not apply to package-info.java (not a suppression of a finding). -->
     <module name="SuppressionSingleFilter">
-        <property name="id" value="MissingJavadocPortType"/>
-        <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/].*[\\/]core[\\/](inbound|outbound)[\\/]).*$"/>
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="package-info\.java$"/>
     </module>
 
     <!-- TAP-D7 applies to main code only (not a suppression of a finding). -->
@@ -57,6 +56,52 @@
     <module name="SuppressionSingleFilter">
         <property name="id" value="TAP-M3"/>
         <property name="files" value="^(?!.*[\\/]src[\\/]main[\\/]).*$"/>
+    </module>
+
+    <!-- Temporary (#276, plan 3): removed by .plans/276-comments-analysis-core.md -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="artifact[\\/]backend[\\/]domain[\\/]analysis[\\/]core[\\/]"/>
+    </module>
+
+    <!-- Temporary (#276, plan 4): removed by .plans/276-comments-analysis-adapter-orchestration.md -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="artifact[\\/]backend[\\/](domain[\\/]analysis[\\/]adapter|orchestration)[\\/]"/>
+    </module>
+
+    <!-- Temporary (#276, plan 5): removed by .plans/276-comments-identity.md -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="artifact[\\/]backend[\\/]domain[\\/]identity[\\/]"/>
+    </module>
+
+    <!-- Temporary (#276, plan 6): removed by .plans/276-comments-report-catalog.md -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="artifact[\\/]backend[\\/]domain[\\/](report|catalog)[\\/]"/>
+    </module>
+
+    <!-- Temporary (#276, plan 7): removed by .plans/276-comments-settings-library.md -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="artifact[\\/]backend[\\/](domain[\\/]settings|library)[\\/]"/>
+    </module>
+
+    <!-- Temporary (#276, plan 8): removed by .plans/276-comments-bff.md -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="artifact[\\/]backend[\\/]bff[\\/]"/>
+    </module>
+
+    <!-- Temporary (#276, plan 9): removed by .plans/276-comments-backend-root.md -->
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-J1"/>
+        <property name="files" value="artifact[\\/]backend[\\/]src[\\/]"/>
+    </module>
+    <module name="SuppressionSingleFilter">
+        <property name="id" value="TAP-C1"/>
+        <property name="files" value="artifact[\\/]backend[\\/]src[\\/]"/>
     </module>
 
     <!-- Files ===================================================================================== -->
@@ -294,22 +339,11 @@
             <property name="allowInSwitchCase" value="true"/>
         </module>
 
-        <!-- Javadoc: a small set ================================================================= -->
-        <!-- Inbound and outbound ports are the domain's contracts: public types in core/inbound and
-             core/outbound need Javadoc (suppressions.xml limits the check to those packages). -->
-        <module name="MissingJavadocType">
-            <property name="id" value="MissingJavadocPortType"/>
-            <property name="scope" value="public"/>
-        </module>
+        <!-- Javadoc: only package-info.java may have one (TAP-J1), these checks keep it well formed. -->
         <!-- Checkstyle 14 split JavadocStyle up: SummaryJavadoc checks the first sentence. -->
         <module name="SummaryJavadoc"/>
         <module name="JavadocMissingLeadingAsterisk"/>
         <module name="InvalidJavadocPosition"/>
-        <module name="JavadocMethod">
-            <property name="validateThrows" value="true"/>
-            <property name="allowMissingParamTags" value="true"/>
-            <property name="allowMissingReturnTag" value="true"/>
-        </module>
         <module name="NonEmptyAtclauseDescription"/>
         <module name="AtclauseOrder"/>
         <module name="SingleLineJavadoc"/>
@@ -385,6 +419,20 @@
             <property name="types" value="*Service, *UseCase, *Port, *Mapper, *Repository, *Adapter"/>
             <property name="allowQualifier" value="true"/>
             <property name="suggestion" value="Name a collaborator after its type in lower camel case, with an optional qualifier: userRepositoryPort, strictUserManagementService."/>
+        </module>
+        <module name="tr.girgin.checkstyle.ForbiddenJavadocCheck">
+            <property name="id" value="TAP-J1"/>
+            <property name="suggestion" value="Delete it, or turn a reason the reader needs into a // comment (docs/coding-convention/repository-code-comments.md)."/>
+        </module>
+        <module name="tr.girgin.checkstyle.CommentRepeatsCodeCheck">
+            <property name="id" value="TAP-C1"/>
+            <property name="ignoredWords" value="a, an, the, and, or, of, to, in, on, at, for, with, by, from, as, is, are, be, it, its, this, that, then"/>
+            <property name="suggestion" value="Delete the comment, or say why, or what the code cannot show."/>
+        </module>
+        <module name="TodoComment">
+            <property name="id" value="TAP-C2"/>
+            <property name="format" value="\b(TODO|FIXME)\b(?!.*#[0-9]+)"/>
+            <message key="todo.match" value="TAP-C2: a TODO / FIXME names its issue: TODO #123: ..."/>
         </module>
     </module>
 </module>

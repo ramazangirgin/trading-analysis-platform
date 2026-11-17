@@ -82,6 +82,9 @@ before Gradle tests, or Testcontainers finds no Docker.
 - Checkstyle with project rules `TAP-*` ([backend-java-checkstyle.md](docs/coding-convention/backend-java-checkstyle.md);
   an injected collaborator is named after its type: `userRepositoryPort`, `TAP-D9`),
   Palantir Java Format, Prettier.
+- Comments: no Javadoc in backend Java (`TAP-J1`), no `//` comment that repeats the next statement
+  (`TAP-C1`), every `TODO`/`FIXME` names an issue (`TAP-C2`), no commented-out code in ta-runner
+  (ruff `ERA`); scope in [repository-code-comments.md](docs/coding-convention/repository-code-comments.md).
 - Persistence: Spring Data JPA only, no plain SQL ([backend-java-persistence.md](docs/coding-convention/backend-java-persistence.md));
   database naming ([backend-database-naming.md](docs/coding-convention/backend-database-naming.md)).
   Never edit a merged migration (Flyway checksums); add a new one.
@@ -90,8 +93,7 @@ before Gradle tests, or Testcontainers finds no Docker.
 
 ## Rules that the build does not check
 
-- No comment or Javadoc that restates the code. A comment says why, or what the code cannot show;
-  Javadoc only where Checkstyle requires it, one sentence
+- No comment that restates the code. The test: would a reader lose something if it were deleted?
   ([repository-code-comments.md](docs/coding-convention/repository-code-comments.md)).
 - Every pull request into `main` raises the version: `mise run version:bump minor|major|patch`
   ([repository-versioning-and-releases.md](docs/coding-convention/repository-versioning-and-releases.md)).

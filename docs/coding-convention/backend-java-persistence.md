@@ -324,7 +324,7 @@ A write based on a stale copy of a row fails instead of overwriting a newer one.
   in one call and a write in a later one; a check inside the adapter's own transaction would cover
   only the milliseconds between its read and its write. A plain `Long` keeps persistence types out
   of the core.
-- **The port promises** (Javadoc on each write method): a record whose version differs from the
+- **The port promises** (proved by each adapter's stale-write test): a record whose version differs from the
   stored row's fails with `org.springframework.dao.OptimisticLockingFailureException` and leaves the
   row unchanged; a `null` version means insert, so it fails on an existing ID too. Spring's
   exception translation already yields `ObjectOptimisticLockingFailureException` (a subclass) for
