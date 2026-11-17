@@ -14,6 +14,7 @@ instance of a check: a few lines of XML, no Java. The rules, with their reasons 
 
 | Check | Reports | Project rules |
 |---|---|---|
+| [`CommentRepeatsCodeCheck`](docs/CommentRepeatsCodeCheck.md) | a `//` comment on lines of its own whose words all occur in the next statement | `TAP-C1` |
 | [`ForbiddenAnnotationCheck`](docs/ForbiddenAnnotationCheck.md) | a use of a forbidden annotation, or one that sets a forbidden attribute | `TAP-M2`, `TAP-M3` |
 | [`ForbiddenJavadocCheck`](docs/ForbiddenJavadocCheck.md) | a Javadoc comment, wherever it is | `TAP-J1` |
 | [`ForbiddenMemberAccessCheck`](docs/ForbiddenMemberAccessCheck.md) | a reference to a forbidden field, a call of a forbidden method or constructor | `TAP-L1` |

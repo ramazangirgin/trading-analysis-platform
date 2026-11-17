@@ -94,11 +94,11 @@ Paths under `build-logic/checkstyle-rules/` are relative to it.
 
 ### WP2: Check `CommentRepeatsCodeCheck`
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: WP1
 - **Files**: `src/main/java/tr/girgin/checkstyle/CommentRepeatsCodeCheck.java`, `src/main/resources/tr/girgin/checkstyle/messages.properties`, `src/test/java/tr/girgin/checkstyle/CommentRepeatsCodeCheckTest.java`, `src/test/resources/checks/CommentRepeatsCodeCheck/`, `docs/CommentRepeatsCodeCheck.md`, `README.md`
 - **Steps**:
-  - [ ] Write the check, its reference document and its row in the README's table of checks
+  - [x] Write the check, its reference document and its row in the README's table of checks
 - **Tests**: `CommentRepeatsCodeCheckTest`: reported (one word, several, a multi-line comment,
   camel case and `_` names, a keyword, an annotated declaration); not reported (a word missing from
   the statement, an empty or symbols-only comment, a trailing comment, a block comment, a comment
