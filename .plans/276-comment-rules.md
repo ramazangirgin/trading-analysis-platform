@@ -120,11 +120,11 @@ Paths under `build-logic/checkstyle-rules/` are relative to it.
 
 ### WP4: ruff `ERA` for ta-runner
 
-- **Status**: open
+- **Status**: done
 - **Depends on**: none
 - **Files**: `artifact/ta-runner/pyproject.toml`
 - **Steps**:
-  - [ ] Add `ERA` to `[tool.ruff.lint] select`
+  - [x] Add `ERA` to `[tool.ruff.lint] select`
 - **Tests**: `mise run runner-test` (no finding today); a commented-out line such as `# x = 1`
   in a scratch copy is reported, and not committed.
 

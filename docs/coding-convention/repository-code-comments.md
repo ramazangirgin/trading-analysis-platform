@@ -5,8 +5,10 @@ comment is written only when it says what the code cannot.**
 
 ## The rule
 
-A comment or Javadoc says something the code, its names, its types and the docs do not: a reason
-that is not obvious, a workaround, a race, a constraint from outside.
+The test: *would a reader lose something if this comment were deleted?* If not, delete it.
+
+A comment says something the code, its names, its types and the docs do not: a reason that is not
+obvious, a workaround, a race, a constraint from outside.
 
 Never write one that repeats:
 
@@ -15,15 +17,31 @@ Never write one that repeats:
 - a convention that is documented elsewhere (naming, versioning, formatting, the schema layout);
 - what the README or the API description already says.
 
+To delete:
+
+```java
+/** Stores presets. */
+public interface PresetRepositoryPort {
+```
+
+To keep (the code cannot show why):
+
+```java
+// No timeout: runs take minutes, and the stream ends with the run.
+return new SseEmitter(0L);
+```
+
 Existing comments are no model. A comment that is already in the code around yours is not a reason
 to write the same kind: when you touch it, remove it if it breaks the rule.
 
 ## Javadoc
 
-Javadoc is written only where Checkstyle requires it (public types in `core/inbound` and
-`core/outbound`, see [backend-java-checkstyle.md](backend-java-checkstyle.md)): one summary
-sentence, then only what a caller must know (the errors thrown, an ordering, what `null` or empty
-means).
+There is none in backend Java, except in `package-info.java`. Ports (`core/inbound`,
+`core/outbound`) are no exception. What becomes of a Javadoc that exists:
+
+- a reason it held becomes a `//` comment on the code it explains;
+- a `@throws` case is dropped: the exception type shows it;
+- a fact that a convention document already states is deleted.
 
 ## File headers
 
@@ -39,7 +57,22 @@ A migration already merged into `main` is never edited to remove a comment: Flyw
 
 ## How it is checked
 
-No tool can tell a redundant comment from a useful one. The review agent reports every redundant
-comment as a finding, also one copied from existing code, and the developer's review of the pull
-request is the backstop. This is the documented exception to the rule that a convention is
-enforced by a tool (see [Changing a convention](README.md#changing-a-convention)).
+| Rule | Tool | Reports | Scope |
+|---|---|---|---|
+| `TAP-J1` | Checkstyle | every Javadoc comment (`/**`) | main and test sources of every backend module; not `package-info.java` |
+| `TAP-C1` | Checkstyle | a `//` comment on lines of its own whose words all occur in the next statement | main and test sources of every backend module |
+| `TAP-C2` | Checkstyle | a `TODO` or `FIXME` without an issue number (`TODO #123: ...`) | main and test sources of every backend module |
+| `ERA` | ruff | commented-out code | `artifact/ta-runner` |
+
+See [backend-java-checkstyle.md](backend-java-checkstyle.md) for the rules, and the
+[temporary filters (#276)](backend-java-checkstyle.md#temporary-filters-276) that keep the build
+green until the existing Javadoc and comments are cleaned up.
+
+What no tool catches, so the review agent and the developer's review of the pull request do:
+
+- a restatement in other words, or one over several statements;
+- a trailing comment or a block comment;
+- an outdated comment;
+- TypeScript, Vue, SQL, YAML and shell;
+- a docstring, and the Python of `scripts/agent` and `.claude/skills`;
+- Javadoc in `build-logic`, which Checkstyle does not check.
