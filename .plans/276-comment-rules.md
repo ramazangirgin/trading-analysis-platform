@@ -47,7 +47,9 @@ The rules (ids: group `J` Javadoc, `C` comments, both already reserved in the id
   `suggestion`. `TAP-C1` sets `ignoredWords = a, an, the, and, or, of, to, in, on, at, for, with, by,
   from, as, is, are, be, it, its, this, that, then`. A trailing comment and a block comment are not
   checked. A fixture's reported comment carries the `// violation` marker on its line, so the
-  statement after it names `violation` too.
+  statement after it names `violation` too. A section heading (`// --- BFF ---`) is not exempt
+  (decided by the developer): one whose words are all in the next member's name is reported, and
+  plan 9 deletes or rewrites it.
 - **`TAP-C2`**, built-in `TodoComment` with `format = \b(TODO|FIXME)\b(?!.*#[0-9]+)` and a
   `todo.match` message naming the rule (`TODO #123: ...`).
 - Rejected from the issue's list: an allow-list of `//` markers (it would ban the why-comments the
@@ -149,11 +151,3 @@ WP3.
   "Javadoc only where Checkstyle requires it"; Checkstyle then rejects one.
 - Javadoc in `build-logic` (Checkstyle does not check that build, see its README) and comments in
   the frontend: no rule; the review covers them.
-
-## Open questions
-
-- `TAP-C1` reports the four section headings of the root module's tests whose words are all in the
-  next member's name (`// ---- list and get ----` above `listAndGetShowRolesStatusLockAndLastLogin`,
-  `// --- BFF ---` above `bff_api_does_not_use_domain_models`), while the headings with other
-  words pass. Plan 9 deletes or rewrites them. Keep that, or exempt a heading (words between runs
-  of `-`) from the rule, so that a test class keeps its groups?
